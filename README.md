@@ -221,7 +221,7 @@ php artisan test tests/Unit
 ## Deployment
 
 ### Production Deployment
-1. Setup server dengan PHP 8.1+, Nginx, PostgreSQL
+1. Setup server dengan PHP 8.2+, Nginx, PostgreSQL
 2. Clone repository dan install dependencies
 3. Setup environment variables production
 4. Compile frontend assets untuk production
