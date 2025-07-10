@@ -1,66 +1,290 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MARIMOI
+**Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah**
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/yourusername/marimoi/releases)
+[![Platform](https://img.shields.io/badge/platform-Web%20%7C%20Mobile-lightgrey.svg)](https://github.com/yourusername/marimoi)
 
-## About Laravel
+## Deskripsi Proyek
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+MARIMOI adalah sistem informasi digital terpadu berbasis web dan mobile yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktur daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini dirancang khusus untuk memperkuat sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fitur Utama
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🏗️ **Manajemen Infrastruktur**
+- Perencanaan proyek infrastruktur daerah
+- Monitoring progress pembangunan real-time
+- Evaluasi dan assessment kualitas infrastruktur
+- Database terpusat aset infrastruktur
 
-## Learning Laravel
+### 📊 **Monitoring dan Evaluasi**
+- Dashboard analytics untuk tracking KPI
+- Laporan progress otomatis
+- Visualisasi data geografis (GIS)
+- Sistem peringatan dini (early warning system)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🤝 **Integrasi Multi-Sektor**
+- Koordinasi antar dinas/instansi
+- Sinergi lintas wilayah kabupaten/kota
+- Kolaborasi dengan pihak swasta
+- Partisipasi masyarakat dalam perencanaan
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 📱 **Multi-Platform**
+- Web application untuk admin dan stakeholder
+- Mobile app untuk monitoring lapangan
+- Progressive Web App (PWA) support
+- Responsive design untuk semua perangkat
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Teknologi yang Digunakan
 
-## Laravel Sponsors
+### Frontend
+- **Web**: React.js, TypeScript, Tailwind CSS
+- **Mobile**: React Native / Flutter
+- **Maps**: Leaflet.js / Google Maps API
+- **Charts**: Chart.js / D3.js
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Backend
+- **Framework**: Laravel 10.x
+- **Database**: PostgreSQL dengan PostGIS
+- **Authentication**: Laravel Sanctum + Breeze
+- **API**: RESTful API dengan Laravel API Resources
 
-### Premium Partners
+### Infrastructure
+- **Cloud**: AWS / Google Cloud Platform
+- **Container**: Docker + Kubernetes
+- **CI/CD**: GitHub Actions / GitLab CI
+- **Monitoring**: Prometheus + Grafana
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Instalasi
 
-## Contributing
+### Prasyarat
+- PHP >= 8.1
+- Composer
+- PostgreSQL >= 12.0
+- Node.js >= 16.0.0 (untuk frontend assets)
+- Docker (opsional)
+- Git
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Langkah Instalasi
 
-## Code of Conduct
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/yourusername/marimoi.git
+   cd marimoi
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+2. **Install dependencies**
+   ```bash
+   # Backend Laravel
+   composer install
+   
+   # Frontend dependencies
+   npm install
+   ```
 
-## Security Vulnerabilities
+3. **Setup database**
+   ```bash
+   # Buat database PostgreSQL
+   createdb marimoi_db
+   
+   # Copy environment file
+   cp .env.example .env
+   
+   # Generate application key
+   php artisan key:generate
+   
+   # Jalankan migrasi dan seeder
+   php artisan migrate --seed
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. **Setup frontend assets**
+   ```bash
+   # Compile assets untuk development
+   npm run dev
+   
+   # Atau untuk production
+   npm run build
+   ```
 
-## License
+5. **Jalankan aplikasi**
+   ```bash
+   # Development server
+   php artisan serve
+   
+   # Queue worker (untuk background jobs)
+   php artisan queue:work
+   
+   # Schedule runner (untuk cron jobs)
+   php artisan schedule:run
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Docker Setup (Alternative)
+
+```bash
+# Build dan jalankan dengan Docker Compose
+docker-compose up -d
+
+# Install dependencies di dalam container
+docker-compose exec app composer install
+
+# Jalankan migrasi database
+docker-compose exec app php artisan migrate --seed
+
+# Compile frontend assets
+docker-compose exec app npm run dev
+```
+
+## Penggunaan
+
+### Dashboard Admin
+1. Login dengan akun administrator
+2. Akses dashboard utama di `/dashboard`
+3. Kelola proyek infrastruktur melalui menu "Proyek"
+4. Monitor progress di menu "Monitoring"
+
+### Mobile App
+1. Download aplikasi MARIMOI dari Play Store/App Store
+2. Login dengan akun yang telah terdaftar
+3. Gunakan fitur GPS untuk tracking lokasi proyek
+4. Upload foto dan laporan progress langsung dari lapangan
+
+### API Documentation
+API documentation tersedia di `/api/documentation` setelah aplikasi berjalan (menggunakan Laravel Swagger).
+
+## Struktur Proyek
+
+```
+marimoi/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   ├── Middleware/
+│   │   ├── Requests/
+│   │   └── Resources/
+│   ├── Models/
+│   ├── Services/
+│   └── Providers/
+├── database/
+│   ├── migrations/
+│   ├── seeders/
+│   └── factories/
+├── resources/
+│   ├── views/
+│   ├── js/
+│   └── css/
+├── routes/
+│   ├── web.php
+│   ├── api.php
+│   └── console.php
+├── public/
+├── storage/
+├── tests/
+│   ├── Feature/
+│   └── Unit/
+├── config/
+└── docs/
+    ├── api/
+    ├── user-guide/
+    └── deployment/
+```
+
+## Kontribusi
+
+Kami menyambut kontribusi dari semua pihak! Silakan baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan berkontribusi.
+
+### Cara Berkontribusi
+1. Fork repository ini
+2. Buat branch fitur (`git checkout -b feature/AmazingFeature`)
+3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
+
+## Testing
+
+```bash
+# Jalankan unit tests
+php artisan test
+
+# Jalankan specific test
+php artisan test --filter=ProjectTest
+
+# Jalankan tests dengan coverage
+php artisan test --coverage
+
+# Jalankan feature tests
+php artisan test tests/Feature
+
+# Jalankan unit tests
+php artisan test tests/Unit
+```
+
+## Deployment
+
+### Production Deployment
+1. Setup server dengan PHP 8.1+, Nginx, PostgreSQL
+2. Clone repository dan install dependencies
+3. Setup environment variables production
+4. Compile frontend assets untuk production
+5. Setup queue worker dengan Supervisor
+6. Konfigurasi cron jobs untuk Laravel Scheduler
+7. Setup SSL certificate dan domain
+8. Deploy menggunakan CI/CD pipeline (GitHub Actions/GitLab CI)
+
+Panduan lengkap deployment tersedia di [docs/deployment/](docs/deployment/).
+
+## Roadmap
+
+### Phase 1 (Q1 2025) ✅
+- [x] Sistem autentikasi dan otorisasi
+- [x] Dashboard monitoring dasar
+- [x] CRUD proyek infrastruktur
+- [x] Integrasi maps dan GIS
+
+### Phase 2 (Q2 2025) 🔄
+- [ ] Mobile application
+- [ ] Advanced analytics dan reporting
+- [ ] Sistem notifikasi real-time
+- [ ] API publik untuk integrasi
+
+### Phase 3 (Q3 2025) 📋
+- [ ] Machine learning untuk prediksi
+- [ ] Chatbot untuk customer service
+- [ ] Advanced workflow management
+- [ ] Integration dengan sistem legacy
+
+## Dukungan
+
+### Dokumentasi
+- [User Guide](docs/user-guide/)
+- [API Documentation](docs/api/)
+- [Developer Guide](docs/developer-guide/)
+
+### Kontak
+- **Email**: support@marimoi.id
+- **Website**: https://marimoi.id
+- **GitHub Issues**: [Issues](https://github.com/yourusername/marimoi/issues)
+
+### Tim Pengembang
+- **Project Manager**: [Nama PM]
+- **Lead Developer**: [Nama Lead Dev]
+- **UI/UX Designer**: [Nama Designer]
+- **DevOps Engineer**: [Nama DevOps]
+
+## Lisensi
+
+Proyek ini dilisensikan di bawah MIT License - lihat file [LICENSE](LICENSE) untuk detail lengkap.
+
+## Penghargaan
+
+Terima kasih kepada semua kontributor dan stakeholder yang telah mendukung pengembangan MARIMOI:
+
+- Pemerintah Provinsi Maluku Utara
+- Dinas Pekerjaan Umum dan Penataan Ruang
+- Badan Perencanaan Pembangunan Daerah
+- Seluruh masyarakat Maluku Utara
+
+---
+
+**MARIMOI** - Membangun Maluku Utara yang Lebih Terintegrasi dan Berkelanjutan
+
+*Dikembangkan dengan ❤️ untuk kemajuan infrastruktur Maluku Utara*
