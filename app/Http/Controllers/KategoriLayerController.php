@@ -20,13 +20,15 @@ class KategoriLayerController extends Controller
     /**
      * Get data for create modal
      */
-    public function create()
-    {
-        $parentKategori = KategoriLayer::whereNull('parent_id')->orderBy('nama')->get();
-        return response()->json([
-            'parentKategori' => $parentKategori
-        ]);
-    }
+   public function create()
+{
+    $parentKategori = KategoriLayer::orderBy('nama')->get();
+
+    return response()->json([
+        'parentKategori' => $parentKategori
+    ]);
+}
+
 
     /**
      * Store a newly created resource in storage.
@@ -72,10 +74,10 @@ class KategoriLayerController extends Controller
      */
     public function edit(KategoriLayer $kategoriLayer)
     {
-        $parentKategori = KategoriLayer::whereNull('parent_id')
-            ->where('id', '!=', $kategoriLayer->id)
-            ->orderBy('nama')
-            ->get();
+    $parentKategori = KategoriLayer::where('id', '!=', $kategoriLayer->id)
+    ->orderBy('nama')
+    ->get();
+
         
         return response()->json([
             'success' => true,

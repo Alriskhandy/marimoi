@@ -28,8 +28,10 @@ return new class extends Migration
 
         
         // Tambahkan kolom geometri menggunakan PostGIS dengan support untuk Z dan M dimensions
+
         // GEOMETRYZM mendukung X, Y, Z (elevation), dan M (measure) coordinates 3D
         // DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY(GEOMETRYZM, 4326)');
+
         // Jika tidak ingin menggunakan Z dan M dimensions, gunakan ini: 2D
         // DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY(Geometry, 4326)');
         // tidak keduanya

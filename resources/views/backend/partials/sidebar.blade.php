@@ -7,7 +7,7 @@
                     <span class="login-status online"></span>
                 </div>
                 <div class="nav-profile-text d-flex flex-column">
-                    <span class="font-weight-bold mb-2">Admin GIS</span>
+                    <span class="font-weight-bold mb-2">{{ Auth::user()->name }}</span>
                     <span class="text-secondary text-small">WebGIS MARIMOI</span>
                 </div>
                 <i class="mdi mdi-map-marker text-success nav-profile-badge"></i>
