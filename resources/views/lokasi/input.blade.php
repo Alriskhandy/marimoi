@@ -219,21 +219,25 @@
                                             <!-- Category Suggestions -->
                                             <div class="category-suggestions">
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Hutan')">Hutan</button>
+                                                    onclick="selectCategory('Ekonomi')">Ekonomi</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Sawah')">Sawah</button>
+                                                    onclick="selectCategory('Infrastruktur')">Infrastruktur</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Permukiman')">Permukiman</button>
+                                                    onclick="selectCategory('Kemiskinan')">Kemiskinan</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Industri')">Industri</button>
+                                                    onclick="selectCategory('Kependudukan')">Kependudukan</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Jalan')">Jalan</button>
+                                                    onclick="selectCategory('Kesehatan')">Kesehatan</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Sungai')">Sungai</button>
+                                                    onclick="selectCategory('Lingkungan Hidup')">Lingkungan
+                                                    Hidup</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Danau')">Danau</button>
+                                                    onclick="selectCategory('Pariwisata & Kebudayaan')">Pariwisata &
+                                                    Kebudayaan</button>
                                                 <button type="button" class="category-badge"
-                                                    onclick="selectCategory('Kebun')">Kebun</button>
+                                                    onclick="selectCategory('Pendidikan')">Pendidikan</button>
+                                                <button type="button" class="category-badge"
+                                                    onclick="selectCategory('Sosial')">Sosial</button>
                                             </div>
                                         </div>
                                     </div>
