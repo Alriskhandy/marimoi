@@ -8,7 +8,7 @@ class FrontendController extends Controller
 {
     public function index()
     {
-        return view('welcome');
+        return view('frontend.pages.index');
     }
 
     public function showMap()

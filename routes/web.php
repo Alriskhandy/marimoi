@@ -19,7 +19,6 @@ Route::middleware('auth')->group(function () {
 });
 
 
-
 Route::get('/lokasi', [LokasiController::class, 'index'])->name('lokasi.index');
 Route::get('/lokasi/create', [LokasiController::class, 'create'])->name('lokasi.create');
 Route::post('/lokasi', [LokasiController::class, 'store'])->name('lokasi.store');
