@@ -13,6 +13,6 @@ class FrontendController extends Controller
 
     public function showMap()
     {
-        return view('frontend.pages.peta-gis');
+        return view('frontend.pages.peta');
     }
 }

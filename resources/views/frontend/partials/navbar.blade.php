@@ -1,37 +1,21 @@
-<header class="w-full border-b border-gray-200 bg-white sticky top-0 z-50">
-    <nav class="container mx-auto flex items-center justify-between py-3 px-4 md:px-6">
-      <div class="flex items-center space-x-3 min-w-max">
-        <img
-          src="{{ asset('assets/img/logo.svg') }}"
-          alt="Logo Bappeda Provinsi Maluku Utara, shield emblem with green, red and yellow colors and text MARIMOI"
-          class="w-12 h-12 object-contain"/>
-        <div class="flex flex-col">
-          <a href="#" class="font-extrabold text-blue-800 text-lg hover:underline">MARIMOI</a>
-          <p class="text-sm text-gray-500 leading-tight">Bappeda Provinsi Maluku Utara</p>
-        </div>
-      </div>
+<header id="header" class="header d-flex align-items-center fixed-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
 
-     <ul class="hidden md:flex space-x-6 font-semibold text-gray-700 text-sm">
-        <li>
-          <a href="{{ route('beranda') }}"
-            class="{{ request()->routeIs('beranda') ? 'text-blue-800 font-bold' : 'hover:text-blue-700 transition' }}">
-            BERANDA
-          </a>
-        </li>
-        <li>
-          <a href="{{ route('tampil.peta') }}"
-            class="{{ request()->routeIs('tampil.peta') ? 'text-blue-800 font-bold' : 'hover:text-blue-700 transition' }}">
-            PETA SIG
-          </a>
-        </li>
-      </ul>
+      <a href="{{ route('beranda') }}" class="logo d-flex align-items-center me-auto">
+        <!-- Uncomment the line below if you also wish to use an image logo -->
+        <img src="{{ asset('frontend/img/logo.svg') }}" alt="Logo Bappeda" class="w-12 h-12" style="height: 40px; margin-right: 8px;">
+        <h1 class="sitename">MARIMOI</h1>
+      </a>
 
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="{{ route('beranda') }}" class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
+          <li><a href="{{ route('tampil.peta') }}" class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Peta</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
 
-      <div class="min-w-max">
-        <a href="{{ route('login') }}">
+      <a class="btn-getstarted" href="{{ route('login') }}">Login</a>
 
-          <button class="btn btn-warning btn-sm normal-case px-5 rounded-lg">LOGIN OPD</button>
-        </a>
-      </div>
-    </nav>
+    </div>
   </header>
