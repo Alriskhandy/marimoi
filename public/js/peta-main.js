@@ -1,5 +1,14 @@
 
-        const map = L.map('map').setView([-0.8, 127.4], 9);
+      const map = L.map('map');
+
+// Batas geografis Maluku Utara (approximate)
+const malukuUtaraBounds = [
+    [1.9, 125.2],   // [north, west]
+    [-1.9, 129.2]   // [south, east]
+];
+
+map.fitBounds(malukuUtaraBounds);
+
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
@@ -8,15 +17,15 @@
         // Definisikan warna untuk setiap kategori
         const categoryColors = {
             'default': { color: '#ff7800', fillColor: '#ffd27f' },
-            'hutan': { color: '#228B22', fillColor: '#90EE90' },
-            'sawah': { color: '#DAA520', fillColor: '#F0E68C' },
-            'permukiman': { color: '#DC143C', fillColor: '#FFB6C1' },
-            'industri': { color: '#4169E1', fillColor: '#87CEEB' },
-            'jalan': { color: '#2F4F4F', fillColor: '#708090' },
-            'sungai': { color: '#1E90FF', fillColor: '#87CEFA' },
-            'danau': { color: '#000080', fillColor: '#ADD8E6' },
-            'kebun': { color: '#32CD32', fillColor: '#98FB98' },
-            'pantai': { color: '#FFD700', fillColor: '#FFFFE0' }
+            'Ekonomi': { color: '#228B22', fillColor: '#90EE90' },
+            'Infrastruktur': { color: '#DAA520', fillColor: '#F0E68C' },
+            'Kependudukan': { color: '#DC143C', fillColor: '#FFB6C1' },
+            'Kemiskinan': { color: '#4169E1', fillColor: '#87CEEB' },
+            'Kesehatan': { color: '#2F4F4F', fillColor: '#708090' },
+            'Lingkungan Hidup': { color: '#1E90FF', fillColor: '#87CEFA' },
+            'Pariwisata & Kebudayaan': { color: '#000080', fillColor: '#ADD8E6' },
+            'Pendidikan': { color: '#32CD32', fillColor: '#98FB98' },
+            'Sosial': { color: '#FFD700', fillColor: '#FFFFE0' }
         };
 
         // Simpan layer berdasarkan kategori
@@ -254,6 +263,7 @@
                                 },
                                 onEachFeature: function(feature, layer) {
                                     const props = feature.properties;
+// console.log('Popup Properties:', props);
 
                                     // Buat popup content dengan atribut DBF
                                     let popupContent = `
@@ -274,7 +284,7 @@
                                     }
 
                                     // Tambahkan atribut DBF lainnya
-                                    const excludeKeys = ['id', 'kategori', 'deskripsi'];
+                                    const excludeKeys = ['id', 'kategori_id', 'deskripsi'];
                                     const dbfAttributes = Object.keys(props)
                                         .filter(key => !excludeKeys.includes(key))
                                         .filter(key => props[key] !== null && props[key] !== undefined && props[key] !== '');
@@ -355,7 +365,7 @@
                 })
                 .catch(err => {
                     console.error("Gagal mengambil data GeoJSON:", err);
-                    showAlert("Gagal memuat data peta. Silakan refresh halaman.", "danger");
+                    // showAlert("Gagal memuat data peta. Silakan refresh halaman.", "danger");
                 });
         }
 

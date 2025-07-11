@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Lokasi extends Model
 {
@@ -66,5 +67,10 @@ class Lokasi extends Model
     public function scopeWhereDbfContains($query, $data)
     {
         return $query->whereRaw("dbf_attributes @> ?", [json_encode($data)]);
+    }
+
+     public function kategori(): BelongsTo
+    {
+        return $this->belongsTo(KategoriLayer::class, 'kategori_id');
     }
 }

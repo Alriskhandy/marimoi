@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FrontendController;
+use App\Http\Controllers\KategoriLayerController;
 use App\Http\Controllers\LokasiController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -19,14 +20,14 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::get('/lokasi', [LokasiController::class, 'index'])->name('lokasi.index');
-Route::get('/lokasi/create', [LokasiController::class, 'create'])->name('lokasi.create');
-Route::post('/lokasi', [LokasiController::class, 'store'])->name('lokasi.store');
-Route::get('/lokasi/{id}/edit', [LokasiController::class, 'edit'])->name('lokasi.edit');
-Route::put('/lokasi/{id}', [LokasiController::class, 'update'])->name('lokasi.update');
-Route::delete('/lokasi/{id}', [LokasiController::class, 'destroy'])->name('lokasi.destroy');
+Route::get('/dashboard/lokasi', [LokasiController::class, 'index'])->name('lokasi.index');
+Route::get('/dashboard/lokasi/create', [LokasiController::class, 'create'])->name('lokasi.create');
+Route::post('/dashboard/lokasi', [LokasiController::class, 'store'])->name('lokasi.store');
+Route::get('/dashboard/lokasi/{id}/edit', [LokasiController::class, 'edit'])->name('lokasi.edit');
+Route::put('/dashboard/lokasi/{id}', [LokasiController::class, 'update'])->name('lokasi.update');
+Route::delete('/dashboard/lokasi/{id}', [LokasiController::class, 'destroy'])->name('lokasi.destroy');
 
-Route::get('/peta', [LokasiController::class, 'peta'])->name('lokasi.peta');
+Route::get('/dashboard/peta', [LokasiController::class, 'peta'])->name('lokasi.peta');
 Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
 
 // Routes untuk fitur layer control
@@ -39,5 +40,11 @@ Route::get('/api/dbf/columns', [LokasiController::class, 'getDbfColumns'])->name
 Route::get('/api/dbf/column/{column}/values', [LokasiController::class, 'getDbfColumnValues'])->name('lokasi.dbf-column-values');
 
 Route::post('/debug-shapefile', [LokasiController::class, 'debugShapefile'])->name('lokasi.debug');
+
+Route::group(['prefix' => 'dashboard', 'middleware' => 'auth'], function () {
+    Route::resource('kategori-layers', KategoriLayerController::class);
+});
+
+
 
 require __DIR__.'/auth.php';

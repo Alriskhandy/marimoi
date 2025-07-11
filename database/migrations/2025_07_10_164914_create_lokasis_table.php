@@ -15,22 +15,17 @@ return new class extends Migration
         // Pastikan ekstensi PostGIS sudah aktif
         DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
         
-        Schema::create('lokasis', function (Blueprint $table) {
-            $table->id();
-            $table->string('kategori');
-            $table->text('deskripsi')->nullable();
-            
-            // Kolom untuk menyimpan semua atribut DBF sebagai JSONB (lebih efisien di PostgreSQL)
-            $table->jsonb('dbf_attributes')->nullable();
-            
-            $table->timestamps();
-            
-            // Index untuk pencarian berdasarkan kategori
-            $table->index('kategori');
-            
-            // Index untuk pencarian dalam JSONB
-            $table->index('dbf_attributes', null, 'gin');
-        });
+       Schema::create('lokasis', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('kategori_id')->constrained('kategori_layers')->onDelete('cascade');
+        $table->text('deskripsi')->nullable();
+        $table->jsonb('dbf_attributes')->nullable();
+        $table->timestamps();
+
+        $table->index('kategori_id');
+        $table->index('dbf_attributes', null, 'gin');
+    });
+
         
         // Tambahkan kolom geometri menggunakan PostGIS dengan support untuk Z dan M dimensions
         // GEOMETRYZM mendukung X, Y, Z (elevation), dan M (measure) coordinates 3D

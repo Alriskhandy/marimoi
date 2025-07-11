@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriLayer;
 use Illuminate\Http\Request;
 use App\Models\Lokasi;
 use Illuminate\Support\Facades\DB;
@@ -14,24 +15,31 @@ class LokasiController extends Controller
     public function index()
     {
         $lokasis = Lokasi::all();
-        return view('lokasi.index', compact('lokasis'));
+        $kategoriLayers = KategoriLayer::with('children')->whereNull('parent_id')->get();
+        return view('backend.pages.data-spasial.data_spasial', compact('lokasis','kategoriLayers'));
     }
 
-    public function edit($id)
-    {
-        $lokasi = Lokasi::findOrFail($id);
-        return view('lokasi.edit', compact('lokasi'));
-    }
+   public function edit($id)
+{
+    $lokasi = Lokasi::findOrFail($id); // atau gunakan model binding jika ingin lebih rapi
+
+    $kategoriLayers = KategoriLayer::orderBy('nama')->get();
+
+    return view('backend.pages.data-spasial.edit', compact('lokasi', 'kategoriLayers'));
+}
+
     
     public function create()
     {
-        return view('lokasi.input');
+         $kategoriLayers = KategoriLayer::with('children')->whereNull('parent_id')->get();
+        return view('backend.pages.data-spasial.input-gis', compact('kategoriLayers'));
     }
 
     public function store(Request $request)
     {
+        // dd($request->all());
         $request->validate([
-            'kategori' => 'required',
+            'kategori_id' => 'required',
             'deskripsi' => 'nullable',
             'shp_file' => 'required|file',
             'shx_file' => 'required|file',
@@ -90,7 +98,7 @@ class LokasiController extends Controller
                 }
 
                 // Cari deskripsi dari berbagai kemungkinan field DBF
-                $possibleDescFields = ['deskripsi', 'desk', 'description', 'desc', 'keterangan', 'ket', 'remark'];
+                $possibleDescFields = ['deskripsi', 'desk', 'description', 'desc', 'keterangan', 'ket', 'remark','NAMOBJ'];
                 $description = $request->deskripsi;
                 
                 if (!$description) {
@@ -106,12 +114,26 @@ class LokasiController extends Controller
                 $processedWkt = $this->processGeometryDimensions($wkt);
 
                 // Simpan ke database
-                Lokasi::create([
-                    'kategori' => $request->kategori,
-                    'deskripsi' => $description,
-                    'dbf_attributes' => $cleanDbfData, // Simpan semua atribut DBF
-                    'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
-                ]);
+                // Lokasi::create([
+                //     'kategori_id' => $request->kategori_id,
+                //     'deskripsi' => $description,
+                //     'dbf_attributes' => $cleanDbfData, // Simpan semua atribut DBF
+                //     'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
+                // ]);
+                $lokasi = new Lokasi();
+                $lokasi->kategori_id = $request->kategori_id;
+                $lokasi->deskripsi = $description;
+                $lokasi->dbf_attributes = $cleanDbfData;
+                $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+                $lokasi->save();
+                // DB::table('lokasis')->insert([
+                //     'kategori_id' => $request->kategori_id,
+                //     'deskripsi' => $description,
+                //     'dbf_attributes' => $cleanDbfData,
+                //     'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
+                //     'created_at' => now(),
+                //     'updated_at' => now(),
+                // ]);
 
                 $recordCount++;
             }
@@ -125,7 +147,7 @@ class LokasiController extends Controller
                 $message .= " Kolom DBF yang tersimpan: " . implode(', ', $dbfColumns);
             }
 
-            return redirect()->back()->with('success', $message);
+            return redirect()->route('lokasi.index')->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Gagal membaca shapefile: ' . $e->getMessage());
             return back()->withErrors(['Gagal membaca shapefile: ' . $e->getMessage()]);
@@ -189,67 +211,76 @@ class LokasiController extends Controller
 
     public function peta()
     {
-        return view('lokasi.peta');
+        return view('backend.pages.peta');
     }
 
-    public function geojson(Request $request)
-    {
-        $query = DB::table('lokasis')
-            ->select('id', 'kategori', 'deskripsi', 'dbf_attributes', DB::raw('ST_AsGeoJSON(geom) as geojson'));
+   public function geojson(Request $request)
+{
+   $query = DB::table('lokasis')
+        ->join('kategori_layers', 'lokasis.kategori_id', '=', 'kategori_layers.id')
+        ->select(
+            'lokasis.id',
+            'lokasis.kategori_id',
+            'kategori_layers.nama as kategori', // ⬅️ ini sangat penting!
+            'lokasis.deskripsi',
+            'lokasis.dbf_attributes',
+            DB::raw('ST_AsGeoJSON(lokasis.geom) as geojson')
+        );
 
-        // Filter berdasarkan kategori jika ada parameter
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn('kategori', $categories);
+    // Filter kategori
+    if ($request->has('kategori') && !empty($request->kategori)) {
+        $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
+        $query->whereIn('kategori_layers.nama', $categories);
+    }
+
+    // Filter atribut DBF
+    if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
+        foreach ($request->dbf_filter as $attribute => $value) {
+            $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
         }
+    }
 
-        // Filter berdasarkan atribut DBF (PostgreSQL JSONB syntax)
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        // Search dalam atribut DBF (PostgreSQL JSONB syntax)
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('kategori', 'ILIKE', "%{$search}%")
-                  ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
-                  ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
-            });
-        }
-
-        // Filter berdasarkan bbox jika ada parameter
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects(geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            // Parse atribut DBF
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-            
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes), // Gabungkan dengan atribut DBF
-                'geometry' => json_decode($lokasi->geojson),
-            ];
+    // Search
+    if ($request->has('search') && !empty($request->search)) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('kategori_layers.nama', 'ILIKE', "%{$search}%")
+              ->orWhere('lokasis.deskripsi', 'ILIKE', "%{$search}%")
+              ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
         });
-
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-        ]);
     }
+
+    // BBOX
+    if ($request->has('bbox') && !empty($request->bbox)) {
+        $bbox = explode(',', $request->bbox);
+        if (count($bbox) === 4) {
+            $query->whereRaw("ST_Intersects(lokasis.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+        }
+    }
+
+    $lokasis = $query->get();
+
+    $features = $lokasis->map(function ($lokasi) {
+        $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+
+        return [
+            'type' => 'Feature',
+            'properties' => array_merge([
+                'id' => $lokasi->id,
+                'kategori_id' => $lokasi->kategori_id,
+                'kategori' => $lokasi->kategori,
+                'deskripsi' => $lokasi->deskripsi,
+            ], $dbfAttributes),
+            'geometry' => json_decode($lokasi->geojson),
+        ];
+    });
+
+    return response()->json([
+        'type' => 'FeatureCollection',
+        'features' => $features,
+    ]);
+}
+
 
     // Method untuk mendapatkan kolom DBF yang tersedia (PostgreSQL JSONB)
     public function getDbfColumns()
@@ -292,85 +323,209 @@ class LokasiController extends Controller
 
     // Method baru untuk mendapatkan daftar kategori
     public function getCategories()
-    {
-        $categories = DB::table('lokasis')
-            ->select('kategori', DB::raw('COUNT(*) as count'))
-            ->groupBy('kategori')
-            ->orderBy('kategori')
-            ->get();
+{
+    $categories = DB::table('lokasis')
+        ->join('kategori_layers', 'lokasis.kategori_id', '=', 'kategori_layers.id')
+        ->select('kategori_layers.id as kategori_id', 'kategori_layers.nama as kategori', DB::raw('COUNT(*) as count'))
+        ->groupBy('kategori_layers.id', 'kategori_layers.nama')
+        ->orderBy('kategori_layers.nama')
+        ->get();
 
-        return response()->json([
-            'success' => true,
-            'categories' => $categories
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'categories' => $categories
+    ]);
+}
+
 
     // Method baru untuk mendapatkan statistik data
-    public function getStatistics()
-    {
-        $stats = [
-            'total_locations' => DB::table('lokasis')->count(),
-            'categories_count' => DB::table('lokasis')->distinct('kategori')->count(),
-            'categories' => DB::table('lokasis')
-                ->select('kategori', DB::raw('COUNT(*) as count'))
-                ->groupBy('kategori')
-                ->orderBy('count', 'desc')
-                ->get(),
-            'bounds' => DB::table('lokasis')
-                ->select(
-                    DB::raw('ST_XMin(ST_Extent(geom)) as min_lng'),
-                    DB::raw('ST_YMin(ST_Extent(geom)) as min_lat'),
-                    DB::raw('ST_XMax(ST_Extent(geom)) as max_lng'),
-                    DB::raw('ST_YMax(ST_Extent(geom)) as max_lat')
-                )
-                ->first()
-        ];
+  public function getStatistics()
+{
+    $stats = [
+        'total_locations' => DB::table('lokasis')->count(),
+        'categories_count' => DB::table('lokasis')->distinct('kategori_id')->count(),
+        'categories' => DB::table('lokasis')
+            ->join('kategori_layers', 'lokasis.kategori_id', '=', 'kategori_layers.id')
+            ->select('kategori_layers.nama as kategori', DB::raw('COUNT(*) as count'))
+            ->groupBy('kategori_layers.nama')
+            ->orderBy('count', 'desc')
+            ->get(),
+        'bounds' => DB::table('lokasis')
+            ->select(
+                DB::raw('ST_XMin(ST_Extent(geom)) as min_lng'),
+                DB::raw('ST_YMin(ST_Extent(geom)) as min_lat'),
+                DB::raw('ST_XMax(ST_Extent(geom)) as max_lng'),
+                DB::raw('ST_YMax(ST_Extent(geom)) as max_lat')
+            )
+            ->first()
+    ];
 
-        return response()->json([
-            'success' => true,
-            'statistics' => $stats
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'statistics' => $stats
+    ]);
+}
+
 
     // Method untuk mendapatkan data berdasarkan kategori tertentu
     public function getByCategory($kategori)
+{
+    $lokasis = DB::table('lokasis')
+        ->join('kategori_layers', 'lokasis.kategori_id', '=', 'kategori_layers.id')
+        ->select('lokasis.id', 'lokasis.kategori_id', 'kategori_layers.nama as kategori', 'lokasis.deskripsi', 'lokasis.dbf_attributes', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        ->where('kategori_layers.nama', $kategori)
+        ->get();
+
+    $features = $lokasis->map(function ($lokasi) {
+        $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+
+        return [
+            'type' => 'Feature',
+            'properties' => array_merge([
+                'id' => $lokasi->id,
+                'kategori_id' => $lokasi->kategori_id,
+                'kategori' => $lokasi->kategori,
+                'deskripsi' => $lokasi->deskripsi,
+            ], $dbfAttributes),
+            'geometry' => json_decode($lokasi->geojson),
+        ];
+    });
+
+    return response()->json([
+        'type' => 'FeatureCollection',
+        'features' => $features,
+    ]);
+}
+
+public function update(Request $request, $id)
     {
-        $lokasis = DB::table('lokasis')
-            ->select('id', 'kategori', 'deskripsi', 'dbf_attributes', DB::raw('ST_AsGeoJSON(geom) as geojson'))
-            ->where('kategori', $kategori)
-            ->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-            
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
+// dd($request->all());
+        // Validasi request
+        $request->validate([
+            'kategori' => 'required|exists:kategori_layers,id',
+            'deskripsi' => 'nullable|string',
+            'dbf_attributes' => 'required|string',
+            'geom' => 'required|string'
         ]);
+ $lokasi = Lokasi::findOrFail($id);
+//   dd($lokasi);
+        try {
+            // Parse dan validate DBF attributes JSON
+            $dbfAttributesJson = $request->dbf_attributes;
+            $dbfAttributes = json_decode($dbfAttributesJson, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Format JSON atribut DBF tidak valid: ' . json_last_error_msg());
+            }
+
+            // Bersihkan dan normalisasi data DBF (sama seperti di store method)
+            $cleanDbfData = [];
+            foreach ($dbfAttributes as $key => $value) {
+                // Bersihkan nama kolom dan nilai
+                $cleanKey = trim($key);
+                $cleanValue = is_string($value) ? trim($value) : $value;
+                
+                // Konversi encoding jika diperlukan
+                if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
+                    $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
+                }
+                
+                $cleanDbfData[$cleanKey] = $cleanValue;
+            }
+
+            // Validate dan process geometri
+            $geometry = trim($request->geom);
+            if (empty($geometry)) {
+                throw new \Exception('Geometri tidak boleh kosong');
+            }
+            
+            // Basic validation
+            $this->validateGeometry($geometry);
+            
+            // Proses geometri untuk mengatasi masalah dimensi Z dan M (sama seperti store method)
+            $processedWkt = $this->processGeometryDimensions($geometry);
+
+            // Log untuk debugging
+            Log::info('Updating lokasi', [
+                'id' => $lokasi->id,
+                'kategori' => $request->kategori,
+                'deskripsi' => $request->deskripsi,
+                'dbf_count' => count($cleanDbfData),
+                'wkt_length' => strlen($processedWkt)
+            ]);
+
+            // Update menggunakan DB transaction untuk konsistensi
+            DB::beginTransaction();
+
+            try {
+                // Update field by field
+                $lokasi->kategori_id = $request->kategori;
+                $lokasi->deskripsi = $request->deskripsi;
+                $lokasi->dbf_attributes = $cleanDbfData;
+                $lokasi->updated_at = now();
+                
+                // Save first without geometry
+                $lokasi->save();
+                
+                // Then update geometry separately using raw SQL
+                DB::statement("UPDATE lokasis SET geom = ST_GeomFromText(?, 4326) WHERE id = ?", [
+                    $processedWkt, 
+                    $lokasi->id
+                ]);
+
+                DB::commit();
+
+                Log::info("Lokasi updated successfully. ID: {$lokasi->id}");
+
+                return redirect()->route('lokasi.index')
+                    ->with('success', 'Lokasi berhasil diperbarui!');
+
+            } catch (\Exception $e) {
+                DB::rollback();
+                Log::error('Database update failed: ' . $e->getMessage());
+                throw new \Exception('Gagal update database: ' . $e->getMessage());
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Update lokasi failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal update lokasi: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
-    public function update(Request $request, $id)
+  private function validateGeometry($geometry)
     {
-        $request->validate([
-            'kategori' => 'required',
-            'deskripsi' => 'nullable',
-        ]);
+        $geometry = trim($geometry);
+        
+        if (empty($geometry)) {
+            throw new \Exception('Geometri tidak boleh kosong');
+        }
 
-        $lokasi = Lokasi::findOrFail($id);
-        $lokasi->update($request->only(['kategori', 'deskripsi']));
-
-        return redirect()->route('lokasi.index')->with('success', 'Data berhasil diperbarui.');
+        // Enhanced WKT validation patterns
+        $wktPatterns = [
+            '/^POINT\s*(Z|M|ZM)?\s*\(/i',
+            '/^LINESTRING\s*(Z|M|ZM)?\s*\(/i',
+            '/^POLYGON\s*(Z|M|ZM)?\s*\(/i',
+            '/^MULTIPOINT\s*(Z|M|ZM)?\s*\(/i',
+            '/^MULTILINESTRING\s*(Z|M|ZM)?\s*\(/i',
+            '/^MULTIPOLYGON\s*(Z|M|ZM)?\s*\(/i',
+            '/^GEOMETRYCOLLECTION\s*\(/i'
+        ];
+        
+        $isValid = false;
+        foreach ($wktPatterns as $pattern) {
+            if (preg_match($pattern, $geometry)) {
+                $isValid = true;
+                break;
+            }
+        }
+        
+        if (!$isValid) {
+            throw new \Exception('Format geometri tidak valid. Gunakan format WKT yang benar.');
+        }
+        
+        return true;
     }
 
     public function destroy($id)
@@ -437,39 +592,37 @@ class LokasiController extends Controller
     /**
      * Method alternatif untuk mengatasi geometri ZM dengan konversi di PostgreSQL
      */
-    private function saveGeometryWithFallback($kategori, $deskripsi, $dbfAttributes, $wkt)
-    {
+   private function saveGeometryWithFallback($kategori_id, $deskripsi, $dbfAttributes, $wkt)
+{
+    try {
+        return Lokasi::create([
+            'kategori_id' => $kategori_id,
+            'deskripsi' => $deskripsi,
+            'dbf_attributes' => $dbfAttributes,
+            'geom' => DB::raw("ST_GeomFromText('{$wkt}', 4326)"),
+        ]);
+    } catch (\Exception $e) {
+        Log::info("Mencoba konversi geometri: " . $e->getMessage());
+
         try {
-            // Coba simpan dengan geometri original
             return Lokasi::create([
-                'kategori' => $kategori,
+                'kategori_id' => $kategori_id,
                 'deskripsi' => $deskripsi,
                 'dbf_attributes' => $dbfAttributes,
-                'geom' => DB::raw("ST_GeomFromText('{$wkt}', 4326)"),
+                'geom' => DB::raw("ST_Force2D(ST_GeomFromText('{$wkt}', 4326))"),
             ]);
-        } catch (\Exception $e) {
-            Log::info("Mencoba konversi geometri: " . $e->getMessage());
-            
-            // Jika gagal, coba konversi dimensi menggunakan PostGIS
-            try {
-                return Lokasi::create([
-                    'kategori' => $kategori,
-                    'deskripsi' => $deskripsi,
-                    'dbf_attributes' => $dbfAttributes,
-                    'geom' => DB::raw("ST_Force2D(ST_GeomFromText('{$wkt}', 4326))"),
-                ]);
-            } catch (\Exception $e2) {
-                Log::error("Gagal konversi geometri: " . $e2->getMessage());
-                
-                // Terakhir, coba dengan strip manual
-                $strippedWkt = $this->stripGeometryDimensions($wkt);
-                return Lokasi::create([
-                    'kategori' => $kategori,
-                    'deskripsi' => $deskripsi,
-                    'dbf_attributes' => $dbfAttributes,
-                    'geom' => DB::raw("ST_GeomFromText('{$strippedWkt}', 4326)"),
-                ]);
-            }
+        } catch (\Exception $e2) {
+            Log::error("Gagal konversi geometri: " . $e2->getMessage());
+
+            $strippedWkt = $this->stripGeometryDimensions($wkt);
+            return Lokasi::create([
+                'kategori_id' => $kategori_id,
+                'deskripsi' => $deskripsi,
+                'dbf_attributes' => $dbfAttributes,
+                'geom' => DB::raw("ST_GeomFromText('{$strippedWkt}', 4326)"),
+            ]);
         }
     }
+}
+
 }
