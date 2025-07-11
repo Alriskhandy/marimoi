@@ -4,28 +4,27 @@
  */
 
 // Destructure config from global object
-const { 
-    APP_CONFIG, 
-    CATEGORY_COLORS, 
-    MAP_STYLES, 
-    ERROR_MESSAGES, 
+const {
+    APP_CONFIG,
+    CATEGORY_COLORS,
+    MAP_STYLES,
+    ERROR_MESSAGES,
     SUCCESS_MESSAGES,
-    ANIMATIONS
+    ANIMATIONS,
 } = window.GIS_CONFIG;
 
 /**
  * Utility Functions
  */
 const GISUtils = {
-    
     /**
      * Get category color configuration
      * @param {string} kategori - Category name
      * @returns {object} Color configuration
      */
     getCategoryColor(kategori) {
-        const key = kategori ? kategori.toLowerCase() : 'default';
-        return CATEGORY_COLORS[key] || CATEGORY_COLORS['default'];
+        const key = kategori ? kategori.toLowerCase() : "default";
+        return CATEGORY_COLORS[key] || CATEGORY_COLORS["default"];
     },
 
     /**
@@ -34,11 +33,11 @@ const GISUtils = {
      * @returns {string} Formatted file size
      */
     formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
+        if (bytes === 0) return "0 Bytes";
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = ["Bytes", "KB", "MB", "GB"];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     },
 
     /**
@@ -58,7 +57,7 @@ const GISUtils = {
      */
     truncateText(text, length = 50) {
         if (!text || text.length <= length) return text;
-        return text.substring(0, length) + '...';
+        return text.substring(0, length) + "...";
     },
 
     /**
@@ -83,9 +82,9 @@ const GISUtils = {
      * Show loading overlay
      */
     showLoading() {
-        const overlay = document.getElementById('loading-overlay');
+        const overlay = document.getElementById("loading-overlay");
         if (overlay) {
-            overlay.style.display = 'flex';
+            overlay.style.display = "flex";
             overlay.classList.add(ANIMATIONS.fadeIn);
         }
     },
@@ -94,9 +93,9 @@ const GISUtils = {
      * Hide loading overlay
      */
     hideLoading() {
-        const overlay = document.getElementById('loading-overlay');
+        const overlay = document.getElementById("loading-overlay");
         if (overlay) {
-            overlay.style.display = 'none';
+            overlay.style.display = "none";
             overlay.classList.remove(ANIMATIONS.fadeIn);
         }
     },
@@ -107,36 +106,36 @@ const GISUtils = {
      * @param {string} type - Alert type (success, warning, danger, info)
      * @param {number} duration - Auto-hide duration in milliseconds
      */
-    showAlert(message, type = 'info', duration = 5000) {
+    showAlert(message, type = "info", duration = 5000) {
         // Remove existing alerts
-        const existingAlerts = document.querySelectorAll('.alert-custom');
-        existingAlerts.forEach(alert => alert.remove());
+        const existingAlerts = document.querySelectorAll(".alert-custom");
+        existingAlerts.forEach((alert) => alert.remove());
 
-        const alertDiv = document.createElement('div');
+        const alertDiv = document.createElement("div");
         alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-custom ${ANIMATIONS.fadeIn}`;
-        
+
         const iconMap = {
-            success: 'bi-check-circle-fill',
-            warning: 'bi-exclamation-triangle-fill',
-            danger: 'bi-x-circle-fill',
-            info: 'bi-info-circle-fill'
+            success: "bi-check-circle-fill",
+            warning: "bi-exclamation-triangle-fill",
+            danger: "bi-x-circle-fill",
+            info: "bi-info-circle-fill",
         };
-        
+
         const icon = iconMap[type] || iconMap.info;
-        
+
         alertDiv.innerHTML = `
             <i class="bi ${icon} me-2"></i>
             ${message}
             <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
         `;
-        
+
         document.body.appendChild(alertDiv);
-        
+
         // Auto remove after specified duration
         if (duration > 0) {
             setTimeout(() => {
                 if (alertDiv.parentElement) {
-                    alertDiv.classList.add('fade');
+                    alertDiv.classList.add("fade");
                     setTimeout(() => alertDiv.remove(), 150);
                 }
             }, duration);
@@ -176,10 +175,10 @@ const GISUtils = {
     async copyToClipboard(text) {
         try {
             await navigator.clipboard.writeText(text);
-            this.showAlert(SUCCESS_MESSAGES.linkCopied, 'success', 3000);
+            this.showAlert(SUCCESS_MESSAGES.linkCopied, "success", 3000);
             return true;
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            console.error("Failed to copy to clipboard:", err);
             return false;
         }
     },
@@ -193,7 +192,9 @@ const GISUtils = {
         const center = map.getCenter();
         const zoom = map.getZoom();
         const baseUrl = window.location.origin + window.location.pathname;
-        return `${baseUrl}#${zoom}/${center.lat.toFixed(5)}/${center.lng.toFixed(5)}`;
+        return `${baseUrl}#${zoom}/${center.lat.toFixed(
+            5
+        )}/${center.lng.toFixed(5)}`;
     },
 
     /**
@@ -208,11 +209,14 @@ const GISUtils = {
                 lat: center.lat,
                 lng: center.lng,
                 zoom: zoom,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             };
-            localStorage.setItem(window.GIS_CONFIG.STORAGE_KEYS.mapView, JSON.stringify(view));
+            localStorage.setItem(
+                window.GIS_CONFIG.STORAGE_KEYS.mapView,
+                JSON.stringify(view)
+            );
         } catch (err) {
-            console.warn('Failed to save map view:', err);
+            console.warn("Failed to save map view:", err);
         }
     },
 
@@ -222,7 +226,9 @@ const GISUtils = {
      */
     loadMapView() {
         try {
-            const saved = localStorage.getItem(window.GIS_CONFIG.STORAGE_KEYS.mapView);
+            const saved = localStorage.getItem(
+                window.GIS_CONFIG.STORAGE_KEYS.mapView
+            );
             if (saved) {
                 const view = JSON.parse(saved);
                 // Check if saved view is not too old (24 hours)
@@ -231,7 +237,7 @@ const GISUtils = {
                 }
             }
         } catch (err) {
-            console.warn('Failed to load map view:', err);
+            console.warn("Failed to load map view:", err);
         }
         return null;
     },
@@ -241,14 +247,16 @@ const GISUtils = {
      */
     initTooltips() {
         try {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            );
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    delay: { show: APP_CONFIG.ui.tooltipDelay, hide: 100 }
+                    delay: { show: APP_CONFIG.ui.tooltipDelay, hide: 100 },
                 });
             });
         } catch (err) {
-            console.warn('Failed to initialize tooltips:', err);
+            console.warn("Failed to initialize tooltips:", err);
         }
     },
 
@@ -257,16 +265,16 @@ const GISUtils = {
      * @param {Error} error - Error object
      * @param {string} context - Error context
      */
-    handleApiError(error, context = '') {
+    handleApiError(error, context = "") {
         console.error(`API Error ${context}:`, error);
-        
+
         let message = ERROR_MESSAGES.loadError;
-        
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+
+        if (error.name === "TypeError" && error.message.includes("fetch")) {
             message = ERROR_MESSAGES.networkError;
         }
-        
-        this.showAlert(message, 'danger');
+
+        this.showAlert(message, "danger");
     },
 
     /**
@@ -276,9 +284,14 @@ const GISUtils = {
      * @returns {boolean} Validation result
      */
     isValidCoordinate(lat, lng) {
-        return !isNaN(lat) && !isNaN(lng) && 
-               lat >= -90 && lat <= 90 && 
-               lng >= -180 && lng <= 180;
+        return (
+            !isNaN(lat) &&
+            !isNaN(lng) &&
+            lat >= -90 &&
+            lat <= 90 &&
+            lng >= -180 &&
+            lng <= 180
+        );
     },
 
     /**
@@ -291,10 +304,13 @@ const GISUtils = {
         const R = 6371; // Earth's radius in km
         const dLat = this.toRadians(point2[0] - point1[0]);
         const dLng = this.toRadians(point2[1] - point1[1]);
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(this.toRadians(point1[0])) * Math.cos(this.toRadians(point2[0])) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this.toRadians(point1[0])) *
+                Math.cos(this.toRadians(point2[0])) *
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     },
 
@@ -331,23 +347,30 @@ const GISUtils = {
      * @returns {boolean} Supports touch
      */
     isTouchDevice() {
-        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        return "ontouchstart" in window || navigator.maxTouchPoints > 0;
     },
 
     /**
      * Log performance metrics
      */
     logPerformance() {
-        if ('performance' in window && window.performance.timing) {
+        if ("performance" in window && window.performance.timing) {
             const timing = window.performance.timing;
             const loadTime = timing.loadEventEnd - timing.navigationStart;
-            const domReadyTime = timing.domContentLoadedEventEnd - timing.navigationStart;
-            
-            console.group('🚀 Performance Metrics');
+            const domReadyTime =
+                timing.domContentLoadedEventEnd - timing.navigationStart;
+
+            console.group("🚀 Performance Metrics");
             console.log(`Page Load Time: ${loadTime}ms`);
             console.log(`DOM Ready Time: ${domReadyTime}ms`);
-            console.log(`DNS Lookup: ${timing.domainLookupEnd - timing.domainLookupStart}ms`);
-            console.log(`TCP Connection: ${timing.connectEnd - timing.connectStart}ms`);
+            console.log(
+                `DNS Lookup: ${
+                    timing.domainLookupEnd - timing.domainLookupStart
+                }ms`
+            );
+            console.log(
+                `TCP Connection: ${timing.connectEnd - timing.connectStart}ms`
+            );
             console.groupEnd();
         }
     },
@@ -357,21 +380,23 @@ const GISUtils = {
      */
     initPerformanceMonitoring() {
         // Monitor long tasks
-        if ('PerformanceObserver' in window) {
+        if ("PerformanceObserver" in window) {
             try {
                 const observer = new PerformanceObserver((list) => {
                     list.getEntries().forEach((entry) => {
                         if (entry.duration > 50) {
-                            console.warn(`Long Task detected: ${entry.duration}ms`);
+                            console.warn(
+                                `Long Task detected: ${entry.duration}ms`
+                            );
                         }
                     });
                 });
-                observer.observe({ entryTypes: ['longtask'] });
+                observer.observe({ entryTypes: ["longtask"] });
             } catch (err) {
-                console.warn('Performance monitoring not available:', err);
+                console.warn("Performance monitoring not available:", err);
             }
         }
-    }
+    },
 };
 
 // Export utilities to global scope
