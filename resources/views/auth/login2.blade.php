@@ -12,7 +12,7 @@
     <div class="w-full max-w-md">
         <!-- Logo/Brand Section -->
         <div class="text-center mb-8 ">
-            <img src="{{ asset('assets/img/logo_text.svg') }}" alt="Logo" class="h-20 mx-auto">
+            <img src="{{ asset('frontend/img/logo_text.svg') }}" alt="Logo" class="h-20 mx-auto">
         </div>
 
         <!-- Login Card -->
