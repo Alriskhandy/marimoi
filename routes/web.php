@@ -45,6 +45,11 @@ Route::post('/debug-shapefile', [LokasiController::class, 'debugShapefile'])->na
 
 Route::group(['prefix' => 'dashboard', 'middleware' => 'auth'], function () {
     Route::resource('kategori-layers', KategoriLayerController::class);
+
+    Route::get('/cooming-soon', function () {
+    return view('backend.cooming_soon');
+})->name('cooming_soon');
+
 });
 
 

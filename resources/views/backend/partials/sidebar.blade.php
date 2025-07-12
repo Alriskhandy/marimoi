@@ -113,11 +113,13 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Des Musrenbang</span>
+            <a class="nav-link" href="{{ route('cooming_soon') }}">
+                <span class="menu-title">DESK MUSREMBANG</span>
                 <i class="mdi mdi-city-variant-outline menu-icon"></i>
             </a>
         </li>
+
+
 
         <li class="nav-item">
             <a class="nav-link" href="#!">

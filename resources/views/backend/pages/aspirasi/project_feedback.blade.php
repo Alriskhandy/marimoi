@@ -8,7 +8,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-comment-multiple-outline"></i>
-            </span> Tanggapan Masyarakat 
+            </span> Tanggapan Masyarakat
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
