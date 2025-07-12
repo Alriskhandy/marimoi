@@ -50,9 +50,11 @@
             z-index: 1050;
         }
 
-        .btn-group, .btn-sm {
+        .btn-group,
+        .btn-sm {
             border-radius: 0;
         }
+
         #map {
             position: relative;
             z-index: 1;
@@ -68,7 +70,7 @@
 
         <!-- Map Section -->
         <section class="section pb-0" style="padding-top: 0;">
-            <div class="container-fluid p-0" data-aos="fade-up" data-aos-delay="100" style="height: 93vh">
+            <div class="container-fluid p-0" data-aos="fade-up" data-aos-delay="100" style="height: calc(100vh - 57px)">
                 <div class="position-relative" style="height: 100%;">
 
                     <!-- Modal Panduan Awal -->
@@ -85,30 +87,40 @@
                                             mengatur tampilan peta.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="2">
-                                        <p>Tombol <strong><i class="bi bi-plus border p-1"></i> Zoom In & <i class="bi bi-dash border p-1"></i> Zoom Out</strong>, digunakan untuk mengatur zoom peta.</p>
+                                        <p>Tombol <strong><i class="bi bi-plus border p-1"></i> Zoom In & <i
+                                                    class="bi bi-dash border p-1"></i> Zoom Out</strong>, digunakan untuk
+                                            mengatur zoom peta.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="3">
-                                        <p>Gunakan tombol <strong><i class="bi bi-info-circle-fill border p-1"></i> Bantuan</strong> untuk melihat panduan ini kapan saja.</p>
+                                        <p>Gunakan tombol <strong><i class="bi bi-info-circle-fill border p-1"></i>
+                                                Bantuan</strong> untuk melihat panduan ini kapan saja.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="4">
-                                        <p>Tombol <strong><i class="bi bi-list-ul border p-1"></i> Legenda Peta</strong> menampilkan keterangan simbol pada peta.</p>
+                                        <p>Tombol <strong><i class="bi bi-list-ul border p-1"></i> Legenda Peta</strong>
+                                            menampilkan keterangan simbol pada peta.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="5">
-                                        <p>Tombol <strong><i class="bi bi-grid-fill border p-1"></i> Basemap Peta</strong> digunakan untuk memilih jenis peta dasar.
+                                        <p>Tombol <strong><i class="bi bi-grid-fill border p-1"></i> Basemap Peta</strong>
+                                            digunakan untuk memilih jenis peta dasar.
                                         </p>
                                     </div>
                                     <div class="guide-step d-none" data-step="6">
-                                        <p>Tombol <strong><i class="bi bi-layers-fill border p-1"></i> Layer Peta</strong> digunakan untuk mengatur layer yang ingin
+                                        <p>Tombol <strong><i class="bi bi-layers-fill border p-1"></i> Layer Peta</strong>
+                                            digunakan untuk mengatur layer yang ingin
                                             ditampilkan.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="7">
-                                        <p>Tombol <strong><i class="bi bi-file-earmark-arrow-down-fill border p-1"></i> Download Peta</strong> memungkinkan Anda mengunduh peta.</p>
+                                        <p>Tombol <strong><i class="bi bi-file-earmark-arrow-down-fill border p-1"></i>
+                                                Download Peta</strong> memungkinkan Anda mengunduh peta.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="8">
-                                        <p>Tombol <strong><i class="bi bi-arrows-fullscreen border p-1"></i> Fullscreen</strong> memungkinkan Anda untuk masuk dan keluar dari tampilan penuh.</p>
+                                        <p>Tombol <strong><i class="bi bi-arrows-fullscreen border p-1"></i>
+                                                Fullscreen</strong> memungkinkan Anda untuk masuk dan keluar dari tampilan
+                                            penuh.</p>
                                     </div>
                                     <div class="guide-step d-none" data-step="9">
-                                        <p>Tombol <strong><i class="bi bi-house-door-fill border p-1"></i> Home</strong> memungkinkan Anda kembali ke default zoom dari peta.</p>
+                                        <p>Tombol <strong><i class="bi bi-house-door-fill border p-1"></i> Home</strong>
+                                            memungkinkan Anda kembali ke default zoom dari peta.</p>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -164,7 +176,8 @@
                             <button id="btn-close-sidebar-legend" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
-                        <div id="legend-content" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                        <div id="legend-content" class="ms-2"
+                            style="max-height: calc(100vh - 250px); overflow-y: auto;">
                             <!-- Legend content will be populated dynamically -->
                             <p>Legend content placeholder</p>
                         </div>
@@ -178,7 +191,8 @@
                             <button id="btn-close-sidebar-download" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
-                        <div id="download-content" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                        <div id="download-content" class="ms-2"
+                            style="max-height: calc(100vh - 250px); overflow-y: auto;">
                             <!-- Legend content will be populated dynamically -->
                             <p>Daftar Peta Yang Bisa di Download</p>
                         </div>
