@@ -66,7 +66,9 @@
             <div class="collapse {{ $isPSDActive ? 'show' : '' }}" id="psdMenu">
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2025</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2024</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2023</a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Daerah</a>
@@ -102,6 +104,12 @@
         <li class="nav-item">
             <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
                 <span class="menu-title">Tanggapan Masyarakat</span>
+                <i class="mdi mdi-account-multiple menu-icon"></i>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                <span class="menu-title">Ulasan Musrembang</span>
                 <i class="mdi mdi-account-multiple menu-icon"></i>
             </a>
         </li>
