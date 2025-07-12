@@ -37,11 +37,13 @@ class KategoriLayerController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
+            'warna' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:kategori_layers,id'
         ]);
-
+        
         if ($validator->fails()) {
+            dd($validator->fails());
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()

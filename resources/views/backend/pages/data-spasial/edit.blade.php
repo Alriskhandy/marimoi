@@ -1,5 +1,13 @@
 @extends('backend.partials.main')
-
+@push('styles')
+    <style>
+        #geom {
+            user-select: none;
+            pointer-events: none;
+            background-color: #9fa0a2;
+        }
+    </style>
+@endpush
 @section('main')
     <div class="page-header">
         <h3 class="page-title">
@@ -37,6 +45,13 @@
                                     <li>{{ $error }}</li>
                                 @endforeach
                             </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>Berhasil!</strong> {{ session('success') }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
@@ -109,13 +124,18 @@
                                         <small class="form-text text-muted">
                                             Edit JSON langsung. Pastikan format JSON valid.
                                         </small>
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" id="validateJson">
+                                                <i class="mdi mdi-check"></i> Validasi JSON
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Geometry Section -->
-                        <div class="card mt-4">
+                        <div class="card mt-4" hidden>
                             <div class="card-header">
                                 <h5 class="mb-0">
                                     <i class="mdi mdi-vector-polygon"></i> Data Geometri
@@ -123,9 +143,9 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label for="geom">Geometri (WKT Format)</label>
+                                    <label for="geom">Geometri (WKT Format) <span class="text-danger">*</span></label>
                                     <textarea class="form-control @error('geom') is-invalid @enderror" id="geom" name="geom" rows="6"
-                                        style="font-family: monospace;" placeholder="POLYGON((lng lat, lng lat, ...))" required>{{ old('geom', $lokasi->geom) }}</textarea>
+                                        style="font-family: monospace;" placeholder="POLYGON((lng lat, lng lat, ...))" required readonly>{{ old('geom', $lokasi->geom) }}</textarea>
                                     @error('geom')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -134,7 +154,7 @@
                                     </small>
                                 </div>
 
-                                <div class="row mt-3">
+                                {{-- <div class="row mt-3">
                                     <div class="col-md-6">
                                         <button type="button" class="btn btn-sm btn-outline-info" id="validateGeometry">
                                             <i class="mdi mdi-check-circle"></i> Validasi Geometri
@@ -145,7 +165,7 @@
                                             <i class="mdi mdi-map"></i> Lihat di Peta
                                         </button>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
 
@@ -154,7 +174,7 @@
 
                         <!-- Submit Buttons -->
                         <div class="form-group mt-4">
-                            <button type="submit" class="btn btn-gradient-primary me-2">
+                            <button type="submit" class="btn btn-gradient-primary me-2" id="submitBtn">
                                 <i class="mdi mdi-content-save"></i> Update Lokasi
                             </button>
                             <a href="{{ route('lokasi.index') }}" class="btn btn-light">
@@ -167,7 +187,7 @@
         </div>
     </div>
 
-    <!-- Map Preview Modal -->
+    {{-- <!-- Map Preview Modal -->
     <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -185,7 +205,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Add Attribute Modal -->
     <div class="modal fade" id="addAttributeModal" tabindex="-1" aria-labelledby="addAttributeModalLabel"
@@ -200,9 +220,11 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="new_attribute_key">Nama Atribut</label>
+                        <label for="new_attribute_key">Nama Atribut <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="new_attribute_key"
                             placeholder="Contoh: NAMA_OBJEK">
+                        <small class="form-text text-muted">Nama atribut tidak boleh mengandung spasi atau karakter
+                            khusus</small>
                     </div>
                     <div class="form-group">
                         <label for="new_attribute_value">Nilai</label>
@@ -220,6 +242,16 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @section('scripts')
@@ -229,9 +261,11 @@
     <script>
         $(document).ready(function() {
             let currentView = 'form';
+            let map = null;
+            let currentLayer = null;
 
             // Parse existing DBF attributes
-            const dbfAttributes = @json($lokasi->dbf_attributes ?? []);
+            let dbfAttributes = @json($lokasi->dbf_attributes ?? []);
 
             // Initialize attributes form
             function initAttributesForm() {
@@ -240,45 +274,58 @@
 
                 if (Object.keys(dbfAttributes).length === 0) {
                     container.append(`
-                <div class="col-12">
-                    <div class="text-center py-4">
-                        <i class="mdi mdi-table mdi-48px text-muted"></i>
-                        <p class="text-muted mt-2">Belum ada atribut DBF. Klik "Tambah Atribut" untuk menambahkan.</p>
-                    </div>
-                </div>
-            `);
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="mdi mdi-table mdi-48px text-muted"></i>
+                                <p class="text-muted mt-2">Belum ada atribut DBF. Klik "Tambah Atribut" untuk menambahkan.</p>
+                            </div>
+                        </div>
+                    `);
                     return;
                 }
 
                 let index = 0;
                 Object.keys(dbfAttributes).forEach(function(key) {
                     if (index % 2 === 0 && index > 0) {
-                        container.append('<div class="w-100"></div>'); // Force new row every 2 items
+                        container.append('<div class="w-100"></div>');
                     }
 
                     const value = dbfAttributes[key];
                     const colDiv = $(`
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="attr_${key}" class="d-flex justify-content-between">
-                            <span>${key}</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-attribute" data-key="${key}">
-                                <i class="mdi mdi-delete"></i>
-                            </button>
-                        </label>
-                        <input type="text" 
-                               class="form-control attribute-input" 
-                               id="attr_${key}" 
-                               name="attr_${key}"
-                               data-key="${key}"
-                               value="${value || ''}" 
-                               placeholder="Masukkan ${key}">
-                    </div>
-                </div>
-            `);
+                        <div class="col-md-6 attribute-item" data-key="${key}">
+                            <div class="form-group">
+                                <label for="attr_${key}" class="d-flex justify-content-between">
+                                    <span>${key}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-attribute" data-key="${key}">
+                                        <i class="mdi mdi-delete"></i>
+                                    </button>
+                                </label>
+                                <input type="text" 
+                                       class="form-control attribute-input" 
+                                       id="attr_${key}" 
+                                       name="attr_${key}"
+                                       data-key="${key}"
+                                       value="${escapeHtml(value || '')}" 
+                                       placeholder="Masukkan ${key}">
+                            </div>
+                        </div>
+                    `);
                     container.append(colDiv);
                     index++;
                 });
+            }
+
+            // Escape HTML untuk mencegah XSS
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Validate attribute name
+            function validateAttributeName(name) {
+                const regex = /^[A-Za-z_][A-Za-z0-9_]*$/;
+                return regex.test(name);
             }
 
             // Add new attribute
@@ -294,12 +341,19 @@
                 const value = $('#new_attribute_value').val().trim();
 
                 if (!key) {
-                    alert('Nama atribut tidak boleh kosong!');
+                    showAlert('Nama atribut tidak boleh kosong!', 'danger');
+                    return;
+                }
+
+                if (!validateAttributeName(key)) {
+                    showAlert(
+                        'Nama atribut tidak valid! Hanya boleh menggunakan huruf, angka, dan underscore. Tidak boleh diawali dengan angka.',
+                        'danger');
                     return;
                 }
 
                 if (dbfAttributes.hasOwnProperty(key)) {
-                    alert('Atribut dengan nama tersebut sudah ada!');
+                    showAlert('Atribut dengan nama tersebut sudah ada!', 'danger');
                     return;
                 }
 
@@ -309,8 +363,14 @@
                 // Reinitialize form
                 initAttributesForm();
 
+                // Update JSON view if active
+                if (currentView === 'json') {
+                    $('#dbf_attributes_json').val(JSON.stringify(dbfAttributes, null, 2));
+                }
+
                 // Close modal
                 $('#addAttributeModal').modal('hide');
+                showAlert('Atribut berhasil ditambahkan!', 'success');
             });
 
             // Remove attribute
@@ -320,7 +380,21 @@
                 if (confirm(`Apakah Anda yakin ingin menghapus atribut "${key}"?`)) {
                     delete dbfAttributes[key];
                     initAttributesForm();
+
+                    // Update JSON view if active
+                    if (currentView === 'json') {
+                        $('#dbf_attributes_json').val(JSON.stringify(dbfAttributes, null, 2));
+                    }
+
+                    showAlert('Atribut berhasil dihapus!', 'success');
                 }
+            });
+
+            // Update attributes when form input changes
+            $(document).on('input', '.attribute-input', function() {
+                const key = $(this).data('key');
+                const value = $(this).val();
+                dbfAttributes[key] = value;
             });
 
             // Toggle between form and JSON view
@@ -341,8 +415,23 @@
                         $(this).html('<i class="mdi mdi-code-json"></i> Toggle JSON View');
                         currentView = 'form';
                     } catch (e) {
-                        alert('JSON tidak valid! Perbaiki format JSON terlebih dahulu.');
+                        showAlert('JSON tidak valid! Perbaiki format JSON terlebih dahulu.', 'danger');
                     }
+                }
+            });
+
+            // Validate JSON
+            $('#validateJson').on('click', function() {
+                try {
+                    const jsonText = $('#dbf_attributes_json').val();
+                    JSON.parse(jsonText);
+                    showAlert('JSON valid!', 'success');
+                    $(this).removeClass('btn-outline-warning').addClass('btn-outline-success');
+                    setTimeout(() => {
+                        $(this).removeClass('btn-outline-success').addClass('btn-outline-warning');
+                    }, 2000);
+                } catch (e) {
+                    showAlert('JSON tidak valid: ' + e.message, 'danger');
                 }
             });
 
@@ -355,7 +444,7 @@
                     updatedAttributes[key] = value;
                 });
 
-                // Update global attributes
+                Object.keys(dbfAttributes).forEach(key => delete dbfAttributes[key]);
                 Object.assign(dbfAttributes, updatedAttributes);
 
                 $('#dbf_attributes_json').val(JSON.stringify(dbfAttributes, null, 2));
@@ -366,11 +455,9 @@
                 const jsonText = $('#dbf_attributes_json').val();
                 const parsedAttributes = JSON.parse(jsonText);
 
-                // Update global attributes
                 Object.keys(dbfAttributes).forEach(key => delete dbfAttributes[key]);
                 Object.assign(dbfAttributes, parsedAttributes);
 
-                // Reinitialize form
                 initAttributesForm();
             }
 
@@ -379,11 +466,10 @@
                 const geometry = $('#geom').val().trim();
 
                 if (!geometry) {
-                    alert('Geometri tidak boleh kosong!');
+                    showAlert('Geometri tidak boleh kosong!', 'danger');
                     return;
                 }
 
-                // Basic validation for WKT format
                 const wktPatterns = [
                     /^POINT\s*\(/i,
                     /^LINESTRING\s*\(/i,
@@ -398,12 +484,13 @@
                 if (isValid) {
                     $(this).removeClass('btn-outline-info').addClass('btn-outline-success');
                     $(this).html('<i class="mdi mdi-check-circle"></i> Geometri Valid');
+                    showAlert('Geometri valid!', 'success');
                     setTimeout(() => {
                         $(this).removeClass('btn-outline-success').addClass('btn-outline-info');
                         $(this).html('<i class="mdi mdi-check-circle"></i> Validasi Geometri');
                     }, 2000);
                 } else {
-                    alert('Format geometri tidak valid! Gunakan format WKT yang benar.');
+                    showAlert('Format geometri tidak valid! Gunakan format WKT yang benar.', 'danger');
                 }
             });
 
@@ -412,61 +499,138 @@
                 $('#mapModal').modal('show');
 
                 setTimeout(function() {
-                    // Initialize map centered on North Maluku (Ternate area)
-                    const map = L.map('map').setView([0.7893, 127.3776], 10);
-
-                    // Add tile layer
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
-                    }).addTo(map);
-
-                    // Try to parse and display geometry
-                    const geometry = $('#geom').val().trim();
-                    if (geometry && geometry.startsWith('POLYGON')) {
-                        try {
-                            // Simple parsing for polygon
-                            const coords = geometry.match(/POLYGON\s*\(\s*\((.*?)\)\s*\)/i);
-                            if (coords && coords[1]) {
-                                const points = coords[1].split(',').map(point => {
-                                    const [lng, lat] = point.trim().split(/\s+/).map(
-                                        Number);
-                                    return [lat, lng]; // Leaflet uses [lat, lng]
-                                });
-
-                                const polygon = L.polygon(points, {
-                                    color: 'red',
-                                    fillColor: '#f03',
-                                    fillOpacity: 0.5
-                                }).addTo(map);
-
-                                // Fit map to polygon bounds
-                                map.fitBounds(polygon.getBounds());
-
-                                // Add popup with location info
-                                const namobj = dbfAttributes.NAMOBJ || dbfAttributes.nama ||
-                                    'Lokasi';
-                                polygon.bindPopup(`<strong>${namobj}</strong>`).openPopup();
-                            }
-                        } catch (e) {
-                            console.error('Error parsing geometry:', e);
-                        }
-                    }
+                    initMap();
                 }, 500);
             });
 
+            // Initialize map
+            function initMap() {
+                if (map) {
+                    map.remove();
+                }
+
+                // Initialize map centered on North Maluku (Ternate area)
+                map = L.map('map').setView([0.7893, 127.3776], 10);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Try to parse and display geometry
+                const geometry = $('#geom').val().trim();
+                if (geometry) {
+                    try {
+                        displayGeometry(geometry);
+                    } catch (e) {
+                        console.error('Error displaying geometry:', e);
+                        showAlert('Error menampilkan geometri di peta', 'warning');
+                    }
+                }
+            }
+
+            // Display geometry on map
+            function displayGeometry(geometry) {
+                if (currentLayer) {
+                    map.removeLayer(currentLayer);
+                }
+
+                const geomType = geometry.split('(')[0].trim().toUpperCase();
+
+                if (geomType === 'POLYGON') {
+                    const coords = geometry.match(/POLYGON\s*\(\s*\((.*?)\)\s*\)/i);
+                    if (coords && coords[1]) {
+                        const points = coords[1].split(',').map(point => {
+                            const [lng, lat] = point.trim().split(/\s+/).map(Number);
+                            return [lat, lng];
+                        });
+
+                        currentLayer = L.polygon(points, {
+                            color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.5
+                        }).addTo(map);
+
+                        map.fitBounds(currentLayer.getBounds());
+
+                        const namobj = dbfAttributes.NAMOBJ || dbfAttributes.nama || 'Lokasi';
+                        currentLayer.bindPopup(`<strong>${namobj}</strong>`).openPopup();
+                    }
+                } else if (geomType === 'POINT') {
+                    const coords = geometry.match(/POINT\s*\(\s*(.*?)\s*\)/i);
+                    if (coords && coords[1]) {
+                        const [lng, lat] = coords[1].trim().split(/\s+/).map(Number);
+                        currentLayer = L.marker([lat, lng]).addTo(map);
+                        map.setView([lat, lng], 15);
+
+                        const namobj = dbfAttributes.NAMOBJ || dbfAttributes.nama || 'Lokasi';
+                        currentLayer.bindPopup(`<strong>${namobj}</strong>`).openPopup();
+                    }
+                }
+            }
+
+            // Show alert
+            function showAlert(message, type) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+
+                $('.card-body').prepend(alertHtml);
+
+                setTimeout(() => {
+                    $('.alert').fadeOut();
+                }, 5000);
+            }
+
             // Form submission
             $('#lokasiForm').on('submit', function(e) {
-                // Update hidden dbf_attributes input based on current view
+                e.preventDefault();
+
+                // Show loading
+                $('#loadingOverlay').show();
+                $('#submitBtn').prop('disabled', true);
+
+                // Update hidden dbf_attributes input
                 if (currentView === 'form') {
                     updateJsonFromForm();
-                    $('#dbf_attributes_hidden').val($('#dbf_attributes_json').val());
-                } else {
-                    $('#dbf_attributes_hidden').val($('#dbf_attributes_json').val());
                 }
+
+                $('#dbf_attributes_hidden').val(JSON.stringify(dbfAttributes));
+
+                // Validate required fields
+                const kategori = $('#kategori').val();
+                const geom = $('#geom').val().trim();
+
+                if (!kategori) {
+                    showAlert('Kategori harus dipilih!', 'danger');
+                    $('#loadingOverlay').hide();
+                    $('#submitBtn').prop('disabled', false);
+                    return;
+                }
+
+                if (!geom) {
+                    showAlert('Geometri harus diisi!', 'danger');
+                    $('#loadingOverlay').hide();
+                    $('#submitBtn').prop('disabled', false);
+                    return;
+                }
+
+                // Submit form
+                this.submit();
             });
 
             // Initialize
             initAttributesForm();
+
+            // Handle modal cleanup
+            $('#mapModal').on('hidden.bs.modal', function() {
+                if (map) {
+                    map.remove();
+                    map = null;
+                }
+            });
         });
     </script>
 @endsection

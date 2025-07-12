@@ -1,12 +1,44 @@
 @extends('backend.partials.main')
 
 @push('styles')
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
-@endpush
+    <style>
+        #rowsPerPageSelect:focus {
+            box-shadow: none;
+            border-color: #764ba2;
+        }
 
+        #pagination {
+            margin-top: 20px;
+        }
+
+        #pagination .page-item {
+            margin: 0 2px;
+        }
+
+        #pagination .page-link {
+            border: 1px solid #dee2e6;
+            color: #4b4b4b;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        #pagination .page-link:hover {
+            background-color: #667eea;
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        #pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: transparent;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+@endpush
 @section('main')
     <!-- Data Table View -->
     <div id="tableView">
@@ -51,7 +83,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h4 class="card-title">Data Spasial Maluku Utara</h4>
+                                <h4 class="card-title">Data Spasial Proyek Strategis Daerah</h4>
                                 <p class="card-description">
                                     Kelola dan pantauProyek Strategis Daerah untuk mendukung perencanaan pembangunan daerah
                                 </p>
@@ -65,58 +97,58 @@
                         </div>
 
                         <div class="table-responsive">
-                            <table id="dataSpasialTable" class="table table-striped" style="width:100%">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <label for="rowsPerPageSelect" class="me-2">Tampilkan</label>
+                                    <select id="rowsPerPageSelect" class="form-select d-inline-block w-auto"
+                                        style="background-image: none;">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+
+
+                                    <span class="ms-2">data per halaman</span>
+                                </div>
+                                <div>
+                                    <input type="text" id="searchInput" class="form-control"
+                                        placeholder="Cari data..." />
+                                </div>
+                            </div>
+
+
+                            <table id="customTable" class="table table-striped">
                                 <thead>
                                     <tr>
-                                        <th>No</th>
-                                        <th>Kategori</th>
+                                        <th onclick="sortTable(0)">No</th>
+                                        <th onclick="sortTable(1)">Kategori</th>
                                         <th>Nama/Deskripsi</th>
-                                        {{-- <th>Status</th> --}}
-                                        <th>Data Tahun</th>
+                                        <th onclick="sortTable(3)">Data Tahun</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-
-
+                                <tbody id="dataRows">
                                     @forelse($lokasis as $lokasi)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
+                                            <td><span class="badge bg-info">{{ $lokasi->kategori->nama }}</span></td>
                                             <td>
-                                                <label
-                                                    class="badge badge-gradient-info">{{ $lokasi->kategori->nama }}</label>
-
-                                            </td>
-                                            <td>
-                                                <div>
-                                                    {{-- <strong>{{ $lokasi->nama ?? 'Tanpa Nama' }}</strong> --}}
-                                                    @if ($lokasi->deskripsi)
-                                                        <br><small
-                                                            class="text-muted">{{ Str::limit($lokasi->deskripsi, 50) }}</small>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            {{-- <td class="text-center">
-                                                @if (($lokasi->status ?? 'aktif') == 'aktif')
-                                                    <label class="badge badge-gradient-success">Aktif</label>
-                                                @else
-                                                    <label class="badge badge-gradient-secondary">Tidak Aktif</label>
+                                                @if ($lokasi->deskripsi)
+                                                    <small
+                                                        class="text-muted">{{ Str::limit($lokasi->deskripsi, 50) }}</small>
                                                 @endif
-                                            </td> --}}
-                                            <td class="text-center">
-                                                {{ $lokasi->tahun }}
                                             </td>
+                                            <td class="text-center">{{ $lokasi->tahun }}</td>
                                             <td class="text-center">
                                                 <a href="{{ route('psd.edit', $lokasi->id) }}"
-                                                    class="btn btn-sm btn-outline-warning" title="Edit">
+                                                    class="btn btn-sm btn-outline-warning">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </a>
                                                 <form action="{{ route('psd.destroy', $lokasi->id) }}" method="POST"
                                                     style="display:inline-block;"
-                                                    onsubmit="return confirm('Yakin ingin menghapus {{ $lokasi->nama ?? $lokasi->kategori }}?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                    onsubmit="return confirm('Yakin ingin menghapus?')">
+                                                    @csrf @method('DELETE')
+                                                    <button class="btn btn-sm btn-outline-danger">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
@@ -124,104 +156,172 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center py-4">
-                                                <i class="mdi mdi-database-remove mdi-48px text-muted"></i>
-                                                <br>
-                                                <h5 class="text-muted mt-2">Belum adaProyek Strategis Daerah</h5>
-                                                <p class="text-muted">Klik tombol "Tambah Data" untuk menambah data baru</p>
-                                            </td>
+                                            <td colspan="5" class="text-center text-muted">Tidak ada data ditemukan.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
+
                             </table>
+
+                            <nav>
+                                <ul class="pagination justify-content-center" id="pagination"></ul>
+                            </nav>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
     <script>
-        $(document).ready(function() {
-            // Initialize DataTable
-            $('#dataSpasialTable').DataTable({
-                responsive: true,
-                pageLength: 10,
-                lengthMenu: [
-                    [10, 25, 50, 100],
-                    [10, 25, 50, 100]
-                ],
-                dom: 'Bfrtip',
-                buttons: [{
-                        extend: 'excel',
-                        text: '<i class="mdi mdi-file-excel me-1"></i> Excel',
-                        className: 'btn btn-success btn-sm',
-                        exportOptions: {
-                            columns: [0, 1, 2, 4, 5]
-                        }
-                    },
-                    {
-                        extend: 'pdf',
-                        text: '<i class="mdi mdi-file-pdf me-1"></i> PDF',
-                        className: 'btn btn-danger btn-sm',
-                        exportOptions: {
-                            columns: [0, 1, 2, 4, 5]
-                        }
-                    },
-                    {
-                        extend: 'print',
-                        text: '<i class="mdi mdi-printer me-1"></i> Print',
-                        className: 'btn btn-info btn-sm',
-                        exportOptions: {
-                            columns: [0, 1, 2, 4, 5]
-                        }
-                    }
-                ],
-                language: {
-                    "sProcessing": "Sedang memproses...",
-                    "sLengthMenu": "Tampilkan _MENU_ data",
-                    "sZeroRecords": "Tidak ditemukan data yang sesuai",
-                    "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
-                    "sInfoFiltered": "(disaring dari _MAX_ data keseluruhan)",
-                    "sSearch": "Cari:",
-                    "oPaginate": {
-                        "sFirst": "Pertama",
-                        "sPrevious": "Sebelumnya",
-                        "sNext": "Selanjutnya",
-                        "sLast": "Terakhir"
-                    }
-                },
-                columnDefs: [{
-                        targets: [0, 3, 4, 5, 6],
-                        className: 'text-center'
-                    },
-                    {
-                        targets: [6],
-                        orderable: false
-                    }
-                ],
-                order: [
-                    [0, 'asc']
-                ]
+        document.addEventListener("DOMContentLoaded", function() {
+            const tableBody = document.getElementById("dataRows");
+            const pagination = document.getElementById("pagination");
+            const searchInput = document.getElementById("searchInput");
+            const rowsPerPageSelect = document.getElementById("rowsPerPageSelect");
+
+            let currentPage = 1;
+            let rowsPerPage = parseInt(rowsPerPageSelect.value);
+
+            const originalRows = Array.from(tableBody.querySelectorAll("tr"));
+
+            function updateTable() {
+                const search = searchInput.value.toLowerCase();
+                rowsPerPage = parseInt(rowsPerPageSelect.value);
+
+                const filteredRows = originalRows.filter(row =>
+                    row.innerText.toLowerCase().includes(search)
+                );
+
+                const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+                currentPage = Math.min(currentPage, totalPages) || 1;
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                tableBody.innerHTML = "";
+                filteredRows.slice(start, end).forEach(row => {
+                    tableBody.appendChild(row.cloneNode(true));
+                });
+
+                renderPagination(totalPages);
+            }
+
+            function renderPagination(totalPages) {
+                pagination.innerHTML = "";
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement("li");
+                    li.classList.add("page-item");
+                    if (i === currentPage) li.classList.add("active");
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener("click", function(e) {
+                        e.preventDefault();
+                        currentPage = i;
+                        updateTable();
+                    });
+                    pagination.appendChild(li);
+                }
+            }
+
+            function sortTable(colIndex) {
+                originalRows.sort((a, b) => {
+                    const aText = a.children[colIndex].innerText.trim();
+                    const bText = b.children[colIndex].innerText.trim();
+                    return aText.localeCompare(bText, 'id', {
+                        numeric: true
+                    });
+                });
+                updateTable();
+            }
+
+            // Event listeners
+            searchInput.addEventListener("input", () => {
+                currentPage = 1;
+                updateTable();
             });
 
-            // Auto-hide alerts
-            setTimeout(function() {
-                $('.alert').fadeOut('slow');
-            }, 5000);
+            rowsPerPageSelect.addEventListener("change", () => {
+                currentPage = 1;
+                updateTable();
+            });
+
+            window.sortTable = sortTable;
+
+            updateTable(); // inisialisasi pertama
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const table = document.getElementById("customTable");
+            const searchInput = document.getElementById("searchInput");
+            const tableBody = document.getElementById("dataRows");
+            const pagination = document.getElementById("pagination");
+            const rowsPerPage = 5;
+            let currentPage = 1;
+
+            // Simpan semua baris awal (original) agar bisa di-reset saat refresh
+            const originalRows = Array.from(tableBody.querySelectorAll("tr"));
+
+            function updateTable() {
+                const search = searchInput.value.toLowerCase();
+
+                const filteredRows = originalRows.filter(row => {
+                    return row.innerText.toLowerCase().includes(search);
+                });
+
+                const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+                currentPage = Math.min(currentPage, totalPages) || 1;
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                tableBody.innerHTML = "";
+                filteredRows.slice(start, end).forEach(row => {
+                    tableBody.appendChild(row.cloneNode(true));
+                });
+
+                renderPagination(totalPages);
+            }
+
+            function renderPagination(totalPages) {
+                pagination.innerHTML = "";
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement("li");
+                    li.classList.add("page-item");
+                    if (i === currentPage) li.classList.add("active");
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener("click", function(e) {
+                        e.preventDefault();
+                        currentPage = i;
+                        updateTable();
+                    });
+                    pagination.appendChild(li);
+                }
+            }
+
+            function sortTable(colIndex) {
+                originalRows.sort((a, b) => {
+                    const aText = a.children[colIndex].innerText.trim();
+                    const bText = b.children[colIndex].innerText.trim();
+                    return aText.localeCompare(bText, 'id', {
+                        numeric: true
+                    });
+                });
+                updateTable(); // langsung refresh setelah sort
+            }
+
+            // Event pencarian
+            searchInput.addEventListener("input", () => {
+                currentPage = 1;
+                updateTable();
+            });
+
+            // Jalankan pertama kali
+            updateTable();
+
+            // Ekspos global agar fungsi onclick di header kolom bisa jalan
+            window.sortTable = sortTable;
         });
     </script>
 @endsection
