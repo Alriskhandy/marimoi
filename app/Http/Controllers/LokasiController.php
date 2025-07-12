@@ -101,7 +101,7 @@ class LokasiController extends Controller
                 }
 
                 // Cari deskripsi dari berbagai kemungkinan field DBF
-                $possibleDescFields = ['NAMA_OBJEK'];
+                $possibleDescFields = ['NAMA_OBJEK','NAMOBJ'];
                 $description = $request->deskripsi;
                 
                 if (!$description) {

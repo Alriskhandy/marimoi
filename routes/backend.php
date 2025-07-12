@@ -288,4 +288,4 @@ Route::fallback(function () {
 */
 // end ProyekStrategisDaerahController
 
-require __DIR__.'/auth.php';
+// require __DIR__.'/auth.php';
