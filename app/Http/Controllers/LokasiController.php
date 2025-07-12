@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\KategoriLayer;
 use Illuminate\Http\Request;
 use App\Models\Lokasi;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 use Shapefile\ShapefileReader;
 
 class LokasiController extends Controller
@@ -99,7 +101,7 @@ class LokasiController extends Controller
                 }
 
                 // Cari deskripsi dari berbagai kemungkinan field DBF
-                $possibleDescFields = ['deskripsi', 'desk', 'description', 'desc', 'keterangan', 'ket', 'remark','NAMOBJ'];
+                $possibleDescFields = ['NAMA_OBJEK'];
                 $description = $request->deskripsi;
                 
                 if (!$description) {
@@ -397,103 +399,302 @@ class LokasiController extends Controller
         'features' => $features,
     ]);
 }
-
 public function update(Request $request, $id)
-    {
-// dd($request->all());
-        // Validasi request
-        $request->validate([
-            'kategori' => 'required|exists:kategori_layers,id',
-            'deskripsi' => 'nullable|string',
-            'dbf_attributes' => 'required|string',
-            'geom' => 'required|string'
-        ]);
- $lokasi = Lokasi::findOrFail($id);
-//   dd($lokasi);
-        try {
-            // Parse dan validate DBF attributes JSON
-            $dbfAttributesJson = $request->dbf_attributes;
-            $dbfAttributes = json_decode($dbfAttributesJson, true);
-            
+{
+    $validator = Validator::make($request->all(), [
+        'kategori' => 'required|exists:kategori_layers,id',
+        'deskripsi' => 'nullable|string|max:255',
+        'dbf_attributes' => 'nullable|string'
+    ], [
+        'kategori.required' => 'Kategori harus dipilih',
+        'kategori.exists' => 'Kategori tidak valid',
+        'deskripsi.max' => 'Deskripsi maksimal 255 karakter'
+    ]);
+
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput();
+    }
+
+    try {
+        $lokasi = Lokasi::find($id);
+        if (!$lokasi) {
+            return redirect()->route('lokasi.index')
+                ->with('error', 'Lokasi tidak ditemukan');
+        }
+
+        $dbfAttributes = [];
+        if ($request->dbf_attributes) {
+            $json = $request->dbf_attributes;
+            $dbfAttributes = json_decode($json, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Format JSON atribut DBF tidak valid: ' . json_last_error_msg());
+                return redirect()->back()
+                    ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: ' . json_last_error_msg()])
+                    ->withInput();
             }
+        }
 
-            // Bersihkan dan normalisasi data DBF (sama seperti di store method)
-            $cleanDbfData = [];
-            foreach ($dbfAttributes as $key => $value) {
-                // Bersihkan nama kolom dan nilai
-                $cleanKey = trim($key);
-                $cleanValue = is_string($value) ? trim($value) : $value;
-                
-                // Konversi encoding jika diperlukan
-                if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
-                    $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
-                }
-                
-                $cleanDbfData[$cleanKey] = $cleanValue;
-            }
+        $lokasi->kategori_id = $request->kategori;
+        $lokasi->deskripsi = $request->deskripsi;
+        $lokasi->dbf_attributes = $dbfAttributes; // array, auto-cast to JSONB
+        $lokasi->save();
 
-            // Validate dan process geometri
-            $geometry = trim($request->geom);
-            if (empty($geometry)) {
-                throw new \Exception('Geometri tidak boleh kosong');
-            }
-            
-            // Basic validation
-            $this->validateGeometry($geometry);
-            
-            // Proses geometri untuk mengatasi masalah dimensi Z dan M (sama seperti store method)
-            $processedWkt = $this->processGeometryDimensions($geometry);
+        Log::info('Lokasi updated successfully', [
+            'id' => $id,
+            'kategori_id' => $request->kategori,
+            'attributes_count' => count($dbfAttributes)
+        ]);
 
-            // Log untuk debugging
-            Log::info('Updating lokasi', [
-                'id' => $lokasi->id,
-                'kategori' => $request->kategori,
-                'deskripsi' => $request->deskripsi,
-                'dbf_count' => count($cleanDbfData),
-                'wkt_length' => strlen($processedWkt)
-            ]);
+        return redirect()->route('lokasi.index')
+            ->with('success', 'Lokasi berhasil diperbarui');
+    } catch (\Exception $e) {
+        Log::error('Error updating lokasi: ' . $e->getMessage(), [
+            'id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
 
-            // Update menggunakan DB transaction untuk konsistensi
-            DB::beginTransaction();
+        return redirect()->back()
+            ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()])
+            ->withInput();
+    }
+}
 
-            try {
-                // Update field by field
-                $lokasi->kategori_id = $request->kategori;
-                $lokasi->deskripsi = $request->deskripsi;
-                $lokasi->dbf_attributes = $cleanDbfData;
-                $lokasi->updated_at = now();
-                
-                // Save first without geometry
-                $lokasi->save();
-                
-                // Then update geometry separately using raw SQL
-                DB::statement("UPDATE lokasis SET geom = ST_GeomFromText(?, 4326) WHERE id = ?", [
-                    $processedWkt, 
-                    $lokasi->id
-                ]);
 
-                DB::commit();
+    /**
+     * Validate WKT (Well-Known Text) format - Improved
+     */
+    private function validateWKT($wkt)
+    {
+        if (empty($wkt)) {
+            return false;
+        }
 
-                Log::info("Lokasi updated successfully. ID: {$lokasi->id}");
+        $wkt = trim($wkt);
 
-                return redirect()->route('lokasi.index')
-                    ->with('success', 'Lokasi berhasil diperbarui!');
+        // Check if it's WKB (binary format) - starts with hex digits
+        if (preg_match('/^[0-9A-Fa-f]+$/', $wkt) && strlen($wkt) > 20) {
+            // This is likely WKB format, try to convert it
+            return $this->validateWKB($wkt);
+        }
 
-            } catch (\Exception $e) {
-                DB::rollback();
-                Log::error('Database update failed: ' . $e->getMessage());
-                throw new \Exception('Gagal update database: ' . $e->getMessage());
-            }
+        // Normalize whitespace for WKT
+        $wkt = preg_replace('/\s+/', ' ', $wkt);
 
-        } catch (\Exception $e) {
-            Log::error('Update lokasi failed: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Gagal update lokasi: ' . $e->getMessage())
-                ->withInput();
+        // Check basic WKT structure
+        if (!preg_match('/^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s*\(/i', $wkt)) {
+            return false;
+        }
+
+        // Get geometry type
+        preg_match('/^(\w+)/i', $wkt, $matches);
+        $geomType = strtoupper($matches[1]);
+
+        switch ($geomType) {
+            case 'POINT':
+                return $this->validatePoint($wkt);
+            case 'LINESTRING':
+                return $this->validateLineString($wkt);
+            case 'POLYGON':
+                return $this->validatePolygon($wkt);
+            case 'MULTIPOINT':
+                return $this->validateMultiPoint($wkt);
+            case 'MULTILINESTRING':
+                return $this->validateMultiLineString($wkt);
+            case 'MULTIPOLYGON':
+                return $this->validateMultiPolygon($wkt);
+            default:
+                return false;
         }
     }
+
+    /**
+     * Validate WKB (Well-Known Binary) format
+     */
+    private function validateWKB($wkb)
+    {
+        // Basic validation for WKB hex string
+        if (!preg_match('/^[0-9A-Fa-f]+$/', $wkb)) {
+            return false;
+        }
+
+        // WKB should have even length (pairs of hex digits)
+        if (strlen($wkb) % 2 !== 0) {
+            return false;
+        }
+
+        // Minimum length check (at least header + type)
+        if (strlen($wkb) < 18) {
+            return false;
+        }
+
+        try {
+            // Try to extract basic WKB structure
+            $bytes = hex2bin($wkb);
+            if ($bytes === false) {
+                return false;
+            }
+
+            // Check if we have enough bytes for the header
+            if (strlen($bytes) < 9) {
+                return false;
+            }
+
+            // Read endianness (1 byte) and geometry type (4 bytes)
+            // This is a basic validation - in production you might want more thorough checking
+            return true;
+
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Convert WKB to WKT for storage normalization
+     */
+    private function convertWKBToWKT($wkb)
+    {
+        // This is a basic converter. For production, consider using PostGIS or similar
+        // For now, we'll store WKB as-is but mark it as valid
+        
+        try {
+            // Try to determine geometry type from WKB
+            $bytes = hex2bin($wkb);
+            if (strlen($bytes) >= 9) {
+                // Read geometry type (skip endianness byte)
+                $typeBytes = substr($bytes, 1, 4);
+                $type = unpack('V', $typeBytes)[1]; // Little endian 32-bit int
+                
+                // Basic geometry type mapping
+                $typeMap = [
+                    1 => 'POINT',
+                    2 => 'LINESTRING', 
+                    3 => 'POLYGON',
+                    4 => 'MULTIPOINT',
+                    5 => 'MULTILINESTRING',
+                    6 => 'MULTIPOLYGON'
+                ];
+                
+                $geomType = $typeMap[$type & 0xFF] ?? 'UNKNOWN';
+                
+                // For now, return a placeholder WKT indicating the type
+                // In production, you'd implement full WKB to WKT conversion
+                return "-- WKB DATA: {$geomType} --\n" . $wkb;
+            }
+        } catch (Exception $e) {
+            // If conversion fails, return original
+        }
+        
+        return $wkb;
+    }
+
+    private function validatePoint($wkt)
+    {
+        // POINT(x y) or POINT EMPTY
+        if (preg_match('/^POINT\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+        
+        return preg_match('/^POINT\s*\(\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*\)$/i', $wkt);
+    }
+
+    private function validateLineString($wkt)
+    {
+        if (preg_match('/^LINESTRING\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+
+        if (!preg_match('/^LINESTRING\s*\((.*)\)$/i', $wkt, $matches)) {
+            return false;
+        }
+
+        $coords = trim($matches[1]);
+        return $this->validateCoordinateString($coords, 2);
+    }
+
+    private function validatePolygon($wkt)
+    {
+        if (preg_match('/^POLYGON\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+
+        // Simple polygon validation
+        if (!preg_match('/^POLYGON\s*\(\s*\((.*?)\)\s*\)$/i', $wkt, $matches)) {
+            return false;
+        }
+
+        $coords = trim($matches[1]);
+        return $this->validateCoordinateString($coords, 4); // Minimum 4 points for polygon
+    }
+
+    private function validateMultiPoint($wkt)
+    {
+        if (preg_match('/^MULTIPOINT\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+
+        return preg_match('/^MULTIPOINT\s*\(\s*(\(\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*\)\s*,?\s*)+\)$/i', $wkt);
+    }
+
+    private function validateMultiLineString($wkt)
+    {
+        if (preg_match('/^MULTILINESTRING\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+
+        return preg_match('/^MULTILINESTRING\s*\(\s*(\(\s*(-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*,?\s*)+\)\s*,?\s*)+\)$/i', $wkt);
+    }
+
+    private function validateMultiPolygon($wkt)
+    {
+        if (preg_match('/^MULTIPOLYGON\s*EMPTY$/i', $wkt)) {
+            return true;
+        }
+
+        return preg_match('/^MULTIPOLYGON\s*\(\s*(\(\s*\(\s*(-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*,?\s*)+\)\s*\)\s*,?\s*)+\)$/i', $wkt);
+    }
+
+    /**
+     * Validate coordinate string
+     */
+    private function validateCoordinateString($coords, $minPoints = 1)
+    {
+        if (empty($coords)) {
+            return false;
+        }
+
+        // Split by comma to get individual points
+        $points = array_map('trim', explode(',', $coords));
+        
+        if (count($points) < $minPoints) {
+            return false;
+        }
+
+        // Validate each coordinate pair
+        foreach ($points as $point) {
+            if (empty($point)) continue;
+            
+            // Each point should have exactly 2 coordinates (x y)
+            $coordPair = preg_split('/\s+/', trim($point));
+            
+            if (count($coordPair) != 2) {
+                return false;
+            }
+
+            // Check if both coordinates are valid numbers
+            if (!is_numeric($coordPair[0]) || !is_numeric($coordPair[1])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate geometry via AJAX
+     */
+    
+
 
   private function validateGeometry($geometry)
     {

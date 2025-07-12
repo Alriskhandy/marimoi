@@ -36,13 +36,29 @@
 
                     <div class="table-responsive">
                         <table class="table table-hover" id="kategoriTable">
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <label for="rowsPerPageSelect" class="me-2">Tampilkan</label>
+                                    <select id="rowsPerPageSelect" class="form-select d-inline-block w-auto"
+                                        style="background-image: none;">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <span class="ms-2">data per halaman</span>
+                                </div>
+                                <div>
+                                    <input type="text" id="searchInput" class="form-control"
+                                        placeholder="Cari kategori...">
+                                </div>
+                            </div>
+
                             <thead>
                                 <tr>
                                     <th>No</th>
                                     <th>Nama</th>
-                                    <th>Deskripsi</th>
+                                    <th>Warna</th> <!-- Ubah dari Deskripsi -->
                                     <th>Parent</th>
-                                    {{-- <th>Jumlah Anak</th> --}}
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -57,8 +73,11 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if ($kategori->deskripsi)
-                                                {{ Str::limit($kategori->deskripsi, 50) }}
+                                            @if ($kategori->warna)
+                                                <span class="badge rounded-pill px-3 py-2 text-white"
+                                                    style="background-color: {{ $kategori->warna }}">
+                                                    {{ $kategori->warna }}
+                                                </span>
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
@@ -70,9 +89,6 @@
                                                 <span class="badge badge-secondary">Root</span>
                                             @endif
                                         </td>
-                                        {{-- <td>
-                                            <span class="badge badge-primary">{{ $kategori->children->count() }}</span>
-                                        </td> --}}
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show"
@@ -94,7 +110,6 @@
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
-
                                             </div>
                                         </td>
                                     </tr>
@@ -110,6 +125,11 @@
                                 @endforelse
                             </tbody>
                         </table>
+
+                        <nav>
+                            <ul class="pagination justify-content-center" id="pagination"></ul>
+                        </nav>
+
                     </div>
                 </div>
             </div>
@@ -140,6 +160,16 @@
                             <select class="form-control" id="add_parent_id" name="parent_id">
                                 <option value="">-- Pilih Parent (Opsional) --</option>
                             </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="add_warna" class="form-label">Warna</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="add_warna"
+                                    name="warna" value="#007bff">
+                                <span class="input-group-text" id="add_colorPreview"
+                                    style="background-color: #007bff; color: white;">●</span>
+                            </div>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="form-group mb-3">
@@ -188,6 +218,17 @@
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="form-group mb-3">
+                            <label for="edit_warna" class="form-label">Warna</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="edit_warna"
+                                    name="warna">
+                                <span class="input-group-text" id="edit_colorPreview"
+                                    style="background-color: #007bff; color: white;">●</span>
+                            </div>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-group mb-3">
                             <label for="edit_deskripsi" class="form-label">Deskripsi</label>
                             <textarea class="form-control" id="edit_deskripsi" name="deskripsi" rows="3"></textarea>
                             <div class="invalid-feedback"></div>
@@ -205,8 +246,9 @@
     </div>
 
     <!-- Show Modal -->
+    <!-- Show Modal -->
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg"> <!-- Ukuran lebih lebar agar nyaman dibaca -->
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="showModalLabel">
@@ -215,32 +257,44 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Nama:</strong>
-                            <p id="show_nama" class="text-muted"></p>
+                            <strong>Nama Kategori:</strong>
+                            <p id="show_nama" class="text-muted mb-0"></p>
                         </div>
+                        <div class="col-md-6">
+                            <strong>Warna:</strong><br>
+                            <span id="show_warna" class="badge rounded-pill px-3 py-2"
+                                style="background-color: #ccc;">-</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Parent:</strong>
-                            <p id="show_parent" class="text-muted"></p>
+                            <p id="show_parent" class="text-muted mb-0"></p>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6">
                             <strong>Jumlah Anak:</strong>
-                            <p id="show_children_count" class="text-muted"></p>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Dibuat:</strong>
-                            <p id="show_created_at" class="text-muted"></p>
+                            <p id="show_children_count" class="text-muted mb-0"></p>
                         </div>
                     </div>
-                    <div class="row">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Tanggal Dibuat:</strong>
+                            <p id="show_created_at" class="text-muted mb-0"></p>
+                        </div>
+                        <div class="col-md-6"></div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-12">
                             <strong>Deskripsi:</strong>
                             <p id="show_deskripsi" class="text-muted"></p>
                         </div>
                     </div>
+
                     <div class="row" id="show_children_container" style="display: none;">
                         <div class="col-12">
                             <strong>Kategori Anak:</strong>
@@ -257,6 +311,24 @@
 @endsection
 
 @section('scripts')
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Preview warna saat memilih (add)
+            const addWarna = document.getElementById('add_warna');
+            const addPreview = document.getElementById('add_colorPreview');
+            addWarna.addEventListener('input', () => {
+                addPreview.style.backgroundColor = addWarna.value;
+            });
+
+            // Preview warna saat memilih (edit)
+            const editWarna = document.getElementById('edit_warna');
+            const editPreview = document.getElementById('edit_colorPreview');
+            editWarna.addEventListener('input', () => {
+                editPreview.style.backgroundColor = editWarna.value;
+            });
+        });
+    </script>
+
     <script>
         $(document).ready(function() {
             // Show Alert Function
@@ -334,10 +406,21 @@
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
-                            showFormErrors(form, xhr.responseJSON.errors);
+                            if (xhr.responseJSON.errors) {
+                                showFormErrors(form, xhr.responseJSON.errors); // validasi field
+                            }
+
+                            if (xhr.responseJSON.message) {
+                                showAlert(xhr.responseJSON.message,
+                                    'error'
+                                ); // pesan umum dari server (misal: "Nama sudah digunakan")
+                            }
                         } else {
-                            showAlert('Terjadi kesalahan server', 'error');
+                            const message = xhr.responseJSON?.message ||
+                                'Terjadi kesalahan server';
+                            showAlert(message, 'error');
                         }
+
                     }
                 });
             });
@@ -419,18 +502,24 @@
                             'id-ID'));
                         $('#show_deskripsi').text(kategori.deskripsi || 'Tidak ada deskripsi');
 
-                        // Show children if any
+                        // Tampilkan warna
+                        $('#show_warna')
+                            .text(kategori.warna || '-')
+                            .css('background-color', kategori.warna || '#ccc');
+
+                        // Tampilkan anak jika ada
                         if (kategori.children.length > 0) {
                             let childrenHtml = '';
                             $.each(kategori.children, function(index, child) {
                                 childrenHtml +=
-                                    `<span class="badge badge-info me-1">${child.nama}</span>`;
+                                    `<span class="badge bg-info me-1 mb-1">${child.nama}</span>`;
                             });
                             $('#show_children').html(childrenHtml);
                             $('#show_children_container').show();
                         } else {
                             $('#show_children_container').hide();
                         }
+
                     }
                 });
             });
@@ -438,4 +527,114 @@
 
         });
     </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const tableBody = document.querySelector("#kategoriTable tbody");
+            const pagination = document.getElementById("pagination");
+            const searchInput = document.getElementById("searchInput");
+            const rowsPerPageSelect = document.getElementById("rowsPerPageSelect");
+
+            let currentPage = 1;
+            let rowsPerPage = parseInt(rowsPerPageSelect.value);
+            const originalRows = Array.from(tableBody.querySelectorAll("tr"));
+
+            function updateTable() {
+                const search = searchInput.value.toLowerCase();
+                rowsPerPage = parseInt(rowsPerPageSelect.value);
+
+                const filteredRows = originalRows.filter(row =>
+                    row.innerText.toLowerCase().includes(search)
+                );
+
+                const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+                currentPage = Math.min(currentPage, totalPages) || 1;
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                tableBody.innerHTML = "";
+                filteredRows.slice(start, end).forEach(row => {
+                    tableBody.appendChild(row.cloneNode(true));
+                });
+
+                renderPagination(totalPages, filteredRows.length);
+            }
+
+            function renderPagination(totalPages, totalFiltered) {
+                pagination.innerHTML = "";
+
+                if (totalFiltered <= 10) {
+                    pagination.style.display = "none";
+                    return;
+                }
+
+                pagination.style.display = "flex";
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const li = document.createElement("li");
+                    li.classList.add("page-item");
+                    if (i === currentPage) li.classList.add("active");
+                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                    li.addEventListener("click", function(e) {
+                        e.preventDefault();
+                        currentPage = i;
+                        updateTable();
+                    });
+                    pagination.appendChild(li);
+                }
+            }
+
+            searchInput.addEventListener("input", () => {
+                currentPage = 1;
+                updateTable();
+            });
+
+            rowsPerPageSelect.addEventListener("change", () => {
+                currentPage = 1;
+                updateTable();
+            });
+
+            updateTable(); // inisialisasi awal
+        });
+    </script>
 @endsection
+@push('styles')
+    <style>
+        #pagination {
+            margin-top: 20px;
+        }
+
+        #pagination .page-item {
+            margin: 0 2px;
+        }
+
+        #pagination .page-link {
+            border: 1px solid #dee2e6;
+            color: #4b4b4b;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        #pagination .page-link:hover {
+            background-color: #667eea;
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        #pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: transparent;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        #show_warna {
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+@endpush

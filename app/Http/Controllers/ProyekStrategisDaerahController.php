@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Shapefile\ShapefileReader;
+use Illuminate\Support\Facades\Validator;
 
 class ProyekStrategisDaerahController extends Controller
 {
@@ -699,101 +700,66 @@ public function getStatisticsByYear($year)
 }
 
 public function update(Request $request, $id)
-    {
-// dd($request->all());
-        // Validasi request
-        $request->validate([
-            'kategori' => 'required|exists:kategori_layers,id',
-            'deskripsi' => 'nullable|string',
-            'dbf_attributes' => 'required|string',
-            'geom' => 'required|string'
-        ]);
- $lokasi = ProyekStrategisDaerah::findOrFail($id);
-//   dd($lokasi);
-        try {
-            // Parse dan validate DBF attributes JSON
-            $dbfAttributesJson = $request->dbf_attributes;
-            $dbfAttributes = json_decode($dbfAttributesJson, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Format JSON atribut DBF tidak valid: ' . json_last_error_msg());
-            }
+{
+    // dd($request->all());
+    $validator = Validator::make($request->all(), [
+        'kategori' => 'required|exists:kategori_layers,id',
+        'deskripsi' => 'nullable|string|max:255',
+        'dbf_attributes' => 'nullable|string'
+    ], [
+        'kategori.required' => 'Kategori harus dipilih',
+        'kategori.exists' => 'Kategori tidak valid',
+        'deskripsi.max' => 'Deskripsi maksimal 255 karakter'
+    ]);
 
-            // Bersihkan dan normalisasi data DBF (sama seperti di store method)
-            $cleanDbfData = [];
-            foreach ($dbfAttributes as $key => $value) {
-                // Bersihkan nama kolom dan nilai
-                $cleanKey = trim($key);
-                $cleanValue = is_string($value) ? trim($value) : $value;
-                
-                // Konversi encoding jika diperlukan
-                if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
-                    $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
-                }
-                
-                $cleanDbfData[$cleanKey] = $cleanValue;
-            }
-
-            // Validate dan process geometri
-            $geometry = trim($request->geom);
-            if (empty($geometry)) {
-                throw new \Exception('Geometri tidak boleh kosong');
-            }
-            
-            // Basic validation
-            $this->validateGeometry($geometry);
-            
-            // Proses geometri untuk mengatasi masalah dimensi Z dan M (sama seperti store method)
-            $processedWkt = $this->processGeometryDimensions($geometry);
-
-            // Log untuk debugging
-            Log::info('Updating lokasi', [
-                'id' => $lokasi->id,
-                'kategori' => $request->kategori,
-                'deskripsi' => $request->deskripsi,
-                'dbf_count' => count($cleanDbfData),
-                'wkt_length' => strlen($processedWkt)
-            ]);
-
-            // Update menggunakan DB transaction untuk konsistensi
-            DB::beginTransaction();
-
-            try {
-                // Update field by field
-                $lokasi->kategori_id = $request->kategori;
-                $lokasi->deskripsi = $request->deskripsi;
-                $lokasi->dbf_attributes = $cleanDbfData;
-                $lokasi->updated_at = now();
-                
-                // Save first without geometry
-                $lokasi->save();
-                
-                // Then update geometry separately using raw SQL
-                DB::statement("UPDATE lokasis SET geom = ST_GeomFromText(?, 4326) WHERE id = ?", [
-                    $processedWkt, 
-                    $lokasi->id
-                ]);
-
-                DB::commit();
-
-                Log::info("Lokasi updated successfully. ID: {$lokasi->id}");
-
-                return redirect()->route('psd.index')
-                    ->with('success', 'Lokasi berhasil diperbarui!');
-
-            } catch (\Exception $e) {
-                DB::rollback();
-                Log::error('Database update failed: ' . $e->getMessage());
-                throw new \Exception('Gagal update database: ' . $e->getMessage());
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Update lokasi failed: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Gagal update lokasi: ' . $e->getMessage())
-                ->withInput();
-        }
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput();
     }
+
+    try {
+        $lokasi = ProyekStrategisDaerah::find($id);
+        if (!$lokasi) {
+            return redirect()->route('lokasi.index')
+                ->with('error', 'Lokasi tidak ditemukan');
+        }
+
+        $dbfAttributes = [];
+        if ($request->dbf_attributes) {
+            $json = $request->dbf_attributes;
+            $dbfAttributes = json_decode($json, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return redirect()->back()
+                    ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: ' . json_last_error_msg()])
+                    ->withInput();
+            }
+        }
+// dd($dbfAttributes);
+        $lokasi->kategori_id = $request->kategori;
+        $lokasi->deskripsi = $request->deskripsi;
+        $lokasi->dbf_attributes = $dbfAttributes; // array, auto-cast to JSONB
+        $lokasi->save();
+
+        Log::info('Lokasi updated successfully', [
+            'id' => $id,
+            'kategori_id' => $request->kategori,
+            'attributes_count' => count($dbfAttributes)
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Lokasi berhasil diperbarui');
+    } catch (\Exception $e) {
+        Log::error('Error updating lokasi: ' . $e->getMessage(), [
+            'id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return redirect()->back()
+            ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()])
+            ->withInput();
+    }
+}
 
   private function validateGeometry($geometry)
     {
