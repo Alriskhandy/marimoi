@@ -738,6 +738,22 @@ public function update(Request $request, $id)
         return redirect()->route('lokasi.index')->with('success', 'Data berhasil dihapus.');
     }
 
+//     public function destroy($id)
+// {
+//     // Ambil geometri + jenisnya
+//     $lokasi = Lokasi::selectRaw('*, ST_GeometryType(geom) as geom_type')->findOrFail($id);
+
+//     // Ambil tipe tanpa prefix 'ST_'
+//     $geomType = str_replace('ST_', '', $lokasi->geom_type);
+
+//     // Tampilkan jenis geometry (POINT, POLYGON, MULTIPOLYGON, dll)
+//     dd($geomType); // ← debug di sini
+
+//     // Jika ingin lanjut hapus:
+//     $lokasi->delete();
+
+//     return redirect()->route('lokasi.index')->with('success', 'Data berhasil dihapus.');
+// }
     /**
      * Proses geometri untuk mengatasi masalah dimensi Z dan M
      * Mengkonversi MULTIPOLYGONZM ke format yang sesuai dengan kolom database

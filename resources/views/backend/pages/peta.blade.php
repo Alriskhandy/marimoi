@@ -173,4 +173,5 @@
     <script src="{{ asset('js/peta-config.js') }}"></script>
     <script src="{{ asset('js/peta-utils.js') }}"></script>
     <script src="{{ asset('js/peta-main.js') }}"></script>
+    <script></script>
 @endsection

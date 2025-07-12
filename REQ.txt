@@ -18,3 +18,6 @@ yang bisa komen
 
 - dashboard :
  - 
+
+ LEGEND :
+  - Pilih icon pada dan simpan pada tabel kategori
