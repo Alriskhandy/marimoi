@@ -77,6 +77,31 @@
             </div>
         </li>
         @php
+            $isPSDActive = request()->routeIs('lokasi.index');
+        @endphp
+
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#psdMenu"
+                aria-expanded="{{ $isPSDActive ? 'true' : 'false' }}" aria-controls="psdMenu">
+                <span class="menu-title">Proyek Strategis Nasional</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-city menu-icon"></i>
+            </a>
+
+            <div class="collapse {{ $isPSDActive ? 'show' : '' }}" id="psdMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2025</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2024</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2023</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Nasional</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @php
             $isPSNActive = request()->routeIs('lokasi.index');
         @endphp
 
@@ -109,13 +134,13 @@
         </li>
         <li class="nav-item">
             <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                <span class="menu-title">Ulasan Musrembang</span>
+                <span class="menu-title">Usulan Musrembang</span>
                 <i class="mdi mdi-account-multiple menu-icon"></i>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" href="#!">
-                <span class="menu-title">Ulasan Tentang Website</span>
+                <span class="menu-title">Ulasan POKIR DPRD</span>
                 <i class="mdi mdi-comment-multiple-outline menu-icon"></i>
             </a>
         </li>
