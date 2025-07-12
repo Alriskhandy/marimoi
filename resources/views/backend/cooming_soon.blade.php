@@ -53,12 +53,11 @@
                     <!-- Description -->
                     <div class="coming-soon-description mb-5">
                         <p class="lead text-muted mb-3">
-                            Kami sedang mengembangkan fitur yang menakjubkan untuk meningkatkan pengalaman Anda dalam
-                            mengelola aspirasi masyarakat Maluku Utara.
+                            Kami sedang mengembangkan fitur yang menakjubkan untuk meningkatkan pengalaman Anda.
                         </p>
                         <p class="text-muted">
                             Fitur ini akan segera hadir dengan berbagai kemampuan baru yang akan memudahkan proses
-                            pengelolaan data dan pelaporan.
+                            pengelolaan data.
                         </p>
                     </div>
 
