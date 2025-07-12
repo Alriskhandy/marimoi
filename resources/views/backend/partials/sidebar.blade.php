@@ -151,7 +151,7 @@
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#rpjmdMenu"
                 aria-expanded="{{ $isRPJMDActive ? 'true' : 'false' }}" aria-controls="rpjmdMenu">
-                <span class="menu-title">Proyek Strategis RPJMD</span>
+                <span class="menu-title">PETA RPJMD</span>
                 <i class="menu-arrow"></i>
                 <i class="mdi mdi-domain menu-icon"></i>
             </a>
@@ -159,12 +159,12 @@
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-database me-2"></i>Data Proyek RPJMD
+                            <i class="mdi mdi-database me-2"></i>Data Peta RPJMD
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek RPJMD
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Peta RPJMD
                         </a>
                     </li>
                 </ul>
@@ -178,7 +178,7 @@
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#pokirMenu"
                 aria-expanded="{{ $isPOKIRActive ? 'true' : 'false' }}" aria-controls="pokirMenu">
-                <span class="menu-title">POKIR DPRD</span>
+                <span class="menu-title">Pokir DPRD</span>
                 <i class="menu-arrow"></i>
                 <i class="mdi mdi-account-group menu-icon"></i>
             </a>
@@ -186,21 +186,39 @@
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-database me-2"></i>Data POKIR DPRD
+                            <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori POKIR
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-comment-text me-2"></i>Ulasan POKIR DPRD
+                            <i class="mdi mdi-comment-text me-2"></i>Ulasan Pokir DPRD
                         </a>
                     </li>
                 </ul>
             </div>
+        </li>
+
+
+        <!-- Usulan Musrembang (Single Menu) -->
+        <li class="nav-item {{ request()->routeIs('musrembang.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('cooming_soon') }}">
+                <span class="menu-title">Usulan Musrembang</span>
+                <i class="mdi mdi-forum menu-icon"></i>
+                <span class="badge badge-warning badge-sm ms-auto">Soon</span>
+            </a>
+        </li>
+        <!-- Desk Musrenbang (Coming Soon) -->
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('cooming_soon') }}">
+                <span class="menu-title">Desk Forum PD</span>
+                <i class="mdi mdi-city-variant-outline menu-icon"></i>
+                <span class="badge badge-warning badge-sm ms-auto">Soon</span>
+            </a>
         </li>
 
         <!-- Partisipasi Masyarakat -->
@@ -221,24 +239,10 @@
                             <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
                         </a>
                     </li>
-                    <li class="nav-item {{ request()->routeIs('Musrenbang.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-forum me-2"></i>Usulan Musrenbang
-                        </a>
-                    </li>
+
                 </ul>
             </div>
         </li>
-
-        <!-- Desk Musrenbang (Coming Soon) -->
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('cooming_soon') }}">
-                <span class="menu-title">Desk Musrenbang</span>
-                <i class="mdi mdi-city-variant-outline menu-icon"></i>
-                <span class="badge badge-warning badge-sm ms-auto">Soon</span>
-            </a>
-        </li>
-
         <!-- Divider -->
         <li class="nav-item nav-category">
             <span class="nav-link">Sistem</span>
