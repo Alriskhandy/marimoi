@@ -109,7 +109,7 @@
                         </div>
                     </div>
 
-                    <!-- Countdown Timer -->
+                    {{-- <!-- Countdown Timer -->
                     <div class="countdown-section mb-5">
                         <h5 class="mb-3">Perkiraan Peluncuran:</h5>
                         <div class="countdown-timer">
@@ -133,7 +133,7 @@
                                 <div class="countdown-label">Detik</div>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Action Buttons -->
                     <div class="action-buttons">
