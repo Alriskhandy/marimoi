@@ -79,7 +79,7 @@ class ProjectFeedbackController extends Controller
             'phone' => 'nullable|string|max:20',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'laporan_gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'laporan_gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
             'nama_proyek.required' => 'Nama proyek wajib diisi',

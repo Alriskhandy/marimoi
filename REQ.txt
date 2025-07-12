@@ -7,3 +7,6 @@ Usulan Aspirasi Masyarakat:
   - nama pemberi aspirasi
 
 - Masyrakat bisa memberikan tanggapan pada website
+
+tambah tahun untuk proyek strategis
+pada aspirasi masyarakat musrembang masyarakat bisa memberikan tanggapan pada masing-mmasing koordinat

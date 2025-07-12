@@ -8,7 +8,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-comment-multiple-outline"></i>
-            </span> Aspirasi Masyarakat Maluku Utara
+            </span> Tanggapan Masyarakat 
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
@@ -16,7 +16,7 @@
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">
-                    <span></span>Aspirasi Masyarakat
+                    <span></span>Tanggapan Masyarakat
                 </li>
             </ul>
         </nav>
@@ -24,7 +24,7 @@
 
     <!-- Stats Cards -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-3 col-sm-6 mt-2">
             <div class="card card-stats">
                 <div class="card-header card-header-warning card-header-icon">
                     <div class="card-icon">
@@ -35,7 +35,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-3 col-sm-6 mt-2">
             <div class="card card-stats">
                 <div class="card-header card-header-info card-header-icon">
                     <div class="card-icon">
@@ -46,7 +46,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-3 col-sm-6 mt-2">
             <div class="card card-stats">
                 <div class="card-header card-header-primary card-header-icon">
                     <div class="card-icon">
@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6">
+        <div class="col-xl-3 col-sm-6 mt-2">
             <div class="card card-stats">
                 <div class="card-header card-header-success card-header-icon">
                     <div class="card-icon">
@@ -174,14 +174,12 @@
                                                 <br><small class="text-muted">{{ $feedback->email }}</small>
                                             @endif
                                         </td>
-                                        <td>
-                                            {{ $feedback->nama_proyek }}
-                                            @if ($feedback->laporan_gambar)
-                                                <br><small class="text-info"><i class="mdi mdi-image"></i> Ada
-                                                    gambar</small>
-                                            @endif
-                                        </td>
 
+                                        <td>
+                                            <span class="badge badge-{{ $feedback->jenis_badge_class }}">
+                                                {{ ucfirst($feedback->jenis_tanggapan) }}
+                                            </span>
+                                        </td>
                                         <td>
                                             <span class="badge badge-{{ $feedback->status_badge_class }}">
                                                 {{ ucfirst($feedback->status) }}
@@ -205,7 +203,7 @@
                                     </tr>
                                 @empty
                                     <tr id="no-data-row">
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="6" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-comment-remove-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Tidak ada data tanggapan masyarakat</p>
@@ -357,21 +355,17 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            {{-- <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Dapatkan Lokasi</label>
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-info btn-sm"
-                                            id="getCurrentLocation">
-                                            <i class="mdi mdi-crosshairs-gps"></i> Lokasi Saat Ini
-                                        </button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm"
-                                            id="openMapPicker">
-                                            <i class="mdi mdi-map"></i> Pilih di Peta
-                                        </button>
+                                        <!-- Sesudah -->
+                                        <a id="openMapBtn" class="btn btn-info btn-sm" target="_blank"
+                                            rel="noopener noreferrer">Lokasi Saat Ini</a>
+
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <div class="form-group mb-3">
@@ -453,16 +447,19 @@
                                     <div class="row" id="show_koordinat_row" style="display: none;">
                                         <div class="col-md-6">
                                             <strong>Latitude:</strong>
-                                            <p id="show_latitude" class="text-muted"></p>
+                                            <p id="show_latitude" class="text-muted" style="cursor: pointer;"
+                                                title="Klik untuk copy koordinat"></p>
                                         </div>
                                         <div class="col-md-6">
                                             <strong>Longitude:</strong>
-                                            <p id="show_longitude" class="text-muted"></p>
+                                            <p id="show_longitude" class="text-muted" style="cursor: pointer;"
+                                                title="Klik untuk copy koordinat"></p>
                                         </div>
                                         <div class="col-12 mt-2">
-                                            <button type="button" class="btn btn-info btn-sm" id="openMapBtn">
-                                                <i class="mdi mdi-map-marker"></i> Lihat di Google Maps
-                                            </button>
+                                            <!-- Sesudah -->
+                                            <a id="openMapBtn" class="btn btn-info btn-sm" target="_blank"
+                                                rel="noopener noreferrer">Lokasi Saat Ini</a>
+
                                         </div>
                                     </div>
                                 </div>
@@ -536,7 +533,7 @@
                             <label for="response_admin" class="form-label">Response Admin <span
                                     class="text-danger">*</span></label>
                             <textarea class="form-control" id="response_admin" name="response_admin" rows="4" required
-                                placeholder="Berikan response/tanggapan admin terhadap aspirasi masyarakat..."></textarea>
+                                placeholder="Berikan response/tanggapan admin terhadap Tanggapan Masyarakat..."></textarea>
                             <div class="invalid-feedback"></div>
                         </div>
                     </div>
@@ -681,7 +678,7 @@
                 if (visibleCount === 0 && $noDataRow.length === 0) {
                     $('#feedbackTable tbody').append(`
                         <tr id="no-data-row">
-                            <td colspan="8" class="text-center">
+                            <td colspan="6" class="text-center">
                                 <div class="py-4">
                                     <i class="mdi mdi-comment-remove-outline mdi-48px text-muted"></i>
                                     <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
@@ -830,12 +827,31 @@
                             $('#show_longitude').text(feedback.longitude);
                             $('#show_koordinat_row').show();
 
-                            // Store coordinates for map button
-                            $('#openMapBtn').data('lat', feedback.latitude).data('lng', feedback
+                            console.log('Setting coordinates data:', feedback.latitude, feedback
                                 .longitude);
+
+                            // Store coordinates as data attribute (cara aman)
+                            $('#openMapBtn').attr('data-lat', feedback.latitude);
+                            $('#openMapBtn').attr('data-lng', feedback.longitude);
+
+                            // Backup ke jQuery data
+                            $('#openMapBtn').data('lat', feedback.latitude);
+                            $('#openMapBtn').data('lng', feedback.longitude);
+
+                            // Global variable (opsional)
+                            window.currentLat = feedback.latitude;
+                            window.currentLng = feedback.longitude;
+
+                            // Buat URL Google Maps dan set ke tombol (misal tombol itu <a>)
+                            const googleMapsUrl =
+                                `https://www.google.com/maps/search/?api=1&query=${feedback.latitude},${feedback.longitude}`;
+                            $('#openMapBtn').attr('href', googleMapsUrl);
+                            $('#openMapBtn').attr('target', '_blank'); // agar buka di tab baru
+
                         } else {
                             $('#show_koordinat_row').hide();
                         }
+
 
                         // Gambar
                         if (feedback.laporan_gambar) {

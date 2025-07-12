@@ -81,7 +81,7 @@
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
                 aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
-                <span class="menu-title">Proyek Strategis Nasional</span>
+                <span class="menu-title">Proyek Strategis RPJMD</span>
                 <i class="menu-arrow"></i>
                 <i class="mdi mdi-domain menu-icon"></i>
             </a>
@@ -89,10 +89,10 @@
             <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Nasional</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek RPJMD</a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Nasional</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek RPJMD</a>
                     </li>
                 </ul>
             </div>
@@ -101,7 +101,7 @@
 
         <li class="nav-item">
             <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                <span class="menu-title">Aspirasi Masyarakat</span>
+                <span class="menu-title">Tanggapan Masyarakat</span>
                 <i class="mdi mdi-account-multiple menu-icon"></i>
             </a>
         </li>
