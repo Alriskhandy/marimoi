@@ -14,11 +14,15 @@
                 <li><a href="{{ route('beranda') }}"
                         class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Proyek Strategis Daerah</a></li>
                 <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Proyek RPJMD</a></li>
+                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Proyek Strategis Nasional</a></li>
                 <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Aspirasi Masyarakat (MUSRENBANG)</a></li>
+                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Peta RPJMD</a></li>
+                <li><a href="{{ route('beranda') }}"
+                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Usulan Musrenbang</a></li>
                 <li><a href="{{ route('beranda') }}"
                         class="{{ request()->routeIs('beranda') ? 'active' : '' }}">POKIR DPRD</a></li>
+                <li><a href="{{ route('beranda') }}"
+                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Tanggapan Masyarakat</a></li>
                 <li><a href="{{ route('tampil.peta') }}"
                         class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Peta</a></li>
             </ul>
