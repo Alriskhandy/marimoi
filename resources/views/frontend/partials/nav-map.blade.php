@@ -3,7 +3,7 @@
 
         <a href="{{ route('beranda') }}" class="logo d-flex align-items-center me-auto">
             <!-- Uncomment the line below if you also wish to use an image logo -->
-            <img src="{{ asset('frontend/img/logo.svg') }}" alt="Logo Bappeda"           style="height: 24px; margin-right: 8px;">
+            <img src="{{ asset('frontend/img/logo.svg') }}" alt="Logo Bappeda" style="height: 24px; margin-right: 8px;">
             <h1 class="sitename fs-5 fs-md-1">MARIMOI</h1>
         </a>
 
@@ -11,20 +11,19 @@
             <ul>
                 <li><a href="{{ route('beranda') }}"
                         class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Proyek Strategis Daerah</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Proyek Strategis Nasional</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Peta RPJMD</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Usulan Musrenbang</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">POKIR DPRD</a></li>
-                <li><a href="{{ route('beranda') }}"
-                        class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Tanggapan Masyarakat</a></li>
                 <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Peta</a></li>
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Proyek Strategis Daerah</a></li>
+                <li><a href="{{ route('tampil.peta') }}"
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Proyek Strategis Nasional</a>
+                </li>
+                <li><a href="{{ route('tampil.peta') }}"
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Peta RPJMD</a></li>
+                <li><a href="{{ route('tampil.peta') }}"
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Usulan Musrenbang</a></li>
+                <li><a href="{{ route('tampil.peta') }}"
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">POKIR DPRD</a></li>
+                <li><a href="{{ route('tampil.peta') }}"
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Tanggapan Masyarakat</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
