@@ -35,99 +35,90 @@
 @endpush
 
 @section('main')
-    <!-- Page Title -->
-    <div class="page-title dark-background" data-aos="fade" style="background-image: url(frontend/img/page-title-bg.jpg);">
-        <div class="container position-relative">
-            <h1>PETA SIG IT</h1>
-            <p>Esse dolorum voluptatum ullam est sint nemo et est ipsa porro placeat quibusdam quia assumenda numquam
-                molestias.</p>
-            <nav class="breadcrumbs">
-                <ol>
-                    <li><a href="{{ route('beranda') }}">Home</a></li>
-                    <li class="current">Peta SIG</li>
-                </ol>
-            </nav>
-        </div>
-    </div><!-- End Page Title -->
+    <div class="container-fluid p-0" style="height: 100vh;">
 
-    <!-- Map Section -->
-    <section class="section">
-        <div class="container-fluid p-0" data-aos="fade-up" data-aos-delay="100" style="height: calc(100vh - 160px);">
-            <div class="position-relative" style="height: 100%;">
-                <!-- Sidebar Layer -->
-                <div id="sidebar-layer" class="sidebar bg-white text-dark position-absolute"
-                    style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Layer</h5>
-                        <button id="btn-close-sidebar-layer" class="btn btn-secondary btn-sm">×</button>
+        <!-- Page Title -->
+        @include('frontend.partials.nav-map')
+    
+        <!-- Map Section -->
+        <section class="section pb-0" style="padding-top: 0;">
+            <div class="container-fluid p-0" data-aos="fade-up" data-aos-delay="100" style="height: 100vh">
+                <div class="position-relative" style="height: 100%;">
+                    <!-- Sidebar Layer -->
+                    <div id="sidebar-layer" class="sidebar bg-white text-dark position-absolute"
+                        style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Layer</h5>
+                            <button id="btn-close-sidebar-layer" class="btn btn-secondary btn-sm">×</button>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transparency" class="form-label">Transparansi Layer</label>
+                            <input type="range" class="form-range" min="0" max="100" value="100"
+                                id="transparency">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" id="layer-search" class="form-control"
+                                placeholder="Masukkan Kata Kunci Pencarian Layer">
+                        </div>
+                        <div id="layer-list" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                            <!-- Layer list will be populated dynamically -->
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="transparency" class="form-label">Transparansi Layer</label>
-                        <input type="range" class="form-range" min="0" max="100" value="100"
-                            id="transparency">
+    
+                    <!-- Sidebar Basemap -->
+                    <div id="sidebar-basemap" class="sidebar bg-white text-dark position-absolute"
+                        style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Basemap</h5>
+                            <button id="btn-close-sidebar-basemap" class="btn btn-secondary btn-sm">×</button>
+                        </div>
+                        <div id="basemap-list" class="px-1" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                            <!-- Basemap options will be populated dynamically -->
+                            <p>Basemap options placeholder</p>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <input type="text" id="layer-search" class="form-control"
-                            placeholder="Masukkan Kata Kunci Pencarian Layer">
+    
+                    <!-- Sidebar Legend -->
+                    <div id="sidebar-legend" class="sidebar bg-white text-dark position-absolute"
+                        style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Legenda</h5>
+                            <button id="btn-close-sidebar-legend" class="btn btn-secondary btn-sm">×</button>
+                        </div>
+                        <div id="legend-content" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                            <!-- Legend content will be populated dynamically -->
+                            <p>Legend content placeholder</p>
+                        </div>
                     </div>
-                    <div id="layer-list" style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                        <!-- Layer list will be populated dynamically -->
+    
+                    <!-- Map -->
+                    <div id="map" style="z-index: 10; height: 100%; width: 100%;"></div>
+    
+                    <!-- Sidebar Control Buttons -->
+                    <div id="sidebar-control-buttons" class="btn-group position-absolute" role="group"
+                        aria-label="Sidebar Control Buttons"
+                        style="top: 10px; right: 10px; z-index: 99; background-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 4px;">
+                        <button id="btn-toggle-sidebar-layer" type="button" class="btn btn-outline-dark btn-sm"
+                            title="Layer Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            data-bs-title="Layer Peta">
+                            <i class="bi bi-layers-fill"></i>
+                        </button>
+                        <button id="btn-toggle-sidebar-basemap" type="button" class="btn btn-outline-dark btn-sm"
+                            title="Basemap Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            data-bs-title="Basemap Peta">
+                            <i class="bi bi-map-fill"></i>
+                        </button>
+                        <button id="btn-toggle-sidebar-legend" type="button" class="btn btn-outline-dark btn-sm"
+                            title="Legenda Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            data-bs-title="Legenda Peta">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
                     </div>
-                </div>
-
-                <!-- Sidebar Basemap -->
-                <div id="sidebar-basemap" class="sidebar bg-white text-dark position-absolute"
-                    style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Basemap</h5>
-                        <button id="btn-close-sidebar-basemap" class="btn btn-secondary btn-sm">×</button>
-                    </div>
-                    <div id="basemap-list" class="px-1" style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                        <!-- Basemap options will be populated dynamically -->
-                        <p>Basemap options placeholder</p>
-                    </div>
-                </div>
-
-                <!-- Sidebar Legend -->
-                <div id="sidebar-legend" class="sidebar bg-white text-dark position-absolute"
-                    style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Legenda</h5>
-                        <button id="btn-close-sidebar-legend" class="btn btn-secondary btn-sm">×</button>
-                    </div>
-                    <div id="legend-content" style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                        <!-- Legend content will be populated dynamically -->
-                        <p>Legend content placeholder</p>
-                    </div>
-                </div>
-
-                <!-- Map -->
-                <div id="map" class="rounded" style="z-index: 10; height: 100%; width: 100%;"></div>
-
-                <!-- Sidebar Control Buttons -->
-                <div id="sidebar-control-buttons" class="btn-group position-absolute" role="group"
-                    aria-label="Sidebar Control Buttons"
-                    style="top: 10px; right: 10px; z-index: 1100; background-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 4px;">
-                    <button id="btn-toggle-sidebar-layer" type="button" class="btn btn-outline-dark btn-sm"
-                        title="Layer Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-title="Layer Peta">
-                        <i class="bi bi-layers-fill"></i>
-                    </button>
-                    <button id="btn-toggle-sidebar-basemap" type="button" class="btn btn-outline-dark btn-sm"
-                        title="Basemap Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-title="Basemap Peta">
-                        <i class="bi bi-map-fill"></i>
-                    </button>
-                    <button id="btn-toggle-sidebar-legend" type="button" class="btn btn-outline-dark btn-sm"
-                        title="Legenda Peta" style="color: black;" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-title="Legenda Peta">
-                        <i class="bi bi-list-ul"></i>
-                    </button>
                 </div>
             </div>
-        </div>
-    </section>
-    <!-- /Map Section -->
+        </section>
+        <!-- /Map Section -->
+    </div>
 @endsection
 
 @push('scripts')

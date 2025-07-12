@@ -199,7 +199,7 @@ function setupUI() {
 
 document.addEventListener("DOMContentLoaded", () => {
     initMap();
-    changeBaseMap("osm");
+    changeBaseMap("esri-world-imagery");
     setupUI();
 
     // Sidebar toggle buttons

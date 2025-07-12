@@ -39,14 +39,9 @@
 
 <body class="index-page">
 
-
-    @include('frontend.partials.navbar')
-
     <main class="main">
         @yield('main')
     </main>
-
-    @include('frontend.partials.footer')
 
     <!-- Scroll Top -->
     <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i

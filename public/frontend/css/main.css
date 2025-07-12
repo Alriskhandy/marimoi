@@ -222,11 +222,11 @@ h6 {
 # Global Header
 --------------------------------------------------------------*/
 .header {
-  --background-color: rgba(14, 29, 52, 0.9);
+  --background-color: rgba(14, 29, 52, 1);
   --heading-color: #ffffff;
   color: var(--default-color);
   background-color: var(--background-color);
-  padding: 20px 0;
+  padding: 0;
   transition: all 0.5s;
   z-index: 997;
 }
@@ -316,7 +316,7 @@ h6 {
   .navmenu a:focus {
     color: var(--nav-color);
     padding: 18px 15px;
-    font-size: 16px;
+    font-size: 14px;
     font-family: var(--nav-font);
     font-weight: 400;
     display: flex;
