@@ -205,7 +205,7 @@
 
         <!-- Partisipasi Masyarakat -->
         @php
-            $isPartisipasiActive = request()->routeIs('project-feedbacks.*') || request()->routeIs('musrembang.*');
+            $isPartisipasiActive = request()->routeIs('project-feedbacks.*') || request()->routeIs('Musrenbang.*');
         @endphp
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#partisipasiMenu"
@@ -221,19 +221,19 @@
                             <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
                         </a>
                     </li>
-                    <li class="nav-item {{ request()->routeIs('musrembang.*') ? 'active' : '' }}">
+                    <li class="nav-item {{ request()->routeIs('Musrenbang.*') ? 'active' : '' }}">
                         <a class="nav-link" href="#!">
-                            <i class="mdi mdi-forum me-2"></i>Usulan Musrembang
+                            <i class="mdi mdi-forum me-2"></i>Usulan Musrenbang
                         </a>
                     </li>
                 </ul>
             </div>
         </li>
 
-        <!-- Desk Musrembang (Coming Soon) -->
+        <!-- Desk Musrenbang (Coming Soon) -->
         <li class="nav-item">
             <a class="nav-link" href="{{ route('cooming_soon') }}">
-                <span class="menu-title">Desk Musrembang</span>
+                <span class="menu-title">Desk Musrenbang</span>
                 <i class="mdi mdi-city-variant-outline menu-icon"></i>
                 <span class="badge badge-warning badge-sm ms-auto">Soon</span>
             </a>
