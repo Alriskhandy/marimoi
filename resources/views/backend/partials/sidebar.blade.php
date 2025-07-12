@@ -108,18 +108,20 @@
         <li class="nav-item">
             <a class="nav-link" href="#!">
                 <span class="menu-title">Ulasan Tentang Website</span>
-                <i class="mdi mdi-account-multiple menu-icon"></i>
+                <i class="mdi mdi-comment-multiple-outline menu-icon"></i>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link" href="#!">
+                <span class="menu-title">Des Musrenbang</span>
+                <i class="mdi mdi-city-variant-outline menu-icon"></i>
+            </a>
+        </li>
+
         <li class="nav-item">
             <a class="nav-link" href="#!">
                 <span class="menu-title">Manajemen Pengguna</span>
-                <i class="mdi mdi-account-multiple menu-icon"></i>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Des Musrembang</span>
                 <i class="mdi mdi-account-multiple menu-icon"></i>
             </a>
         </li>
