@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Lokasi extends Model
+class ProyekStrategisDaerah extends Model
 {
-    use HasFactory;
-
+    
     protected $fillable = [
         'kategori_id',
+        'tahun',
         'deskripsi',
         'dbf_attributes',
         'geom'
@@ -71,6 +71,6 @@ class Lokasi extends Model
 
      public function kategori(): BelongsTo
     {
-        return $this->belongsTo(KategoriLayer::class, 'kategori_id');
+        return $this->belongsTo(KategoriPSD::class, 'kategori_id');
     }
 }

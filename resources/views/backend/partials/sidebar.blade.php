@@ -4,7 +4,7 @@
         <li class="nav-item nav-profile">
             <a href="#!" class="nav-link">
                 <div class="nav-profile-image">
-                    <img src="{{ asset('backend/assets/images/faces/face1.jpg') }}" alt="profile" />
+                    <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile" />
                     <span class="login-status online"></span>
                 </div>
                 <div class="nav-profile-text d-flex flex-column">
@@ -23,13 +23,13 @@
             </a>
         </li>
 
-        <!-- Peta Interaktif -->
+        {{-- <!-- Peta Interaktif -->
         <li class="nav-item {{ request()->routeIs('lokasi.peta') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('lokasi.peta') }}">
                 <span class="menu-title">Peta Interaktif</span>
                 <i class="mdi mdi-map menu-icon"></i>
             </a>
-        </li>
+        </li> --}}
 
         <!-- Data Peta Tematik -->
         @php
@@ -58,10 +58,21 @@
             </div>
         </li>
 
-        <!-- Proyek Strategis Daerah -->
+        {{-- Helper untuk Menu Dinamis --}}
+        {{-- File: resources/views/partials/menu-psd.blade.php --}}
+
         @php
+            // Dapatkan tahun yang tersedia dari database
+            $availableYears = \App\Models\ProyekStrategisDaerah::select('tahun')
+                ->distinct()
+                ->orderBy('tahun', 'desc')
+                ->pluck('tahun');
+
             $isPSDActive = request()->routeIs('psd.*');
+            $currentYear = request()->route('year') ?? date('Y');
         @endphp
+
+        <!-- Proyek Strategis Daerah -->
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#psdMenu"
                 aria-expanded="{{ $isPSDActive ? 'true' : 'false' }}" aria-controls="psdMenu">
@@ -74,32 +85,90 @@
                     <li class="nav-item">
                         <h6 class="sub-menu-header">Data per Tahun</h6>
                     </li>
+
+                    {{-- Menu untuk semua data
                     <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2025
+                        <a class="nav-link {{ request()->routeIs('psd.index') ? 'active' : '' }}"
+                            href="{{ route('psd.index') }}">
+                            <i class="mdi mdi-database me-2"></i>Semua Data
+                        </a>
+                    </li> --}}
+
+                    {{-- Menu dinamis berdasarkan tahun yang ada dalam database --}}
+                    @if ($availableYears->count() > 0)
+                        @foreach ($availableYears as $year)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('psd.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
+                                    href="{{ route('psd.tahun.show', $year) }}">
+                                    <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
+                                    <span class="badge badge-sm bg-primary ms-auto">
+                                        {{ \App\Models\ProyekStrategisDaerah::where('tahun', $year)->count() }}
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    @else
+                        <li class="nav-item">
+                            <span class="nav-link text-muted">
+                                <i class="mdi mdi-information me-2"></i>Belum ada data
+                            </span>
+                        </li>
+                    @endif
+
+                    <li class="nav-item">
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    {{-- Menu kategori --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('psd.kategori.*') ? 'active' : '' }}"
+                            href="{{ route('psd.kategori.index') }}">
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Daerah
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2024
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2023
-                        </a>
-                    </li>
+
+
+
+                    {{-- Menu tambah data baru --}}
                     <li class="nav-item">
                         <hr class="dropdown-divider">
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Daerah
+                        <a class="nav-link {{ request()->routeIs('psd.create') ? 'active' : '' }}"
+                            href="{{ route('psd.create') }}">
+                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
                         </a>
                     </li>
                 </ul>
             </div>
         </li>
+
+        {{-- JavaScript untuk auto-refresh menu jika ada data baru --}}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Auto refresh available years setiap 30 detik (opsional)
+                setInterval(function() {
+                    fetch('{{ route('psd.api.years') }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.years.length > 0) {
+                                // Update badge counts
+                                data.years.forEach(yearData => {
+                                    const yearLink = document.querySelector(
+                                        `a[href*="tahun/${yearData.year}"]`);
+                                    if (yearLink) {
+                                        const badge = yearLink.querySelector('.badge');
+                                        if (badge) {
+                                            badge.textContent = yearData.count;
+                                        }
+                                    }
+                                });
+                            }
+                        })
+                        .catch(error => console.log('Error updating year counts:', error));
+                }, 30000); // 30 seconds
+            });
+        </script>
 
         <!-- Proyek Strategis Nasional -->
         @php
