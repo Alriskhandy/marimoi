@@ -66,9 +66,9 @@
             <div class="collapse {{ $isPSDActive ? 'show' : '' }}" id="psdMenu">
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2025</a>
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2024</a>
-                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah 2023</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2025</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2024</a>
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Tahun 2023</a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Daerah</a>
