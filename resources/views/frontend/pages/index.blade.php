@@ -2,7 +2,7 @@
 
 @section('main')
     <!-- Hero Section -->
-    @include('frontend.partials.navbar')
+    @include('frontend.partials.nav-map')
 
     <!-- Hero Section -->
     <section id="hero" class="hero section dark-background position-relative">

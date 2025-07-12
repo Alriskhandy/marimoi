@@ -2,8 +2,8 @@
 console.log("map-app.js loaded");
 
 const mapConfig = {
-    center: [0.36310009945603017, 127.12398149281738],
-    zoom: 8,
+    center: [0.735485, 128.028201],
+    zoom: 7,
     baseMapsList: [
         {
             id: "osm",
@@ -131,7 +131,7 @@ function updateLayerList() {
     listDiv.innerHTML = "";
 
     const select = document.createElement("select");
-    select.className = "form-select mb-3";
+    select.className = "form-select form-select-sm mb-3";
     select.innerHTML = `<option value="all">Semua Kategori</option>`;
     Object.keys(layerGroups).forEach((kategori) => {
         select.innerHTML += `<option value="${kategori}">${kategori}</option>`;
@@ -144,7 +144,7 @@ function updateLayerList() {
         const id = `layer-${kategori.toLowerCase().replace(/\s+/g, "-")}`;
         list.innerHTML += `
       <div class="d-flex align-items-center py-1">
-        <input type="checkbox" id="${id}" class="form-check-input me-2" data-kategori="${kategori}" />
+        <input type="checkbox" id="${id}" class="form-check-input my-0 ms-1 me-2" data-kategori="${kategori}" />
         <label for="${id}" class="form-check-label small">${kategori}</label>
       </div>`;
     });
@@ -204,21 +204,155 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Sidebar toggle buttons
     const btnToggleLayer = document.getElementById("btn-toggle-sidebar-layer");
-    const btnToggleBasemap = document.getElementById("btn-toggle-sidebar-basemap");
-    const btnToggleLegend = document.getElementById("btn-toggle-sidebar-legend");
+    const btnToggleBasemap = document.getElementById(
+        "btn-toggle-sidebar-basemap"
+    );
+    const btnToggleLegend = document.getElementById(
+        "btn-toggle-sidebar-legend"
+    );
+    const btnToggleDownload = document.getElementById(
+        "btn-toggle-sidebar-download"
+    );
+    const btnFullscreen = document.getElementById("btn-fullscreen");
+    const btnDefaultZoom = document.getElementById("btn-default-zoom");
+
+    // Panduan awal dengan modal dan highlight tombol kontrol
+    const guideModal = document.getElementById("guideModal");
+    const guideSteps = document.querySelectorAll(".guide-step");
+    const btnPrev = document.getElementById("btnPrev");
+    const btnNext = document.getElementById("btnNext");
+
+    let currentStep = 1;
+    const totalSteps = guideSteps.length;
+    const controlButtons = [
+        document.getElementById("btn-toggle-sidebar-help"),
+        document.getElementById("btn-toggle-sidebar-legend"),
+        document.getElementById("btn-toggle-sidebar-basemap"),
+        document.getElementById("btn-toggle-sidebar-layer"),
+        document.getElementById("btn-toggle-sidebar-download"),
+        document.getElementById("btn-fullscreen"),
+        document.getElementById("btn-default-zoom"),
+    ];
+
+    // Modal Help Control
+    const btnToggleHelp = document.getElementById("btn-toggle-sidebar-help");
+    const btnSkip = document.getElementById("btnSkip");
 
     const sidebarLayer = document.getElementById("sidebar-layer");
     const sidebarBasemap = document.getElementById("sidebar-basemap");
     const sidebarLegend = document.getElementById("sidebar-legend");
+    const sidebarDownload = document.getElementById("sidebar-download");
+    const modalHelp = document.getElementById("guideModal");
 
     const btnCloseLayer = document.getElementById("btn-close-sidebar-layer");
-    const btnCloseBasemap = document.getElementById("btn-close-sidebar-basemap");
+    const btnCloseBasemap = document.getElementById(
+        "btn-close-sidebar-basemap"
+    );
     const btnCloseLegend = document.getElementById("btn-close-sidebar-legend");
+    const btnCloseDownload = document.getElementById(
+        "btn-close-sidebar-download"
+    );
 
     function closeAllSidebars() {
         sidebarLayer.style.display = "none";
         sidebarBasemap.style.display = "none";
         sidebarLegend.style.display = "none";
+        sidebarDownload.style.display = "none";
+        modalHelp.style.display = "none";
+    }
+
+    // Fungsi untuk mengecek apakah sudah dalam mode fullscreen
+    function isFullscreen() {
+        return (
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+        );
+    }
+
+    // Fungsi untuk masuk dan keluar dari mode fullscreen
+    function toggleFullscreen() {
+        if (isFullscreen()) {
+            // Keluar dari fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                // Untuk Safari
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                // Untuk Firefox
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                // Untuk IE/Edge
+                document.msExitFullscreen();
+            }
+        } else {
+            // Masuk ke fullscreen
+            const elem = document.documentElement; // Bisa diubah dengan elemen lain jika perlu
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                // Untuk Safari
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                // Untuk Firefox
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                // Untuk IE/Edge
+                elem.msRequestFullscreen();
+            }
+        }
+    }
+
+    function showStep(step) {
+        guideSteps.forEach((stepDiv) => {
+            stepDiv.classList.toggle(
+                "d-none",
+                parseInt(stepDiv.dataset.step) !== step
+            );
+        });
+
+        btnPrev.disabled = step === 1;
+        btnNext.textContent = step === totalSteps ? "Finish" : "Next";
+
+        // Hapus highlight dari semua tombol kontrol
+        controlButtons.forEach((btn) => {
+            btn.classList.remove("highlighted-control");
+            btn.style.position = "";
+            btn.style.zIndex = "";
+            btn.style.padding = "";
+        });
+
+        switch (step) {
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                controlButtons[0]?.classList.add("highlighted-control");
+                break;
+            case 4:
+                controlButtons[1]?.classList.add("highlighted-control");
+                break;
+            case 5:
+                controlButtons[2]?.classList.add("highlighted-control");
+                break;
+            case 6:
+                controlButtons[3]?.classList.add("highlighted-control");
+                break;
+            case 7:
+                controlButtons[4]?.classList.add("highlighted-control");
+                break;
+            case 8:
+                controlButtons[5]?.classList.add("highlighted-control");
+                break;
+            case 9:
+                controlButtons[6]?.classList.add("highlighted-control");
+                break;
+            default:
+                break;
+        }
     }
 
     btnToggleLayer?.addEventListener("click", () => {
@@ -239,6 +373,39 @@ document.addEventListener("DOMContentLoaded", () => {
         sidebarLegend.style.display = isVisible ? "none" : "block";
     });
 
+    btnToggleDownload?.addEventListener("click", () => {
+        const isVisible = sidebarDownload.style.display === "block";
+        closeAllSidebars();
+        sidebarDownload.style.display = isVisible ? "none" : "block";
+    });
+
+    btnToggleHelp?.addEventListener("click", () => {
+        const modalInstance =
+            bootstrap.Modal.getInstance(modalHelp) ||
+            new bootstrap.Modal(modalHelp);
+        const isVisible = modalInstance._isShown;
+        closeAllSidebars();
+        if (!isVisible) {
+            currentStep = 1;
+            showStep(currentStep);
+            // Hapus overlay bebas di sekitar tombol
+            controlButtons.forEach((btn) => {
+                btn.style.position = "";
+                btn.style.zIndex = "";
+                btn.style.padding = "";
+            });
+            modalInstance.show();
+        } else {
+            // Hapus overlay bebas saat modal ditutup
+            controlButtons.forEach((btn) => {
+                btn.style.position = "";
+                btn.style.zIndex = "";
+                btn.style.padding = "";
+            });
+            modalInstance.hide();
+        }
+    });
+
     btnCloseLayer?.addEventListener("click", () => {
         sidebarLayer.style.display = "none";
     });
@@ -251,6 +418,54 @@ document.addEventListener("DOMContentLoaded", () => {
         sidebarLegend.style.display = "none";
     });
 
+    btnCloseDownload?.addEventListener("click", () => {
+        sidebarDownload.style.display = "none";
+    });
+
+    btnSkip?.addEventListener("click", () => {
+        const modalInstance = bootstrap.Modal.getInstance(guideModal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+        controlButtons.forEach((btn) =>
+            btn.classList.remove("highlighted-control")
+        );
+    });
+
+    btnPrev.addEventListener("click", () => {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    btnNext.addEventListener("click", () => {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            showStep(currentStep);
+        } else {
+            // Tutup modal dengan Bootstrap method
+            const modalInstance = bootstrap.Modal.getInstance(guideModal);
+            modalInstance.hide();
+            controlButtons.forEach((btn) =>
+                btn.classList.remove("highlighted-control")
+            );
+        }
+    });
+
+    // Menambahkan event listener pada tombol fullscreen
+    btnFullscreen.addEventListener("click", toggleFullscreen);
+
+    // Menambahkan event listener pada tombol Default Zoom
+    btnDefaultZoom.addEventListener("click", function () {
+        map.setView(mapConfig.center, mapConfig.zoom); // Mengatur ulang peta ke koordinat default dan zoom level
+    });
+
+    // Tampilkan modal dengan Bootstrap method
+    const modalInstance = new bootstrap.Modal(guideModal);
+    modalInstance.show();
+    showStep(currentStep);
+
     // Layer search filter
     const layerSearchInput = document.getElementById("layer-search");
     const layerListDiv = document.getElementById("layer-list");
@@ -260,9 +475,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!layerListDiv) return;
 
         // Filter checkboxes by label text
-        const checkboxes = layerListDiv.querySelectorAll("input[type='checkbox']");
+        const checkboxes = layerListDiv.querySelectorAll(
+            "input[type='checkbox']"
+        );
         checkboxes.forEach((checkbox) => {
-            const label = layerListDiv.querySelector(`label[for='${checkbox.id}']`);
+            const label = layerListDiv.querySelector(
+                `label[for='${checkbox.id}']`
+            );
             if (label) {
                 const text = label.textContent.toLowerCase();
                 const match = text.includes(searchTerm);
