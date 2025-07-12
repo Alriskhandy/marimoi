@@ -29,6 +29,7 @@ class KategoriLayerSeeder extends Seeder
         foreach ($kategoris as $nama) {
             KategoriLayer::create([
                 'nama' => $nama,
+                'warna' => $nama,
                 'parent_id' => null,
                 'deskripsi' => null,
             ]);

@@ -27,6 +27,15 @@
 
     <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
     @stack('styles')
+    <style>
+        .nav .nav-item .nav-link,
+        .nav .nav-item .sub-menu .nav-link {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+        }
+    </style>
+
 </head>
 
 <body>

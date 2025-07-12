@@ -9,6 +9,7 @@ return new class extends Migration {
         Schema::create('kategori_layers', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
+            $table->string('warna');
             $table->text('deskripsi')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('kategori_layers')->onDelete('cascade');
             $table->timestamps();

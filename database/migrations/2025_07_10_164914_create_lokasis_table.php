@@ -33,12 +33,12 @@ return new class extends Migration
         // DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY(GEOMETRYZM, 4326)');
 
         // Jika tidak ingin menggunakan Z dan M dimensions, gunakan ini: 2D
-        DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY(Geometry, 4326)');
+        // DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY(Geometry, 4326)');
         // tidak keduanya
-        // DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY');
+        DB::statement('ALTER TABLE lokasis ADD COLUMN geom GEOMETRY');
 
         // Buat spatial index untuk geometri
-        // DB::statement('CREATE INDEX idx_lokasis_geom ON lokasis USING GIST (geom)');
+        DB::statement('CREATE INDEX idx_lokasis_geom ON lokasis USING GIST (geom)');
         
         // Buat index untuk pencarian teks dalam JSONB
         DB::statement('CREATE INDEX idx_lokasis_dbf_gin ON lokasis USING GIN (dbf_attributes jsonb_path_ops)');

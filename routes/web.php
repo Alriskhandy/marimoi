@@ -3,7 +3,9 @@
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\KategoriLayerController;
 use App\Http\Controllers\LokasiController;
+use App\Http\Controllers\MalukuUtaraController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectFeedbackController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontendController::class, 'index'])->name('beranda');
@@ -46,5 +48,34 @@ Route::group(['prefix' => 'dashboard', 'middleware' => 'auth'], function () {
 });
 
 
+// Project Feedback Routes
+Route::prefix('project-feedbacks')->name('project-feedbacks.')->group(function () {
+    // Main index page
+    Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index');
+    
+    // Store new feedback
+    Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store');
+    
+    // Show specific feedback (for modal detail)
+    Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show');
+    
+   // Update feedback response (use PUT method properly)
+    Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
+    
+    // Delete feedback
+    Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy');
+});
+
+// Statistics endpoint
+Route::get('/project-feedbacks-statistics', [ProjectFeedbackController::class, 'statistics'])->name('project-feedbacks.statistics');
+
+// Maluku Utara Reference Data Routes
+Route::prefix('maluku-utara')->name('maluku-utara.')->group(function () {
+    // Get reference data (kabupaten list)
+    Route::get('/reference', [MalukuUtaraController::class, 'reference'])->name('reference');
+    
+    // Get kecamatan by kabupaten
+    Route::get('/kecamatan/{kabupaten}', [MalukuUtaraController::class, 'kecamatan'])->name('kecamatan');
+});
 
 require __DIR__.'/auth.php';

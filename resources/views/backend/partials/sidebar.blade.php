@@ -28,26 +28,89 @@
             </a>
         </li>
 
-        <li class="nav-item {{ request()->routeIs('lokasi.*') && !request()->routeIs('lokasi.peta') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('lokasi.index') }}">
-                <span class="menu-title">Data Spasial</span>
-                <i class="mdi mdi-database menu-icon"></i>
-            </a>
-        </li>
-
-
         @php
-            $currentRoute = request()->route()->getName();
-            $isKategoriLayerActive = str_contains($currentRoute, 'kategori-layers');
+            $isPetaTematikActive = request()->routeIs('lokasi.index') || request()->routeIs('kategori-layers.index');
         @endphp
 
-        <li class="nav-item {{ $isKategoriLayerActive ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('kategori-layers.index') }}">
-                <span class="menu-title">Kategori Layer</span>
-                <i class="mdi mdi-layers menu-icon"></i>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
+                aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}" aria-controls="petaTematikMenu">
+                <span class="menu-title">Data Peta Tematik</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-map menu-icon"></i>
             </a>
+
+            <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Peta Tematik</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('kategori-layers.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('kategori-layers.index') }}">Kategori Peta Tematik</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @php
+            $isPSDActive = request()->routeIs('lokasi.index');
+        @endphp
+
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#psdMenu"
+                aria-expanded="{{ $isPSDActive ? 'true' : 'false' }}" aria-controls="psdMenu">
+                <span class="menu-title">Proyek Strategis Daerah</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-city menu-icon"></i>
+            </a>
+
+            <div class="collapse {{ $isPSDActive ? 'show' : '' }}" id="psdMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Daerah</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Daerah</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        @php
+            $isPSNActive = request()->routeIs('lokasi.index');
+        @endphp
+
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
+                aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
+                <span class="menu-title">Proyek Strategis Nasional</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-domain menu-icon"></i>
+            </a>
+
+            <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek Nasional</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek Nasional</a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
+
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                <span class="menu-title">Aspirasi Masyarakat</span>
+                <i class="mdi mdi-account-multiple menu-icon"></i>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#!">
+                <span class="menu-title">Ulasan Tentang Website</span>
+                <i class="mdi mdi-account-multiple menu-icon"></i>
+            </a>
+        </li>
         <li class="nav-item">
             <a class="nav-link" href="#!">
                 <span class="menu-title">Manajemen Pengguna</span>

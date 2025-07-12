@@ -1,0 +1,9 @@
+Usulan Aspirasi Masyarakat:
+- Masyarakat memberikan tanggapan pada proyek
+  - titik koordintanya
+  - laporan gambar
+  - ulasannya
+  - nama proyek
+  - nama pemberi aspirasi
+
+- Masyrakat bisa memberikan tanggapan pada website
