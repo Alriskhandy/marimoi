@@ -124,6 +124,33 @@
                 </ul>
             </div>
         </li>
+        @php
+            $isPSNActive = request()->routeIs('lokasi.index');
+        @endphp
+
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
+                aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
+                <span class="menu-title">POKIR DPRD</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-domain menu-icon"></i>
+            </a>
+
+            <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
+                <ul class="nav flex-column sub-menu">
+
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Data Proyek RPJMD</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Kategori Proyek RPJMD</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('lokasi.index') }}">Ulasan POKIR DPRD</a>
+                    </li>
+                </ul>
+            </div>
+        </li>
 
 
         <li class="nav-item">
@@ -138,12 +165,6 @@
                 <i class="mdi mdi-account-multiple menu-icon"></i>
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Ulasan POKIR DPRD</span>
-                <i class="mdi mdi-comment-multiple-outline menu-icon"></i>
-            </a>
-        </li>
 
         <li class="nav-item">
             <a class="nav-link" href="{{ route('cooming_soon') }}">
@@ -155,24 +176,29 @@
 
 
         <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Manajemen Pengguna</span>
-                <i class="mdi mdi-account-multiple menu-icon"></i>
+            <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu" aria-expanded="false"
+                aria-controls="systemMenu">
+                <span class="menu-title">Sistem & Pengguna</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-cog-outline menu-icon"></i>
             </a>
+            <div class="collapse" id="systemMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#!">
+                            <i class="mdi mdi-account-multiple me-2"></i>
+                            Manajemen Pengguna
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#!">
+                            <i class="mdi mdi-settings me-2"></i>
+                            Pengaturan Sistem
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Pengaturan Sistem</span>
-                <i class="mdi mdi-settings menu-icon"></i>
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="#!">
-                <span class="menu-title">Keluar</span>
-                <i class="mdi mdi-logout menu-icon"></i>
-            </a>
-        </li>
     </ul>
 </nav>
