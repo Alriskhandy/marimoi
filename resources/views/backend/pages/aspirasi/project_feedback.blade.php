@@ -22,53 +22,68 @@
         </nav>
     </div>
 
-    <!-- Stats Cards -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-sm-6 mt-2">
-            <div class="card card-stats">
-                <div class="card-header card-header-warning card-header-icon">
-                    <div class="card-icon">
-                        <i class="mdi mdi-clock-outline"></i>
-                    </div>
-                    <p class="card-category">Pending</p>
-                    <h3 class="card-title">{{ $stats['pending'] ?? 0 }}</h3>
+        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
+            <div class="card bg-gradient-warning card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle" />
+                    <h4 class="font-weight-normal mb-3">
+                        Pending
+                        <i class="mdi mdi-clock-outline mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-4">{{ $stats['pending'] ?? 0 }}</h2>
+                    <h6 class="card-text">Menunggu proses lanjutan</h6>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6 mt-2">
-            <div class="card card-stats">
-                <div class="card-header card-header-info card-header-icon">
-                    <div class="card-icon">
-                        <i class="mdi mdi-eye-outline"></i>
-                    </div>
-                    <p class="card-category">Ditinjau</p>
-                    <h3 class="card-title">{{ $stats['ditinjau'] ?? 0 }}</h3>
+
+        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
+            <div class="card bg-gradient-info card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle" />
+                    <h4 class="font-weight-normal mb-3">
+                        Ditinjau
+                        <i class="mdi mdi-eye-outline mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-4">{{ $stats['ditinjau'] ?? 0 }}</h2>
+                    <h6 class="card-text">Sedang dalam peninjauan</h6>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6 mt-2">
-            <div class="card card-stats">
-                <div class="card-header card-header-primary card-header-icon">
-                    <div class="card-icon">
-                        <i class="mdi mdi-cog-outline"></i>
-                    </div>
-                    <p class="card-category">Ditindaklanjuti</p>
-                    <h3 class="card-title">{{ $stats['ditindaklanjuti'] ?? 0 }}</h3>
+
+        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
+            <div class="card bg-gradient-primary card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle" />
+                    <h4 class="font-weight-normal mb-3">
+                        Ditindaklanjuti
+                        <i class="mdi mdi-cog-outline mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-4">{{ $stats['ditindaklanjuti'] ?? 0 }}</h2>
+                    <h6 class="card-text">Dalam proses tindak lanjut</h6>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-sm-6 mt-2">
-            <div class="card card-stats">
-                <div class="card-header card-header-success card-header-icon">
-                    <div class="card-icon">
-                        <i class="mdi mdi-check-circle-outline"></i>
-                    </div>
-                    <p class="card-category">Selesai</p>
-                    <h3 class="card-title">{{ $stats['selesai'] ?? 0 }}</h3>
+
+        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
+            <div class="card bg-gradient-success card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle" />
+                    <h4 class="font-weight-normal mb-3">
+                        Selesai
+                        <i class="mdi mdi-check-circle-outline mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-4">{{ $stats['selesai'] ?? 0 }}</h2>
+                    <h6 class="card-text">Telah diselesaikan</h6>
                 </div>
             </div>
         </div>
     </div>
+
 
     <div class="row">
         <div class="col-12 grid-margin stretch-card">
@@ -176,15 +191,38 @@
                                         </td>
 
                                         <td>
-                                            <span class="badge badge-{{ $feedback->jenis_badge_class }}">
+                                            @php
+                                                $jenis = strtolower($feedback->jenis_tanggapan);
+                                                $jenisBadge = match ($jenis) {
+                                                    'keluhan' => 'danger',
+                                                    'saran' => 'info',
+                                                    'apresiasi' => 'success',
+                                                    'pertanyaan' => 'warning',
+                                                    default => 'secondary',
+                                                };
+                                            @endphp
+
+                                            <span class="badge bg-{{ $jenisBadge }}">
                                                 {{ ucfirst($feedback->jenis_tanggapan) }}
                                             </span>
+
                                         </td>
+
                                         <td>
-                                            <span class="badge badge-{{ $feedback->status_badge_class }}">
+                                            @php
+                                                $statusBadge = match (strtolower($feedback->status)) {
+                                                    'pending' => 'warning',
+                                                    'ditinjau' => 'info',
+                                                    'ditindaklanjuti' => 'primary',
+                                                    'selesai' => 'success',
+                                                    default => 'light',
+                                                };
+                                            @endphp
+                                            <span class="badge bg-{{ $statusBadge }}">
                                                 {{ ucfirst($feedback->status) }}
                                             </span>
                                         </td>
+
                                         <td>{{ $feedback->created_at->format('d/m/Y') }}</td>
                                         <td>
                                             <div class="btn-group" role="group">
@@ -1028,8 +1066,8 @@
         }
 
         .table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            /* background: linear-gradient(135deg, #5E50F9 0%, #b66dff 0%) !important; */
+            color: #000000;
             border: none;
             font-weight: 600;
         }
@@ -1040,7 +1078,7 @@
         }
 
         .table tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: #f9f8fa;
         }
 
         .btn-group .btn {
@@ -1090,6 +1128,10 @@
         .filter-item.active {
             background-color: #667eea;
             color: white;
+        }
+
+        a:hover {
+            color: #b66dff !important;
         }
     </style>
 @endsection

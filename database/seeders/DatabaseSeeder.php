@@ -16,12 +16,13 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
                 KategoriLayerSeeder::class,
+                KategoriPSDSeeder::class,
                 ProjectFeedbackSeeder::class,
             ]);
         User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
-            'password' => bcrypt('Admin123')
+            'password' => bcrypt('admin123')
         ]);
     }
 }

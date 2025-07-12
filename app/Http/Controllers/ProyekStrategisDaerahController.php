@@ -3,37 +3,335 @@
 namespace App\Http\Controllers;
 
 use App\Models\KategoriLayer;
+use App\Models\KategoriPSD;
+use App\Models\ProyekStrategisDaerah;
 use Illuminate\Http\Request;
-use App\Models\Lokasi;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Shapefile\ShapefileReader;
 
-class LokasiController extends Controller
+class ProyekStrategisDaerahController extends Controller
 {
+    
+
+// Method tambahan yang perlu ditambahkan ke ProyekStrategisDaerahController
+
+/**
+ * Mendapatkan daftar tahun yang tersedia dalam database
+ */
+public function getAvailableYears()
+{
+    $years = ProyekStrategisDaerah::select('tahun')
+        ->distinct()
+        ->orderBy('tahun', 'desc')
+        ->pluck('tahun')
+        ->toArray();
+    
+    $kategoriLayers = KategoriPSD::with('children')->whereNull('parent_id')->get();
+    
+    return view('backend.pages.proyek_strategis_daerah.years', compact('years', 'kategoriLayers'));
+}
+
+/**
+ * API untuk mendapatkan tahun yang tersedia
+ */
+public function getAvailableYearsApi()
+{
+    $years = ProyekStrategisDaerah::select('tahun')
+        ->distinct()
+        ->orderBy('tahun', 'desc')
+        ->get()
+        ->map(function($item) {
+            return [
+                'year' => $item->tahun,
+                'count' => ProyekStrategisDaerah::where('tahun', $item->tahun)->count()
+            ];
+        });
+    
+    return response()->json([
+        'success' => true,
+        'years' => $years,
+        'total_years' => $years->count()
+    ]);
+}
+
+/**
+ * Menampilkan data berdasarkan tahun tertentu
+ */
+public function indexByYear($year)
+{
+    // Validasi apakah tahun tersebut ada dalam database
+    $yearExists = ProyekStrategisDaerah::where('tahun', $year)->exists();
+    
+    if (!$yearExists) {
+        return redirect()->route('psd.index')
+            ->with('error', "Data untuk tahun {$year} tidak ditemukan.");
+    }
+    
+    $lokasis = ProyekStrategisDaerah::with('kategori')
+        ->where('tahun', $year)
+        ->get();
+    
+    $kategoriLayers = KategoriPSD::with('children')->whereNull('parent_id')->get();
+    
+    // Statistik untuk tahun tersebut
+    $statistics = [
+        'total' => $lokasis->count(),
+        'categories' => $lokasis->groupBy('kategori_id')->map->count(),
+        'year' => $year
+    ];
+    
+    return view('backend.pages.proyek_strategis_daerah.by_year', compact('lokasis', 'kategoriLayers', 'year', 'statistics'));
+}
+
+/**
+ * Form create untuk tahun tertentu
+ */
+public function createByYear($year)
+{
+    $kategoriLayers = KategoriPSD::with('children')->whereNull('parent_id')->get();
+    return view('backend.pages.proyek_strategis_daerah.input-gis', compact('kategoriLayers', 'year'));
+}
+
+/**
+ * Store data untuk tahun tertentu
+ */
+public function storeByYear(Request $request, $year)
+{
+    // Validasi dengan tambahan tahun
+    $request->validate([
+        'kategori_id' => 'required',
+        'deskripsi' => 'nullable',
+        'shp_file' => 'required|file',
+        'shx_file' => 'required|file',
+        'dbf_file' => 'required|file',
+    ]);
+    
+    // Tambahkan tahun ke request
+    $request->merge(['tahun' => $year]);
+    
+    // Gunakan logic store yang sudah ada, tapi dengan tambahan tahun
+    return $this->storeWithYear($request, $year);
+}
+
+/**
+ * Method helper untuk store dengan tahun
+ */
+private function storeWithYear(Request $request, $year)
+{
+    $folder = storage_path('app/shapefiles');
+
+    if (!file_exists($folder)) {
+        mkdir($folder, 0755, true);
+    }
+
+    File::cleanDirectory($folder);
+
+    try {
+        // Simpan file (sama seperti method store asli)
+        $request->file('shp_file')->move($folder, 'data.shp');
+        $request->file('shx_file')->move($folder, 'data.shx');
+        $request->file('dbf_file')->move($folder, 'data.dbf');
+
+        $shpPath = "$folder/data.shp";
+
+        if (!file_exists($shpPath)) {
+            return back()->withErrors(['Gagal menyimpan file shapefile.']);
+        }
+
+        $reader = new ShapefileReader($shpPath);
+        $recordCount = 0;
+        $dbfColumns = [];
+
+        while ($geometry = $reader->fetchRecord()) {
+            if ($geometry->isDeleted()) continue;
+
+            $wkt = $geometry->getWKT();
+            $dbfData = $geometry->getDataArray();
+
+            if (empty($dbfColumns)) {
+                $dbfColumns = array_keys($dbfData);
+                Log::info('DBF Columns found: ' . implode(', ', $dbfColumns));
+            }
+
+            // Bersihkan dan normalisasi data DBF
+            $cleanDbfData = [];
+            foreach ($dbfData as $key => $value) {
+                $cleanKey = trim($key);
+                $cleanValue = is_string($value) ? trim($value) : $value;
+                
+                if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
+                    $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
+                }
+                
+                $cleanDbfData[$cleanKey] = $cleanValue;
+            }
+
+            // Cari deskripsi
+            $possibleDescFields = ['deskripsi', 'desk', 'description', 'desc', 'keterangan', 'ket', 'remark','NAMOBJ'];
+            $description = $request->deskripsi;
+            
+            if (!$description) {
+                foreach ($possibleDescFields as $field) {
+                    if (isset($cleanDbfData[$field]) && !empty($cleanDbfData[$field])) {
+                        $description = $cleanDbfData[$field];
+                        break;
+                    }
+                }
+            }
+
+            $processedWkt = $this->processGeometryDimensions($wkt);
+
+            // Simpan dengan tahun
+            $lokasi = new ProyekStrategisDaerah();
+            $lokasi->tahun = $year; // Tambahkan tahun
+            $lokasi->kategori_id = $request->kategori_id;
+            $lokasi->deskripsi = $description;
+            $lokasi->dbf_attributes = $cleanDbfData;
+            $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+            $lokasi->save();
+
+            $recordCount++;
+        }
+
+        if ($recordCount === 0) {
+            return back()->withErrors(['Shapefile tidak berisi data geometrik yang valid.']);
+        }
+
+        $message = "Berhasil menyimpan {$recordCount} record untuk tahun {$year}.";
+        if (!empty($dbfColumns)) {
+            $message .= " Kolom DBF yang tersimpan: " . implode(', ', $dbfColumns);
+        }
+
+        return redirect()->route('psd.tahun.show', $year)->with('success', $message);
+    } catch (\Exception $e) {
+        Log::error('Gagal membaca shapefile: ' . $e->getMessage());
+        return back()->withErrors(['Gagal membaca shapefile: ' . $e->getMessage()]);
+    }
+}
+
+/**
+ * GeoJSON berdasarkan tahun
+ */
+public function geojsonByYear(Request $request, $year)
+{
+    $query = DB::table('proyek_strategis_daerahs')
+        ->join('kategori_psd', 'proyek_strategis_daerahs.kategori_id', '=', 'kategori_psd.id')
+        ->select(
+            'proyek_strategis_daerahs.id',
+            'proyek_strategis_daerahs.kategori_id',
+            'proyek_strategis_daerahs.tahun',
+            'kategori_psd.nama as kategori',
+            'proyek_strategis_daerahs.deskripsi',
+            'proyek_strategis_daerahs.dbf_attributes',
+            DB::raw('ST_AsGeoJSON(proyek_strategis_daerahs.geom) as geojson')
+        )
+        ->where('proyek_strategis_daerahs.tahun', $year);
+
+    // Filter kategori
+    if ($request->has('kategori') && !empty($request->kategori)) {
+        $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
+        $query->whereIn('kategori_psd.nama', $categories);
+    }
+
+    // Filter atribut DBF
+    if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
+        foreach ($request->dbf_filter as $attribute => $value) {
+            $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+        }
+    }
+
+    // Search
+    if ($request->has('search') && !empty($request->search)) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('kategori_psd.nama', 'ILIKE', "%{$search}%")
+              ->orWhere('proyek_strategis_daerahs.deskripsi', 'ILIKE', "%{$search}%")
+              ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+        });
+    }
+
+    $lokasis = $query->get();
+
+    $features = $lokasis->map(function ($lokasi) {
+        $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+
+        return [
+            'type' => 'Feature',
+            'properties' => array_merge([
+                'id' => $lokasi->id,
+                'kategori_id' => $lokasi->kategori_id,
+                'kategori' => $lokasi->kategori,
+                'tahun' => $lokasi->tahun,
+                'deskripsi' => $lokasi->deskripsi,
+            ], $dbfAttributes),
+            'geometry' => json_decode($lokasi->geojson),
+        ];
+    });
+
+    return response()->json([
+        'type' => 'FeatureCollection',
+        'features' => $features,
+        'year' => $year,
+        'total' => $features->count()
+    ]);
+}
+
+/**
+ * Statistik berdasarkan tahun
+ */
+public function getStatisticsByYear($year)
+{
+    $stats = [
+        'year' => $year,
+        'total_locations' => DB::table('proyek_strategis_daerahs')->where('tahun', $year)->count(),
+        'categories_count' => DB::table('proyek_strategis_daerahs')->where('tahun', $year)->distinct('kategori_id')->count(),
+        'categories' => DB::table('proyek_strategis_daerahs')
+            ->join('kategori_psd', 'proyek_strategis_daerahs.kategori_id', '=', 'kategori_psd.id')
+            ->select('kategori_psd.nama as kategori', DB::raw('COUNT(*) as count'))
+            ->where('proyek_strategis_daerahs.tahun', $year)
+            ->groupBy('kategori_psd.nama')
+            ->orderBy('count', 'desc')
+            ->get(),
+        'bounds' => DB::table('proyek_strategis_daerahs')
+            ->select(
+                DB::raw('ST_XMin(ST_Extent(geom)) as min_lng'),
+                DB::raw('ST_YMin(ST_Extent(geom)) as min_lat'),
+                DB::raw('ST_XMax(ST_Extent(geom)) as max_lng'),
+                DB::raw('ST_YMax(ST_Extent(geom)) as max_lat')
+            )
+            ->where('tahun', $year)
+            ->first()
+    ];
+
+    return response()->json([
+        'success' => true,
+        'statistics' => $stats
+    ]);
+}
     
     public function index()
     {
-        $lokasis = Lokasi::all();
-        $kategoriLayers = KategoriLayer::with('children')->whereNull('parent_id')->get();
-        return view('backend.pages.data-spasial.data_spasial', compact('lokasis','kategoriLayers'));
+        $lokasis = ProyekStrategisDaerah::all();
+        $kategoriLayers = KategoriPSD::with('children')->whereNull('parent_id')->get();
+        return view('backend.pages.proyek_strategis_daerah.index', compact('lokasis','kategoriLayers'));
     }
 
    public function edit($id)
 {
-    $lokasi = Lokasi::findOrFail($id); // atau gunakan model binding jika ingin lebih rapi
+    $lokasi = ProyekStrategisDaerah::findOrFail($id); // atau gunakan model binding jika ingin lebih rapi
 
-    $kategoriLayers = KategoriLayer::orderBy('nama')->get();
+    $kategoriLayers = KategoriPSD::orderBy('nama')->get();
 
-    return view('backend.pages.data-spasial.edit', compact('lokasi', 'kategoriLayers'));
+    return view('backend.pages.proyek_strategis_daerah.edit', compact('lokasi', 'kategoriLayers'));
 }
 
     
     public function create()
     {
-         $kategoriLayers = KategoriLayer::with('children')->whereNull('parent_id')->get();
-        return view('backend.pages.data-spasial.input-gis', compact('kategoriLayers'));
+         $kategoriLayers = KategoriPSD::with('children')->whereNull('parent_id')->get();
+        return view('backend.pages.proyek_strategis_daerah.input-gis', compact('kategoriLayers'));
     }
 
     public function store(Request $request)
@@ -41,6 +339,7 @@ class LokasiController extends Controller
         // dd($request->all());
         $request->validate([
             'kategori_id' => 'required',
+            'tahun' => 'required',
             'deskripsi' => 'nullable',
             'shp_file' => 'required|file',
             'shx_file' => 'required|file',
@@ -115,14 +414,15 @@ class LokasiController extends Controller
                 $processedWkt = $this->processGeometryDimensions($wkt);
 
                 // Simpan ke database
-                // Lokasi::create([
+                // ProyekStrategisDaerah::create([
                 //     'kategori_id' => $request->kategori_id,
                 //     'deskripsi' => $description,
                 //     'dbf_attributes' => $cleanDbfData, // Simpan semua atribut DBF
                 //     'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
                 // ]);
-                $lokasi = new Lokasi();
+                $lokasi = new ProyekStrategisDaerah();
                 $lokasi->kategori_id = $request->kategori_id;
+                $lokasi->tahun = $request->tahun;
                 $lokasi->deskripsi = $description;
                 $lokasi->dbf_attributes = $cleanDbfData;
                 $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
@@ -148,7 +448,7 @@ class LokasiController extends Controller
                 $message .= " Kolom DBF yang tersimpan: " . implode(', ', $dbfColumns);
             }
 
-            return redirect()->route('lokasi.index')->with('success', $message);
+            return redirect()->route('psd.index')->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Gagal membaca shapefile: ' . $e->getMessage());
             return back()->withErrors(['Gagal membaca shapefile: ' . $e->getMessage()]);
@@ -408,7 +708,7 @@ public function update(Request $request, $id)
             'dbf_attributes' => 'required|string',
             'geom' => 'required|string'
         ]);
- $lokasi = Lokasi::findOrFail($id);
+ $lokasi = ProyekStrategisDaerah::findOrFail($id);
 //   dd($lokasi);
         try {
             // Parse dan validate DBF attributes JSON
@@ -478,7 +778,7 @@ public function update(Request $request, $id)
 
                 Log::info("Lokasi updated successfully. ID: {$lokasi->id}");
 
-                return redirect()->route('lokasi.index')
+                return redirect()->route('psd.index')
                     ->with('success', 'Lokasi berhasil diperbarui!');
 
             } catch (\Exception $e) {
@@ -531,10 +831,10 @@ public function update(Request $request, $id)
 
     public function destroy($id)
     {
-        $lokasi = Lokasi::findOrFail($id);
+        $lokasi = ProyekStrategisDaerah::findOrFail($id);
         $lokasi->delete();
 
-        return redirect()->route('lokasi.index')->with('success', 'Data berhasil dihapus.');
+        return redirect()->route('psd.index')->with('success', 'Data berhasil dihapus.');
     }
 
     /**
@@ -596,7 +896,7 @@ public function update(Request $request, $id)
    private function saveGeometryWithFallback($kategori_id, $deskripsi, $dbfAttributes, $wkt)
 {
     try {
-        return Lokasi::create([
+        return ProyekStrategisDaerah::create([
             'kategori_id' => $kategori_id,
             'deskripsi' => $deskripsi,
             'dbf_attributes' => $dbfAttributes,
@@ -606,7 +906,7 @@ public function update(Request $request, $id)
         Log::info("Mencoba konversi geometri: " . $e->getMessage());
 
         try {
-            return Lokasi::create([
+            return ProyekStrategisDaerah::create([
                 'kategori_id' => $kategori_id,
                 'deskripsi' => $deskripsi,
                 'dbf_attributes' => $dbfAttributes,
@@ -616,7 +916,7 @@ public function update(Request $request, $id)
             Log::error("Gagal konversi geometri: " . $e2->getMessage());
 
             $strippedWkt = $this->stripGeometryDimensions($wkt);
-            return Lokasi::create([
+            return ProyekStrategisDaerah::create([
                 'kategori_id' => $kategori_id,
                 'deskripsi' => $deskripsi,
                 'dbf_attributes' => $dbfAttributes,
@@ -625,5 +925,6 @@ public function update(Request $request, $id)
         }
     }
 }
+
 
 }
