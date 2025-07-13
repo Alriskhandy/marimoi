@@ -800,7 +800,7 @@ public function update(Request $request, $id)
         $lokasi = ProyekStrategisDaerah::findOrFail($id);
         $lokasi->delete();
 
-        return redirect()->route('psd.index')->with('success', 'Data berhasil dihapus.');
+        return redirect()->back()->with('success', 'Data berhasil dihapus.');
     }
 
     /**

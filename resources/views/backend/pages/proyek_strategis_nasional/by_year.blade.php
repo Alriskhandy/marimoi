@@ -1,44 +1,6 @@
 @extends('backend.partials.main', ['title' => 'Proyek Strategis Nasional Tahun ' . $year])
 
-@push('styles')
-    <style>
-        #rowsPerPageSelect:focus {
-            box-shadow: none;
-            border-color: #764ba2;
-        }
 
-        #pagination {
-            margin-top: 20px;
-        }
-
-        #pagination .page-item {
-            margin: 0 2px;
-        }
-
-        #pagination .page-link {
-            border: 1px solid #dee2e6;
-            color: #4b4b4b;
-            padding: 6px 12px;
-            border-radius: 4px;
-            background-color: #fff;
-            transition: all 0.3s ease;
-        }
-
-        #pagination .page-link:hover {
-            background-color: #667eea;
-            color: #fff;
-            border-color: #667eea;
-        }
-
-        #pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            border-color: transparent;
-            font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-    </style>
-@endpush
 @section('main')
     <!-- Data Table View -->
     <div id="tableView">
@@ -146,8 +108,8 @@
                                                     <i class="mdi mdi-pencil"></i>
                                                 </a>
                                                 <form action="{{ route('psn.destroy', $lokasi->id) }}" method="POST"
-                                                    style="display:inline-block;"
-                                                    onsubmit="return confirm('Yakin ingin menghapus?')">
+                                                    style="display:inline-block;" data-confirm="delete">
+
                                                     @csrf @method('DELETE')
                                                     <button class="btn btn-sm btn-outline-danger">
                                                         <i class="mdi mdi-delete"></i>

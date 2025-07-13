@@ -122,8 +122,7 @@
                                                     <i class="mdi mdi-pencil"></i>
                                                 </a>
                                                 <form action="{{ route('lokasi.destroy', $lokasi->id) }}" method="POST"
-                                                    style="display:inline-block;"
-                                                    onsubmit="return confirm('Yakin ingin menghapus {{ $lokasi->nama ?? $lokasi->kategori }}?')">
+                                                    style="display:inline-block;" data-confirm="delete">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button class="btn btn-sm btn-outline-danger" title="Hapus">

@@ -102,14 +102,14 @@
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
                                                 <form action="{{ route('kategori-layers.destroy', $kategori->id) }}"
-                                                    method="POST" style="display: inline-block;"
-                                                    onsubmit="return confirm('Yakin ingin menghapus kategori {{ $kategori->nama }}?')">
+                                                    method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
+
                                             </div>
                                         </td>
                                     </tr>
@@ -311,6 +311,33 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('backend/assets/vendors/sweetalert/sweetalert2.all.min.js') }}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Event delegasi untuk menangani semua form dengan data-confirm="delete"
+            document.body.addEventListener("submit", function(e) {
+                const form = e.target;
+                if (form.matches('form[data-confirm="delete"]')) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Yakin ingin menghapus?',
+                        text: "Data akan dihapus secara permanen!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, hapus!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit(); // lanjut hapus
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             // Preview warna saat memilih (add)

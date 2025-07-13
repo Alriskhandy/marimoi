@@ -801,7 +801,7 @@ public function update(Request $request, $id)
         $lokasi = ProyekStrategisNasional::findOrFail($id);
         $lokasi->delete();
 
-        return redirect()->route('psn.index')->with('success', 'Data berhasil dihapus.');
+        return redirect()->back()->with('success', 'Data berhasil dihapus.');
     }
 
     /**

@@ -174,8 +174,7 @@
                                                     </a>
                                                 @endif --}}
                                                 <form action="{{ route('kategori-psn.destroy', $kategori->id) }}"
-                                                    method="POST" style="display: inline-block;"
-                                                    onsubmit="return confirmDelete('{{ $kategori->nama }}', {{ $kategori->proyeks_count ?? 0 }})">
+                                                    method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-outline-danger"

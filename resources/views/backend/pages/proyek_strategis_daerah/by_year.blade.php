@@ -145,8 +145,7 @@
                                                     <i class="mdi mdi-pencil"></i>
                                                 </a>
                                                 <form action="{{ route('psd.destroy', $lokasi->id) }}" method="POST"
-                                                    style="display:inline-block;"
-                                                    onsubmit="return confirm('Yakin ingin menghapus?')">
+                                                    style="display:inline-block;" data-confirm="delete">
                                                     @csrf @method('DELETE')
                                                     <button class="btn btn-sm btn-outline-danger">
                                                         <i class="mdi mdi-delete"></i>
