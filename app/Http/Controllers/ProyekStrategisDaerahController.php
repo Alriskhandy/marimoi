@@ -414,6 +414,14 @@ public function getStatisticsByYear($year)
                 // Proses geometri untuk mengatasi masalah dimensi Z dan M
                 $processedWkt = $this->processGeometryDimensions($wkt);
 
+                if (preg_match('/POINT\s*\(([\d\.\-]+)\s+([\d\.\-]+)\)/i', $processedWkt, $matches)) {
+                $lng = (float) $matches[1];
+                $lat = (float) $matches[2];
+
+                if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+                    throw new \Exception("Koordinat POINT berada di luar jangkauan WGS 84: ($lng, $lat)");
+                }
+            }
                 // Simpan ke database
                 // ProyekStrategisDaerah::create([
                 //     'kategori_id' => $request->kategori_id,
@@ -426,7 +434,8 @@ public function getStatisticsByYear($year)
                 $lokasi->tahun = $request->tahun;
                 $lokasi->deskripsi = $description;
                 $lokasi->dbf_attributes = $cleanDbfData;
-                $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+                // $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+                $lokasi->geom = DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$processedWkt}'), 4326), 4326)");
                 $lokasi->save();
                 // DB::table('lokasis')->insert([
                 //     'kategori_id' => $request->kategori_id,

@@ -116,27 +116,26 @@ class LokasiController extends Controller
                 // Proses geometri untuk mengatasi masalah dimensi Z dan M
                 $processedWkt = $this->processGeometryDimensions($wkt);
 
-                // Simpan ke database
-                // Lokasi::create([
-                //     'kategori_id' => $request->kategori_id,
-                //     'deskripsi' => $description,
-                //     'dbf_attributes' => $cleanDbfData, // Simpan semua atribut DBF
-                //     'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
-                // ]);
+                // Validasi WKT hanya jika geom-nya tipe POINT
+            if (preg_match('/POINT\s*\(([\d\.\-]+)\s+([\d\.\-]+)\)/i', $processedWkt, $matches)) {
+                $lng = (float) $matches[1];
+                $lat = (float) $matches[2];
+
+                if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+                    throw new \Exception("Koordinat POINT berada di luar jangkauan WGS 84: ($lng, $lat)");
+                }
+            }
+    
+
                 $lokasi = new Lokasi();
                 $lokasi->kategori_id = $request->kategori_id;
                 $lokasi->deskripsi = $description;
                 $lokasi->dbf_attributes = $cleanDbfData;
-                $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+                // $lokasi->geom = DB::raw("ST_GeomFromText('{$processedWkt}', 4326)");
+                $lokasi->geom = DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$processedWkt}'), 4326), 4326)");
+
                 $lokasi->save();
-                // DB::table('lokasis')->insert([
-                //     'kategori_id' => $request->kategori_id,
-                //     'deskripsi' => $description,
-                //     'dbf_attributes' => $cleanDbfData,
-                //     'geom' => DB::raw("ST_GeomFromText('{$processedWkt}', 4326)"),
-                //     'created_at' => now(),
-                //     'updated_at' => now(),
-                // ]);
+              
 
                 $recordCount++;
             }
@@ -153,6 +152,8 @@ class LokasiController extends Controller
             return redirect()->route('lokasi.index')->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Gagal membaca shapefile: ' . $e->getMessage());
+           
+
             return back()->withErrors(['Gagal membaca shapefile: ' . $e->getMessage()]);
         }
     }

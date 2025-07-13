@@ -596,21 +596,3 @@ function initApp() {
 
 // Start the application when DOM is ready
 document.addEventListener("DOMContentLoaded", initApp);
-
-// Add some helpful console messages for developers
-console.log(`
-╔═══════════════════════════════════════╗
-║           GIS Web Application         ║
-║                                       ║
-║  🗺️  Interactive Map with Filters    ║
-║  📊  Real-time Statistics             ║
-║  🎨  Bootstrap 5 Design              ║
-║  📱  Mobile Responsive               ║
-║                                       ║
-║  Shortcuts:                           ║
-║  • Ctrl+F: Focus search               ║
-║  • Escape: Clear search               ║
-║  • Ctrl+Click: Show coordinates       ║
-║                                       ║
-╚═══════════════════════════════════════╝
-        `);
