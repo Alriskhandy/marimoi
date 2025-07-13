@@ -502,6 +502,8 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
 
 // pokir DPRD
 // Pokir DPRD routes with auth
+
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/pokir-dprd', [PokirDprdController::class, 'index'])->name('pokir-dprd.index');
     Route::get('/dashboard/pokir-dprd/create', [PokirDprdController::class, 'create'])->name('pokir-dprd.create');
@@ -513,7 +515,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/peta-pokir', [PokirDprdController::class, 'peta'])->name('pokir-dprd.peta');
      Route::resource('/dashboard/kategori-pokir-dprd', KategoriPokirDprdController::class);
 });
-
 // end pokir DPRD
 // end pokir DPRD
 // require __DIR__.'/auth.php';
