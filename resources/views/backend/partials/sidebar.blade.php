@@ -38,7 +38,7 @@
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
                 aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}" aria-controls="petaTematikMenu">
-                <span class="menu-title">Data Peta Tematik</span>
+                <span class="menu-title">Peta RPJMD</span>
                 <i class="menu-arrow"></i>
                 <i class="mdi mdi-layers menu-icon"></i>
             </a>
@@ -46,12 +46,12 @@
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item {{ request()->routeIs('lokasi.index') ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('lokasi.index') }}">
-                            <i class="mdi mdi-map-outline me-2"></i>Data Peta Tematik
+                            <i class="mdi mdi-map-outline me-2"></i>Data Peta RPJMD
                         </a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('kategori-layers.index') ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('kategori-layers.index') }}">
-                            <i class="mdi mdi-format-list-bulleted me-2"></i>Kategori Peta Tematik
+                            <i class="mdi mdi-format-list-bulleted me-2"></i>Kategori Peta RPJMD
                         </a>
                     </li>
                 </ul>
@@ -235,7 +235,7 @@
 
 
 
-        <!-- Proyek Strategis RPJMD -->
+        {{-- <!-- Proyek Strategis RPJMD -->
         @php
             $isRPJMDActive = request()->routeIs('rpjmd.*');
         @endphp
@@ -260,7 +260,7 @@
                     </li>
                 </ul>
             </div>
-        </li>
+        </li> --}}
 
         <!-- POKIR DPRD -->
         @php

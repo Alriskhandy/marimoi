@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Proyek Strategis Daerah Tahun ' . $year])
 
 @push('styles')
     <style>
@@ -47,7 +47,7 @@
                 <span class="page-title-icon bg-gradient-primary text-white me-2">
                     <i class="mdi mdi-map-marker-multiple"></i>
                 </span>
-                Proyek Strategis Daerah
+                Proyek Strategis Daerah Tahun {{ $year }}
             </h3>
             <nav aria-label="breadcrumb">
                 <ul class="breadcrumb">
@@ -83,9 +83,9 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h4 class="card-title">Data Spasial Proyek Strategis Daerah</h4>
+                                <h4 class="card-title">Data Spasial Proyek Strategis Daerah Tahun {{ $year }}</h4>
                                 <p class="card-description">
-                                    Kelola dan pantauProyek Strategis Daerah untuk mendukung perencanaan pembangunan daerah
+                                    Kelola dan pantau Proyek Strategis Daerah untuk mendukung perencanaan pembangunan daerah
                                 </p>
                             </div>
                             <div>

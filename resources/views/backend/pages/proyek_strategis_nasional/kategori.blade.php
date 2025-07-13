@@ -1,6 +1,6 @@
 {{-- File: resources/views/backend/pages/data-spasial/kategori_index.blade.php --}}
 
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Kategori Proyek Strategis Nasional'])
 
 @section('main')
     <div class="page-header">

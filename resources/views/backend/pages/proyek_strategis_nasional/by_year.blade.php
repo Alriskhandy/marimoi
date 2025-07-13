@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Proyek Strategis Nasional Tahun ' . $year])
 
 @push('styles')
     <style>

@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Edit Proyek Strategis Daerah'])
 @push('styles')
     <style>
         #geom {
@@ -66,7 +66,7 @@
                                 <div class="form-group">
                                     <label for="kategori">Kategori <span class="text-danger">*</span></label>
                                     <select class="form-control @error('kategori') is-invalid @enderror" id="kategori"
-                                        name="kategori" required>
+                                        name="kategori_id" required>
                                         <option value="">-- Pilih Kategori --</option>
                                         @foreach ($kategoriLayers as $kategori)
                                             <option value="{{ $kategori->id }}"

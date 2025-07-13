@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Data Peta RPJMD'])
 
 
 @section('main')
@@ -9,13 +9,13 @@
                 <span class="page-title-icon bg-gradient-primary text-white me-2">
                     <i class="mdi mdi-map-marker-multiple"></i>
                 </span>
-                Data Spasial
+                Data Spasial Peta RPJMD
             </h3>
             <nav aria-label="breadcrumb">
                 <ul class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#!">Dashboard</a></li>
                     <li class="breadcrumb-item active" aria-current="page">
-                        <span></span>Data Spasial <i
+                        <span></span>Data Spasial Peta RPJMD<i
                             class="mdi mdi-alert-circle-outline icon-sm text-primary align-middle"></i>
                     </li>
                 </ul>
@@ -45,7 +45,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h4 class="card-title">Data Spasial Maluku Utara</h4>
+                                <h4 class="card-title">Data Spasial Peta RPJMD Maluku Utara</h4>
                                 <p class="card-description">
                                     Kelola dan pantau data spasial untuk mendukung perencanaan pembangunan daerah
                                 </p>

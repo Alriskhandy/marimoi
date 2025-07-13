@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Input Peta RPJMD'])
 
 @push('styles')
     <style>
@@ -218,13 +218,14 @@
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-map-marker-multiple"></i>
             </span>
-            Data Spasial
+            Data Spasial Peta RPJMD
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
                 <li class="breadcrumb-item"><a href="#!">Dashboard</a></li>
                 <li class="breadcrumb-item active" aria-current="page">
-                    <span></span>Data Spasial <i class="mdi mdi-alert-circle-outline icon-sm text-primary align-middle"></i>
+                    <span></span>Data Spasial Peta RPJMD <i
+                        class="mdi mdi-alert-circle-outline icon-sm text-primary align-middle"></i>
                 </li>
             </ul>
         </nav>

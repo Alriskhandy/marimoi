@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Edit Peta RPJMD'])
 @push('styles')
     <style>
         #geom {
@@ -34,7 +34,7 @@
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <h4 class="card-title">Form Edit Lokasi</h4>
+                    <h4 class="card-title">Form Edit Lokasi RPJMD</h4>
                     <p class="card-description">Edit informasi lokasi dan atribut DBF</p>
 
                     @if ($errors->any())

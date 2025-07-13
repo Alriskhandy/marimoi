@@ -703,12 +703,12 @@ public function update(Request $request, $id)
 {
     // dd($request->all());
     $validator = Validator::make($request->all(), [
-        'kategori' => 'required|exists:kategori_layers,id',
+        'kategori_id' => 'required|exists:kategori_psd,id',
         'deskripsi' => 'nullable|string|max:255',
         'dbf_attributes' => 'nullable|string'
     ], [
-        'kategori.required' => 'Kategori harus dipilih',
-        'kategori.exists' => 'Kategori tidak valid',
+        'kategori_id.required' => 'Kategori harus dipilih',
+        'kategori_id.exists' => 'Kategori tidak valid',
         'deskripsi.max' => 'Deskripsi maksimal 255 karakter'
     ]);
 
@@ -736,14 +736,14 @@ public function update(Request $request, $id)
             }
         }
 // dd($dbfAttributes);
-        $lokasi->kategori_id = $request->kategori;
+        $lokasi->kategori_id = $request->kategori_id;
         $lokasi->deskripsi = $request->deskripsi;
         $lokasi->dbf_attributes = $dbfAttributes; // array, auto-cast to JSONB
         $lokasi->save();
 
         Log::info('Lokasi updated successfully', [
             'id' => $id,
-            'kategori_id' => $request->kategori,
+            'kategori_id' => $request->kategori_id,
             'attributes_count' => count($dbfAttributes)
         ]);
 

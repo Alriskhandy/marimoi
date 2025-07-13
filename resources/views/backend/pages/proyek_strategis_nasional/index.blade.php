@@ -1,4 +1,5 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Proyek Strategis Nasional'])
+
 
 @push('styles')
     <!-- DataTables CSS -->
@@ -15,7 +16,7 @@
                 <span class="page-title-icon bg-gradient-primary text-white me-2">
                     <i class="mdi mdi-map-marker-multiple"></i>
                 </span>
-                Proyek Strategis Nasional
+                Samua Proyek Strategis Nasional
             </h3>
             <nav aria-label="breadcrumb">
                 <ul class="breadcrumb">
@@ -51,9 +52,9 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h4 class="card-title">Data Spasial Maluku Utara</h4>
+                                <h4 class="card-title">Data Spasial Proyek Strategis Nasional Maluku Utara</h4>
                                 <p class="card-description">
-                                    Kelola dan pantauProyek Strategis Nasional untuk mendukung perencanaan pembangunan
+                                    Kelola dan pantau Proyek Strategis Nasional untuk mendukung perencanaan pembangunan
                                     daerah
                                 </p>
                             </div>

@@ -13,6 +13,14 @@
         <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
             <span class="mdi mdi-menu"></span>
         </button>
+        <!-- Tombol ke Halaman Depan -->
+        <ul class="navbar-nav me-auto ms-3">
+            <li class="nav-item">
+                <a href="{{ url('/') }}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                    <i class="mdi mdi-home"></i> Halaman Depan
+                </a>
+            </li>
+        </ul>
 
         <ul class="navbar-nav navbar-nav-right">
             <li class="nav-item nav-profile dropdown">

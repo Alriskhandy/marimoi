@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Input Proyek Strategis Nasional'])
 
 @push('styles')
     <style>
