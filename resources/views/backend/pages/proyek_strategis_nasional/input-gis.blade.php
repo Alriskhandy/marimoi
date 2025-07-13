@@ -88,7 +88,7 @@
         }
 
         .step.completed {
-            background: linear-gradient(135deg, #198754, #146c43);
+            background: linear-gradient(135deg, #198754, #1df992);
             color: white;
             box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
         }
