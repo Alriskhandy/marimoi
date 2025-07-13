@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
                 KategoriLayerSeeder::class,
                 KategoriPSDSeeder::class,
+                KategoriPSNSeeder::class,
                 ProjectFeedbackSeeder::class,
             ]);
         User::factory()->create([

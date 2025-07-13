@@ -56,7 +56,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('psd.update', $lokasi->id) }}" method="POST" id="lokasiForm">
+                    <form action="{{ route('psn.update', $lokasi->id) }}" method="POST" id="lokasiForm">
                         @csrf
                         @method('PUT')
 

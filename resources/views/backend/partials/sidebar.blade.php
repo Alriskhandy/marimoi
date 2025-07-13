@@ -61,6 +61,8 @@
         {{-- Helper untuk Menu Dinamis --}}
         {{-- File: resources/views/partials/menu-psd.blade.php --}}
 
+
+        <!-- Proyek Strategis Daerah -->
         @php
             // Dapatkan tahun yang tersedia dari database
             $availableYears = \App\Models\ProyekStrategisDaerah::select('tahun')
@@ -71,8 +73,6 @@
             $isPSDActive = request()->routeIs('psd.*');
             $currentYear = request()->route('year') ?? date('Y');
         @endphp
-
-        <!-- Proyek Strategis Daerah -->
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#psdMenu"
                 aria-expanded="{{ $isPSDActive ? 'true' : 'false' }}" aria-controls="psdMenu">
@@ -86,15 +86,6 @@
                         <h6 class="sub-menu-header">Data per Tahun</h6>
                     </li>
 
-                    {{-- Menu untuk semua data
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('psd.index') ? 'active' : '' }}"
-                            href="{{ route('psd.index') }}">
-                            <i class="mdi mdi-database me-2"></i>Semua Data
-                        </a>
-                    </li> --}}
-
-                    {{-- Menu dinamis berdasarkan tahun yang ada dalam database --}}
                     @if ($availableYears->count() > 0)
                         @foreach ($availableYears as $year)
                             <li class="nav-item">
@@ -110,7 +101,7 @@
                     @else
                         <li class="nav-item">
                             <span class="nav-link text-muted">
-                                <i class="mdi mdi-information me-2"></i>Belum ada data
+                                <i class="mdi mdi-information me-2"></i>Belum ada data tahunan
                             </span>
                         </li>
                     @endif
@@ -136,6 +127,78 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('psd.create') ? 'active' : '' }}"
                             href="{{ route('psd.create') }}">
+                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+        <!-- Proyek Strategis Nasional -->
+        @php
+            // Dapatkan tahun yang tersedia dari database
+            $availableYears = \App\Models\ProyekStrategisNasional::select('tahun')
+                ->distinct()
+                ->orderBy('tahun', 'desc')
+                ->pluck('tahun');
+
+            $isPSNActive = request()->routeIs('psn.*');
+            $currentYear = request()->route('year') ?? date('Y');
+        @endphp
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
+                aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
+                <span class="menu-title">Proyek Strategis Nasional</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-flag menu-icon"></i>
+            </a>
+            <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item">
+                        <h6 class="sub-menu-header">Data per Tahun</h6>
+                    </li>
+
+                    @if ($availableYears->count() > 0)
+                        @foreach ($availableYears as $year)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('psn.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
+                                    href="{{ route('psn.tahun.show', $year) }}">
+                                    <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
+                                    <span class="badge badge-sm bg-primary ms-auto">
+                                        {{ \App\Models\ProyekStrategisNasional::where('tahun', $year)->count() }}
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    @else
+                        <li class="nav-item">
+                            <span class="nav-link text-muted">
+                                <i class="mdi mdi-information me-2"></i>Belum ada data tahunan
+                            </span>
+                        </li>
+                    @endif
+
+                    <li class="nav-item">
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    {{-- Menu kategori --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('psn.kategori.*') ? 'active' : '' }}"
+                            href="{{ route('psn.kategori.index') }}">
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Nasional
+                        </a>
+                    </li>
+
+
+
+                    {{-- Menu tambah data baru --}}
+                    <li class="nav-item">
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('psn.create') ? 'active' : '' }}"
+                            href="{{ route('psn.create') }}">
                             <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
                         </a>
                     </li>
@@ -170,48 +233,7 @@
             });
         </script>
 
-        <!-- Proyek Strategis Nasional -->
-        @php
-            $isPSNActive = request()->routeIs('psn.*');
-        @endphp
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
-                aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
-                <span class="menu-title">Proyek Strategis Nasional</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-flag menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item">
-                        <h6 class="sub-menu-header">Data per Tahun</h6>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2025
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2024
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-calendar me-2"></i>Tahun 2023
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Nasional
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
+
 
         <!-- Proyek Strategis RPJMD -->
         @php

@@ -2,18 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\KategoriPSD;
+use App\Models\KategoriPSN;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class KategoriPSDSeeder extends Seeder
+class KategoriPSNSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-  public function run(): void
+   public function run(): void
 {
-    $kategoris = [
+   $kategoris = [
         'Pusat Pertumbuhan Ekonomi',
         'Kawasan Industri',
         'Kawasan Strategis Pariwisata',
@@ -27,13 +27,12 @@ class KategoriPSDSeeder extends Seeder
     ];
 
     foreach ($kategoris as $nama) {
-        KategoriPSD::create([
+        KategoriPSN::create([
             'nama' => $nama,
-            'warna' => 'red', // Disarankan diganti nanti dengan kode warna hex atau nama warna yang valid
+            'warna' => 'green', // Disarankan diganti nanti dengan kode warna hex atau nama warna yang valid
             'parent_id' => null,
             'deskripsi' => null,
         ]);
     }
 }
-
 }
