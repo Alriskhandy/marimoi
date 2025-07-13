@@ -234,38 +234,11 @@
         </script>
 
 
-
-        {{-- <!-- Proyek Strategis RPJMD -->
-        @php
-            $isRPJMDActive = request()->routeIs('rpjmd.*');
-        @endphp
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#rpjmdMenu"
-                aria-expanded="{{ $isRPJMDActive ? 'true' : 'false' }}" aria-controls="rpjmdMenu">
-                <span class="menu-title">PETA RPJMD</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-domain menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isRPJMDActive ? 'show' : '' }}" id="rpjmdMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-database me-2"></i>Data Peta RPJMD
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Peta RPJMD
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li> --}}
-
         <!-- POKIR DPRD -->
         @php
-            $isPOKIRActive = request()->routeIs('pokir.*');
+            $isPOKIRActive = request()->routeIs('pokir-dprd.*') || request()->routeIs('kategori-pokir-dprd.*');
         @endphp
+
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#pokirMenu"
                 aria-expanded="{{ $isPOKIRActive ? 'true' : 'false' }}" aria-controls="pokirMenu">
@@ -276,18 +249,15 @@
             <div class="collapse {{ $isPOKIRActive ? 'show' : '' }}" id="pokirMenu">
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item">
-                        <a class="nav-link" href="#!">
+                        <a class="nav-link {{ request()->routeIs('pokir-dprd.index') ? 'active' : '' }}"
+                            href="{{ route('pokir-dprd.index') }}">
                             <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#!">
+                        <a class="nav-link {{ request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}"
+                            href="{{ route('kategori-pokir-dprd.index') }}">
                             <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-comment-text me-2"></i>Ulasan Pokir DPRD
                         </a>
                     </li>
                 </ul>

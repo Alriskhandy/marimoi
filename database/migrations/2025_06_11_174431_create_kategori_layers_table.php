@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->string('nama');
             $table->string('warna');
             $table->text('deskripsi')->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('kategori_layers')->onDelete('cascade');
+            $table->foreignId('parent_id')->nullable()->constrained('kategori_layers')->onDelete('restrict');
             $table->timestamps();
         });
     }

@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KategoriLayer;
+use App\Models\KategoriPokirDprd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 
-class KategoriLayerController extends Controller
+class KategoriPokirDprdController extends Controller
 {
-    /**
+     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $kategoriLayers = KategoriLayer::with('parent', 'children')->orderBy('nama')->get();
-        return view('backend.pages.kategori_layers.index', compact('kategoriLayers'));
+        $kategori_pokir_dprds = KategoriPokirDprd::with('parent', 'children')->orderBy('nama')->get();
+        return view('backend.pages.pokir_dprd.kategori', compact('kategori_pokir_dprds'));
     }
 
     /**
@@ -23,7 +23,7 @@ class KategoriLayerController extends Controller
      */
    public function create()
 {
-    $parentKategori = KategoriLayer::orderBy('nama')->get();
+    $parentKategori = KategoriPokirDprd::orderBy('nama')->get();
 
     return response()->json([
         'parentKategori' => $parentKategori
@@ -40,7 +40,7 @@ class KategoriLayerController extends Controller
             'nama' => 'required|string|max:255',
             'warna' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:kategori_layers,id'
+            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id'
         ]);
         
         if ($validator->fails()) {
@@ -51,40 +51,40 @@ class KategoriLayerController extends Controller
             ], 422);
         }
 
-        $kategoriLayer = KategoriLayer::create($request->all());
+        $kategori_pokir_dprd = KategoriPokirDprd::create($request->all());
 
         return response()->json([
             'success' => true,
             'message' => 'Kategori Layer berhasil ditambahkan!',
-            'data' => $kategoriLayer->load('parent', 'children')
+            'data' => $kategori_pokir_dprd->load('parent', 'children')
         ]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(KategoriLayer $kategoriLayer)
+    public function show(KategoriPokirDprd $kategori_pokir_dprd)
     {
-        $kategoriLayer->load('parent', 'children');
+        $kategori_pokir_dprd->load('parent', 'children');
         return response()->json([
             'success' => true,
-            'data' => $kategoriLayer
+            'data' => $kategori_pokir_dprd
         ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(KategoriLayer $kategoriLayer)
+    public function edit(KategoriPokirDprd $kategori_pokir_dprd)
     {
-    $parentKategori = KategoriLayer::where('id', '!=', $kategoriLayer->id)
+    $parentKategori = KategoriPokirDprd::where('id', '!=', $kategori_pokir_dprd->id)
     ->orderBy('nama')
     ->get();
 
         
         return response()->json([
             'success' => true,
-            'data' => $kategoriLayer,
+            'data' => $kategori_pokir_dprd,
             'parentKategori' => $parentKategori
         ]);
     }
@@ -92,12 +92,12 @@ class KategoriLayerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, KategoriLayer $kategoriLayer)
+    public function update(Request $request, KategoriPokirDprd $kategori_pokir_dprd)
     {
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:kategori_layers,id'
+            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id'
         ]);
 
         if ($validator->fails()) {
@@ -108,52 +108,49 @@ class KategoriLayerController extends Controller
         }
 
         // Prevent setting parent to itself or its children
-        if ($request->parent_id && $this->isDescendant($kategoriLayer->id, $request->parent_id)) {
+        if ($request->parent_id && $this->isDescendant($kategori_pokir_dprd->id, $request->parent_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak dapat memilih kategori anak sebagai parent!'
             ], 422);
         }
 
-        $kategoriLayer->update($request->all());
+        $kategori_pokir_dprd->update($request->all());
 
         return response()->json([
             'success' => true,
             'message' => 'Kategori Layer berhasil diperbarui!',
-            'data' => $kategoriLayer->load('parent', 'children')
+            'data' => $kategori_pokir_dprd->load('parent', 'children')
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-   
+    public function destroy(KategoriPokirDprd $kategori_pokir_dprd)
+    {
+        try {
+             $kategori_pokir_dprd->delete();
 
-public function destroy(KategoriLayer $kategoriLayer)
-{
-    try {
-        $kategoriLayer->delete();
-
-        return redirect()->route('kategori-layers.index')
+        return redirect()->route('kategori-pokir-dprd.index')
             ->with('success', 'Kategori Layer berhasil dihapus!');
-    } catch (QueryException $e) {
-        if ($e->getCode() === '23503') {
-            // Foreign key constraint violation
-            return redirect()->route('kategori-layers.index')
-                ->with('error', 'Data tidak bisa dihapus karena masih digunakan di data lain.');
+        } catch (QueryException $e) {
+        if ($e->getCode() === '23503') { // Kode error foreign key PostgreSQL
+            return redirect()->back()->with('error', 'Data tidak bisa dihapus karena masih digunakan di tabel lain.');
         }
 
-        return redirect()->route('kategori-layers.index')
-            ->with('error', 'Terjadi kesalahan saat menghapus data.');
+        // Untuk error lainnya
+        return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus data.');
     }
-}
+      
+    }
 
     /**
      * Check if a category is descendant of another
      */
     private function isDescendant($parentId, $childId)
     {
-        $category = KategoriLayer::find($childId);
+        $category = KategoriPokirDprd::find($childId);
         
         while ($category && $category->parent_id) {
             if ($category->parent_id == $parentId) {

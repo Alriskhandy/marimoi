@@ -36,8 +36,17 @@
                         </button>
                     </div>
 
-                    <!-- Alert Container -->
-                    <div id="alertContainer"></div>
+                    @if (session('success'))
+                        <div class="alert alert-success">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if (session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
 
                     <div class="row">
                         <div class="col-md-3 stretch-card grid-margin">

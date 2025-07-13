@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nama');
             $table->string('warna');
             $table->text('deskripsi')->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('kategori_psn')->onDelete('cascade');
+            $table->foreignId('parent_id')->nullable()->constrained('kategori_psn')->onDelete('restrict');
              $table->timestamps();
         });
     }
