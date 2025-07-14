@@ -320,13 +320,13 @@
             $isDokumenActive = request()->routeIs('dokumen.*');
         @endphp
         <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#partisipasiMenu"
-                aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="partisipasiMenu">
+            <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
+                aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
                 <span class="menu-title">Upload Dokumen</span>
                 <i class="menu-arrow"></i>
                 <i class="mdi mdi-file-document-multiple menu-icon"></i>
             </a>
-            <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="partisipasiMenu">
+            <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
                 <ul class="nav flex-column sub-menu">
                     <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('dokumen.index') }}">
