@@ -314,6 +314,30 @@
                 </ul>
             </div>
         </li>
+
+        <!-- Upload Dokumen -->
+        @php
+            $isDokumenActive = request()->routeIs('dokumen.*');
+        @endphp
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#partisipasiMenu"
+                aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="partisipasiMenu">
+                <span class="menu-title">Upload Dokumen</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-file-document-multiple menu-icon"></i>
+            </a>
+            <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="partisipasiMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('dokumen.index') }}">
+                            <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+        </li>
+
         <!-- Divider -->
         <li class="nav-item nav-category">
             <span class="nav-link">Sistem</span>

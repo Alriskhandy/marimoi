@@ -7,6 +7,7 @@ use App\Http\Controllers\LokasiController;
 use App\Http\Controllers\MalukuUtaraController;
 use App\Http\Controllers\PokirDprdController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\ProyekStrategisDaerahController;
 use App\Http\Controllers\ProyekStrategisNasionalController;
@@ -498,6 +499,22 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
 });
 
 // end ProyekStrategisnasinonal
+
+// // ProyekStrategisNasionalController
+Route::prefix('dashboard')->middleware('auth')->group(function () {
+    
+    // Routes for Dokumen upload management
+    Route::prefix('upload-dokumen')->name('dokumen.')->group(function () {
+        
+        Route::get('/', [DokumenController::class, 'index'])->name('index');
+        Route::get('/create', [DokumenController::class, 'create'])->name('create');
+        Route::post('/', [DokumenController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [DokumenController::class, 'edit'])->where('id', '[0-9]+')->name('edit');
+        Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update');
+        Route::delete('/{id}', [DokumenController::class, 'destroy'])->where('id', '[0-9]+')->name('destroy');
+    });
+});
+// end Upload Dokumen
 
 
 // pokir DPRD
