@@ -18,7 +18,7 @@ return new class extends Migration
        Schema::create('proyek_strategis_daerahs', function (Blueprint $table) {
         $table->id();
         $table->year('tahun');
-        $table->foreignId('kategori_id')->constrained('kategori_psd')->onDelete('cascade');
+        $table->foreignId('kategori_id')->constrained('kategori_psd')->onDelete('restrict');
         $table->text('deskripsi')->nullable();
         $table->jsonb('dbf_attributes')->nullable();
         $table->timestamps();

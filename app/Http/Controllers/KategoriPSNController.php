@@ -185,6 +185,7 @@ class KategoriPSNController extends Controller
 
         $kategoriPsn->delete();
 
+        // dd($kategoriPsn);
         return redirect()->back()
             ->with('success', 'Kategori berhasil dihapus.');
     }

@@ -21,3 +21,5 @@ yang bisa komen
 
  LEGEND :
   - Pilih icon pada dan simpan pada tabel kategori
+
+  

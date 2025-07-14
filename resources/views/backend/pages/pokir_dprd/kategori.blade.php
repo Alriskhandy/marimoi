@@ -5,7 +5,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-layers"></i>
-            </span> Kategori Layer
+            </span> Kategori Pokir DPRD Layer
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
@@ -13,7 +13,7 @@
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">
-                    <span></span>Kategori Layer
+                    <span></span>Kategori Pokir DPRD Layer
                 </li>
             </ul>
         </nav>
@@ -73,7 +73,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($kategoriLayers as $index => $kategori)
+                                @forelse($kategori_pokir_dprds as $index => $kategori)
                                     <tr data-id="{{ $kategori->id }}">
                                         <td>{{ $index + 1 }}</td>
                                         <td>
@@ -111,7 +111,7 @@
                                                     data-bs-target="#editModal">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
-                                                <form action="{{ route('kategori-layers.destroy', $kategori->id) }}"
+                                                <form action="{{ route('kategori-pokir-dprd.destroy', $kategori->id) }}"
                                                     method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
                                                     @method('DELETE')
@@ -403,7 +403,7 @@
 
             // Load parent categories for form
             function loadParentCategories(selectElement, excludeId = null) {
-                $.get('{{ route('kategori-layers.create') }}', function(data) {
+                $.get('{{ route('kategori-pokir-dprd.create') }}', function(data) {
                     selectElement.empty();
                     selectElement.append('<option value="">-- Pilih Parent (Opsional) --</option>');
                     $.each(data.parentKategori, function(index, kategori) {
@@ -429,7 +429,7 @@
                 const formData = new FormData(this);
 
                 $.ajax({
-                    url: '{{ route('kategori-layers.store') }}',
+                    url: '{{ route('kategori-pokir-dprd.store') }}',
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -467,7 +467,7 @@
                 const id = $(this).data('id');
                 const form = $('#editForm');
 
-                $.get(`{{ route('kategori-layers.index') }}/${id}/edit`, function(data) {
+                $.get(`{{ route('kategori-pokir-dprd.index') }}/${id}/edit`, function(data) {
                     if (data.success) {
                         $('#edit_id').val(data.data.id);
                         $('#edit_nama').val(data.data.nama);
@@ -499,7 +499,7 @@
                 const formData = new FormData(this);
 
                 $.ajax({
-                    url: `{{ route('kategori-layers.index') }}/${id}`,
+                    url: `{{ route('kategori-pokir-dprd.index') }}/${id}`,
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -529,7 +529,7 @@
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
 
-                $.get(`{{ route('kategori-layers.index') }}/${id}`, function(data) {
+                $.get(`{{ route('kategori-pokir-dprd.index') }}/${id}`, function(data) {
                     if (data.success) {
                         const kategori = data.data;
                         $('#show_nama').text(kategori.nama);

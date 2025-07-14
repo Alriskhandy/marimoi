@@ -40,39 +40,75 @@
 
             <div class="row gy-4">
 
-                <div class="col-lg-4 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="100">
+                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="100">
                     <div class="icon flex-shrink-0"><i class="fa-solid fa-cart-flatbed"></i></div>
                     <div>
-                        <h4 class="title">Lorem Ipsum</h4>
-                        <p class="description">Voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi
-                            sint occaecati cupiditate non provident</p>
-                        <a href="#" class="readmore stretched-link"><span>Learn More</span><i
-                                class="bi bi-arrow-right"></i></a>
+                        <h4 class="title">Indeks Pengembanyan Wilayah</h4>
+                        <p class="description">MARIMOI
+                            meningkatkan Indeks Pengembangan Wilayah
+                            melalui:
+                        </p>
+                        <ul>
+                            <li>Penyediaan data spasial dan sektoral untuk mengukur
+                                keterjangkauan layanan dasar.</li>
+                            <li>Akselerasi pembangunan infrastruktur di wilayah hinterland
+                                dan kawasan tertinggal.</li>
+                            <li>Integrasi lintas wilayah dalam perencanaan berbasis
+                                konektivitas (antarpulau, antarkawasan).</li>
+                        </ul>
                     </div>
                 </div>
                 <!-- End Service Item -->
 
-                <div class="col-lg-4 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="200">
+                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="200">
                     <div class="icon flex-shrink-0"><i class="fa-solid fa-truck"></i></div>
                     <div>
-                        <h4 class="title">Dolor Sitema</h4>
-                        <p class="description">Minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-                            commodo consequat tarad limino ata</p>
-                        <a href="#" class="readmore stretched-link"><span>Learn More</span><i
-                                class="bi bi-arrow-right"></i></a>
+                        <h4 class="title">Indeks Pelyanan Public</h4>
+                        <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
+                            melalui:</p>
+                        <ul>
+                            <li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur
+                                (jalan rusak, PSU, jembatan, dIl).</li>
+                            <li>Penyediaan data real-time kepada unit pelayanan teknis
+                                untuk respon cepat.</li>
+                            <li>Penguatan kualitas layanan berbasis kebutuhan wilayah,
+                                bukan hanya standar sektoral.</li>
+                        </ul>
                     </div>
                 </div><!-- End Service Item -->
 
-                <div class="col-lg-4 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
+                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
                     <div class="icon flex-shrink-0"><i class="fa-solid fa-truck-ramp-box"></i></div>
                     <div>
-                        <h4 class="title">Sed ut perspiciatis</h4>
-                        <p class="description">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
-                            eu fugiat nulla pariatur</p>
-                        <a href="#" class="readmore stretched-link"><span>Learn More</span><i
-                                class="bi bi-arrow-right"></i></a>
+                        <h4 class="title">Indeks SPBE</h4>
+                        <p class="description">MARIMOI mendorong pencapaian SPBE melalui:</p>
+                        <ul>
+                            <li>Digitalisasi proses perencanaan, monitoring, dan pelaporan
+                                infrastruktur.</li>
+                            <li>Interoperabilitas data antar instansi (Bappeda, OPD teknis,
+                                DPRD).</li>
+                            <li>Fitur dashboard publik sebagai bentuk pelayanan digital
+                                transparan.</li>
+                        </ul>
                     </div>
                 </div><!-- End Service Item -->
+                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
+                    <div class="icon flex-shrink-0"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                    <div>
+                        <h4 class="title">Indeks Kualitas Layanan Infrastruktur</h4>
+                        <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
+                            melalui:</p>
+                        <ul>
+                            <li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur
+                                (jalan rusak, PSU, jembatan, dIl).</li>
+                            <li>Penyediaan data real-time kepada unit pelayanan teknis
+                                untuk respon cepat.</li>
+                            <li>Penguatan kualitas layanan berbasis kebutuhan wilayah,
+                                bukan hanya standar sektoral.</li>
+                        </ul>
+                    </div>
+                </div><!-- End Service Item -->
+
 
             </div>
 
@@ -94,37 +130,22 @@
                 </div>
 
                 <div class="col-lg-6 content order-last  order-lg-first" data-aos="fade-up" data-aos-delay="100">
-                    <h3>About Us</h3>
+                    <h3>TENTANG BAPEDA</h3>
                     <p>
-                        Dolor iure expedita id fuga asperiores qui sunt consequatur minima. Quidem voluptas deleniti. Sit
-                        quia molestiae quia quas qui magnam itaque veritatis dolores. Corrupti totam ut eius incidunt
-                        reiciendis veritatis asperiores placeat.
+                        Badan Perencanaan Pembangunan Daerah merupakan Organisasi
+                        Perangkat Daerah yang mengemban tugas mengkoordinasikan penyusunan
+                        dokumen Perencanaan Pembangunan Daerah serta melakukan pemantauan dan
+                        evaluasi pelaksanaan rencana pada periodesasi tertentu sesuai ketentuan
+                        perundang - undangan yang berlaku.
                     </p>
-                    <ul>
-                        <li>
-                            <i class="bi bi-diagram-3"></i>
-                            <div>
-                                <h5>Ullamco laboris nisi ut aliquip consequat</h5>
-                                <p>Magni facilis facilis repellendus cum excepturi quaerat praesentium libre trade</p>
-                            </div>
-                        </li>
-                        <li>
-                            <i class="bi bi-fullscreen-exit"></i>
-                            <div>
-                                <h5>Magnam soluta odio exercitationem reprehenderi</h5>
-                                <p>Quo totam dolorum at pariatur aut distinctio dolorum laudantium illo direna pasata redi
-                                </p>
-                            </div>
-                        </li>
-                        <li>
-                            <i class="bi bi-broadcast"></i>
-                            <div>
-                                <h5>Voluptatem et qui exercitationem</h5>
-                                <p>Et velit et eos maiores est tempora et quos dolorem autem tempora incidunt maxime veniam
-                                </p>
-                            </div>
-                        </li>
-                    </ul>
+                    <br>
+                    <p>
+                        Bappeda Provinsi Maluku Utara dibentuk berdasarkan Peraturan Gubernur Nomor 63 Tahun 2021 dan
+                        bertugas membantu Gubernur dalam melaksanakan fungsi penunjang urusan pemerintahan di bidang
+                        perencanaan dan pembangunan daerah, dengan mengacu pada RPJPD, RPJMD, kebijakan Gubernur, kondisi
+                        objektif, serta peraturan perundang-undangan yang berlaku.
+                    </p>
+
                 </div>
 
             </div>

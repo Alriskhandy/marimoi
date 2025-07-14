@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('kategori_psd', function (Blueprint $table) {
-           $table->id();
+        Schema::create('kategori_pokir_dprds', function (Blueprint $table) {
+            $table->id();
             $table->string('nama');
             $table->string('warna');
             $table->text('deskripsi')->nullable();
-            $table->foreignId('parent_id')->nullable()->constrained('kategori_psd')->onDelete('restrict');
+            $table->foreignId('parent_id')->nullable()->constrained('kategori_pokir_dprds')->onDelete('restrict');
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('kategori_psd');
+        Schema::dropIfExists('kategori_pokir_dprds');
     }
 };
