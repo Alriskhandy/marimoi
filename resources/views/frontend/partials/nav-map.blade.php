@@ -11,17 +11,17 @@
             <ul>
                 <li><a href="{{ route('beranda') }}"
                         class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Proyek Strategis Daerah</a></li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Proyek Strategis Nasional</a>
+                <li><a href="{{ route('tampil.psd') }}"
+                        class="{{ request()->routeIs('tampil.psd') ? 'active' : '' }}">Proyek Strategis Daerah</a></li>
+                <li><a href="{{ route('tampil.psn') }}"
+                        class="{{ request()->routeIs('tampil.psn') ? 'active' : '' }}">Proyek Strategis Nasional</a>
                 </li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Peta RPJMD</a></li>
+                <li><a href="{{ route('tampil.rpjmd') }}"
+                        class="{{ request()->routeIs('tampil.rpjmd') ? 'active' : '' }}">Peta RPJMD</a></li>
                 <li><a href="{{ route('tampil.peta') }}"
                         class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Usulan Musrenbang</a></li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">POKIR DPRD</a></li>
+                <li><a href="{{ route('tampil.pokir') }}"
+                        class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">POKIR DPRD</a></li>
                 <li><a href="{{ route('tampil.peta') }}"
                         class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Tanggapan Masyarakat</a></li>
             </ul>
