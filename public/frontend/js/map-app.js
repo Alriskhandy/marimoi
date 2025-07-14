@@ -43,15 +43,17 @@ const map = L.map("map", {
 
 let layerGroups = {};
 let currentBaseMap = null;
-
+let kategoriWarnaMap = {}; // ✅ Tambahkan ini
+// console.log(kategori);
 function getStyleForCategory(kategori) {
-    const colorMap = {
-        Infrastruktur: { color: "#172953", fillColor: "#B6D8C7" },
-        Perekonomian: { color: "#172953", fillColor: "#F2A44E" },
-        Lingkungan: { color: "#172953", fillColor: "#C4D17C" },
-        default: { color: "#172953", fillColor: "#ECE6D6" },
+    const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
+    return {
+        color: warna,          // outline color (untuk LineString dan Polygon)
+        weight: 2,             // ketebalan garis
+        fillColor: warna,      // isi warna (hanya dipakai Polygon)
+        fillOpacity: 0.4,      // opacity isi (Polygon saja)
+        opacity: 1             // opacity garis
     };
-    return colorMap[kategori] || colorMap.default;
 }
 
 function bindPopupContent(feature, layer) {
@@ -102,23 +104,108 @@ function changeBaseMap(baseMapId) {
     }
 }
 
+// initmap bisa
 async function initMap() {
     try {
         const response = await fetch("/geojson");
         const geoJsonData = await response.json();
-        if (!geoJsonData?.features?.length)
-            return showAlert("Data GeoJSON kosong", "warning");
 
-        layerGroups = {};
-        geoJsonData.features.forEach((feature) => {
-            const kategori = feature.properties?.kategori || "Lainnya";
-            if (!layerGroups[kategori]) layerGroups[kategori] = L.layerGroup();
-            L.geoJSON(feature, {
-                style: getStyleForCategory(kategori),
-                onEachFeature: (f, l) => bindPopupContent(f, l),
-            }).addTo(layerGroups[kategori]);
+        if (!geoJsonData?.features?.length) {
+            return showAlert("Data GeoJSON kosong", "warning");
+        }
+
+        // ⬇️ Masukkan di sini
+        kategoriWarnaMap = {};
+        geoJsonData.all_categories.forEach(cat => {
+            if (cat.nama && cat.warna) {
+                kategoriWarnaMap[cat.nama] = cat.warna;
+            }
         });
 
+        // Reset layer lama
+        Object.values(layerGroups).forEach((group) => {
+            Object.values(group).forEach((layer) => {
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            });
+        });
+
+        layerGroups = {};
+
+        // Ambil semua nama subkategori dari root_categories
+        const allSubNames = new Set();
+        geoJsonData.root_categories.forEach((cat) => {
+            cat.children?.forEach((child) => {
+                if (child?.nama) {
+                    allSubNames.add(child.nama);
+                }
+            });
+        });
+
+        // Siapkan struktur layerGroups, tapi hanya untuk root (yang bukan anak)
+        geoJsonData.root_categories.forEach((cat) => {
+            const kategori = cat.nama;
+           // Jika ini adalah subkategori, cari parent-nya
+if (allSubNames.has(kategori)) {
+    const parent = geoJsonData.all_categories.find(cat => cat.nama === kategori)?.parent?.nama;
+    if (parent && layerGroups[parent]?.[kategori]) {
+        L.geoJSON(feature, {
+            style: getStyleForCategory(kategori),
+            onEachFeature: (f, l) => bindPopupContent(f, l),
+        }).addTo(layerGroups[parent][kategori]);
+    }
+    return; // Sudah ditangani, tidak lanjut ke bawah
+}
+
+            layerGroups[kategori] = {};
+            cat.children?.forEach((sub) => {
+                layerGroups[kategori][sub.nama] = L.layerGroup();
+            });
+        });
+
+        // Proses fitur ke dalam layer
+        geoJsonData.features.forEach((feature) => {
+            const kategori = (feature.properties?.kategori || "").trim();
+            let subkategori = (feature.properties?.subkategori || "").trim();
+
+            if (!kategori) return;
+            if (!subkategori) subkategori = kategori;
+
+          // Jika ini adalah subkategori, cari parent-nya
+if (allSubNames.has(kategori)) {
+    const parent = geoJsonData.all_categories.find(cat => cat.nama === kategori)?.parent?.nama;
+    if (parent && layerGroups[parent]?.[kategori]) {
+        L.geoJSON(feature, {
+            style: getStyleForCategory(kategori),
+            onEachFeature: (f, l) => bindPopupContent(f, l),
+        }).addTo(layerGroups[parent][kategori]);
+    }
+    return; // Sudah ditangani, tidak lanjut ke bawah
+}
+
+
+            if (!layerGroups[kategori]) layerGroups[kategori] = {};
+            if (!layerGroups[kategori][subkategori]) {
+                layerGroups[kategori][subkategori] = L.layerGroup();
+            }
+
+            L.geoJSON(feature, {
+                style: getStyleForCategory(subkategori),
+                onEachFeature: (f, l) => bindPopupContent(f, l),
+            }).addTo(layerGroups[kategori][subkategori]);
+        });
+
+        // Hapus kategori dan subkategori yang tidak punya layer (kosong)
+Object.entries(layerGroups).forEach(([kat, subs]) => {
+    Object.entries(subs).forEach(([sub, layer]) => {
+        if (layer.getLayers().length === 0) {
+            delete layerGroups[kat][sub]; // hapus subkategori kosong
+        }
+    });
+    // Jika semua subkategori sudah dihapus, hapus kategori juga
+    if (Object.keys(layerGroups[kat]).length === 0) {
+        delete layerGroups[kat];
+    }
+});
         updateLayerList();
     } catch (error) {
         console.error("Error:", error);
@@ -127,49 +214,95 @@ async function initMap() {
 }
 
 function updateLayerList() {
-    const listDiv = document.getElementById("layer-list");
-    listDiv.innerHTML = "";
+    const container = document.getElementById("layer-list");
+    container.innerHTML = "";
 
-    const select = document.createElement("select");
-    select.className = "form-select form-select-sm mb-3";
-    select.innerHTML = `<option value="all">Semua Kategori</option>`;
-    Object.keys(layerGroups).forEach((kategori) => {
-        select.innerHTML += `<option value="${kategori}">${kategori}</option>`;
-    });
+    Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
+        const groupId = `group-${kategori.replace(/\s+/g, "-")}`;
+        const groupWrapper = document.createElement("div");
+        groupWrapper.classList.add("layer-group");
 
-    listDiv.appendChild(select);
+        const rootId = `root-${kategori.replace(/\s+/g, "-")}`;
+        const header = document.createElement("div");
+        header.className = "d-flex align-items-center justify-content-between px-2 py-1 bg-light border";
 
-    const list = document.createElement("div");
-    Object.keys(layerGroups).forEach((kategori) => {
-        const id = `layer-${kategori.toLowerCase().replace(/\s+/g, "-")}`;
-        list.innerHTML += `
-      <div class="d-flex align-items-center py-1">
-        <input type="checkbox" id="${id}" class="form-check-input my-0 ms-1 me-2" data-kategori="${kategori}" />
-        <label for="${id}" class="form-check-label small">${kategori}</label>
-      </div>`;
-    });
+        const leftSection = document.createElement("div");
+        leftSection.className = "d-flex align-items-center";
 
-    listDiv.appendChild(list);
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "btn btn-sm btn-link text-decoration-none";
+        toggleBtn.innerHTML = `<i class="bi bi-caret-down-fill"></i>`;
+        toggleBtn.onclick = () => {
+            const list = document.getElementById(groupId);
+            list.style.display = list.style.display === "none" ? "block" : "none";
+            toggleBtn.innerHTML = list.style.display === "none"
+                ? `<i class="bi bi-caret-right-fill"></i>`
+                : `<i class="bi bi-caret-down-fill"></i>`;
+        };
 
-    select.addEventListener("change", (e) => {
-        const val = e.target.value;
-        list.querySelectorAll("input").forEach((input) => {
-            const match = val === "all" || input.dataset.kategori === val;
-            input.parentElement.style.display = match ? "flex" : "none";
-            if (!match && input.checked) {
-                map.removeLayer(layerGroups[input.dataset.kategori]);
-                input.checked = false;
-            }
+        const checkboxRoot = document.createElement("input");
+        checkboxRoot.type = "checkbox";
+        checkboxRoot.className = "form-check-input my-0 mx-2";
+        checkboxRoot.id = rootId;
+
+        const labelRoot = document.createElement("label");
+        labelRoot.className = "form-check-label small";
+        labelRoot.htmlFor = rootId;
+        labelRoot.textContent = kategori;
+
+        // Control all sublayers from root checkbox
+        checkboxRoot.addEventListener("change", () => {
+            const isChecked = checkboxRoot.checked;
+            Object.entries(sublayers).forEach(([subname, layer]) => {
+                const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
+                const checkbox = document.getElementById(subId);
+                if (checkbox) checkbox.checked = isChecked;
+                isChecked ? map.addLayer(layer) : map.removeLayer(layer);
+            });
         });
-    });
 
-    list.addEventListener("change", (e) => {
-        if (e.target.type === "checkbox") {
-            const kat = e.target.dataset.kategori;
-            e.target.checked
-                ? map.addLayer(layerGroups[kat])
-                : map.removeLayer(layerGroups[kat]);
-        }
+        leftSection.appendChild(toggleBtn);
+        leftSection.appendChild(checkboxRoot);
+        leftSection.appendChild(labelRoot);
+        header.appendChild(leftSection);
+        groupWrapper.appendChild(header);
+
+        const subLayerList = document.createElement("div");
+        subLayerList.id = groupId;
+        subLayerList.style.paddingLeft = "1.5rem";
+
+        Object.entries(sublayers).forEach(([subname, layer]) => {
+            // Hindari sub sama dengan kategori agar tidak ganda
+              const hasChildren = Object.keys(sublayers).length > 1;
+    if (subname === kategori && hasChildren) return;
+            // if (subname === kategori) return;
+
+            const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
+            const row = document.createElement("div");
+            row.className = "d-flex align-items-center py-1";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.className = "form-check-input my-0 me-2";
+            checkbox.id = subId;
+            checkbox.checked = false;
+
+            checkbox.addEventListener("change", () => {
+                checkbox.checked ? map.addLayer(layer) : map.removeLayer(layer);
+            });
+
+            const label = document.createElement("label");
+            label.className = "form-check-label small";
+            label.htmlFor = subId;
+            label.textContent = subname;
+
+            row.appendChild(checkbox);
+            row.appendChild(label);
+            subLayerList.appendChild(row);
+        });
+
+        groupWrapper.appendChild(subLayerList);
+        container.appendChild(groupWrapper);
     });
 }
 

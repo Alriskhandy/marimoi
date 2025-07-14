@@ -278,10 +278,30 @@ class LokasiController extends Controller
             'geometry' => json_decode($lokasi->geojson),
         ];
     });
-
+$rootCategories = KategoriLayer::whereNull('parent_id')
+                ->with(['children' => function($query) {
+                    $query->orderBy('nama');
+                }])
+                ->orderBy('nama')
+                ->get();
+            
+            $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
+   
+            
+            
+           
+            
+     
     return response()->json([
         'type' => 'FeatureCollection',
         'features' => $features,
+        'root_categories' => $rootCategories,
+                'all_categories' => $allCategories,
+                'meta' => [
+                    'total_root_categories' => $rootCategories->count(),
+                    'total_categories' => $allCategories->count(),
+                    'generated_at' => now()->toISOString()
+                ]
     ]);
 }
 
