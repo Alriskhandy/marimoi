@@ -145,19 +145,8 @@
                             <input type="range" class="form-range" min="0" max="100" value="100"
                                 id="transparency">
                         </div>
-                        <div class="mb-3 ms-2">
-                            <select name="yearSelect" id="yearSelect" class="form-select form-select-sm">
-                                <option value="all" selected>Semua Tahun</option>
-                                @foreach ($allYear as $year)
-                                    <option value="{{ $year }}"
-                                        {{ $year == old('yearSelect', 'all') ? 'selected' : '' }}>
-                                        {{ $year }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
                         <div id="layer-list" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
-
+                            <!-- Layer list will be populated dynamically -->
                         </div>
                     </div>
 
@@ -263,9 +252,6 @@
 @endsection
 
 @push('scripts')
-    <script>
-        window.psdCategories = @json($allCategory);
-    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Fungsi Khusus Peta -->
