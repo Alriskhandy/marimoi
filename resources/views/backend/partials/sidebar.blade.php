@@ -118,6 +118,11 @@
                         </a>
                     </li>
 
+                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
+                        </a>
+                    </li>
 
 
                     {{-- Menu tambah data baru --}}
@@ -252,6 +257,11 @@
                         <a class="nav-link {{ request()->routeIs('pokir-dprd.index') ? 'active' : '' }}"
                             href="{{ route('pokir-dprd.index') }}">
                             <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
                         </a>
                     </li>
                     <li class="nav-item">
