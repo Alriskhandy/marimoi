@@ -56,11 +56,35 @@ function getStyleForCategory(kategori) {
     };
 }
 
+function generateLegend() {
+    const legendContainer = document.getElementById("legend-content");
+    if (!legendContainer) return;
+
+    legendContainer.innerHTML = ""; // Kosongkan dulu
+
+    const added = new Set();
+
+    Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
+        Object.keys(sublayers).forEach(sub => {
+            if (!added.has(sub)) {
+                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                legendContainer.innerHTML += `
+                    <div class="d-flex align-items-center mb-2">
+                        <div style="width: 16px; height: 16px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                        <span>${sub}</span>
+                    </div>
+                `;
+                added.add(sub);
+            }
+        });
+    });
+}
+
 function bindPopupContent(feature, layer) {
     const props = feature.properties;
-    let content = `<div class="p-2" style="max-width: 300px;"><h5 class="fw-bold mb-2 text-primary">${
-        props.kategori || "Feature"
-    }</h5>`;
+    let content = `<div class="p-2" style="max-width: 300px;">
+        <h5 class="fw-bold mb-2 text-primary">${props.kategori || "Feature"}</h5>`;
+
     Object.entries(props).forEach(([key, value]) => {
         if (value && !["geometry", "id"].includes(key)) {
             const label = key
@@ -69,7 +93,61 @@ function bindPopupContent(feature, layer) {
             content += `<p class="small mb-1"><span class="fw-medium">${label}:</span> ${value}</p>`;
         }
     });
-    content += `</div>`;
+
+    // Tambahkan detail geometry
+    const geom = feature.geometry;
+    if (geom) {
+        const type = geom.type;
+        content += `<hr><p class="small mb-1"><span class="fw-medium">Geometry:</span> ${type}</p>`;
+
+        if (type === "LineString" && Array.isArray(geom.coordinates)) {
+            let length = 0;
+            for (let i = 1; i < geom.coordinates.length; i++) {
+                const [lon1, lat1] = geom.coordinates[i - 1];
+                const [lon2, lat2] = geom.coordinates[i];
+                const R = 6371;
+                const rad = Math.PI / 180;
+                const dLat = (lat2 - lat1) * rad;
+                const dLon = (lon2 - lon1) * rad;
+                const a =
+                    Math.sin(dLat / 2) ** 2 +
+                    Math.cos(lat1 * rad) *
+                        Math.cos(lat2 * rad) *
+                        Math.sin(dLon / 2) ** 2;
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                length += R * c;
+            }
+            content += `<p class="small mb-1"><span class="fw-medium">Panjang:</span> ${length.toFixed(
+                2
+            )} km</p>`;
+        }
+
+        // Tampilkan koordinat tengah
+        let center;
+        if (geom.type === "Point") {
+            center = geom.coordinates;
+        } else if (geom.type === "LineString") {
+            const mid = Math.floor(geom.coordinates.length / 2);
+            center = geom.coordinates[mid];
+        } else if (geom.type === "Polygon") {
+            const poly = geom.coordinates[0];
+            const mid = Math.floor(poly.length / 2);
+            center = poly[mid];
+        }
+
+        if (center) {
+            content += `<p class="small mb-1"><span class="fw-medium">Koordinat:</span> ${center[1].toFixed(5)}, ${center[0].toFixed(5)}</p>`;
+        }
+    }
+
+    // Tambahkan tombol "Lihat Detail"
+    const id = props.id || "";
+    content += `
+        <div class="text-end mt-3">
+            <a href="/detail/${id}" target="_blank" class="btn text-white btn-sm btn-primary">Lihat Detail</a>
+        </div>
+    </div>`;
+
     layer.bindPopup(content);
 }
 
@@ -207,6 +285,7 @@ Object.entries(layerGroups).forEach(([kat, subs]) => {
     }
 });
         updateLayerList();
+        generateLegend();
     } catch (error) {
         console.error("Error:", error);
         showAlert("Gagal memuat data peta", "danger");
@@ -309,9 +388,22 @@ function updateLayerList() {
 function setupUI() {
     document.getElementById("transparency")?.addEventListener("input", (e) => {
         const val = e.target.value / 100;
-        Object.values(layerGroups).forEach((g) =>
-            g.eachLayer((l) => l.setStyle?.({ fillOpacity: val }))
-        );
+        Object.values(layerGroups).forEach((group) => {
+        Object.values(group).forEach((layerGroup) => {
+            if (layerGroup.eachLayer) {
+                layerGroup.eachLayer((layer) => {
+                    if (layer.setStyle) {
+                        layer.setStyle({
+                            fillOpacity: val,
+                            opacity: val
+                        });
+                    }
+                });
+            }
+        });
+    
+});
+
     });
 
     const basemapList = document.getElementById("basemap-list");
