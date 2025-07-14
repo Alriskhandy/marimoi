@@ -18,12 +18,12 @@
                 </li>
                 <li><a href="{{ route('tampil.rpjmd') }}"
                         class="{{ request()->routeIs('tampil.rpjmd') ? 'active' : '' }}">Peta RPJMD</a></li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Usulan Musrenbang</a></li>
+                <li><a href="{{ route('tampil.musrenbang') }}"
+                        class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Usulan Musrenbang</a></li>
                 <li><a href="{{ route('tampil.pokir') }}"
                         class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">POKIR DPRD</a></li>
-                <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Aspirasi</a></li>
+                <li><a href="{{ route('tampil.aspirasi') }}"
+                        class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>

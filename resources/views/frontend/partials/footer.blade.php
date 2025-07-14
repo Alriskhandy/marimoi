@@ -48,6 +48,7 @@
 
     <div class="container copyright text-center mt-4">
         <p>© <span>Copyright</span> <strong class="px-1 sitename">MARIMOI</strong> <span>All Rights Reserved</span></p>
+        <p><span>Beta Version 1.0 | Developed By</span> <strong class="px-1 sitename"><a href="https://heartware-digital.my.id">Heartware Digital</a></strong></p>
 
     </div>
 
