@@ -412,7 +412,7 @@ function setupUI() {
       <div class="form-check form-switch mb-2">
         <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${
             bm.id
-        }" value="${bm.id}" ${i === 0 ? "checked" : ""}>
+        }" value="${bm.id}" ${i === 4 ? "checked" : ""}>
         <label class="form-check-label" for="bm-${bm.id}">${bm.label}</label>
       </div>`;
     });

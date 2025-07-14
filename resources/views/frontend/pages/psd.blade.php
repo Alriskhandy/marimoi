@@ -146,10 +146,6 @@
                                 id="transparency">
                         </div>
                         <div class="mb-3 ms-2">
-                            <input type="text" id="layer-search" class="form-control form-control-sm"
-                                placeholder="Masukkan Kata Kunci Pencarian Layer">
-                        </div>
-                        <div class="mb-3 ms-2">
                             <select name="yearSelect" id="yearSelect" class="form-select form-select-sm">
                                 <option value="all" selected>Semua Tahun</option>
                                 @foreach ($allYear as $year)

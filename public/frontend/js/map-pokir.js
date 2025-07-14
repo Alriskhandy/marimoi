@@ -185,7 +185,7 @@ function changeBaseMap(baseMapId) {
 // initmap bisa
 async function initMap() {
     try {
-        const response = await fetch("/psd-geojson");
+        const response = await fetch("/pokir-geojson");
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {

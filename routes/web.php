@@ -11,7 +11,13 @@ Route::get('/peta-psn', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/peta-rpjmd', [FrontendController::class, 'rpjmd'])->name('tampil.rpjmd');
 Route::get('/peta-pokir', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
+Route::get('/detail/{id}', [FrontendController::class, 'showDetail'])->name('tampil.detail');
 
+
+Route::get('/psd-geojson', [FrontendController::class, 'psdGeojson']);
+Route::get('/psn-geojson', [FrontendController::class, 'psnGeojson']);
+Route::get('/rpjmd-geojson', [FrontendController::class, 'rpjmdGeojson']);
+Route::get('/pokir-geojson', [FrontendController::class, 'pokirGeojson']);
 Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
 
 Route::prefix('api')->group(function (){

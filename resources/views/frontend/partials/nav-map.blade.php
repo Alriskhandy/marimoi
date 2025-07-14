@@ -23,7 +23,7 @@
                 <li><a href="{{ route('tampil.pokir') }}"
                         class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">POKIR DPRD</a></li>
                 <li><a href="{{ route('tampil.peta') }}"
-                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Tanggapan Masyarakat</a></li>
+                        class="{{ request()->routeIs('tampil.peta') ? 'active' : '' }}">Aspirasi</a></li>
             </ul>
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>

@@ -145,10 +145,6 @@
                             <input type="range" class="form-range" min="0" max="100" value="100"
                                 id="transparency">
                         </div>
-                        <div class="mb-3 ms-2">
-                            <input type="text" id="layer-search" class="form-control form-control-sm"
-                                placeholder="Masukkan Kata Kunci Pencarian Layer">
-                        </div>
                         <div id="layer-list" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
                             <!-- Layer list will be populated dynamically -->
                         </div>
@@ -257,5 +253,5 @@
 @push('scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script type="module" src="{{ asset('frontend/js/map-app.js') }}"></script>
+    <script type="module" src="{{ asset('frontend/js/map-psn.js') }}"></script>
 @endpush
