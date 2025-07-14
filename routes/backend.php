@@ -500,16 +500,14 @@ Route::prefix('dashboard')->middleware('auth')->group(function () {
 
 // end ProyekStrategisnasinonal
 
-// // ProyekStrategisNasionalController
+// // Upload Dokumen
 Route::prefix('dashboard')->middleware('auth')->group(function () {
     
     // Routes for Dokumen upload management
     Route::prefix('upload-dokumen')->name('dokumen.')->group(function () {
         
         Route::get('/', [DokumenController::class, 'index'])->name('index');
-        Route::get('/create', [DokumenController::class, 'create'])->name('create');
         Route::post('/', [DokumenController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [DokumenController::class, 'edit'])->where('id', '[0-9]+')->name('edit');
         Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update');
         Route::delete('/{id}', [DokumenController::class, 'destroy'])->where('id', '[0-9]+')->name('destroy');
     });
