@@ -1,7 +1,7 @@
 @extends('frontend.layouts.main')
 
 @section('main')
-    <!-- Hero Section -->
+    <!-- Navbar Section -->
     @include('frontend.partials.nav-map')
 
     <!-- Hero Section -->
@@ -33,8 +33,14 @@
 
     </section><!-- /Hero Section -->
 
-    <!-- Featured Services Section -->
-    <section id="featured-services" class="featured-services section">
+    <!--Indikator Pembangunan Section -->
+    <section id="featured-services" class="featured-services section pt-3 pb-5">
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+            <span>Indikator Pembangunan Strategis<br></span>
+            <h2>Indikator Pembangunan Strategis</h2>
+            <p>Kontribusi MARIMOI Terhadap Indikator-Indikator Pembangunan Strategis</p>
+        </div><!-- End Section Title -->
 
         <div class="container">
 
@@ -114,7 +120,7 @@
 
         </div>
 
-    </section><!-- /Featured Services Section -->
+    </section><!-- /Indikator Pembangunan Section -->
 
     <!-- About Section -->
     <section id="about" class="about section">
@@ -125,8 +131,8 @@
 
                 <div class="col-lg-6 position-relative align-self-start order-lg-last order-first" data-aos="fade-up"
                     data-aos-delay="200">
-                    <img src="assets/img/about.jpg" class="img-fluid" alt="">
-                    <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox pulsating-play-btn"></a>
+                    <img src="{{ asset('frontend/img/kantor-gub-malut.jpeg') }}" class="img-fluid" alt="">
+                    <a href="https://www.youtube.com/watch?v=EQbw-E1ecB8" class="glightbox pulsating-play-btn"></a>
                 </div>
 
                 <div class="col-lg-6 content order-last  order-lg-first" data-aos="fade-up" data-aos-delay="100">
@@ -154,8 +160,8 @@
 
     </section><!-- /About Section -->
 
-    <!-- Services Section -->
-    <section id="services" class="services section">
+    <!-- Fitur Section -->
+    <section id="services" class="services section pt-3 pb-5">
 
         <!-- Section Title -->
         <div class="container section-title" data-aos="fade-up">
@@ -239,9 +245,8 @@
 
         </div>
 
-    </section><!-- /Services Section -->
+    </section><!-- /Fitur Section -->
 
-
-    <!-- About Section -->
+    <!-- Footer Section -->
     @include('frontend.partials.footer')
 @endsection

@@ -86,31 +86,43 @@ function generateLegend() {
 function bindPopupContent(feature, layer) {
     const props = feature.properties;
     let content = `<div class="p-2" style="max-width: 300px;">
-        <h5 class="fw-bold mb-2 text-primary">${
-            props.kategori || "Feature"
-        }</h5>`;
+        <h5 class="fw-bold text-primary">${props.kategori || "Feature"}</h5>`;
 
+    // Menampilkan properti dalam bentuk tabel dua kolom, kecuali id, kategori, dan kategori id
+    content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
     Object.entries(props).forEach(([key, value]) => {
-        if (value && !["geometry", "id"].includes(key)) {
+        if (
+            value &&
+            ![
+                "geometry",
+                "ID",
+                "Kategori Id",
+                "id",
+                "kategori",
+                "kategori id",
+            ].includes(key.toLowerCase())
+        ) {
             const label = key
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase());
-            content += `<p class="small mb-1"><span class="fw-medium">${label}:</span> ${value}</p>`;
+            content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
+    content += `</table>`;
 
-    // Tambahkan detail geometry
+    // Menambahkan detail geometry dalam format tabel dua kolom
     const geom = feature.geometry;
     if (geom) {
         const type = geom.type;
-        content += `<hr><p class="small mb-1"><span class="fw-medium">Geometry:</span> ${type}</p>`;
+        content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
+        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
             let length = 0;
             for (let i = 1; i < geom.coordinates.length; i++) {
                 const [lon1, lat1] = geom.coordinates[i - 1];
                 const [lon2, lat2] = geom.coordinates[i];
-                const R = 6371;
+                const R = 6371; // Radius Earth in km
                 const rad = Math.PI / 180;
                 const dLat = (lat2 - lat1) * rad;
                 const dLon = (lon2 - lon1) * rad;
@@ -122,9 +134,9 @@ function bindPopupContent(feature, layer) {
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 length += R * c;
             }
-            content += `<p class="small mb-1"><span class="fw-medium">Panjang:</span> ${length.toFixed(
+            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
                 2
-            )} km</p>`;
+            )} km</td></tr>`;
         }
 
         // Tampilkan koordinat tengah
@@ -141,21 +153,36 @@ function bindPopupContent(feature, layer) {
         }
 
         if (center) {
-            content += `<p class="small mb-1"><span class="fw-medium">Koordinat:</span> ${center[1].toFixed(
+            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
                 5
-            )}, ${center[0].toFixed(5)}</p>`;
+            )}, ${center[0].toFixed(5)}</td></tr>`;
         }
+
+        content += `</table>`;
     }
 
     // Tambahkan tombol "Lihat Detail"
     const id = props.id || "";
     content += `
-        <div class="text-end mt-3">
-            <a href="/detail/${id}" target="_blank" class="btn text-white btn-sm btn-primary">Lihat Detail</a>
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button>
+            <a href="/detail-psn/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
     layer.bindPopup(content);
+
+    layer.on("popupopen", function () {
+        const popupNode = layer.getPopup().getElement();
+        const zoomButton = popupNode.querySelector(".zoomToBtn");
+        if (zoomButton) {
+            zoomButton.addEventListener("click", function () {
+                const lat = parseFloat(this.getAttribute("data-lat"));
+                const lng = parseFloat(this.getAttribute("data-lng"));
+                layer._map.setView([lat, lng], 15);
+            });
+        }
+    });
 }
 
 function showAlert(message, type = "info") {
@@ -184,6 +211,7 @@ function changeBaseMap(baseMapId) {
     if (config) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
+            minZoom: 4,
             maxZoom: 20,
         }).addTo(map);
     }
@@ -207,7 +235,10 @@ async function initMap() {
                 }
             });
         } else {
-            console.error("all_categories tidak ditemukan atau bukan array:", geoJsonData.all_categories);
+            console.error(
+                "all_categories tidak ditemukan atau bukan array:",
+                geoJsonData.all_categories
+            );
         }
 
         // ⬇️ Masukkan di sini

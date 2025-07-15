@@ -6,7 +6,9 @@ use App\Models\Dokumen;
 use App\Models\KategoriLayer;
 use App\Models\KategoriPSD;
 use App\Models\Lokasi;
+use App\Models\PokirDprd;
 use App\Models\ProyekStrategisDaerah;
+use App\Models\ProyekStrategisNasional;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,12 +19,8 @@ class FrontendController extends Controller
         return view('frontend.pages.index');
     }
 
-    public function showDetail($id)
-    {
-        Lokasi::findOrFail($id);
-        return view('frontend.pages.detail', compact('id'));
-    }
 
+    // TAMPILAN PETA //
     public function showMap()
     {
         $documents = Dokumen::all();
@@ -372,5 +370,34 @@ class FrontendController extends Controller
                 'generated_at' => now()->toISOString()
             ]
         ]);
+    }
+
+
+    // DETAIL LOKASI //
+    public function showDetail($id)
+    {
+        $project = Lokasi::findOrFail($id);
+        return view('frontend.pages.detail', compact('project'));
+    }
+    public function detailPsd($id)
+    {
+        $project = ProyekStrategisDaerah::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->findOrFail($id);
+        $project->geojson = json_decode($project->geojson);
+        return view('frontend.pages.detail', compact('project'));
+    }
+    public function detailPsn($id)
+    {
+        $project = ProyekStrategisNasional::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->findOrFail($id);
+        $project->geojson = json_decode($project->geojson);
+        return view('frontend.pages.detail', compact('project'));
+    }
+    public function detailPokir($id)
+    {
+        $project = PokirDprd::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->findOrFail($id);
+        $project->geojson = json_decode($project->geojson);
+        return view('frontend.pages.detail', compact('project'));
     }
 }

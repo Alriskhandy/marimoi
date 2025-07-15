@@ -48,11 +48,11 @@ let kategoriWarnaMap = {}; // ✅ Tambahkan ini
 function getStyleForCategory(kategori) {
     const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
     return {
-        color: warna,          // outline color (untuk LineString dan Polygon)
-        weight: 2,             // ketebalan garis
-        fillColor: warna,      // isi warna (hanya dipakai Polygon)
-        fillOpacity: 0.4,      // opacity isi (Polygon saja)
-        opacity: 1             // opacity garis
+        color: warna, // outline color (untuk LineString dan Polygon)
+        weight: 2, // ketebalan garis
+        fillColor: warna, // isi warna (hanya dipakai Polygon)
+        fillOpacity: 0.4, // opacity isi (Polygon saja)
+        opacity: 1, // opacity garis
     };
 }
 
@@ -65,9 +65,12 @@ function generateLegend() {
     const added = new Set();
 
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
-        Object.keys(sublayers).forEach(sub => {
+        Object.keys(sublayers).forEach((sub) => {
             if (!added.has(sub)) {
-                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                const color =
+                    kategoriWarnaMap[sub] ||
+                    kategoriWarnaMap[kategori] ||
+                    "#ccc";
                 legendContainer.innerHTML += `
                     <div class="d-flex align-items-center mb-2">
                         <div style="width: 16px; height: 16px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
@@ -83,29 +86,43 @@ function generateLegend() {
 function bindPopupContent(feature, layer) {
     const props = feature.properties;
     let content = `<div class="p-2" style="max-width: 300px;">
-        <h5 class="fw-bold mb-2 text-primary">${props.kategori || "Feature"}</h5>`;
+        <h5 class="fw-bold text-primary">${props.kategori || "Feature"}</h5>`;
 
+    // Menampilkan properti dalam bentuk tabel dua kolom, kecuali id, kategori, dan kategori id
+    content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
     Object.entries(props).forEach(([key, value]) => {
-        if (value && !["geometry", "id"].includes(key)) {
+        if (
+            value &&
+            ![
+                "geometry",
+                "ID",
+                "Kategori Id",
+                "id",
+                "kategori",
+                "kategori id",
+            ].includes(key.toLowerCase())
+        ) {
             const label = key
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase());
-            content += `<p class="small mb-1"><span class="fw-medium">${label}:</span> ${value}</p>`;
+            content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
+    content += `</table>`;
 
-    // Tambahkan detail geometry
+    // Menambahkan detail geometry dalam format tabel dua kolom
     const geom = feature.geometry;
     if (geom) {
         const type = geom.type;
-        content += `<hr><p class="small mb-1"><span class="fw-medium">Geometry:</span> ${type}</p>`;
+        content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
+        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
             let length = 0;
             for (let i = 1; i < geom.coordinates.length; i++) {
                 const [lon1, lat1] = geom.coordinates[i - 1];
                 const [lon2, lat2] = geom.coordinates[i];
-                const R = 6371;
+                const R = 6371; // Radius Earth in km
                 const rad = Math.PI / 180;
                 const dLat = (lat2 - lat1) * rad;
                 const dLon = (lon2 - lon1) * rad;
@@ -117,9 +134,9 @@ function bindPopupContent(feature, layer) {
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 length += R * c;
             }
-            content += `<p class="small mb-1"><span class="fw-medium">Panjang:</span> ${length.toFixed(
+            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
                 2
-            )} km</p>`;
+            )} km</td></tr>`;
         }
 
         // Tampilkan koordinat tengah
@@ -136,19 +153,36 @@ function bindPopupContent(feature, layer) {
         }
 
         if (center) {
-            content += `<p class="small mb-1"><span class="fw-medium">Koordinat:</span> ${center[1].toFixed(5)}, ${center[0].toFixed(5)}</p>`;
+            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
+                5
+            )}, ${center[0].toFixed(5)}</td></tr>`;
         }
+
+        content += `</table>`;
     }
 
     // Tambahkan tombol "Lihat Detail"
     const id = props.id || "";
     content += `
-        <div class="text-end mt-3">
-            <a href="/detail/${id}" target="_blank" class="btn text-white btn-sm btn-primary">Lihat Detail</a>
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button>
+            <a href="/detail-psd/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
     layer.bindPopup(content);
+
+    layer.on("popupopen", function () {
+        const popupNode = layer.getPopup().getElement();
+        const zoomButton = popupNode.querySelector(".zoomToBtn");
+        if (zoomButton) {
+            zoomButton.addEventListener("click", function () {
+                const lat = parseFloat(this.getAttribute("data-lat"));
+                const lng = parseFloat(this.getAttribute("data-lng"));
+                layer._map.setView([lat, lng], 15);
+            });
+        }
+    });
 }
 
 function showAlert(message, type = "info") {
@@ -177,6 +211,7 @@ function changeBaseMap(baseMapId) {
     if (config) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
+            minZoom: 4,
             maxZoom: 20,
         }).addTo(map);
     }
@@ -194,7 +229,7 @@ async function initMap() {
 
         // ⬇️ Masukkan di sini
         kategoriWarnaMap = {};
-        geoJsonData.all_categories.forEach(cat => {
+        geoJsonData.all_categories.forEach((cat) => {
             if (cat.nama && cat.warna) {
                 kategoriWarnaMap[cat.nama] = cat.warna;
             }
@@ -222,17 +257,19 @@ async function initMap() {
         // Siapkan struktur layerGroups, tapi hanya untuk root (yang bukan anak)
         geoJsonData.root_categories.forEach((cat) => {
             const kategori = cat.nama;
-           // Jika ini adalah subkategori, cari parent-nya
-if (allSubNames.has(kategori)) {
-    const parent = geoJsonData.all_categories.find(cat => cat.nama === kategori)?.parent?.nama;
-    if (parent && layerGroups[parent]?.[kategori]) {
-        L.geoJSON(feature, {
-            style: getStyleForCategory(kategori),
-            onEachFeature: (f, l) => bindPopupContent(f, l),
-        }).addTo(layerGroups[parent][kategori]);
-    }
-    return; // Sudah ditangani, tidak lanjut ke bawah
-}
+            // Jika ini adalah subkategori, cari parent-nya
+            if (allSubNames.has(kategori)) {
+                const parent = geoJsonData.all_categories.find(
+                    (cat) => cat.nama === kategori
+                )?.parent?.nama;
+                if (parent && layerGroups[parent]?.[kategori]) {
+                    L.geoJSON(feature, {
+                        style: getStyleForCategory(kategori),
+                        onEachFeature: (f, l) => bindPopupContent(f, l),
+                    }).addTo(layerGroups[parent][kategori]);
+                }
+                return; // Sudah ditangani, tidak lanjut ke bawah
+            }
 
             layerGroups[kategori] = {};
             cat.children?.forEach((sub) => {
@@ -248,18 +285,19 @@ if (allSubNames.has(kategori)) {
             if (!kategori) return;
             if (!subkategori) subkategori = kategori;
 
-          // Jika ini adalah subkategori, cari parent-nya
-if (allSubNames.has(kategori)) {
-    const parent = geoJsonData.all_categories.find(cat => cat.nama === kategori)?.parent?.nama;
-    if (parent && layerGroups[parent]?.[kategori]) {
-        L.geoJSON(feature, {
-            style: getStyleForCategory(kategori),
-            onEachFeature: (f, l) => bindPopupContent(f, l),
-        }).addTo(layerGroups[parent][kategori]);
-    }
-    return; // Sudah ditangani, tidak lanjut ke bawah
-}
-
+            // Jika ini adalah subkategori, cari parent-nya
+            if (allSubNames.has(kategori)) {
+                const parent = geoJsonData.all_categories.find(
+                    (cat) => cat.nama === kategori
+                )?.parent?.nama;
+                if (parent && layerGroups[parent]?.[kategori]) {
+                    L.geoJSON(feature, {
+                        style: getStyleForCategory(kategori),
+                        onEachFeature: (f, l) => bindPopupContent(f, l),
+                    }).addTo(layerGroups[parent][kategori]);
+                }
+                return; // Sudah ditangani, tidak lanjut ke bawah
+            }
 
             if (!layerGroups[kategori]) layerGroups[kategori] = {};
             if (!layerGroups[kategori][subkategori]) {
@@ -273,17 +311,17 @@ if (allSubNames.has(kategori)) {
         });
 
         // Hapus kategori dan subkategori yang tidak punya layer (kosong)
-Object.entries(layerGroups).forEach(([kat, subs]) => {
-    Object.entries(subs).forEach(([sub, layer]) => {
-        if (layer.getLayers().length === 0) {
-            delete layerGroups[kat][sub]; // hapus subkategori kosong
-        }
-    });
-    // Jika semua subkategori sudah dihapus, hapus kategori juga
-    if (Object.keys(layerGroups[kat]).length === 0) {
-        delete layerGroups[kat];
-    }
-});
+        Object.entries(layerGroups).forEach(([kat, subs]) => {
+            Object.entries(subs).forEach(([sub, layer]) => {
+                if (layer.getLayers().length === 0) {
+                    delete layerGroups[kat][sub]; // hapus subkategori kosong
+                }
+            });
+            // Jika semua subkategori sudah dihapus, hapus kategori juga
+            if (Object.keys(layerGroups[kat]).length === 0) {
+                delete layerGroups[kat];
+            }
+        });
         updateLayerList();
         generateLegend();
     } catch (error) {
@@ -303,7 +341,8 @@ function updateLayerList() {
 
         const rootId = `root-${kategori.replace(/\s+/g, "-")}`;
         const header = document.createElement("div");
-        header.className = "d-flex align-items-center justify-content-between px-2 py-1 bg-light border";
+        header.className =
+            "d-flex align-items-center justify-content-between px-2 py-1 bg-light border";
 
         const leftSection = document.createElement("div");
         leftSection.className = "d-flex align-items-center";
@@ -313,10 +352,12 @@ function updateLayerList() {
         toggleBtn.innerHTML = `<i class="bi bi-caret-down-fill"></i>`;
         toggleBtn.onclick = () => {
             const list = document.getElementById(groupId);
-            list.style.display = list.style.display === "none" ? "block" : "none";
-            toggleBtn.innerHTML = list.style.display === "none"
-                ? `<i class="bi bi-caret-right-fill"></i>`
-                : `<i class="bi bi-caret-down-fill"></i>`;
+            list.style.display =
+                list.style.display === "none" ? "block" : "none";
+            toggleBtn.innerHTML =
+                list.style.display === "none"
+                    ? `<i class="bi bi-caret-right-fill"></i>`
+                    : `<i class="bi bi-caret-down-fill"></i>`;
         };
 
         const checkboxRoot = document.createElement("input");
@@ -352,8 +393,8 @@ function updateLayerList() {
 
         Object.entries(sublayers).forEach(([subname, layer]) => {
             // Hindari sub sama dengan kategori agar tidak ganda
-              const hasChildren = Object.keys(sublayers).length > 1;
-    if (subname === kategori && hasChildren) return;
+            const hasChildren = Object.keys(sublayers).length > 1;
+            if (subname === kategori && hasChildren) return;
             // if (subname === kategori) return;
 
             const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
@@ -389,21 +430,19 @@ function setupUI() {
     document.getElementById("transparency")?.addEventListener("input", (e) => {
         const val = e.target.value / 100;
         Object.values(layerGroups).forEach((group) => {
-        Object.values(group).forEach((layerGroup) => {
-            if (layerGroup.eachLayer) {
-                layerGroup.eachLayer((layer) => {
-                    if (layer.setStyle) {
-                        layer.setStyle({
-                            fillOpacity: val,
-                            opacity: val
-                        });
-                    }
-                });
-            }
+            Object.values(group).forEach((layerGroup) => {
+                if (layerGroup.eachLayer) {
+                    layerGroup.eachLayer((layer) => {
+                        if (layer.setStyle) {
+                            layer.setStyle({
+                                fillOpacity: val,
+                                opacity: val,
+                            });
+                        }
+                    });
+                }
+            });
         });
-    
-});
-
     });
 
     const basemapList = document.getElementById("basemap-list");

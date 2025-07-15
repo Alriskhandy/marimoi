@@ -15,7 +15,10 @@ Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.po
 Route::get('/usulan-musrenbang', [FrontendController::class, 'showMap'])->name('tampil.musrenbang');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'showMap'])->name('tampil.aspirasi');
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
-Route::get('/detail/{id}', [FrontendController::class, 'showDetail'])->name('tampil.detail');
+
+Route::get('/detail-psd/{id}', [FrontendController::class, 'detailPsd'])->name('detail.psd');
+Route::get('/detail-psn/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
+Route::get('/detail-pokir/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
 
 // Rute API
 Route::get('/psd-geojson', [FrontendController::class, 'psdGeojson']);
