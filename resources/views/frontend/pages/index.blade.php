@@ -41,9 +41,9 @@
             <div class="row gy-4">
 
                 <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="100">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-cart-flatbed"></i></div>
+                    <div class="icon flex-shrink-0"><i class="fa-solid fa-map-location-dot"></i></div>
                     <div>
-                        <h4 class="title">Indeks Pengembanyan Wilayah</h4>
+                        <h4 class="title">Indeks Pengembangan Wilayah</h4>
                         <p class="description">MARIMOI
                             meningkatkan Indeks Pengembangan Wilayah
                             melalui:
@@ -61,9 +61,9 @@
                 <!-- End Service Item -->
 
                 <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="200">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-truck"></i></div>
+                    <div class="icon flex-shrink-0"><i class="fa-solid fa-person"></i></div>
                     <div>
-                        <h4 class="title">Indeks Pelyanan Public</h4>
+                        <h4 class="title">Indeks Pelayanan Publik</h4>
                         <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
                             melalui:</p>
                         <ul>
@@ -78,7 +78,7 @@
                 </div><!-- End Service Item -->
 
                 <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                    <div class="icon flex-shrink-0"><i class="fa-solid fa-computer"></i></div>
                     <div>
                         <h4 class="title">Indeks SPBE</h4>
                         <p class="description">MARIMOI mendorong pencapaian SPBE melalui:</p>
@@ -93,7 +93,7 @@
                     </div>
                 </div><!-- End Service Item -->
                 <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                    <div class="icon flex-shrink-0"><i class="fa-solid fa-road-bridge"></i></div>
                     <div>
                         <h4 class="title">Indeks Kualitas Layanan Infrastruktur</h4>
                         <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
@@ -130,7 +130,7 @@
                 </div>
 
                 <div class="col-lg-6 content order-last  order-lg-first" data-aos="fade-up" data-aos-delay="100">
-                    <h3>TENTANG BAPEDA</h3>
+                    <h3>TENTANG BAPPEDA</h3>
                     <p>
                         Badan Perencanaan Pembangunan Daerah merupakan Organisasi
                         Perangkat Daerah yang mengemban tugas mengkoordinasikan penyusunan
@@ -153,6 +153,94 @@
         </div>
 
     </section><!-- /About Section -->
+
+    <!-- Services Section -->
+    <section id="services" class="services section">
+
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+            <span>Fitur-Fitur<br></span>
+            <h2>Fitur-Fitur</h2>
+            <p>Jelajahi Fitur-Fitur Sistem Informasi Manajemen Akselerasi Untuk Monitoring dan Integrasi Wilayah (MARIMOI)
+            </p>
+        </div><!-- End Section Title -->
+
+        <div class="container">
+
+            <div class="row gy-4">
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="card">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/daerah.png') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.psd') }}" class="stretched-link">Proyek Strategis Daerah</a></h3>
+                        <p>Mempermudah pemantauan dan pelaporan proyek-proyek strategis di tingkat daerah untuk mendukung
+                            akselerasi pembangunan wilayah.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/nasional.jpg') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.psn') }}" class="stretched-link">Proyek Strategis Nasional</a></h3>
+                        <p>Integrasi data proyek strategis nasional untuk memastikan koordinasi yang lebih baik dan
+                            monitoring yang efektif di seluruh Indonesia.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                    <div class="card">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/wilayah.jpg') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.prioritas') }}" class="stretched-link">Prioritas Daerah 2025-2029</a>
+                        </h3>
+                        <p>Menampilkan rencana dan prioritas pembangunan wilayah Provinsi Maluku Utara untuk periode 2025-2029, mendukung
+                            visi & misi Gubernur 2025-2029.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                    <div class="card">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/musyawarah.jpg') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.musrenbang') }}" class="stretched-link">Usulan Musrenbang</a></h3>
+                        <p>Menampilkan pengembangan wilayah sesuai dengan hasil usulan dalam Musyawarah Perencanaan
+                            Pembangunan (Musrenbang) tingkat daerah.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                    <div class="card">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/pokok-pikiran.jpg') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.pokir') }}" class="stretched-link">Pokir DPRD</a></h3>
+                        <p>Pokok Pikiran (Pokir) DPRD dalam rangka pengembangan wilayah Maluku Utara.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
+                    <div class="card d-flex text-justify">
+                        <div class="card-img">
+                            <img src="{{ asset('frontend/img/aspirasi.jpg') }}" alt="" class="img-fluid">
+                        </div>
+                        <h3><a href="{{ route('tampil.aspirasi') }}" class="stretched-link">Aspirasi Masyarakat</a></h3>
+                        <p>Menyediakan platform bagi masyarakat untuk menyampaikan aspirasi dan pengaduan terkait
+                            pembangunan dan kebijakan publik.</p>
+                    </div>
+                </div><!-- End Card Item -->
+
+            </div>
+
+        </div>
+
+    </section><!-- /Services Section -->
+
 
     <!-- About Section -->
     @include('frontend.partials.footer')

@@ -41,10 +41,10 @@ class FrontendController extends Controller
         return view('frontend.pages.psn', compact('documents'));
     }
 
-    public function rpjmd()
+    public function prioritas()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.rpjmd', compact('documents'));
+        return view('frontend.pages.prioritas', compact('documents'));
     }
 
     public function pokir()

@@ -16,12 +16,12 @@
                 <li><a href="{{ route('tampil.psn') }}"
                         class="{{ request()->routeIs('tampil.psn') ? 'active' : '' }}">Proyek Strategis Nasional</a>
                 </li>
-                <li><a href="{{ route('tampil.rpjmd') }}"
-                        class="{{ request()->routeIs('tampil.rpjmd') ? 'active' : '' }}">Peta RPJMD</a></li>
+                <li><a href="{{ route('tampil.prioritas') }}"
+                        class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah 2025-2029</a></li>
                 <li><a href="{{ route('tampil.musrenbang') }}"
-                        class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Usulan Musrenbang</a></li>
+                        class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a></li>
                 <li><a href="{{ route('tampil.pokir') }}"
-                        class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">POKIR DPRD</a></li>
+                        class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir DPRD</a></li>
                 <li><a href="{{ route('tampil.aspirasi') }}"
                         class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a></li>
             </ul>

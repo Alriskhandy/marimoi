@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [FrontendController::class, 'index'])->name('beranda');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
-Route::get('/peta-rpjmd', [FrontendController::class, 'rpjmd'])->name('tampil.rpjmd');
+Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 
 // Rute Tahap Pengembangan
