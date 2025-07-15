@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Dokumen;
 use App\Models\KategoriLayer;
 use App\Models\KategoriPSD;
 use App\Models\Lokasi;
@@ -24,29 +25,35 @@ class FrontendController extends Controller
 
     public function showMap()
     {
-        return view('frontend.pages.peta');
+        $documents = Dokumen::all();
+        return view('frontend.pages.peta', compact('documents'));
     }
 
     public function psd()
     {
-        return view('frontend.pages.psd');
+        $documents = Dokumen::all();
+        return view('frontend.pages.psd', compact('documents'));
     }
 
     public function psn()
     {
-        return view('frontend.pages.psn');
+        $documents = Dokumen::all();
+        return view('frontend.pages.psn', compact('documents'));
     }
 
     public function rpjmd()
     {
-        return view('frontend.pages.rpjmd');
+        $documents = Dokumen::all();
+        return view('frontend.pages.rpjmd', compact('documents'));
     }
 
     public function pokir()
     {
-        return view('frontend.pages.pokir');
+        $documents = Dokumen::all();
+        return view('frontend.pages.pokir', compact('documents'));
     }
 
+    // API //
     public function psdGeojson(Request $request)
     {
         // Variabel dinamis untuk nama tabel dan kolom

@@ -158,8 +158,7 @@
                             <button id="btn-close-sidebar-basemap" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
-                        <div id="basemap-list" class="px-1 ms-2"
-                            style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                        <div id="basemap-list" class="px-1 ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
                             <!-- Basemap options will be populated dynamically -->
                             <p>Basemap options placeholder</p>
                         </div>
@@ -184,14 +183,19 @@
                     <div id="sidebar-download" class="sidebar bg-white text-dark position-absolute"
                         style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
                         <div class="d-flex justify-content-between align-items-center mb-3 gradient-purple">
-                            <h6 class="text-white mb-0">Download Peta</h6>
+                            <h6 class="text-white mb-0">Unduh Data/Informasi</h6>
                             <button id="btn-close-sidebar-download" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
                         <div id="download-content" class="ms-2"
                             style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                            <!-- Legend content will be populated dynamically -->
-                            <p>Daftar Peta Yang Bisa di Download</p>
+                            <p class="text-sm">Daftar Dokumen :</p>
+                            <ul class="text-sm">
+                                @foreach ($documents as $doc)
+                                    <li><a href="{{ asset('storage/' . $doc->file) }}" title="{{ $doc->nama }}"
+                                            download>{{ $doc->nama }}</a></li>
+                                @endforeach
+                            </ul>
                         </div>
                     </div>
 
@@ -226,7 +230,7 @@
                         aria-label="Sidebar Control Buttons"
                         style="bottom: 30px; right: 10px; z-index: 99; background-color: rgb(90, 90, 90); box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
                         <button id="btn-toggle-sidebar-download" type="button" class="btn btn-sm border-white"
-                            title="Download Peta" style="color: white;" data-bs-toggle="tooltip"
+                            title="Unduh Data/Informasi" style="color: white;" data-bs-toggle="tooltip"
                             data-bs-placement="bottom" data-bs-title="Download Peta">
                             <i class="bi bi-file-earmark-arrow-down-fill"></i>
                         </button>

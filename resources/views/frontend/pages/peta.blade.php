@@ -193,8 +193,13 @@
                         </div>
                         <div id="download-content" class="ms-2"
                             style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                            <!-- Legend content will be populated dynamically -->
-                            <p>Daftar Peta Yang Bisa di Download</p>
+                            <p class="text-sm">Daftar Dokumen :</p>
+                            <ul class="text-sm">
+                                @foreach ($documents as $doc)
+                                    <li><a href="{{ asset('storage/' . $doc->file) }}" title="{{ $doc->nama }}"
+                                            download>{{ $doc->nama }}</a></li>
+                                @endforeach
+                            </ul>
                         </div>
                     </div>
 
