@@ -100,6 +100,7 @@ function bindPopupContent(feature, layer) {
                 "id",
                 "kategori",
                 "kategori id",
+                "kategori_id"
             ].includes(key.toLowerCase())
         ) {
             const label = key

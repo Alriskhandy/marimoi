@@ -18,8 +18,12 @@ class FrontendController extends Controller
     {
         return view('frontend.pages.index');
     }
-
-
+    public function aspirasi()
+    {
+        return view('frontend.pages.aspirasi');
+    }
+    
+    
     // TAMPILAN PETA //
     public function showMap()
     {
