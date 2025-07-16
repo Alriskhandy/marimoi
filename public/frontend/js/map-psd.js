@@ -213,7 +213,7 @@ function changeBaseMap(baseMapId) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
             minZoom: 4,
-            maxZoom: 20,
+            maxZoom: 19,
         }).addTo(map);
     }
 }
