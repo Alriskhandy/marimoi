@@ -105,7 +105,7 @@
 
                 <div class="col-lg-8">
                     <h4 class="text-center text-secondary mb-3">Formulir Aspirasi / Pengaduan</h4>
-                    <form action="forms/contact.php" method="post" enctype="multipart/form-data" class="php-email-form"
+                    <form action="#" method="post" enctype="multipart/form-data" class="php-email-form"
                         data-aos="fade-up" data-aos-delay="200" id="complaintForm">
                         @csrf
                         <div class="row gy-4">
@@ -146,11 +146,12 @@
                             </div>
 
                             <div class="col-md-12 text-center d-grid gap-2">
-                                <div class="loading">Loading</div>
-                                <div class="error-message"></div>
-                                <div class="sent-message">Tanggapan Anda telah dikirim. Terima kasih!</div>
-
                                 <button type="submit" class="btn btn-md btn-outline-success">Kirim</button>
+                                {{-- <div class="loading">Loading</div> --}}
+                                {{-- <div class="error-message"></div> --}}
+                                <div class="sent-message"
+                                    style="display: none; opacity: 0; transition: opacity 1s ease-in-out, visibility 1s ease-in-out; visibility: hidden;">
+                                    Tanggapan Anda telah dikirim. Terima kasih!</div>
                             </div>
 
                         </div>
@@ -163,6 +164,18 @@
                                 event.preventDefault();
                                 alert('Lampiran wajib diisi untuk jenis pengaduan.');
                                 attachment.focus();
+                            } else {
+                                // Menampilkan pesan sukses untuk dummy
+                                var sentMessage = document.querySelector('.sent-message');
+                                sentMessage.style.display = 'block'; // Tampilkan elemen
+                                sentMessage.style.opacity = 1; // Set opacity ke 1 untuk tampak terlihat
+                                sentMessage.style.visibility = 'visible'; // Set visibility menjadi visible
+
+                                // Menyembunyikan pesan setelah 2 detik (2000 ms) dengan transisi
+                                setTimeout(function() {
+                                    sentMessage.style.opacity = 0; // Gradual hide dengan opacity
+                                    sentMessage.style.visibility = 'hidden'; // Gradual hide dengan visibility
+                                }, 2000); // 2000 ms = 2 detik
                             }
                         });
                     </script>
