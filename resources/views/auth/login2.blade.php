@@ -40,7 +40,7 @@
                             class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
                             type="email" 
                             id="email" name="email"
-                            placeholder="Enter your email"
+                            placeholder="Input Email"
                             value="{{ old('email') }}" required autofocus autocomplete="username"
                         >
                     </div>
@@ -57,7 +57,7 @@
                             class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
                             type="password" name="password"
                             id="password" 
-                            placeholder="Enter your password"
+                            placeholder="Input Password"
                             required autocomplete="current-password"
                         >
                     </div>
