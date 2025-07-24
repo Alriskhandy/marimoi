@@ -182,6 +182,36 @@
                             </div>
                             <div class="invalid-feedback"></div>
                         </div>
+                        <div class="form-group mb-3 text-center">
+                            <div class="form-check d-inline-block">
+                                <input class="form-check-input" type="checkbox" value="1" id="is_marker"
+                                    name="is_marker">
+                                <label class="form-check-label" for="is_marker">
+                                    Gunakan sebagai Marker (Point)
+                                </label>
+                            </div>
+                        </div>
+
+
+                        <div class="form-group mb-3" id="iconContainer" style="display: none;">
+
+                            <label for="add_icon" class="form-label">
+                                <i class="fa fa-map-marker me-1"></i> Ikon Marker
+                            </label>
+                            <select class="form-select" id="add_icon" name="icon">
+                                <option value="">-- Pilih Ikon --</option>
+                                <option value="fa-solid fa-location-dot"><i class="fa fa-map-marker"></i> Lokasi</option>
+                                <option value="fa-solid fa-tree"><i class="fa fa-tree"></i> Pohon</option>
+                                <option value="fa-solid fa-tint"><i class="fa fa-tint"></i> Air</option>
+                                <option value="fa-solid fa-car"><i class="fa fa-car"></i> Mobil</option>
+                                <option value="fa-solid fa-home"><i class="fa fa-home"></i> Bangunan</option>
+                            </select>
+                            <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point)</div>
+                            <div id="iconPreview" class="mt-2 text-dark">
+                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
+                            </div>
+                        </div>
+
                         <div class="form-group mb-3">
                             <label for="add_deskripsi" class="form-label">Deskripsi</label>
                             <textarea class="form-control" id="add_deskripsi" name="deskripsi" rows="3"></textarea>
@@ -632,6 +662,41 @@
             });
 
             updateTable(); // inisialisasi awal
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isMarkerCheckbox = document.getElementById('is_marker');
+            const iconContainer = document.getElementById('iconContainer');
+            const iconSelect = document.getElementById('add_icon');
+            const iconPreview = document.getElementById('iconPreview');
+
+            // Toggle tampilan ikon
+            isMarkerCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    iconContainer.style.display = 'block';
+                } else {
+                    iconContainer.style.display = 'none';
+                    iconSelect.value = '';
+                    iconPreview.innerHTML =
+                        `<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>`;
+                }
+            });
+
+            // Preview ikon saat dipilih
+            iconSelect.addEventListener('change', function() {
+                const selectedOption = iconSelect.options[iconSelect.selectedIndex];
+                const iconHTML = selectedOption.innerHTML;
+                const value = selectedOption.value;
+
+                if (value) {
+                    iconPreview.innerHTML =
+                        `<span style="font-size: 24px; color: black;">${iconHTML}</span> <code>${value}</code>`;
+                } else {
+                    iconPreview.innerHTML =
+                        `<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>`;
+                }
+            });
         });
     </script>
 @endsection
