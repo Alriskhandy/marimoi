@@ -621,14 +621,14 @@
                                             <div class="coord-field">
                                                 <label class="form-label">Latitude <span
                                                         class="text-danger">*</span></label>
-                                                <input type="number" class="form-control coord-lat"
+                                                <input type="text" class="form-control coord-lat"
                                                     name="coordinates[0][latitude]" step="any"
                                                     placeholder="-6.123456">
                                             </div>
                                             <div class="coord-field">
                                                 <label class="form-label">Longitude <span
                                                         class="text-danger">*</span></label>
-                                                <input type="number" class="form-control coord-lng"
+                                                <input type="text" class="form-control coord-lng"
                                                     name="coordinates[0][longitude]" step="any"
                                                     placeholder="106.123456">
                                             </div>

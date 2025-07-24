@@ -83,9 +83,9 @@ class LokasiController extends Controller
     private function processShapefileInput(Request $request)
     {
         $request->validate([
-            'shp_file' => 'required|file|mimes:shp',
-            'shx_file' => 'required|file|mimes:shx',
-            'dbf_file' => 'required|file|mimes:dbf',
+            'shp_file' => 'required|file',
+            'shx_file' => 'required|file',
+            'dbf_file' => 'required|file',
         ]);
 
         $folder = storage_path('app/shapefiles');
@@ -186,7 +186,7 @@ class LokasiController extends Controller
     private function processKmzInput(Request $request)
     {
         $request->validate([
-            'kmz_file' => 'required|file|mimes:kmz,kml',
+            'kmz_file' => 'required|file',
         ]);
 
         $file = $request->file('kmz_file');

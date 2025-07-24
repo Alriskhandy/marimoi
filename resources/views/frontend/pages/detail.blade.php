@@ -8,7 +8,7 @@
     <!-- Hero Section -->
     @include('frontend.partials.nav-map')
 
-    <!-- Hero Section -->
+    {{-- <!-- Hero Section -->
     <section id="hero" class="hero section dark-background position-relative">
 
         <img src="{{ asset('frontend/img/hero2.png') }}" alt="" class="hero-bg" data-aos="fade-in">
@@ -35,14 +35,14 @@
             </div>
         </div>
 
-    </section><!-- /Hero Section -->
+    </section><!-- /Hero Section --> --}}
 
     <!-- Detail Section -->
     <section class="section py-4">
         <!-- Section Title -->
         <div class="container section-title" data-aos="fade-up">
-            <span>Detail Lokasi<br></span>
-            <h2>Detail Lokasi</h2>
+            <span>Detail Kegiatan<br></span>
+            <h2>Detail Kegiatan</h2>
         </div><!-- End Section Title -->
 
         <div class="container">
@@ -96,15 +96,17 @@
     <section class="section py-4">
         <!-- Section Title -->
         <div class="container section-title" data-aos="fade-up">
-            <span>Aspirasi & Pengaduan<br></span>
-            <h2>Aspirasi & Pengaduan</h2>
+            <span>Tanggapan Terhadap Pelakasanaan Kegiatan<br></span>
+            <h2>Tanggapan Terhadap Pelakasanaan Kegiatan</h2>
+            <p class="p-1">Anda dapat menyampaikan tanggapan, masukan ataupun informasi terkini terkait pelaksanaan
+                kegiatan ini</p>
         </div><!-- End Section Title -->
         <div class="container" data-aos="fade-up" data-aos-delay="100">
 
             <div class="row gy-4">
 
                 <div class="col-lg-8">
-                    <h4 class="text-center text-secondary mb-3">Formulir Aspirasi / Pengaduan</h4>
+                    <h4 class="text-center text-secondary mb-3">Formulir Tanggapan</h4>
                     <form action="#" method="post" enctype="multipart/form-data" class="php-email-form"
                         data-aos="fade-up" data-aos-delay="200" id="complaintForm">
                         @csrf
@@ -146,7 +148,7 @@
                             </div>
 
                             <div class="col-md-12 text-center d-grid gap-2">
-                                <button type="submit" class="btn btn-md btn-outline-success">Kirim</button>
+                                <button type="submit" class="btn btn-md btn-outline-primary">Kirim</button>
                                 {{-- <div class="loading">Loading</div> --}}
                                 {{-- <div class="error-message"></div> --}}
                                 <div class="sent-message"

@@ -4,7 +4,7 @@
     <!-- Hero Section -->
     @include('frontend.partials.nav-map')
 
-    <!-- Hero Section -->
+    {{-- <!-- Hero Section -->
     <section id="hero" class="hero section dark-background position-relative">
 
         <img src="{{ asset('frontend/img/hero2.png') }}" alt="" class="hero-bg" data-aos="fade-in">
@@ -31,7 +31,7 @@
             </div>
         </div>
 
-    </section><!-- /Hero Section -->
+    </section><!-- /Hero Section --> --}}
 
     <!-- Form Section -->
     <section class="section">
@@ -85,7 +85,7 @@
                             </div>
 
                             <div class="col-md-12 text-center d-grid gap-2">
-                                <button type="submit" class="btn btn-md btn-outline-success">Kirim Masukan</button>
+                                <button type="submit" class="btn btn-md btn-outline-primary">Kirim Masukan</button>
                                 {{-- <div class="loading">Loading</div>
                                 <div class="error-message"></div> --}}
                                 <div class="sent-message"
