@@ -184,6 +184,7 @@
                         </div>
                         <div class="form-group mb-3 text-center">
                             <div class="form-check d-inline-block">
+                                <input type="hidden" name="is_marker" value="0"> {{-- default jika tidak dicentang --}}
                                 <input class="form-check-input" type="checkbox" value="1" id="is_marker"
                                     name="is_marker">
                                 <label class="form-check-label" for="is_marker">
@@ -457,7 +458,7 @@
                 e.preventDefault();
                 const form = $(this);
                 const formData = new FormData(this);
-
+                console.log([...formData.entries()]); // debug semua input
                 $.ajax({
                     url: '{{ route('kategori-layers.store') }}',
                     type: 'POST',
@@ -737,6 +738,212 @@
             font-weight: bold;
             color: #fff;
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom Marker Styles */
+        .custom-marker-icon {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            cursor: pointer !important;
+        }
+
+        .custom-marker-container {
+            cursor: pointer !important;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .custom-marker-container:hover {
+            transform: scale(1.1);
+        }
+
+        .custom-marker-container i {
+            display: block;
+            text-align: center;
+            line-height: 1;
+            filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+            pointer-events: none;
+        }
+
+        .marker-clickable-area {
+            cursor: pointer !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+        }
+
+        /* Leaflet Popup Styles */
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: white !important;
+        }
+
+        .custom-popup .leaflet-popup-content {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .custom-popup {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .popup-custom {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 280px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .popup-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            margin: 0;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .popup-section {
+            margin-bottom: 12px;
+            padding: 0 15px;
+        }
+
+        .popup-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 15px;
+        }
+
+        .popup-section:first-of-type {
+            margin-top: 15px;
+        }
+
+        .popup-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .popup-value {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Layer Control */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .layer-item:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .category-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid;
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+
+        .layer-label {
+            flex-grow: 1;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .layer-count {
+            background: #e9ecef;
+            color: #495057;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .popup-custom {
+                max-width: 250px;
+            }
+
+            .popup-header {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+
+            .popup-section {
+                padding: 0 12px;
+            }
+
+            .popup-section:first-of-type {
+                margin-top: 12px;
+            }
+
+            .popup-section:last-child {
+                padding-bottom: 12px;
+            }
+
+            .custom-marker-container {
+                transform: scale(0.9);
+            }
+
+            .custom-marker-container:hover {
+                transform: scale(1.0);
+            }
         }
     </style>
 @endpush

@@ -576,14 +576,18 @@ class LokasiController extends Controller
 {
    $query = DB::table('lokasis')
         ->join('kategori_layers', 'lokasis.kategori_id', '=', 'kategori_layers.id')
-        ->select(
-            'lokasis.id',
-            'lokasis.kategori_id',
-            'kategori_layers.nama as kategori',
-            'lokasis.deskripsi',
-            'lokasis.dbf_attributes',
-            DB::raw('ST_AsGeoJSON(lokasis.geom) as geojson')
-        );
+       ->select(
+    'lokasis.id',
+    'lokasis.kategori_id',
+    'kategori_layers.nama as kategori',
+    'lokasis.deskripsi',
+    'lokasis.dbf_attributes',
+    'kategori_layers.icon',
+    'kategori_layers.warna',
+    'kategori_layers.is_marker',
+    DB::raw('ST_AsGeoJSON(lokasis.geom) as geojson')
+)
+;
 
     // Filter kategori
     if ($request->has('kategori') && !empty($request->kategori)) {
@@ -622,15 +626,18 @@ class LokasiController extends Controller
         $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
 
         return [
-            'type' => 'Feature',
-            'properties' => array_merge([
-                'id' => $lokasi->id,
-                'kategori_id' => $lokasi->kategori_id,
-                'kategori' => $lokasi->kategori,
-                'deskripsi' => $lokasi->deskripsi,
-            ], $dbfAttributes),
-            'geometry' => json_decode($lokasi->geojson),
-        ];
+    'type' => 'Feature',
+    'properties' => array_merge([
+        'id' => $lokasi->id,
+        'kategori_id' => $lokasi->kategori_id,
+        'kategori' => $lokasi->kategori,
+        'deskripsi' => $lokasi->deskripsi,
+        'icon' => $lokasi->icon,
+        'warna' => $lokasi->warna,
+        'is_marker' => (bool) $lokasi->is_marker,
+    ], $dbfAttributes),
+    'geometry' => json_decode($lokasi->geojson),
+];
     });
 
     $rootCategories = KategoriLayer::whereNull('parent_id')

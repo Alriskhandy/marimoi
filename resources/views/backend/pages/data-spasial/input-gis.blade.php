@@ -614,11 +614,6 @@
                                     <div id="coordinate-inputs">
                                         <div class="coord-input-row">
                                             <div class="coord-field">
-                                                <label class="form-label">Nama Lokasi</label>
-                                                <input type="text" class="form-control coord-name"
-                                                    name="coordinates[0][name]" placeholder="Masukkan nama lokasi">
-                                            </div>
-                                            <div class="coord-field">
                                                 <label class="form-label">Latitude <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" class="form-control coord-lat"
@@ -635,7 +630,7 @@
                                             <div class="coord-actions">
                                                 <button type="button" class="btn btn-add-coord"
                                                     onclick="addCoordinateInput()">
-                                                    <i class="bi bi-plus"></i>
+                                                    +
                                                 </button>
                                             </div>
                                         </div>
@@ -802,11 +797,7 @@
             const newRow = document.createElement('div');
             newRow.className = 'coord-input-row';
             newRow.innerHTML = `
-                <div class="coord-field">
-                    <label class="form-label">Nama Lokasi</label>
-                    <input type="text" class="form-control coord-name" name="coordinates[${coordinateCount-1}][name]" 
-                           placeholder="Masukkan nama lokasi">
-                </div>
+               
                 <div class="coord-field">
                     <label class="form-label">Latitude <span class="text-danger">*</span></label>
                     <input type="number" class="form-control coord-lat" name="coordinates[${coordinateCount-1}][latitude]" 
@@ -819,10 +810,10 @@
                 </div>
                 <div class="coord-actions">
                     <button type="button" class="btn btn-add-coord" onclick="addCoordinateInput()">
-                        <i class="bi bi-plus"></i>
+                        +
                     </button>
                     <button type="button" class="btn btn-remove-coord" onclick="removeCoordinateInput(this)">
-                        <i class="bi bi-dash"></i>
+                     -
                     </button>
                 </div>
             `;

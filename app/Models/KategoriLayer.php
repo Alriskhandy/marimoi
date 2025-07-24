@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KategoriLayer extends Model
 {
-    protected $fillable = ['warna','nama', 'deskripsi', 'parent_id'];
+    protected $fillable = ['warna','nama', 'deskripsi', 'parent_id','icon','is_marker'];
 
     public function parent()
     {
