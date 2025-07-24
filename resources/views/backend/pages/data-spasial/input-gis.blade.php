@@ -113,42 +113,188 @@
             display: block;
         }
 
+        /* New styles for input type selection */
+        .input-type-selector {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-options {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .input-option {
+            border: 2px solid #dee2e6;
+            border-radius: 15px;
+            padding: 25px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            flex: 1;
+            min-width: 200px;
+            max-width: 280px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .input-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(0, 86, 179, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .input-option:hover {
+            border-color: #0d6efd;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(13, 110, 253, 0.15);
+        }
+
+        .input-option:hover::before {
+            opacity: 1;
+        }
+
+        .input-option.selected {
+            border-color: #0d6efd;
+            background: linear-gradient(135deg, #e7f3ff, #cce7ff);
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(13, 110, 253, 0.3);
+        }
+
+        .input-option .option-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-option.selected .option-icon,
+        .input-option:hover .option-icon {
+            color: #0d6efd;
+            transform: scale(1.1);
+        }
+
+        .input-option .option-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #495057;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-option.selected .option-title,
+        .input-option:hover .option-title {
+            color: #0d6efd;
+        }
+
+        .input-option .option-description {
+            font-size: 0.85rem;
+            color: #6c757d;
+            line-height: 1.4;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-content {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .input-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .coord-input-group {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .coord-input-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .coord-input-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .coord-field {
+            flex: 1;
+        }
+
+        .coord-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-add-coord {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add-coord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-remove-coord {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-remove-coord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
 
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
-
-        .category-suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .category-badge {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border: 1px solid #dee2e6;
-            border-radius: 20px;
-            padding: 6px 15px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: #495057;
-        }
-
-        .category-badge:hover {
-            background: linear-gradient(135deg, #0d6efd, #0056b3);
-            color: white;
-            border-color: #0d6efd;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
         }
 
         .loading-spinner {
@@ -208,6 +354,12 @@
             color: #495057;
             font-weight: 600;
             margin-bottom: 1rem;
+        }
+
+        .alert-info-custom {
+            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+            border: 1px solid #b8daff;
+            border-radius: 10px;
         }
     </style>
 @endpush
@@ -295,7 +447,6 @@
                                     </div>
                                 </div>
 
-
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="deskripsi" class="form-label">
@@ -316,109 +467,229 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: File Upload -->
+                        <!-- Step 2: Input Type Selection & Data Input -->
                         <div class="form-section" id="section-2">
                             <h5 class="mb-4">
                                 <i class="bi bi-cloud-upload me-2"></i>
-                                Upload File Shapefile
+                                Pilih Jenis Input Data
                             </h5>
 
-                            <div class="row">
-                                <!-- SHP File -->
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label class="form-label">
-                                            <i class="bi bi-file-earmark-code me-1"></i>
-                                            File .shp <span class="text-danger">*</span>
-                                        </label>
-                                        <div class="upload-area" ondrop="handleDrop(event, 'shp_file')"
-                                            ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                                            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
-                                            <p class="mt-2 mb-2">Drag & drop file .shp atau klik untuk browse</p>
-                                            <input type="file" class="form-control" id="shp_file" name="shp_file"
-                                                accept=".shp" required style="display: none;"
-                                                onchange="handleFileSelect(this, 'shp')">
-                                            <button type="button" class="btn btn-outline-primary btn-sm"
-                                                onclick="document.getElementById('shp_file').click()">
-                                                <i class="bi bi-folder2-open me-1"></i>Browse File
-                                            </button>
+                            <!-- Input Type Selector -->
+                            <div class="input-type-selector">
+                                <h6 class="text-center mb-4">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Pilih Metode Input Data Spasial
+                                </h6>
+                                <div class="input-options">
+                                    <div class="input-option" data-type="shapefile" onclick="selectInputType('shapefile')">
+                                        <div class="option-icon">
+                                            <i class="bi bi-file-earmark-zip"></i>
                                         </div>
-                                        <div class="file-info" id="shp-info">
-                                            <i class="bi bi-file-check text-success me-1"></i>
-                                            <span id="shp-filename"></span>
-                                            <small class="text-muted d-block" id="shp-size"></small>
-                                        </div>
+                                        <div class="option-title">Shapefile</div>
+                                        <div class="option-description">Upload file .shp, .shx, dan .dbf untuk data vektor
+                                            kompleks</div>
                                     </div>
-                                </div>
-
-                                <!-- SHX File -->
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label class="form-label">
-                                            <i class="bi bi-file-earmark-text me-1"></i>
-                                            File .shx <span class="text-danger">*</span>
-                                        </label>
-                                        <div class="upload-area" ondrop="handleDrop(event, 'shx_file')"
-                                            ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                                            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
-                                            <p class="mt-2 mb-2">Drag & drop file .shx atau klik untuk browse</p>
-                                            <input type="file" class="form-control" id="shx_file" name="shx_file"
-                                                accept=".shx" required style="display: none;"
-                                                onchange="handleFileSelect(this, 'shx')">
-                                            <button type="button" class="btn btn-outline-primary btn-sm"
-                                                onclick="document.getElementById('shx_file').click()">
-                                                <i class="bi bi-folder2-open me-1"></i>Browse File
-                                            </button>
+                                    <div class="input-option" data-type="coordinates"
+                                        onclick="selectInputType('coordinates')">
+                                        <div class="option-icon">
+                                            <i class="bi bi-geo-alt"></i>
                                         </div>
-                                        <div class="file-info" id="shx-info">
-                                            <i class="bi bi-file-check text-success me-1"></i>
-                                            <span id="shx-filename"></span>
-                                            <small class="text-muted d-block" id="shx-size"></small>
-                                        </div>
+                                        <div class="option-title">Koordinat</div>
+                                        <div class="option-description">Input manual latitude dan longitude untuk titik
+                                            lokasi</div>
                                     </div>
-                                </div>
-
-                                <!-- DBF File -->
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label class="form-label">
-                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>
-                                            File .dbf <span class="text-danger">*</span>
-                                        </label>
-                                        <div class="upload-area" ondrop="handleDrop(event, 'dbf_file')"
-                                            ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                                            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
-                                            <p class="mt-2 mb-2">Drag & drop file .dbf atau klik untuk browse</p>
-                                            <input type="file" class="form-control" id="dbf_file" name="dbf_file"
-                                                accept=".dbf" required style="display: none;"
-                                                onchange="handleFileSelect(this, 'dbf')">
-                                            <button type="button" class="btn btn-outline-primary btn-sm"
-                                                onclick="document.getElementById('dbf_file').click()">
-                                                <i class="bi bi-folder2-open me-1"></i>Browse File
-                                            </button>
+                                    <div class="input-option" data-type="kmz" onclick="selectInputType('kmz')">
+                                        <div class="option-icon">
+                                            <i class="bi bi-globe"></i>
                                         </div>
-                                        <div class="file-info" id="dbf-info">
-                                            <i class="bi bi-file-check text-success me-1"></i>
-                                            <span id="dbf-filename"></span>
-                                            <small class="text-muted d-block" id="dbf-size"></small>
-                                        </div>
+                                        <div class="option-title">File KMZ</div>
+                                        <div class="option-description">Upload file KMZ dari Google Earth atau aplikasi GIS
+                                            lainnya</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="alert alert-info mt-3">
-                                <i class="bi bi-info-circle me-2"></i>
-                                <strong>Catatan:</strong> Pastikan ketiga file (.shp, .shx, .dbf) memiliki nama yang
-                                sama dan berasal dari dataset yang sama.
+                            <!-- Hidden input for selected type -->
+                            <input type="hidden" name="input_type" id="input_type" value="">
+
+                            <!-- Shapefile Input Content -->
+                            <div class="input-content" id="shapefile-content">
+                                <div class="row">
+                                    <!-- SHP File -->
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-file-earmark-code me-1"></i>
+                                                File .shp <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="upload-area" ondrop="handleDrop(event, 'shp_file')"
+                                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                                <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                                <p class="mt-2 mb-2">Drag & drop file .shp atau klik untuk browse</p>
+                                                <input type="file" class="form-control" id="shp_file"
+                                                    name="shp_file" accept=".shp" style="display: none;"
+                                                    onchange="handleFileSelect(this, 'shp')">
+                                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                                    onclick="document.getElementById('shp_file').click()">
+                                                    <i class="bi bi-folder2-open me-1"></i>Browse File
+                                                </button>
+                                            </div>
+                                            <div class="file-info" id="shp-info">
+                                                <i class="bi bi-file-check text-success me-1"></i>
+                                                <span id="shp-filename"></span>
+                                                <small class="text-muted d-block" id="shp-size"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- SHX File -->
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-file-earmark-text me-1"></i>
+                                                File .shx <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="upload-area" ondrop="handleDrop(event, 'shx_file')"
+                                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                                <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                                <p class="mt-2 mb-2">Drag & drop file .shx atau klik untuk browse</p>
+                                                <input type="file" class="form-control" id="shx_file"
+                                                    name="shx_file" accept=".shx" style="display: none;"
+                                                    onchange="handleFileSelect(this, 'shx')">
+                                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                                    onclick="document.getElementById('shx_file').click()">
+                                                    <i class="bi bi-folder2-open me-1"></i>Browse File
+                                                </button>
+                                            </div>
+                                            <div class="file-info" id="shx-info">
+                                                <i class="bi bi-file-check text-success me-1"></i>
+                                                <span id="shx-filename"></span>
+                                                <small class="text-muted d-block" id="shx-size"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DBF File -->
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                                                File .dbf <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="upload-area" ondrop="handleDrop(event, 'dbf_file')"
+                                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                                <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                                <p class="mt-2 mb-2">Drag & drop file .dbf atau klik untuk browse</p>
+                                                <input type="file" class="form-control" id="dbf_file"
+                                                    name="dbf_file" accept=".dbf" style="display: none;"
+                                                    onchange="handleFileSelect(this, 'dbf')">
+                                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                                    onclick="document.getElementById('dbf_file').click()">
+                                                    <i class="bi bi-folder2-open me-1"></i>Browse File
+                                                </button>
+                                            </div>
+                                            <div class="file-info" id="dbf-info">
+                                                <i class="bi bi-file-check text-success me-1"></i>
+                                                <span id="dbf-filename"></span>
+                                                <small class="text-muted d-block" id="dbf-size"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info alert-info-custom mt-3">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Catatan:</strong> Pastikan ketiga file (.shp, .shx, .dbf) memiliki nama yang
+                                    sama dan berasal dari dataset yang sama.
+                                </div>
                             </div>
 
-                            <div class="d-flex justify-content-between">
+                            <!-- Coordinates Input Content -->
+                            <div class="input-content" id="coordinates-content">
+                                <div class="coord-input-group">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-geo-alt me-2"></i>
+                                        Input Koordinat Lokasi
+                                    </h6>
+                                    <div id="coordinate-inputs">
+                                        <div class="coord-input-row">
+                                            <div class="coord-field">
+                                                <label class="form-label">Nama Lokasi</label>
+                                                <input type="text" class="form-control coord-name"
+                                                    name="coordinates[0][name]" placeholder="Masukkan nama lokasi">
+                                            </div>
+                                            <div class="coord-field">
+                                                <label class="form-label">Latitude <span
+                                                        class="text-danger">*</span></label>
+                                                <input type="number" class="form-control coord-lat"
+                                                    name="coordinates[0][latitude]" step="any"
+                                                    placeholder="-6.123456">
+                                            </div>
+                                            <div class="coord-field">
+                                                <label class="form-label">Longitude <span
+                                                        class="text-danger">*</span></label>
+                                                <input type="number" class="form-control coord-lng"
+                                                    name="coordinates[0][longitude]" step="any"
+                                                    placeholder="106.123456">
+                                            </div>
+                                            <div class="coord-actions">
+                                                <button type="button" class="btn btn-add-coord"
+                                                    onclick="addCoordinateInput()">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Format: Latitude (-90 sampai 90), Longitude (-180 sampai 180). Gunakan titik (.)
+                                            untuk desimal.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- KMZ Input Content -->
+                            <div class="input-content" id="kmz-content">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-file-earmark-zip me-1"></i>
+                                        File KMZ <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="upload-area" ondrop="handleDrop(event, 'kmz_file')"
+                                        ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                        <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                                        <p class="mt-2 mb-2">Drag & drop file .kmz atau klik untuk browse</p>
+                                        <input type="file" class="form-control" id="kmz_file" name="kmz_file"
+                                            accept=".kmz,.kml" style="display: none;"
+                                            onchange="handleFileSelect(this, 'kmz')">
+                                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                            onclick="document.getElementById('kmz_file').click()">
+                                            <i class="bi bi-folder2-open me-1"></i>Browse File
+                                        </button>
+                                    </div>
+                                    <div class="file-info" id="kmz-info">
+                                        <i class="bi bi-file-check text-success me-1"></i>
+                                        <span id="kmz-filename"></span>
+                                        <small class="text-muted d-block" id="kmz-size"></small>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info alert-info-custom">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Catatan:</strong> File KMZ harus berisi data lokasi yang valid. Format yang
+                                    didukung: .kmz dan .kml
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-secondary" onclick="prevStep(2)">
                                     <i class="bi bi-arrow-left me-1"></i> Kembali
                                 </button>
                                 <div>
-                                    <button type="button" class="btn btn-outline-info me-2"
-                                        onclick="previewShapefile()">
+                                    <button type="button" class="btn btn-outline-info me-2" id="previewBtn"
+                                        onclick="previewData()" style="display: none;">
                                         <i class="bi bi-eye me-1"></i> Preview
                                     </button>
                                     <button type="button" class="btn btn-primary" onclick="nextStep(2)">
@@ -442,13 +713,11 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <p><strong>Kategori:</strong> <span id="summary-kategori">-</span></p>
-                                            <p><strong>Deskripsi:</strong> <span id="summary-deskripsi">-</span>
-                                            </p>
+                                            <p><strong>Deskripsi:</strong> <span id="summary-deskripsi">-</span></p>
+                                            <p><strong>Jenis Input:</strong> <span id="summary-input-type">-</span></p>
                                         </div>
-                                        <div class="col-md-6">
-                                            <p><strong>File SHP:</strong> <span id="summary-shp">-</span></p>
-                                            <p><strong>File SHX:</strong> <span id="summary-shx">-</span></p>
-                                            <p><strong>File DBF:</strong> <span id="summary-dbf">-</span></p>
+                                        <div class="col-md-6" id="summary-files">
+                                            <!-- Dynamic summary based on input type -->
                                         </div>
                                     </div>
                                 </div>
@@ -463,7 +732,7 @@
                                             <div class="spinner-border text-primary" role="status">
                                                 <span class="visually-hidden">Loading...</span>
                                             </div>
-                                            <p class="mt-2">Memproses shapefile...</p>
+                                            <p class="mt-2">Memproses data...</p>
                                         </div>
                                     </div>
                                 </div>
@@ -497,6 +766,86 @@
     <script>
         let currentStep = 1;
         let uploadedFiles = {};
+        let selectedInputType = '';
+        let coordinateCount = 1;
+
+        // Input type selection
+        function selectInputType(type) {
+            selectedInputType = type;
+            document.getElementById('input_type').value = type;
+
+            // Update visual selection
+            document.querySelectorAll('.input-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+
+            // Show/hide content sections
+            document.querySelectorAll('.input-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${type}-content`).classList.add('active');
+
+            // Show/hide preview button based on type
+            const previewBtn = document.getElementById('previewBtn');
+            if (type === 'shapefile' || type === 'kmz') {
+                previewBtn.style.display = 'inline-block';
+            } else {
+                previewBtn.style.display = 'none';
+            }
+        }
+
+        // Coordinate input management
+        function addCoordinateInput() {
+            coordinateCount++;
+            const container = document.getElementById('coordinate-inputs');
+            const newRow = document.createElement('div');
+            newRow.className = 'coord-input-row';
+            newRow.innerHTML = `
+                <div class="coord-field">
+                    <label class="form-label">Nama Lokasi</label>
+                    <input type="text" class="form-control coord-name" name="coordinates[${coordinateCount-1}][name]" 
+                           placeholder="Masukkan nama lokasi">
+                </div>
+                <div class="coord-field">
+                    <label class="form-label">Latitude <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control coord-lat" name="coordinates[${coordinateCount-1}][latitude]" 
+                           step="any" placeholder="-6.123456">
+                </div>
+                <div class="coord-field">
+                    <label class="form-label">Longitude <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control coord-lng" name="coordinates[${coordinateCount-1}][longitude]" 
+                           step="any" placeholder="106.123456">
+                </div>
+                <div class="coord-actions">
+                    <button type="button" class="btn btn-add-coord" onclick="addCoordinateInput()">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                    <button type="button" class="btn btn-remove-coord" onclick="removeCoordinateInput(this)">
+                        <i class="bi bi-dash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function removeCoordinateInput(button) {
+            if (coordinateCount > 1) {
+                button.closest('.coord-input-row').remove();
+                coordinateCount--;
+                // Update name attributes
+                updateCoordinateNames();
+            }
+        }
+
+        function updateCoordinateNames() {
+            const rows = document.querySelectorAll('.coord-input-row');
+            rows.forEach((row, index) => {
+                row.querySelector('.coord-name').name = `coordinates[${index}][name]`;
+                row.querySelector('.coord-lat').name = `coordinates[${index}][latitude]`;
+                row.querySelector('.coord-lng').name = `coordinates[${index}][longitude]`;
+            });
+        }
 
         // Step navigation
         function nextStep(step) {
@@ -534,20 +883,52 @@
                     return false;
                 }
             } else if (step === 2) {
-                const requiredFiles = ['shp_file', 'shx_file', 'dbf_file'];
-                for (let fileId of requiredFiles) {
-                    if (!document.getElementById(fileId).files.length) {
-                        alert(`File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`);
+                if (!selectedInputType) {
+                    alert('Pilih jenis input data terlebih dahulu!');
+                    return false;
+                }
+
+                if (selectedInputType === 'shapefile') {
+                    const requiredFiles = ['shp_file', 'shx_file', 'dbf_file'];
+                    for (let fileId of requiredFiles) {
+                        if (!document.getElementById(fileId).files.length) {
+                            alert(`File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`);
+                            return false;
+                        }
+                    }
+                } else if (selectedInputType === 'coordinates') {
+                    const latInputs = document.querySelectorAll('.coord-lat');
+                    const lngInputs = document.querySelectorAll('.coord-lng');
+                    let hasValidCoord = false;
+
+                    for (let i = 0; i < latInputs.length; i++) {
+                        const lat = latInputs[i].value.trim();
+                        const lng = lngInputs[i].value.trim();
+                        if (lat && lng) {
+                            if (lat < -90 || lat > 90) {
+                                alert(`Latitude harus antara -90 sampai 90 (baris ${i+1})`);
+                                return false;
+                            }
+                            if (lng < -180 || lng > 180) {
+                                alert(`Longitude harus antara -180 sampai 180 (baris ${i+1})`);
+                                return false;
+                            }
+                            hasValidCoord = true;
+                        }
+                    }
+
+                    if (!hasValidCoord) {
+                        alert('Minimal satu koordinat harus diisi!');
+                        return false;
+                    }
+                } else if (selectedInputType === 'kmz') {
+                    if (!document.getElementById('kmz_file').files.length) {
+                        alert('File KMZ harus dipilih!');
                         return false;
                     }
                 }
             }
             return true;
-        }
-
-        // Category selection
-        function selectCategory(category) {
-            document.getElementById('kategori').value = category;
         }
 
         // File handling
@@ -599,6 +980,14 @@
         }
 
         // Preview functionality
+        function previewData() {
+            if (selectedInputType === 'shapefile') {
+                previewShapefile();
+            } else if (selectedInputType === 'kmz') {
+                previewKMZ();
+            }
+        }
+
         function previewShapefile() {
             const formData = new FormData();
             const shpFile = document.getElementById('shp_file').files[0];
@@ -630,7 +1019,7 @@
                     document.querySelector('.loading-spinner').style.display = 'none';
 
                     if (data.success) {
-                        displayPreview(data);
+                        displayShapefilePreview(data);
                     } else {
                         document.getElementById('preview-content').innerHTML =
                             `<div class="alert alert-danger">Error: ${data.error}</div>`;
@@ -644,7 +1033,48 @@
                 });
         }
 
-        function displayPreview(data) {
+        function previewKMZ() {
+            const formData = new FormData();
+            const kmzFile = document.getElementById('kmz_file').files[0];
+
+            if (!kmzFile) {
+                alert('File KMZ harus dipilih terlebih dahulu!');
+                return;
+            }
+
+            formData.append('kmz_file', kmzFile);
+
+            document.querySelector('.loading-spinner').style.display = 'block';
+            document.getElementById('preview-section').classList.add('show');
+
+            fetch('/debug-kmz', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                            document.querySelector('input[name="_token"]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.loading-spinner').style.display = 'none';
+
+                    if (data.success) {
+                        displayKMZPreview(data);
+                    } else {
+                        document.getElementById('preview-content').innerHTML =
+                            `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                    document.getElementById('preview-content').innerHTML =
+                        `<div class="alert alert-danger">Terjadi kesalahan saat memproses file KMZ.</div>`;
+                    console.error('Error:', error);
+                });
+        }
+
+        function displayShapefilePreview(data) {
             let html = `
                 <div class="alert alert-success">
                     <i class="bi bi-check-circle me-2"></i>
@@ -699,18 +1129,106 @@
             document.getElementById('preview-content').innerHTML = html;
         }
 
+        function displayKMZPreview(data) {
+            let html = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong>Berhasil!</strong> File KMZ valid dan berisi ${data.features ? data.features.length : 0} fitur.
+                </div>
+            `;
+
+            if (data.features && data.features.length > 0) {
+                html += `
+                    <h6>Preview Fitur KMZ:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama</th>
+                                    <th>Tipe Geometri</th>
+                                    <th>Deskripsi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                data.features.slice(0, 10).forEach((feature, index) => {
+                    html += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${feature.name || 'N/A'}</td>
+                            <td><span class="badge bg-info">${feature.geometry_type || 'Unknown'}</span></td>
+                            <td>${feature.description ? feature.description.substring(0, 100) + '...' : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+
+                if (data.features.length > 10) {
+                    html += `
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                ... dan ${data.features.length - 10} fitur lainnya
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('preview-content').innerHTML = html;
+        }
+
         // Update summary
         function updateSummary() {
             document.getElementById('summary-kategori').textContent =
-                document.getElementById('kategori').value || '-';
+                document.querySelector('#kategori option:checked').textContent || '-';
             document.getElementById('summary-deskripsi').textContent =
                 document.getElementById('deskripsi').value || '-';
-            document.getElementById('summary-shp').textContent =
-                document.getElementById('shp_file').files[0]?.name || '-';
-            document.getElementById('summary-shx').textContent =
-                document.getElementById('shx_file').files[0]?.name || '-';
-            document.getElementById('summary-dbf').textContent =
-                document.getElementById('dbf_file').files[0]?.name || '-';
+
+            // Update input type summary
+            const inputTypeLabels = {
+                'shapefile': 'Shapefile (.shp, .shx, .dbf)',
+                'coordinates': 'Input Koordinat Manual',
+                'kmz': 'File KMZ/KML'
+            };
+            document.getElementById('summary-input-type').textContent =
+                inputTypeLabels[selectedInputType] || '-';
+
+            // Update files summary based on input type
+            const summaryFiles = document.getElementById('summary-files');
+            let filesHtml = '';
+
+            if (selectedInputType === 'shapefile') {
+                filesHtml = `
+                    <p><strong>File SHP:</strong> ${document.getElementById('shp_file').files[0]?.name || '-'}</p>
+                    <p><strong>File SHX:</strong> ${document.getElementById('shx_file').files[0]?.name || '-'}</p>
+                    <p><strong>File DBF:</strong> ${document.getElementById('dbf_file').files[0]?.name || '-'}</p>
+                `;
+            } else if (selectedInputType === 'coordinates') {
+                const coordCount = document.querySelectorAll('.coord-input-row').length;
+                let validCoords = 0;
+                document.querySelectorAll('.coord-lat').forEach((input, index) => {
+                    const lat = input.value.trim();
+                    const lng = document.querySelectorAll('.coord-lng')[index].value.trim();
+                    if (lat && lng) validCoords++;
+                });
+                filesHtml = `
+                    <p><strong>Total Koordinat:</strong> ${coordCount} input</p>
+                    <p><strong>Koordinat Valid:</strong> ${validCoords} titik</p>
+                `;
+            } else if (selectedInputType === 'kmz') {
+                filesHtml = `
+                    <p><strong>File KMZ:</strong> ${document.getElementById('kmz_file').files[0]?.name || '-'}</p>
+                `;
+            }
+
+            summaryFiles.innerHTML = filesHtml;
         }
 
         // Form submission with progress
