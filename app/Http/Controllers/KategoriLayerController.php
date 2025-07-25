@@ -98,7 +98,9 @@ class KategoriLayerController extends Controller
     public function update(Request $request, KategoriLayer $kategoriLayer)
     {
         $validator = Validator::make($request->all(), [
+             'is_marker' => 'nullable|boolean',
             'nama' => 'required|string|max:255',
+             'icon' => 'nullable|string|max:255',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:kategori_layers,id'
         ]);

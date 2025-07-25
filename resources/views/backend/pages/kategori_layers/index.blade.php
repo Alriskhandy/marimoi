@@ -107,10 +107,16 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-warning btn-edit"
-                                                    data-id="{{ $kategori->id }}" data-bs-toggle="modal"
+                                                    data-id="{{ $kategori->id }}" data-nama="{{ $kategori->nama }}"
+                                                    data-parent-id="{{ $kategori->parent_id }}"
+                                                    data-warna="{{ $kategori->warna }}"
+                                                    data-is-marker="{{ $kategori->is_marker }}"
+                                                    data-icon="{{ $kategori->icon }}"
+                                                    data-deskripsi="{{ $kategori->deskripsi }}" data-bs-toggle="modal"
                                                     data-bs-target="#editModal">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
+
                                                 <form action="{{ route('kategori-layers.destroy', $kategori->id) }}"
                                                     method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
@@ -231,6 +237,7 @@
     </div>
 
     <!-- Edit Modal -->
+    <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -251,13 +258,23 @@
                             <input type="text" class="form-control" id="edit_nama" name="nama" required>
                             <div class="invalid-feedback"></div>
                         </div>
+
                         <div class="form-group mb-3">
                             <label for="edit_parent_id" class="form-label">Parent Kategori</label>
                             <select class="form-control" id="edit_parent_id" name="parent_id">
                                 <option value="">-- Pilih Parent (Opsional) --</option>
+                                @foreach ($kategoriLayers as $parent)
+                                    <option value="{{ $parent->id }}" data-parent-nama="{{ $parent->nama }}">
+                                        {{ $parent->nama }}
+                                    </option>
+                                @endforeach
                             </select>
+
                             <div class="invalid-feedback"></div>
                         </div>
+                        <input type="hidden" name="is_marker" value="0">
+
+
                         <div class="form-group mb-3">
                             <label for="edit_warna" class="form-label">Warna</label>
                             <div class="input-group">
@@ -267,6 +284,35 @@
                                     style="background-color: #007bff; color: white;">●</span>
                             </div>
                             <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-group mb-3 text-center">
+                            <div class="form-check d-inline-block">
+                                <input type="hidden" name="is_marker" value="0">
+                                <input class="form-check-input" type="checkbox" value="1" id="edit_is_marker"
+                                    name="is_marker">
+                                <label class="form-check-label" for="edit_is_marker">
+                                    Gunakan sebagai Marker (Point)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3" id="edit_iconContainer" style="display: none;">
+                            <label for="edit_icon" class="form-label">
+                                <i class="fa fa-map-marker me-1"></i> Ikon Marker
+                            </label>
+                            <select class="form-select" id="edit_icon" name="icon">
+                                <option value="">-- Pilih Ikon --</option>
+                                <option value="fa-solid fa-location-dot">Lokasi</option>
+                                <option value="fa-solid fa-tree">Pohon</option>
+                                <option value="fa-solid fa-tint">Air</option>
+                                <option value="fa-solid fa-car">Mobil</option>
+                                <option value="fa-solid fa-home">Bangunan</option>
+                            </select>
+                            <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point)</div>
+                            <div id="edit_iconPreview" class="mt-2 text-dark">
+                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -285,6 +331,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Show Modal -->
     <!-- Show Modal -->
@@ -399,30 +446,29 @@
 
     <script>
         $(document).ready(function() {
-            // Show Alert Function
+            // Tampilkan Alert
             function showAlert(message, type = 'success') {
                 const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
                 const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
                 $('#alertContainer').html(alertHtml);
 
-                // Auto hide after 3 seconds
-                setTimeout(function() {
+                setTimeout(() => {
                     $('#alertContainer .alert').alert('close');
                 }, 3000);
             }
 
-            // Clear form errors
+            // Bersihkan error form
             function clearFormErrors(form) {
                 form.find('.is-invalid').removeClass('is-invalid');
                 form.find('.invalid-feedback').text('');
             }
 
-            // Show form errors
+            // Tampilkan error validasi form
             function showFormErrors(form, errors) {
                 clearFormErrors(form);
                 $.each(errors, function(field, messages) {
@@ -432,7 +478,7 @@
                 });
             }
 
-            // Load parent categories for form
+            // Load parent kategori untuk select
             function loadParentCategories(selectElement, excludeId = null) {
                 $.get('{{ route('kategori-layers.create') }}', function(data) {
                     selectElement.empty();
@@ -440,12 +486,26 @@
                     $.each(data.parentKategori, function(index, kategori) {
                         if (excludeId && kategori.id == excludeId) return;
                         selectElement.append(
-                            `<option value="${kategori.id}">${kategori.nama}</option>`);
+                            `<option value="${kategori.id}">${kategori.nama}</option>`
+                        );
                     });
                 });
             }
 
-            // Add Modal
+            // Fungsi konversi ikon FA6 ke FA4
+            function convertFa6toFa4(fa6Class) {
+                if (!fa6Class) return '';
+                const parts = fa6Class.split(' ');
+                const mapped = parts.map(part => {
+                    if (['fa-solid', 'fa-regular', 'fa-brands'].includes(part)) {
+                        return 'fa';
+                    }
+                    return part;
+                });
+                return mapped.join(' ');
+            }
+
+            // === Modal Tambah ===
             $('#addModal').on('show.bs.modal', function() {
                 const form = $('#addForm');
                 form[0].reset();
@@ -453,12 +513,11 @@
                 loadParentCategories($('#add_parent_id'));
             });
 
-            // Add Form Submit
             $('#addForm').on('submit', function(e) {
                 e.preventDefault();
                 const form = $(this);
                 const formData = new FormData(this);
-                console.log([...formData.entries()]); // debug semua input
+
                 $.ajax({
                     url: '{{ route('kategori-layers.store') }}',
                     type: 'POST',
@@ -469,65 +528,90 @@
                         if (response.success) {
                             $('#addModal').modal('hide');
                             showAlert(response.message);
-                            location.reload(); // Reload page to update table
+                            location.reload();
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             if (xhr.responseJSON.errors) {
-                                showFormErrors(form, xhr.responseJSON.errors); // validasi field
+                                showFormErrors(form, xhr.responseJSON.errors);
                             }
-
                             if (xhr.responseJSON.message) {
-                                showAlert(xhr.responseJSON.message,
-                                    'error'
-                                ); // pesan umum dari server (misal: "Nama sudah digunakan")
+                                showAlert(xhr.responseJSON.message, 'error');
                             }
                         } else {
                             const message = xhr.responseJSON?.message ||
                                 'Terjadi kesalahan server';
                             showAlert(message, 'error');
                         }
-
                     }
                 });
             });
 
-            // Edit Modal
+            // === Modal Edit ===
             $(document).on('click', '.btn-edit', function() {
-                const id = $(this).data('id');
-                const form = $('#editForm');
+                const btn = $(this);
+                const id = btn.data('id');
+                const nama = btn.data('nama');
+                const parentId = btn.data('parent-id');
+                const warna = btn.data('warna');
+                const isMarker = btn.data('is-marker');
+                const icon = btn.data('icon');
+                const deskripsi = btn.data('deskripsi');
 
-                $.get(`{{ route('kategori-layers.index') }}/${id}/edit`, function(data) {
-                    if (data.success) {
-                        $('#edit_id').val(data.data.id);
-                        $('#edit_nama').val(data.data.nama);
-                        $('#edit_deskripsi').val(data.data.deskripsi);
+                // Isi form edit
+                $('#edit_id').val(id);
+                $('#edit_nama').val(nama);
+                $('#edit_warna').val(warna);
+                $('#edit_colorPreview').css('background-color', warna);
+                $('#edit_deskripsi').val(deskripsi);
 
-                        // Load parent categories
-                        const parentSelect = $('#edit_parent_id');
-                        parentSelect.empty();
-                        parentSelect.append(
-                            '<option value="">-- Pilih Parent (Opsional) --</option>');
-                        $.each(data.parentKategori, function(index, kategori) {
-                            const selected = data.data.parent_id == kategori.id ?
-                                'selected' : '';
-                            parentSelect.append(
-                                `<option value="${kategori.id}" ${selected}>${kategori.nama}</option>`
-                            );
-                        });
+                // Load ulang parent kategori lalu sembunyikan dirinya sendiri
+                loadParentCategories($('#edit_parent_id'), id);
 
-                        clearFormErrors(form);
-                    }
-                });
+                // Marker
+                if (isMarker == 1) {
+                    $('#edit_is_marker').prop('checked', true);
+                    $('#edit_iconContainer').show();
+                } else {
+                    $('#edit_is_marker').prop('checked', false);
+                    $('#edit_iconContainer').hide();
+                }
+
+                // Ikon
+                $('#edit_icon').val(icon);
+                const convertedIcon = convertFa6toFa4(icon);
+                if (icon) {
+                    $('#edit_iconPreview').html(`<i class="${convertedIcon} fa-2x"></i>`);
+                } else {
+                    $('#edit_iconPreview').html(
+                        `<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>`);
+                }
             });
 
-            // Edit Form Submit
+            // Saat ikon diubah manual
+            $('#edit_icon').on('change', function() {
+                const icon = $(this).val();
+                const convertedIcon = convertFa6toFa4(icon);
+                $('#edit_iconPreview').html(`<i class="${convertedIcon} fa-2x"></i>`);
+            });
+
+            // Checkbox Marker: toggle icon field
+            $('#edit_is_marker').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#edit_iconContainer').show();
+                } else {
+                    $('#edit_iconContainer').hide();
+                }
+            });
+
+            // Submit Form Edit
             $('#editForm').on('submit', function(e) {
                 e.preventDefault();
                 const form = $(this);
                 const id = $('#edit_id').val();
                 const formData = new FormData(this);
+                formData.append('_method', 'PUT'); // Penting untuk method PUT
 
                 $.ajax({
                     url: `{{ route('kategori-layers.index') }}/${id}`,
@@ -539,7 +623,7 @@
                         if (response.success) {
                             $('#editModal').modal('hide');
                             showAlert(response.message);
-                            location.reload(); // Reload page to update table
+                            location.reload();
                         }
                     },
                     error: function(xhr) {
@@ -556,7 +640,7 @@
                 });
             });
 
-            // Show Modal
+            // Show Detail Modal
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
 
@@ -570,12 +654,10 @@
                             'id-ID'));
                         $('#show_deskripsi').text(kategori.deskripsi || 'Tidak ada deskripsi');
 
-                        // Tampilkan warna
                         $('#show_warna')
                             .text(kategori.warna || '-')
                             .css('background-color', kategori.warna || '#ccc');
 
-                        // Tampilkan anak jika ada
                         if (kategori.children.length > 0) {
                             let childrenHtml = '';
                             $.each(kategori.children, function(index, child) {
@@ -587,14 +669,12 @@
                         } else {
                             $('#show_children_container').hide();
                         }
-
                     }
                 });
             });
-
-
         });
     </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const tableBody = document.querySelector("#kategoriTable tbody");
