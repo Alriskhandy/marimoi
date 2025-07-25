@@ -120,7 +120,7 @@
                                     <th>Warna</th>
                                     {{-- <th>Deskripsi</th> --}}
                                     <th>Parent</th>
-                                    <th>Jumlah Proyek</th>
+                                    {{-- <th>Jumlah Proyek</th> --}}
                                     <th>Sub Kategori</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -153,12 +153,12 @@
                                         <td>
                                             <span class="badge badge-secondary">Root</span>
                                         </td>
-                                        <td>
+                                        {{-- <td>
                                             <span class="badge badge-primary">
                                                 {{ $kategori->proyeks_count ?? 0 }}
                                             </span>
 
-                                        </td>
+                                        </td> --}}
                                         <td>
                                             <span class="badge badge-info">
                                                 {{ isset($childKategoris[$kategori->id]) ? $childKategoris[$kategori->id]->count() : 0 }}
@@ -171,7 +171,7 @@
                                                     data-bs-target="#showModal" title="Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-warning btn-edit"
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                     data-id="{{ $kategori->id }}" data-bs-toggle="modal"
                                                     data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
@@ -225,7 +225,7 @@
                                                 <td>
                                                     <span class="badge badge-info">{{ $kategori->nama }}</span>
                                                 </td>
-                                                <td>
+                                                {{-- <td>
                                                     <span class="badge badge-primary">
                                                         {{ $child->proyeks_count ?? 0 }}
                                                     </span>
@@ -237,7 +237,7 @@
                                                             </a>
                                                         </small>
                                                     @endif
-                                                </td>
+                                                </td> --}}
                                                 <td>
                                                     <span class="badge badge-secondary">0</span>
                                                 </td>
@@ -250,18 +250,18 @@
                                                             <i class="mdi mdi-eye"></i>
                                                         </button>
                                                         <button type="button"
-                                                            class="btn btn-sm btn-outline-warning btn-edit"
+                                                            class="btn btn-sm btn-outline-success btn-edit"
                                                             data-id="{{ $child->id }}" data-bs-toggle="modal"
                                                             data-bs-target="#editModal" title="Edit">
                                                             <i class="mdi mdi-pencil"></i>
                                                         </button>
-                                                        @if (($child->proyeks_count ?? 0) > 0)
+                                                        {{-- @if (($child->proyeks_count ?? 0) > 0)
                                                             <a href="{{ route('psd.kategori.show', $child->id) }}"
                                                                 class="btn btn-sm btn-outline-success"
                                                                 title="Lihat Proyek">
                                                                 <i class="mdi mdi-eye-check"></i>
                                                             </a>
-                                                        @endif
+                                                        @endif --}}
                                                         <form action="{{ route('kategori-psd.destroy', $child->id) }}"
                                                             method="POST" style="display: inline-block;"
                                                             onsubmit="return confirmDelete('{{ $child->nama }}', {{ $child->proyeks_count ?? 0 }})">
@@ -444,10 +444,10 @@
                             <span><strong>Parent:</strong></span>
                             <span id="show_parent" class="text-muted"></span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between">
+                        {{-- <li class="list-group-item d-flex justify-content-between">
                             <span><strong>Jumlah Proyek:</strong></span>
                             <span id="show_proyek_count" class="badge bg-success"></span>
-                        </li>
+                        </li> --}}
                         <li class="list-group-item d-flex justify-content-between">
                             <span><strong>Jumlah Sub Kategori:</strong></span>
                             <span id="show_children_count" class="badge bg-info"></span>
@@ -468,7 +468,7 @@
                         <div id="show_children" class="mt-2 ps-3 border-start border-3 border-info"></div>
                     </div>
 
-                    <div class="mb-3" id="show_proyek_container" style="display: none;">
+                    {{-- <div class="mb-3" id="show_proyek_container" style="display: none;">
                         <strong>Proyek Terbaru:</strong>
                         <div id="show_proyeks" class="mt-2 ps-3 border-start border-3 border-primary"></div>
                         <div class="mt-3">
@@ -476,7 +476,7 @@
                                 <i class="mdi mdi-eye-check"></i> Lihat Semua Proyek
                             </a>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

@@ -2,6 +2,7 @@
 console.log("map-app.js loaded");
 
 const mapConfig = {
+     weight: 6, 
     center: [0.735485, 128.028201],
     zoom: 7,
     baseMapsList: [
@@ -49,7 +50,7 @@ function getStyleForCategory(kategori) {
     const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
     return {
         color: warna,
-        weight: 2,
+        weight: 5,
         fillColor: warna,
         fillOpacity: 0.4,
         opacity: 1,
