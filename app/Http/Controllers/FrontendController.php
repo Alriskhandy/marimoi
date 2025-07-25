@@ -114,14 +114,14 @@ class FrontendController extends Controller
         });
 
         // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriLayer::whereNull('parent_id')
+        $rootCategories = KategoriPSD::whereNull('parent_id')
             ->with(['children' => function($query) {
                 $query->orderBy('nama');
             }])
             ->orderBy('nama')
             ->get();
                     
-        $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
+        $allCategories = KategoriPSD::with('parent')->orderBy('nama')->get();
                     
         return response()->json([
             'type' => 'FeatureCollection',
