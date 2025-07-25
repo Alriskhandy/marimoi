@@ -2,7 +2,7 @@
 console.log("map-app.js loaded");
 
 const mapConfig = {
-     weight: 6, 
+    weight: 6,
     center: [0.735485, 128.028201],
     zoom: 7,
     baseMapsList: [
@@ -67,7 +67,10 @@ function generateLegend() {
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
             if (!added.has(sub)) {
-                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                const color =
+                    kategoriWarnaMap[sub] ||
+                    kategoriWarnaMap[kategori] ||
+                    "#ccc";
                 legendContainer.innerHTML += `
                     <div class="d-flex align-items-center mb-2">
                         <div style="width: 16px; height: 16px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
@@ -90,11 +93,18 @@ function bindPopupContent(feature, layer) {
         if (
             value &&
             ![
-                "geometry", "ID", "Kategori Id", "id", "kategori", 
-                "kategori id", "kategori_id",
+                "geometry",
+                "ID",
+                "Kategori Id",
+                "id",
+                "kategori",
+                "kategori id",
+                "kategori_id",
             ].includes(key.toLowerCase())
         ) {
-            const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+            const label = key
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
             content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
@@ -115,11 +125,17 @@ function bindPopupContent(feature, layer) {
                 const rad = Math.PI / 180;
                 const dLat = (lat2 - lat1) * rad;
                 const dLon = (lon2 - lon1) * rad;
-                const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+                const a =
+                    Math.sin(dLat / 2) ** 2 +
+                    Math.cos(lat1 * rad) *
+                        Math.cos(lat2 * rad) *
+                        Math.sin(dLon / 2) ** 2;
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 length += R * c;
             }
-            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(2)} km</td></tr>`;
+            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
+                2
+            )} km</td></tr>`;
         }
 
         let center;
@@ -135,11 +151,15 @@ function bindPopupContent(feature, layer) {
         }
 
         if (center) {
-            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(5)}, ${center[0].toFixed(5)}</td></tr>`;
+            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
+                5
+            )}, ${center[0].toFixed(5)}</td></tr>`;
         }
         content += `</table>`;
     }
 
+    const basePath = window.location.pathname.replace(/\/$/, "");
+    const detailPath = '${basePath}/${id}';
     const id = props.id || "";
     content += `
         <div class="d-flex justify-content-between mt-3">
@@ -198,7 +218,8 @@ function changeBaseMap(baseMapId) {
 // ✅ Modified initMap with proper hierarchy using all_categories
 async function initMap() {
     try {
-        const response = await fetch("/psd-geojson");
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const response = await fetch(urlPath + "/api");
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {
@@ -225,21 +246,30 @@ async function initMap() {
         layerGroups = {};
 
         // ✅ Build hierarchy structure
-        if (geoJsonData.all_categories && geoJsonData.all_categories.length > 0) {
+        if (
+            geoJsonData.all_categories &&
+            geoJsonData.all_categories.length > 0
+        ) {
             // Use all_categories with parent_id structure
-            const parentCategories = geoJsonData.all_categories.filter(cat => !cat.parent_id);
-            const childCategories = geoJsonData.all_categories.filter(cat => cat.parent_id);
+            const parentCategories = geoJsonData.all_categories.filter(
+                (cat) => !cat.parent_id
+            );
+            const childCategories = geoJsonData.all_categories.filter(
+                (cat) => cat.parent_id
+            );
 
             // Create layer groups for parent categories
-            parentCategories.forEach(parent => {
+            parentCategories.forEach((parent) => {
                 layerGroups[parent.nama] = {};
-                
+
                 // Find children of this parent
-                const children = childCategories.filter(child => child.parent_id === parent.id);
-                
+                const children = childCategories.filter(
+                    (child) => child.parent_id === parent.id
+                );
+
                 if (children.length > 0) {
                     // Create layers for children
-                    children.forEach(child => {
+                    children.forEach((child) => {
                         layerGroups[parent.nama][child.nama] = L.layerGroup();
                     });
                 } else {
@@ -252,7 +282,7 @@ async function initMap() {
             geoJsonData.root_categories.forEach((cat) => {
                 const kategori = cat.nama;
                 layerGroups[kategori] = {};
-                
+
                 if (cat.children && cat.children.length > 0) {
                     cat.children.forEach((sub) => {
                         layerGroups[kategori][sub.nama] = L.layerGroup();
@@ -315,7 +345,7 @@ async function initMap() {
 function updateLayerList() {
     const container = document.getElementById("layer-list");
     if (!container) return;
-    
+
     container.innerHTML = "";
 
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
@@ -324,10 +354,11 @@ function updateLayerList() {
         groupWrapper.classList.add("layer-group", "mb-2");
 
         const rootId = `root-${kategori.replace(/\s+/g, "-")}`;
-        
+
         // Create header
         const header = document.createElement("div");
-        header.className = "d-flex align-items-center justify-content-between px-3 py-2 border rounded";
+        header.className =
+            "d-flex align-items-center justify-content-between px-3 py-2 border rounded";
         header.style.cursor = "pointer";
 
         const leftSection = document.createElement("div");
@@ -344,7 +375,7 @@ function updateLayerList() {
         checkboxRoot.type = "checkbox";
         checkboxRoot.className = "form-check-input me-2";
         checkboxRoot.id = rootId;
-checkboxRoot.style.border = "2px solid #999"; // Atur warna dan ketebalan border
+        checkboxRoot.style.border = "2px solid #999"; // Atur warna dan ketebalan border
         // Parent label
         const labelRoot = document.createElement("label");
         labelRoot.className = "form-check-label fw-bold ";
@@ -403,11 +434,13 @@ checkboxRoot.style.border = "2px solid #999"; // Atur warna dan ketebalan border
 
             checkbox.addEventListener("change", () => {
                 checkbox.checked ? map.addLayer(layer) : map.removeLayer(layer);
-                
+
                 // Update parent state
-                const allSubs = Array.from(subLayerList.querySelectorAll('input[type="checkbox"]'));
-                const checkedCount = allSubs.filter(cb => cb.checked).length;
-                
+                const allSubs = Array.from(
+                    subLayerList.querySelectorAll('input[type="checkbox"]')
+                );
+                const checkedCount = allSubs.filter((cb) => cb.checked).length;
+
                 if (checkedCount === 0) {
                     checkboxRoot.checked = false;
                     checkboxRoot.indeterminate = false;
@@ -424,16 +457,16 @@ checkboxRoot.style.border = "2px solid #999"; // Atur warna dan ketebalan border
             label.className = "form-check-label";
             label.htmlFor = subId;
             label.textContent = subname;
-// Parent Row (pastikan ada)
-row.style.cssText = `
+            // Parent Row (pastikan ada)
+            row.style.cssText = `
     display: flex;
     align-items: center;
     width: 100%;
     gap: 0.5rem;
 `;
 
-// Label
-label.style.cssText = `
+            // Label
+            label.style.cssText = `
     font-size: 0.75rem;              /* kecilkan teks */
     white-space: normal;             /* izinkan teks membungkus */
     word-wrap: break-word;
@@ -443,22 +476,21 @@ label.style.cssText = `
     line-height: 1.2;
 `;
 
-
             // Color indicator
             // const colorIndicator = document.createElement("div");
             // Color indicator
-// colorIndicator.style.cssText = `
-//     width: 16px; 
-//     height: 16px; 
-//     flex-shrink: 0;                  /* jangan menyusutkan kotak warna */
-//     background-color: ${kategoriWarnaMap[subname] || kategoriWarnaMap[kategori] || "#ccc"};
-//     border: 1px solid #333; 
-//     border-radius: 3px; 
-//     margin-left: 0.5rem;
-// `;
+            // colorIndicator.style.cssText = `
+            //     width: 16px;
+            //     height: 16px;
+            //     flex-shrink: 0;                  /* jangan menyusutkan kotak warna */
+            //     background-color: ${kategoriWarnaMap[subname] || kategoriWarnaMap[kategori] || "#ccc"};
+            //     border: 1px solid #333;
+            //     border-radius: 3px;
+            //     margin-left: 0.5rem;
+            // `;
 
             // colorIndicator.style.cssText = `
-            //     width: 16px; height: 16px; 
+            //     width: 16px; height: 16px;
             //     background-color: ${kategoriWarnaMap[subname] || kategoriWarnaMap[kategori] || "#ccc"};
             //     border: 1px solid #333; border-radius: 3px; margin-left: auto;
             // // `;
@@ -473,8 +505,8 @@ label.style.cssText = `
         const toggleDropdown = () => {
             const isVisible = subLayerList.style.display !== "none";
             subLayerList.style.display = isVisible ? "none" : "block";
-            toggleBtn.innerHTML = isVisible 
-                ? `<i class="bi bi-chevron-right"></i>` 
+            toggleBtn.innerHTML = isVisible
+                ? `<i class="bi bi-chevron-right"></i>`
                 : `<i class="bi bi-chevron-down"></i>`;
         };
 
@@ -516,13 +548,18 @@ function setupUI() {
         mapConfig.baseMapsList.forEach((bm, i) => {
             basemapList.innerHTML += `
                 <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${bm.id}" value="${bm.id}" ${i === 4 ? "checked" : ""}>
-                    <label class="form-check-label" for="bm-${bm.id}">${bm.label}</label>
+                    <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${
+                        bm.id
+                    }" value="${bm.id}" ${i === 4 ? "checked" : ""}>
+                    <label class="form-check-label" for="bm-${bm.id}">${
+                bm.label
+            }</label>
                 </div>`;
         });
 
         basemapList.addEventListener("change", (e) => {
-            if (e.target.name === "basemap-radio") changeBaseMap(e.target.value);
+            if (e.target.name === "basemap-radio")
+                changeBaseMap(e.target.value);
         });
     }
 }
@@ -538,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
         basemap: document.getElementById("sidebar-basemap"),
         legend: document.getElementById("sidebar-legend"),
         download: document.getElementById("sidebar-download"),
-        help: document.getElementById("guideModal")
+        help: document.getElementById("guideModal"),
     };
 
     const toggleButtons = {
@@ -546,11 +583,11 @@ document.addEventListener("DOMContentLoaded", () => {
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
         legend: document.getElementById("btn-toggle-sidebar-legend"),
         download: document.getElementById("btn-toggle-sidebar-download"),
-        help: document.getElementById("btn-toggle-sidebar-help")
+        help: document.getElementById("btn-toggle-sidebar-help"),
     };
 
     function closeAllSidebars() {
-        Object.values(sidebarElements).forEach(element => {
+        Object.values(sidebarElements).forEach((element) => {
             if (element) element.style.display = "none";
         });
     }
@@ -572,7 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Close buttons
-    ["layer", "basemap", "legend", "download"].forEach(type => {
+    ["layer", "basemap", "legend", "download"].forEach((type) => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
             closeBtn.addEventListener("click", () => {
@@ -586,7 +623,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnFullscreen) {
         btnFullscreen.addEventListener("click", () => {
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(console.error);
+                document.documentElement
+                    .requestFullscreen()
+                    .catch(console.error);
             } else {
                 document.exitFullscreen().catch(console.error);
             }
@@ -607,26 +646,34 @@ document.addEventListener("DOMContentLoaded", () => {
         layerSearchInput.addEventListener("input", (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const layerGroups = document.querySelectorAll(".layer-group");
-            
-            layerGroups.forEach(group => {
+
+            layerGroups.forEach((group) => {
                 const parentLabel = group.querySelector(".fw-bold");
                 const childLabels = group.querySelectorAll(".bg-light label");
-                
+
                 let hasMatch = false;
-                
+
                 // Check parent
-                if (parentLabel && parentLabel.textContent.toLowerCase().includes(searchTerm)) {
+                if (
+                    parentLabel &&
+                    parentLabel.textContent.toLowerCase().includes(searchTerm)
+                ) {
                     hasMatch = true;
                 }
-                
+
                 // Check children
-                childLabels.forEach(childLabel => {
-                    if (childLabel.textContent.toLowerCase().includes(searchTerm)) {
+                childLabels.forEach((childLabel) => {
+                    if (
+                        childLabel.textContent
+                            .toLowerCase()
+                            .includes(searchTerm)
+                    ) {
                         hasMatch = true;
                     }
                 });
-                
-                group.style.display = hasMatch || searchTerm === "" ? "block" : "none";
+
+                group.style.display =
+                    hasMatch || searchTerm === "" ? "block" : "none";
             });
         });
     }

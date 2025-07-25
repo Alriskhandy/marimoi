@@ -9,6 +9,7 @@ Route::get('/', [FrontendController::class, 'index'])->name('beranda');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
+Route::get('/usulan-musrenbang', [FrontendController::class, 'showMap'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
@@ -17,14 +18,14 @@ Route::get('/detail-psn/{id}', [FrontendController::class, 'detailPsn'])->name('
 Route::get('/detail-pokir/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
 
 // Rute Tahap Pengembangan //
-Route::get('/usulan-musrenbang', [FrontendController::class, 'showMap'])->name('tampil.musrenbang');
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
 
 // Rute API //
-Route::get('/psd-geojson', [FrontendController::class, 'psdGeojson']);
-Route::get('/psn-geojson', [FrontendController::class, 'psnGeojson']);
+Route::get('/proyek-strategis-daerah/api', [FrontendController::class, 'psdGeojson']);
+Route::get('/proyek-strategis-nasional/api', [FrontendController::class, 'psnGeojson']);
+Route::get('/pokir-dprd/api', [FrontendController::class, 'pokirGeojson']);
+Route::get('/usulan-musrenbang/api', [FrontendController::class, 'pokirGeojson']);
 Route::get('/rpjmd-geojson', [FrontendController::class, 'rpjmdGeojson']);
-Route::get('/pokir-geojson', [FrontendController::class, 'pokirGeojson']);
 Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
 
 // Nanti di hapus //
