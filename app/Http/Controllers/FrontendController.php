@@ -28,7 +28,7 @@ class FrontendController extends Controller
     public function showMap()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.peta', compact('documents'));
+        return view('frontend.pages.rpjmd', compact('documents'));
     }
 
     public function psd()
