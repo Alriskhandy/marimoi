@@ -4,41 +4,35 @@ use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LokasiController;
 use Illuminate\Support\Facades\Route;
 
-// Rute FIX //
+// HALAMAN //
 Route::get('/', [FrontendController::class, 'index'])->name('beranda');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
+Route::get('/rpjmd', [FrontendController::class, 'rpjmd'])->name('tampil.rpjmd');
 Route::get('/usulan-musrenbang', [FrontendController::class, 'showMap'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
-Route::get('/detail-psd/{id}', [FrontendController::class, 'detailPsd'])->name('detail.psd');
-Route::get('/detail-psn/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
-Route::get('/detail-pokir/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
+// HALAMAN DETAIL //
+Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPsd'])->name('detail.psd');
+Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
+Route::get('/rpjmd/{id}', [FrontendController::class, 'detailRpjmd'])->name('detail.rpjmd');
+Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
 
-// Rute Tahap Pengembangan //
-Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
+// API GEOJSON //
+Route::prefix('geojson')->group(function(){
+    Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psdGeojson']);
+    Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psnGeojson']);
+    Route::get('/rpjmd', [FrontendController::class, 'rpjmdGeojson']);
+    Route::get('/pokir-dprd', [FrontendController::class, 'pokirGeojson']);
+    Route::get('/usulan-musrenbang', [FrontendController::class, 'pokirGeojson']);
+});
 
-// Rute API //
-Route::get('/proyek-strategis-daerah/api', [FrontendController::class, 'psdGeojson']);
-Route::get('/proyek-strategis-nasional/api', [FrontendController::class, 'psnGeojson']);
-Route::get('/pokir-dprd/api', [FrontendController::class, 'pokirGeojson']);
-Route::get('/usulan-musrenbang/api', [FrontendController::class, 'pokirGeojson']);
-Route::get('/rpjmd-geojson', [FrontendController::class, 'rpjmdGeojson']);
 Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
 
-// Nanti di hapus //
-Route::prefix('api')->group(function (){
-    
-    // API DEFAULT - LOKASI
-    Route::get('/categories', [LokasiController::class, 'getCategories'])->name('lokasi.categories');
-    Route::get('/statistics', [LokasiController::class, 'getStatistics'])->name('lokasi.statistics');
-    Route::get('/category/{kategori}', [LokasiController::class, 'getByCategory'])->name('lokasi.by-category');
-
-    Route::get('/dbf/columns', [LokasiController::class, 'getDbfColumns'])->name('lokasi.dbf-columns');
-    Route::get('/dbf/column/{column}/values', [LokasiController::class, 'getDbfColumnValues'])->name('lokasi.dbf-column-values');
-});
+// TAHAP PENGEMBANGAN //
+Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';

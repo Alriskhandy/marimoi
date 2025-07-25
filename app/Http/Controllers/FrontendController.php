@@ -43,6 +43,12 @@ class FrontendController extends Controller
         return view('frontend.pages.psn', compact('documents'));
     }
 
+    public function rpjmd()
+    {
+        $documents = Dokumen::all();
+        return view('frontend.pages.rpjmd', compact('documents'));
+    }
+
     public function prioritas()
     {
         $documents = Dokumen::all();
@@ -381,6 +387,13 @@ class FrontendController extends Controller
     public function showDetail($id)
     {
         $project = Lokasi::findOrFail($id);
+        return view('frontend.pages.detail', compact('project'));
+    }
+    public function detailRpjmd($id)
+    {
+        $project = Lokasi::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->findOrFail($id);
+        $project->geojson = json_decode($project->geojson);
         return view('frontend.pages.detail', compact('project'));
     }
     public function detailPsd($id)

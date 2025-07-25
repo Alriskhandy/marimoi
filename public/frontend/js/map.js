@@ -83,7 +83,7 @@ function generateLegend() {
     });
 }
 
-function bindPopupContent(feature, layer) {
+function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
     let content = `<div class="p-2" style="max-width: 300px;">
         <h5 class="fw-bold text-primary">${props.kategori || "Feature"}</h5>`;
@@ -158,13 +158,11 @@ function bindPopupContent(feature, layer) {
         content += `</table>`;
     }
 
-    const basePath = window.location.pathname.replace(/\/$/, "");
-    const detailPath = '${basePath}/${id}';
     const id = props.id || "";
     content += `
         <div class="d-flex justify-content-between mt-3">
             <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button>
-            <a href="/detail-psd/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -219,7 +217,7 @@ function changeBaseMap(baseMapId) {
 async function initMap() {
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
-        const response = await fetch(urlPath + "/api");
+        const response = await fetch("/geojson" + urlPath);
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {
@@ -316,7 +314,7 @@ async function initMap() {
             if (targetLayer) {
                 L.geoJSON(feature, {
                     style: getStyleForCategory(kategori),
-                    onEachFeature: (f, l) => bindPopupContent(f, l),
+                    onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
                 }).addTo(targetLayer);
             }
         });

@@ -18,6 +18,9 @@
                 </li>
                 <li><a href="{{ route('tampil.prioritas') }}"
                         class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah 2025-2029</a></li>
+                {{-- Aktifkan Jika RPJMD sudah Siap --}}
+                {{-- <li><a href="{{ route('tampil.rpjmd') }}"
+                        class="{{ request()->routeIs('tampil.rpjmd') ? 'active' : '' }}">RPJMD</a></li> --}} 
                 <li><a href="{{ route('tampil.musrenbang') }}"
                         class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a></li>
                 <li><a href="{{ route('tampil.pokir') }}"
