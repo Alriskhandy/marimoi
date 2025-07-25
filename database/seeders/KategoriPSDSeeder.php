@@ -14,26 +14,37 @@ class KategoriPSDSeeder extends Seeder
   public function run(): void
 {
     $kategoris = [
-        'Pusat Pertumbuhan Ekonomi',
-        'Kawasan Industri',
-        'Kawasan Strategis Pariwisata',
-        'Pengembangan Infrastruktur Wilayah',
-        'Kawasan Perkotaan',
-        'Kawasan Pedesaan',
-        'Kawasan Rawan Bencana',
-        'Kawasan Hutan dan Konservasi',
-        'Kawasan Perbatasan',
-        'Kawasan Transmigrasi',
+        'Pendidikan berkualitas dan merata' => [
+            'Pembangunan Prasarana SMA/SMK/SLB',
+            'Rehabilitasi Prasarana SMA/SMK/SLB',
+            'Pengadaan Sarana Pendidikan',
+        ],
+        'Kesehatan Untuk Semua' => [
+            'Pembangunan/Rehabilitasi/Penyediaan Sarana & Prasarana Rumah Sakit Daerah',
+        ],
+        'Layanan infrastruktur dasar berkualitas dan merata' => [
+            'Pembangunan Jalan dan Jembatan',
+        ],
     ];
 
-    foreach ($kategoris as $nama) {
-        KategoriPSD::create([
-            'nama' => $nama,
-            'warna' => 'red', // Disarankan diganti nanti dengan kode warna hex atau nama warna yang valid
+    foreach ($kategoris as $parentNama => $subKategoris) {
+        $parent = KategoriPSD::create([
+            'nama' => $parentNama,
+            'warna' => '#d6e9c6', // warna hijau muda (parent)
             'parent_id' => null,
             'deskripsi' => null,
         ]);
+
+        foreach ($subKategoris as $subNama) {
+            KategoriPSD::create([
+                'nama' => $subNama,
+                'warna' => '#f9c6aa', // warna merah muda (sub)
+                'parent_id' => $parent->id,
+                'deskripsi' => null,
+            ]);
+        }
     }
 }
+
 
 }
