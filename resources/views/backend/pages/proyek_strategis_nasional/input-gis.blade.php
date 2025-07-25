@@ -302,7 +302,7 @@
                                         </label>
                                         <select name="tahun" id="tahun" class="form-select" required>
                                             <option value="">-- Pilih Tahun --</option>
-                                            @for ($i = date('Y') + 2; $i >= 2000; $i--)
+                                            @for ($i = date('Y') + 2; $i >= 2020; $i--)
                                                 <option value="{{ $i }}">{{ $i }}</option>
                                             @endfor
                                         </select>

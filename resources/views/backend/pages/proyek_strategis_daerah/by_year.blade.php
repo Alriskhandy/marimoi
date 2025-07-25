@@ -128,7 +128,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="dataRows">
-                                    @forelse($lokasis as $lokasi)
+                                    @forelse($proyek_strategis_daerahs as $lokasi)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             <td><span class="badge bg-info">{{ $lokasi->kategori->nama }}</span></td>

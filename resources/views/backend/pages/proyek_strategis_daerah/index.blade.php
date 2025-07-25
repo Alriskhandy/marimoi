@@ -79,7 +79,7 @@
                                 <tbody>
 
 
-                                    @forelse($lokasis as $lokasi)
+                                    @forelse($proyek_strategis_daerahs as $lokasi)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             <td>
