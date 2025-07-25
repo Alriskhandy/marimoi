@@ -58,4 +58,18 @@
         <img src="{{ asset('frontend/img/prioritas/prioritas-3.jpg') }}" alt="Image 3">
         <img src="{{ asset('frontend/img/prioritas/prioritas-4.jpg') }}" alt="Image 4">
     </section><!-- /Document Section -->
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const scrollContainer = document.querySelector('.horizontal-scroll-section');
+            if (scrollContainer) {
+                scrollContainer.addEventListener('wheel', function (evt) {
+                    evt.preventDefault();
+                    scrollContainer.scrollLeft += evt.deltaY;
+                });
+            }
+        });
+    </script>
+    @endpush
 @endsection
