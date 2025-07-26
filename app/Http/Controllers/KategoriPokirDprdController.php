@@ -12,11 +12,16 @@ class KategoriPokirDprdController extends Controller
      /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $kategori_pokir_dprds = KategoriPokirDprd::with('parent', 'children')->orderBy('nama')->get();
-        return view('backend.pages.pokir_dprd.kategori', compact('kategori_pokir_dprds'));
-    }
+  public function index()
+{
+    $allKategori = KategoriPokirDprd::with('parent')->orderBy('nama')->get();
+
+    $parentKategoris = $allKategori->whereNull('parent_id');
+    $childKategoris = $allKategori->whereNotNull('parent_id')->groupBy('parent_id');
+
+    return view('backend.pages.pokir_dprd.kategori', compact('parentKategoris', 'childKategoris'));
+}
+
 
     /**
      * Get data for create modal

@@ -71,7 +71,7 @@ class ProyekStrategisDaerahController extends Controller
             DB::commit();
 
             $message = "Berhasil menyimpan {$recordCount} record dengan metode {$inputType}.";
-            return redirect()->route('psd.index')->with('success', $message);
+           return redirect()->route('psd.tahun.show', ['year' => $request->tahun])->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -79,6 +79,7 @@ class ProyekStrategisDaerahController extends Controller
             return back()->withErrors(['Gagal menyimpan data: ' . $e->getMessage()])->withInput();
         }
     }
+
 
     private function processShapefileInput(Request $request)
     {
@@ -828,7 +829,7 @@ public function update(Request $request, $id)
             'attributes_count' => count($dbfAttributes)
         ]);
 
-        return redirect()->route('psd.index')
+        return redirect()->route('psd.tahun.show', ['year' => $lokasi->tahun])
             ->with('success', 'Lokasi berhasil diperbarui');
     } catch (\Exception $e) {
         Log::error('Error updating lokasi: ' . $e->getMessage(), [
@@ -842,13 +843,15 @@ public function update(Request $request, $id)
     }
 }
 
-    public function destroy($id)
-    {
-        $lokasi = ProyekStrategisDaerah::findOrFail($id);
-        $lokasi->delete();
+  public function destroy($id)
+{
+    $lokasi = ProyekStrategisDaerah::findOrFail($id);
+    $tahun = $lokasi->tahun; // simpan tahun sebelum data dihapus
+    $lokasi->delete();
 
-        return redirect()->route('psd.index')->with('success', 'Data berhasil dihapus.');
-    }
+    return redirect()->route('psd.tahun.show', ['year' => $tahun])->with('success', 'Data berhasil dihapus.');
+}
+
 
     /**
      * Proses geometri untuk mengatasi masalah dimensi Z dan M

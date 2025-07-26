@@ -23,4 +23,9 @@ class KategoriMusrenbang extends Model
     {
         return $this->hasMany(UsulanMusrenbang::class, 'kategori_id');
     }
+
+     public function proyeks()
+    {
+        return $this->hasMany(UsulanMusrenbang::class, 'kategori_id');
+    }
 }

@@ -221,11 +221,11 @@ class PokirDprdController extends Controller
    public function geojson(Request $request)
 {
    $query = DB::table('pokir_dprds')
-        ->join('kategori_layers', 'pokir_dprds.kategori_id', '=', 'kategori_layers.id')
+        ->join('kategori_pokir_dprds', 'pokir_dprds.kategori_id', '=', 'kategori_pokir_dprds.id')
         ->select(
             'pokir_dprds.id',
             'pokir_dprds.kategori_id',
-            'kategori_layers.nama as kategori', // ⬅️ ini sangat penting!
+            'kategori_pokir_dprds.nama as kategori', // ⬅️ ini sangat penting!
             'pokir_dprds.deskripsi',
             'pokir_dprds.dbf_attributes',
             DB::raw('ST_AsGeoJSON(pokir_dprds.geom) as geojson')
@@ -234,7 +234,7 @@ class PokirDprdController extends Controller
     // Filter kategori
     if ($request->has('kategori') && !empty($request->kategori)) {
         $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-        $query->whereIn('kategori_layers.nama', $categories);
+        $query->whereIn('kategori_pokir_dprds.nama', $categories);
     }
 
     // Filter atribut DBF
@@ -248,7 +248,7 @@ class PokirDprdController extends Controller
     if ($request->has('search') && !empty($request->search)) {
         $search = $request->search;
         $query->where(function ($q) use ($search) {
-            $q->where('kategori_layers.nama', 'ILIKE', "%{$search}%")
+            $q->where('kategori_pokir_dprds.nama', 'ILIKE', "%{$search}%")
               ->orWhere('pokir_dprds.deskripsi', 'ILIKE', "%{$search}%")
               ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
         });
@@ -329,10 +329,10 @@ class PokirDprdController extends Controller
     public function getCategories()
 {
     $categories = DB::table('pokir_dprds')
-        ->join('kategori_layers', 'pokir_dprds.kategori_id', '=', 'kategori_layers.id')
-        ->select('kategori_layers.id as kategori_id', 'kategori_layers.nama as kategori', DB::raw('COUNT(*) as count'))
-        ->groupBy('kategori_layers.id', 'kategori_layers.nama')
-        ->orderBy('kategori_layers.nama')
+        ->join('kategori_pokir_dprds', 'pokir_dprds.kategori_id', '=', 'kategori_pokir_dprds.id')
+        ->select('kategori_pokir_dprds.id as kategori_id', 'kategori_pokir_dprds.nama as kategori', DB::raw('COUNT(*) as count'))
+        ->groupBy('kategori_pokir_dprds.id', 'kategori_pokir_dprds.nama')
+        ->orderBy('kategori_pokir_dprds.nama')
         ->get();
 
     return response()->json([
@@ -349,9 +349,9 @@ class PokirDprdController extends Controller
         'total_locations' => DB::table('pokir_dprds')->count(),
         'categories_count' => DB::table('pokir_dprds')->distinct('kategori_id')->count(),
         'categories' => DB::table('pokir_dprds')
-            ->join('kategori_layers', 'pokir_dprds.kategori_id', '=', 'kategori_layers.id')
-            ->select('kategori_layers.nama as kategori', DB::raw('COUNT(*) as count'))
-            ->groupBy('kategori_layers.nama')
+            ->join('kategori_pokir_dprds', 'pokir_dprds.kategori_id', '=', 'kategori_pokir_dprds.id')
+            ->select('kategori_pokir_dprds.nama as kategori', DB::raw('COUNT(*) as count'))
+            ->groupBy('kategori_pokir_dprds.nama')
             ->orderBy('count', 'desc')
             ->get(),
         'bounds' => DB::table('pokir_dprds')
@@ -375,9 +375,9 @@ class PokirDprdController extends Controller
     public function getByCategory($kategori)
 {
     $lokasis = DB::table('pokir_dprds')
-        ->join('kategori_layers', 'pokir_dprds.kategori_id', '=', 'kategori_layers.id')
-        ->select('pokir_dprds.id', 'pokir_dprds.kategori_id', 'kategori_layers.nama as kategori', 'pokir_dprds.deskripsi', 'pokir_dprds.dbf_attributes', DB::raw('ST_AsGeoJSON(geom) as geojson'))
-        ->where('kategori_layers.nama', $kategori)
+        ->join('kategori_pokir_dprds', 'pokir_dprds.kategori_id', '=', 'kategori_pokir_dprds.id')
+        ->select('pokir_dprds.id', 'pokir_dprds.kategori_id', 'kategori_pokir_dprds.nama as kategori', 'pokir_dprds.deskripsi', 'pokir_dprds.dbf_attributes', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        ->where('kategori_pokir_dprds.nama', $kategori)
         ->get();
 
     $features = $lokasis->map(function ($lokasi) {
@@ -403,7 +403,7 @@ class PokirDprdController extends Controller
 public function update(Request $request, $id)
 {
     $validator = Validator::make($request->all(), [
-        'kategori' => 'required|exists:kategori_layers,id',
+        'kategori' => 'required|exists:kategori_pokir_dprds,id',
         'deskripsi' => 'nullable|string|max:255',
         'dbf_attributes' => 'nullable|string'
     ], [

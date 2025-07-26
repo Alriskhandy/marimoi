@@ -124,6 +124,7 @@
                                         <th onclick="sortTable(1)">Kategori</th>
                                         <th>Nama/Deskripsi</th>
                                         <th onclick="sortTable(3)">Data Tahun</th>
+                                        <th>Dibuat Pada</th> <!-- Tambahan -->
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -140,6 +141,9 @@
                                             </td>
                                             <td class="text-center">{{ $lokasi->tahun }}</td>
                                             <td class="text-center">
+                                                {{ $lokasi->created_at ? $lokasi->created_at->setTimezone('Asia/Jayapura')->format('d M Y H:i') . ' WIT' : '-' }}
+                                            </td>
+                                            <td class="text-center">
                                                 <a href="{{ route('psd.edit', $lokasi->id) }}"
                                                     class="btn btn-sm btn-outline-warning">
                                                     <i class="mdi mdi-pencil"></i>
@@ -155,12 +159,12 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted">Tidak ada data ditemukan.</td>
+                                            <td colspan="6" class="text-center text-muted">Tidak ada data ditemukan.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
-
                             </table>
+
 
                             <nav>
                                 <ul class="pagination justify-content-center" id="pagination"></ul>

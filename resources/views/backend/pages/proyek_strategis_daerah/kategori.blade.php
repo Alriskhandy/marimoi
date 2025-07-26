@@ -1,6 +1,40 @@
 {{-- File: resources/views/backend/pages/data-spasial/kategori_index.blade.php --}}
 
 @extends('backend.partials.main', ['title' => 'Kategori Proyek Strategis Daerah'])
+{{-- @push('styles')
+    <style>
+        .custom-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 15px;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3Csvg%20fill%3D%22%236B7280%22%20viewBox%3D%220%200%2020%2020%22%20xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%200%201%201.06.02L10%2011.094l3.71-3.864a.75.75%200%201%201%201.08%201.04l-4.25%204.418a.75.75%200%200%201-1.08%200l-4.25-4.418a.75.75%200%200%201%20.02-1.06z%22%20clip-rule%3D%22evenodd%22/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .custom-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            outline: none;
+        }
+
+        .custom-select option[disabled] {
+            color: #9ca3af;
+            background-color: #f3f4f6;
+            font-style: italic;
+        }
+    </style>
+@endpush --}}
+
 
 @section('main')
     <div class="page-header">
@@ -118,10 +152,6 @@
                                     <th>No</th>
                                     <th>Nama</th>
                                     <th>Warna</th>
-                                    {{-- <th>Deskripsi</th> --}}
-                                    <th>Parent</th>
-                                    {{-- <th>Jumlah Proyek</th> --}}
-                                    <th>Sub Kategori</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -130,9 +160,7 @@
                                 @forelse($parentKategoris as $kategori)
                                     <tr data-id="{{ $kategori->id }}">
                                         <td>{{ $no++ }}</td>
-                                        <td>
-                                            <strong>{{ $kategori->nama }}</strong>
-                                        </td>
+                                        <td><strong>{{ $kategori->nama }}</strong></td>
                                         <td>
                                             @if ($kategori->warna)
                                                 <span class="badge"
@@ -142,27 +170,6 @@
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
-                                        </td>
-                                        {{-- <td>
-                                            @if ($kategori->deskripsi)
-                                                {{ Str::limit($kategori->deskripsi, 50) }}
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td> --}}
-                                        <td>
-                                            <span class="badge badge-secondary">Root</span>
-                                        </td>
-                                        {{-- <td>
-                                            <span class="badge badge-primary">
-                                                {{ $kategori->proyeks_count ?? 0 }}
-                                            </span>
-
-                                        </td> --}}
-                                        <td>
-                                            <span class="badge badge-info">
-                                                {{ isset($childKategoris[$kategori->id]) ? $childKategoris[$kategori->id]->count() : 0 }}
-                                            </span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
@@ -176,12 +183,6 @@
                                                     data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
-                                                {{-- @if (($kategori->proyeks_count ?? 0) > 0)
-                                                    <a href="{{ route('psd.kategori.show', $kategori->id) }}"
-                                                        class="btn btn-sm btn-outline-success" title="Lihat Proyek">
-                                                        <i class="mdi mdi-eye-check"></i>
-                                                    </a>
-                                                @endif --}}
                                                 <form action="{{ route('kategori-psd.destroy', $kategori->id) }}"
                                                     method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
@@ -195,7 +196,7 @@
                                         </td>
                                     </tr>
 
-                                    {{-- Sub Categories --}}
+                                    {{-- Sub Kategori --}}
                                     @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
                                         @foreach ($childKategoris[$kategori->id] as $child)
                                             <tr data-id="{{ $child->id }}" class="table-secondary">
@@ -215,32 +216,6 @@
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
-                                                {{-- <td>
-                                                    @if ($child->deskripsi)
-                                                        {{ Str::limit($child->deskripsi, 50) }}
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td> --}}
-                                                <td>
-                                                    <span class="badge badge-info">{{ $kategori->nama }}</span>
-                                                </td>
-                                                {{-- <td>
-                                                    <span class="badge badge-primary">
-                                                        {{ $child->proyeks_count ?? 0 }}
-                                                    </span>
-                                                    @if (($child->proyeks_count ?? 0) > 0)
-                                                        <br><small class="text-muted">
-                                                            <a href="{{ route('psd.kategori.show', $child->id) }}"
-                                                                class="text-decoration-none">
-                                                                Lihat Proyek
-                                                            </a>
-                                                        </small>
-                                                    @endif
-                                                </td> --}}
-                                                <td>
-                                                    <span class="badge badge-secondary">0</span>
-                                                </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <button type="button"
@@ -255,13 +230,6 @@
                                                             data-bs-target="#editModal" title="Edit">
                                                             <i class="mdi mdi-pencil"></i>
                                                         </button>
-                                                        {{-- @if (($child->proyeks_count ?? 0) > 0)
-                                                            <a href="{{ route('psd.kategori.show', $child->id) }}"
-                                                                class="btn btn-sm btn-outline-success"
-                                                                title="Lihat Proyek">
-                                                                <i class="mdi mdi-eye-check"></i>
-                                                            </a>
-                                                        @endif --}}
                                                         <form action="{{ route('kategori-psd.destroy', $child->id) }}"
                                                             method="POST" style="display: inline-block;"
                                                             onsubmit="return confirmDelete('{{ $child->nama }}', {{ $child->proyeks_count ?? 0 }})">
@@ -279,7 +247,7 @@
                                     @endif
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="4" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada kategori PSD yang dibuat</p>
@@ -294,6 +262,7 @@
                             </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>

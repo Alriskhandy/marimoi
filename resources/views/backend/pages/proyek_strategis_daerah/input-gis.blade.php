@@ -434,7 +434,8 @@
                                             <i class="bi bi-tag me-1"></i>
                                             Kategori <span class="text-danger">*</span>
                                         </label>
-                                        <select name="kategori_id" id="kategori" class="form-select" required>
+                                        <select name="kategori_id" id="kategori" class="form-select custom-select"
+                                            required>
                                             <option value="">-- Pilih Kategori --</option>
                                             @foreach ($kategoriLayers as $kategori)
                                                 @include('backend.partials.kategori_option', [
@@ -443,6 +444,7 @@
                                                 ])
                                             @endforeach
                                         </select>
+
                                         <div class="form-text">Pilih kategori sesuai jenis lokasi</div>
                                     </div>
                                 </div>
@@ -883,13 +885,47 @@
         function validateStep(step) {
             if (step === 1) {
                 const kategori = document.getElementById('kategori').value.trim();
+                const tahun = document.getElementById('tahun').value.trim();
+
                 if (!kategori) {
-                    alert('Kategori harus diisi!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Kategori harus diisi!',
+                        confirmButtonColor: '#3085d6',
+                    });
                     return false;
                 }
+
+                if (!tahun) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Tahun harus diisi!',
+                        confirmButtonColor: '#3085d6',
+                    });
+                    return false;
+                }
+
+                if (isNaN(tahun) || tahun.length !== 4) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Tahun harus berupa 4 digit angka!',
+                        confirmButtonColor: '#3085d6',
+                    });
+                    return false;
+                }
+
+
             } else if (step === 2) {
                 if (!selectedInputType) {
-                    alert('Pilih jenis input data terlebih dahulu!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Pilih jenis input data terlebih dahulu!',
+                        confirmButtonColor: '#3085d6',
+                    });
                     return false;
                 }
 
@@ -897,7 +933,12 @@
                     const requiredFiles = ['shp_file', 'shx_file', 'dbf_file'];
                     for (let fileId of requiredFiles) {
                         if (!document.getElementById(fileId).files.length) {
-                            alert(`File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`);
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Validasi Gagal',
+                                text: `File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`,
+                                confirmButtonColor: '#3085d6',
+                            });
                             return false;
                         }
                     }
@@ -909,30 +950,54 @@
                     for (let i = 0; i < latInputs.length; i++) {
                         const lat = latInputs[i].value.trim();
                         const lng = lngInputs[i].value.trim();
+
                         if (lat && lng) {
                             if (lat < -90 || lat > 90) {
-                                alert(`Latitude harus antara -90 sampai 90 (baris ${i+1})`);
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Validasi Koordinat',
+                                    text: `Latitude harus antara -90 sampai 90 (baris ${i + 1})`,
+                                    confirmButtonColor: '#3085d6',
+                                });
                                 return false;
                             }
+
                             if (lng < -180 || lng > 180) {
-                                alert(`Longitude harus antara -180 sampai 180 (baris ${i+1})`);
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Validasi Koordinat',
+                                    text: `Longitude harus antara -180 sampai 180 (baris ${i + 1})`,
+                                    confirmButtonColor: '#3085d6',
+                                });
                                 return false;
                             }
+
                             hasValidCoord = true;
                         }
                     }
 
                     if (!hasValidCoord) {
-                        alert('Minimal satu koordinat harus diisi!');
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Validasi Gagal',
+                            text: 'Minimal satu koordinat harus diisi!',
+                            confirmButtonColor: '#3085d6',
+                        });
                         return false;
                     }
                 } else if (selectedInputType === 'kmz') {
                     if (!document.getElementById('kmz_file').files.length) {
-                        alert('File KMZ harus dipilih!');
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Validasi Gagal',
+                            text: 'File KMZ harus dipilih!',
+                            confirmButtonColor: '#3085d6',
+                        });
                         return false;
                     }
                 }
             }
+
             return true;
         }
 

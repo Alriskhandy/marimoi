@@ -5,7 +5,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-layers"></i>
-            </span> Kategori Pokir DPRD Layer
+            </span> Kategori Usulan Musrembang Layer
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
@@ -13,7 +13,7 @@
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">
-                    <span></span>Kategori Pokir DPRD Layer
+                    <span></span>Kategori Usulan Musrembang Layer
                 </li>
             </ul>
         </nav>
@@ -23,6 +23,8 @@
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
+
+                    {{-- Header & Tombol Tambah --}}
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="card-title">Daftar Kategori Layer</h4>
                         <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
@@ -30,62 +32,42 @@
                             <i class="mdi mdi-plus"></i> Tambah Kategori
                         </button>
                     </div>
-                    @if (session('success'))
-                        <div class="alert alert-success">
-                            {{ session('success') }}
-                        </div>
-                    @endif
 
-                    @if (session('error'))
-                        <div class="alert alert-danger">
-                            {{ session('error') }}
-                        </div>
+                    {{-- Alert --}}
+                    @if (session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
                     @endif
-                    <!-- Alert Container -->
+                    @if (session('error'))
+                        <div class="alert alert-danger">{{ session('error') }}</div>
+                    @endif
                     <div id="alertContainer"></div>
 
+                    {{-- Tabel --}}
                     <div class="table-responsive">
                         <table class="table table-hover" id="kategoriTable">
-                            <div class="d-flex justify-content-between mb-3">
-                                <div>
-                                    <label for="rowsPerPageSelect" class="me-2">Tampilkan</label>
-                                    <select id="rowsPerPageSelect" class="form-select d-inline-block w-auto"
-                                        style="background-image: none;">
-                                        <option value="10" selected>10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                    </select>
-                                    <span class="ms-2">data per halaman</span>
-                                </div>
-                                <div>
-                                    <input type="text" id="searchInput" class="form-control"
-                                        placeholder="Cari kategori...">
-                                </div>
-                            </div>
-
                             <thead>
                                 <tr>
                                     <th>No</th>
                                     <th>Nama</th>
-                                    <th>Warna</th> <!-- Ubah dari Deskripsi -->
-                                    <th>Parent</th>
+                                    <th>Warna</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($kategori_pokir_dprds as $index => $kategori)
+                                @php $no = 1; @endphp
+                                @forelse($parentKategoris as $kategori)
+                                    {{-- Root Kategori --}}
                                     <tr data-id="{{ $kategori->id }}">
-                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $no++ }}</td>
                                         <td>
                                             <strong>{{ $kategori->nama }}</strong>
-                                            @if ($kategori->parent_id)
-                                                <br><small class="text-muted">{{ $kategori->full_path }}</small>
-                                            @endif
+                                            <br>
+                                            <small class="text-muted">Root Kategori</small>
                                         </td>
                                         <td>
                                             @if ($kategori->warna)
-                                                <span class="badge rounded-pill px-3 py-2 text-white"
-                                                    style="background-color: {{ $kategori->warna }}">
+                                                <span class="badge"
+                                                    style="background-color: {{ $kategori->warna }}; color: white;">
                                                     {{ $kategori->warna }}
                                                 </span>
                                             @else
@@ -93,58 +75,110 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if ($kategori->parent)
-                                                <span class="badge badge-info">{{ $kategori->parent->nama }}</span>
-                                            @else
-                                                <span class="badge badge-secondary">Root</span>
-                                            @endif
-                                        </td>
-                                        <td>
                                             <div class="btn-group" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show"
                                                     data-id="{{ $kategori->id }}" data-bs-toggle="modal"
-                                                    data-bs-target="#showModal">
+                                                    data-bs-target="#showModal" title="Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-warning btn-edit"
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                     data-id="{{ $kategori->id }}" data-bs-toggle="modal"
-                                                    data-bs-target="#editModal">
+                                                    data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
-                                                <form action="{{ route('kategori-pokir-dprd.destroy', $kategori->id) }}"
-                                                    method="POST" style="display: inline-block;" data-confirm="delete">
+                                                <form
+                                                    action="{{ route('kategori-usulan-musrenbang.destroy', $kategori->id) }}"
+                                                    method="POST" style="display:inline-block;"
+                                                    onsubmit="return confirm('Yakin ingin menghapus {{ $kategori->nama }}?')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
-
                                             </div>
                                         </td>
                                     </tr>
+
+                                    {{-- Subkategori --}}
+                                    @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
+                                        @foreach ($childKategoris[$kategori->id] as $child)
+                                            <tr data-id="{{ $child->id }}" class="table-light">
+                                                <td>{{ $no++ }}</td>
+                                                <td>
+                                                    <i class="mdi mdi-subdirectory-arrow-right text-muted me-1"></i>
+                                                    <strong>{{ $child->nama }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">Sub dari: {{ $kategori->nama }}</small>
+                                                </td>
+                                                <td>
+                                                    @if ($child->warna)
+                                                        <span class="badge"
+                                                            style="background-color: {{ $child->warna }}; color: white;">
+                                                            {{ $child->warna }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-show"
+                                                            data-id="{{ $child->id }}" data-bs-toggle="modal"
+                                                            data-bs-target="#showModal" title="Detail">
+                                                            <i class="mdi mdi-eye"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-success btn-edit"
+                                                            data-id="{{ $child->id }}" data-bs-toggle="modal"
+                                                            data-bs-target="#editModal" title="Edit">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </button>
+                                                        <form
+                                                            action="{{ route('kategori-usulan-musrenbang.destroy', $child->id) }}"
+                                                            method="POST" style="display:inline-block;"
+                                                            onsubmit="return confirm('Yakin ingin menghapus {{ $child->nama }}?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                                title="Hapus">
+                                                                <i class="mdi mdi-delete"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="4" class="text-center">
                                             <div class="py-4">
-                                                <i class="mdi mdi-layers mdi-48px text-muted"></i>
-                                                <p class="text-muted mt-2">Belum ada kategori layer yang dibuat</p>
+                                                <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
+                                                <p class="text-muted mt-2">Belum ada kategori PSD yang dibuat</p>
+                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                    data-bs-target="#addModal">
+                                                    <i class="mdi mdi-plus"></i> Tambah Kategori Pertama
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
-
-                        <nav>
-                            <ul class="pagination justify-content-center" id="pagination"></ul>
-                        </nav>
-
                     </div>
+
+                    {{-- Pagination --}}
+                    <nav>
+                        <ul class="pagination justify-content-center" id="pagination"></ul>
+                    </nav>
+
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Add Modal -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
@@ -403,16 +437,24 @@
 
             // Load parent categories for form
             function loadParentCategories(selectElement, excludeId = null) {
-                $.get('{{ route('kategori-pokir-dprd.create') }}', function(data) {
+                $.get('{{ route('kategori-usulan-musrenbang.create') }}', function(data) {
                     selectElement.empty();
                     selectElement.append('<option value="">-- Pilih Parent (Opsional) --</option>');
+
                     $.each(data.parentKategori, function(index, kategori) {
+                        // Hanya tampilkan kategori yang parent_id-nya null (root saja)
+                        if (kategori.parent_id !== null) return;
+
+                        // Jangan tampilkan jika ID-nya sama dengan excludeId
                         if (excludeId && kategori.id == excludeId) return;
+
                         selectElement.append(
-                            `<option value="${kategori.id}">${kategori.nama}</option>`);
+                            `<option value="${kategori.id}">${kategori.nama}</option>`
+                        );
                     });
                 });
             }
+
 
             // Add Modal
             $('#addModal').on('show.bs.modal', function() {
@@ -429,7 +471,7 @@
                 const formData = new FormData(this);
 
                 $.ajax({
-                    url: '{{ route('kategori-pokir-dprd.store') }}',
+                    url: '{{ route('kategori-usulan-musrenbang.store') }}',
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -467,7 +509,7 @@
                 const id = $(this).data('id');
                 const form = $('#editForm');
 
-                $.get(`{{ route('kategori-pokir-dprd.index') }}/${id}/edit`, function(data) {
+                $.get(`{{ route('kategori-usulan-musrenbang.index') }}/${id}/edit`, function(data) {
                     if (data.success) {
                         $('#edit_id').val(data.data.id);
                         $('#edit_nama').val(data.data.nama);
@@ -499,7 +541,7 @@
                 const formData = new FormData(this);
 
                 $.ajax({
-                    url: `{{ route('kategori-pokir-dprd.index') }}/${id}`,
+                    url: `{{ route('kategori-usulan-musrenbang.index') }}/${id}`,
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -529,7 +571,7 @@
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
 
-                $.get(`{{ route('kategori-pokir-dprd.index') }}/${id}`, function(data) {
+                $.get(`{{ route('kategori-usulan-musrenbang.index') }}/${id}`, function(data) {
                     if (data.success) {
                         const kategori = data.data;
                         $('#show_nama').text(kategori.nama);

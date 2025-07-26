@@ -459,7 +459,7 @@ public function getStatisticsByYear($year)
                 $message .= " Kolom DBF yang tersimpan: " . implode(', ', $dbfColumns);
             }
 
-            return redirect()->route('psn.index')->with('success', $message);
+           return redirect()->route('psn.tahun.show', ['year' => $request->tahun])->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Gagal membaca shapefile: ' . $e->getMessage());
             return back()->withErrors(['Gagal membaca shapefile: ' . $e->getMessage()]);
@@ -757,7 +757,7 @@ public function update(Request $request, $id)
             'attributes_count' => count($dbfAttributes)
         ]);
 
-        return redirect()->back()
+      return redirect()->route('psn.tahun.show', ['year' => $lokasi->tahun])
             ->with('success', 'Lokasi berhasil diperbarui');
     } catch (\Exception $e) {
         Log::error('Error updating lokasi: ' . $e->getMessage(), [

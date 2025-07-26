@@ -73,18 +73,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($kategori_pokir_dprds as $index => $kategori)
-                                    <tr data-id="{{ $kategori->id }}">
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>
-                                            <strong>{{ $kategori->nama }}</strong>
-                                            @if ($kategori->parent_id)
-                                                <br><small class="text-muted">{{ $kategori->full_path }}</small>
-                                            @endif
-                                        </td>
+                                @php $no = 1; @endphp
+                                @forelse($parentKategoris as $kategori)
+                                    {{-- Parent --}}
+                                    <tr class="table-light">
+                                        <td>{{ $no++ }}</td>
+                                        <td><strong>{{ $kategori->nama }}</strong></td>
                                         <td>
                                             @if ($kategori->warna)
-                                                <span class="badge rounded-pill px-3 py-2 text-white"
+                                                <span class="badge rounded-pill text-white px-3 py-2"
                                                     style="background-color: {{ $kategori->warna }}">
                                                     {{ $kategori->warna }}
                                                 </span>
@@ -92,48 +89,96 @@
                                                 <span class="text-muted">-</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            @if ($kategori->parent)
-                                                <span class="badge badge-info">{{ $kategori->parent->nama }}</span>
-                                            @else
-                                                <span class="badge badge-secondary">Root</span>
-                                            @endif
-                                        </td>
+                                        <td><span class="badge bg-secondary">Root</span></td>
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show"
                                                     data-id="{{ $kategori->id }}" data-bs-toggle="modal"
-                                                    data-bs-target="#showModal">
+                                                    data-bs-target="#showModal" title="Lihat">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-warning btn-edit"
                                                     data-id="{{ $kategori->id }}" data-bs-toggle="modal"
-                                                    data-bs-target="#editModal">
+                                                    data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
                                                 <form action="{{ route('kategori-pokir-dprd.destroy', $kategori->id) }}"
-                                                    method="POST" style="display: inline-block;" data-confirm="delete">
+                                                    method="POST" style="display:inline-block;"
+                                                    onsubmit="return confirm('Yakin ingin menghapus {{ $kategori->nama }}?')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
                                                 </form>
-
                                             </div>
                                         </td>
                                     </tr>
+
+                                    {{-- Child dari parent --}}
+                                    @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
+                                        @foreach ($childKategoris[$kategori->id] as $child)
+                                            <tr class="table-secondary">
+                                                <td>{{ $no++ }}</td>
+                                                <td>
+                                                    <i class="mdi mdi-subdirectory-arrow-right text-muted me-1"></i>
+                                                    <strong>{{ $child->nama }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">Sub dari: {{ $kategori->nama }}</small>
+                                                </td>
+                                                <td>
+                                                    @if ($child->warna)
+                                                        <span class="badge rounded-pill text-white px-3 py-2"
+                                                            style="background-color: {{ $child->warna }}">
+                                                            {{ $child->warna }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td><span class="badge bg-info">{{ $kategori->nama }}</span></td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-show"
+                                                            data-id="{{ $child->id }}" data-bs-toggle="modal"
+                                                            data-bs-target="#showModal" title="Lihat">
+                                                            <i class="mdi mdi-eye"></i>
+                                                        </button>
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-warning btn-edit"
+                                                            data-id="{{ $child->id }}" data-bs-toggle="modal"
+                                                            data-bs-target="#editModal" title="Edit">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </button>
+                                                        <form
+                                                            action="{{ route('kategori-pokir-dprd.destroy', $child->id) }}"
+                                                            method="POST" style="display:inline-block;"
+                                                            onsubmit="return confirm('Yakin ingin menghapus {{ $child->nama }}?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                                title="Hapus">
+                                                                <i class="mdi mdi-delete"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="5" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-layers mdi-48px text-muted"></i>
-                                                <p class="text-muted mt-2">Belum ada kategori layer yang dibuat</p>
+                                                <p class="text-muted mt-2">Belum ada kategori yang dibuat</p>
                                             </div>
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
+
                         </table>
 
                         <nav>
@@ -256,68 +301,71 @@
     </div>
 
     <!-- Show Modal -->
-    <!-- Show Modal -->
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg"> <!-- Ukuran lebih lebar agar nyaman dibaca -->
-            <div class="modal-content">
-                <div class="modal-header">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content shadow-sm border-0">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="showModalLabel">
-                        <i class="mdi mdi-eye"></i> Detail Kategori Layer
+                        <i class="mdi mdi-eye me-1"></i> Detail Kategori Layer
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
+
                 <div class="modal-body">
-                    <div class="row mb-3">
+                    <div class="row g-4">
                         <div class="col-md-6">
-                            <strong>Nama Kategori:</strong>
-                            <p id="show_nama" class="text-muted mb-0"></p>
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-1 text-muted">Nama Kategori</h6>
+                                <p id="show_nama" class="fw-semibold fs-6 mb-0 text-dark"></p>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Warna:</strong><br>
-                            <span id="show_warna" class="badge rounded-pill px-3 py-2"
-                                style="background-color: #ccc;">-</span>
-                        </div>
-                    </div>
 
-                    <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Parent:</strong>
-                            <p id="show_parent" class="text-muted mb-0"></p>
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-1 text-muted">Warna</h6>
+                                <span id="show_warna" class="badge rounded-pill px-3 py-2"
+                                    style="background-color: #ccc;">-</span>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <strong>Jumlah Anak:</strong>
-                            <p id="show_children_count" class="text-muted mb-0"></p>
-                        </div>
-                    </div>
 
-                    <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Tanggal Dibuat:</strong>
-                            <p id="show_created_at" class="text-muted mb-0"></p>
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-1 text-muted">Parent</h6>
+                                <p id="show_parent" class="text-dark mb-0"></p>
+                            </div>
                         </div>
-                        <div class="col-md-6"></div>
-                    </div>
 
-                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="mb-1 text-muted">Tanggal Dibuat</h6>
+                                <p id="show_created_at" class="text-dark mb-0"></p>
+                            </div>
+                        </div>
+
                         <div class="col-12">
-                            <strong>Deskripsi:</strong>
-                            <p id="show_deskripsi" class="text-muted"></p>
+                            <div class="border rounded p-3">
+                                <h6 class="mb-1 text-muted">Deskripsi</h6>
+                                <p id="show_deskripsi" class="text-dark mb-0"></p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row" id="show_children_container" style="display: none;">
-                        <div class="col-12">
-                            <strong>Kategori Anak:</strong>
-                            <div id="show_children" class="mt-2"></div>
+                        <div class="col-12" id="show_children_container" style="display: none;">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-2 text-muted">Kategori Anak</h6>
+                                <div id="show_children" class="text-dark"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+
+                <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
     </div>
+
 @endsection
 
 @section('scripts')

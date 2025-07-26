@@ -544,19 +544,55 @@
         function validateStep(step) {
             if (step === 1) {
                 const kategori = document.getElementById('kategori').value.trim();
+                const tahun = document.getElementById('tahun').value.trim();
+
                 if (!kategori) {
-                    alert('Kategori harus diisi!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Kategori harus diisi!',
+                        confirmButtonColor: '#3085d6',
+                    });
                     return false;
                 }
+
+                if (!tahun) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Tahun harus diisi!',
+                        confirmButtonColor: '#3085d6',
+                    });
+                    return false;
+                }
+
+                if (isNaN(tahun) || tahun.length !== 4) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validasi Gagal',
+                        text: 'Tahun harus berupa 4 digit angka!',
+                        confirmButtonColor: '#3085d6',
+                    });
+                    return false;
+                }
+
             } else if (step === 2) {
                 const requiredFiles = ['shp_file', 'shx_file', 'dbf_file'];
+
                 for (let fileId of requiredFiles) {
-                    if (!document.getElementById(fileId).files.length) {
-                        alert(`File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`);
+                    const fileInput = document.getElementById(fileId);
+                    if (!fileInput || !fileInput.files.length) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Validasi Gagal',
+                            text: `File ${fileId.replace('_file', '').toUpperCase()} harus dipilih!`,
+                            confirmButtonColor: '#3085d6',
+                        });
                         return false;
                     }
                 }
             }
+
             return true;
         }
 

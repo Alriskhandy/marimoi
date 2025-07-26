@@ -119,10 +119,6 @@
                                     <th>No</th>
                                     <th>Nama</th>
                                     <th>Warna</th>
-                                    {{-- <th>Deskripsi</th> --}}
-                                    <th>Parent</th>
-                                    <th>Jumlah Proyek</th>
-                                    <th>Sub Kategori</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -131,9 +127,7 @@
                                 @forelse($parentKategoris as $kategori)
                                     <tr data-id="{{ $kategori->id }}">
                                         <td>{{ $no++ }}</td>
-                                        <td>
-                                            <strong>{{ $kategori->nama }}</strong>
-                                        </td>
+                                        <td><strong>{{ $kategori->nama }}</strong></td>
                                         <td>
                                             @if ($kategori->warna)
                                                 <span class="badge"
@@ -143,27 +137,6 @@
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
-                                        </td>
-                                        {{-- <td>
-                                            @if ($kategori->deskripsi)
-                                                {{ Str::limit($kategori->deskripsi, 50) }}
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td> --}}
-                                        <td>
-                                            <span class="badge badge-secondary">Root</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-primary">
-                                                {{ $kategori->proyeks_count ?? 0 }}
-                                            </span>
-
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-info">
-                                                {{ isset($childKategoris[$kategori->id]) ? $childKategoris[$kategori->id]->count() : 0 }}
-                                            </span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
@@ -177,12 +150,6 @@
                                                     data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
-                                                {{-- @if (($kategori->proyeks_count ?? 0) > 0)
-                                                    <a href="{{ route('psn.kategori.show', $kategori->id) }}"
-                                                        class="btn btn-sm btn-outline-success" title="Lihat Proyek">
-                                                        <i class="mdi mdi-eye-check"></i>
-                                                    </a>
-                                                @endif --}}
                                                 <form action="{{ route('kategori-psn.destroy', $kategori->id) }}"
                                                     method="POST" style="display: inline-block;" data-confirm="delete">
                                                     @csrf
@@ -196,7 +163,7 @@
                                         </td>
                                     </tr>
 
-                                    {{-- Sub Categories --}}
+                                    {{-- Subkategori --}}
                                     @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
                                         @foreach ($childKategoris[$kategori->id] as $child)
                                             <tr data-id="{{ $child->id }}" class="table-secondary">
@@ -215,32 +182,6 @@
                                                     @else
                                                         <span class="text-muted">-</span>
                                                     @endif
-                                                </td>
-                                                {{-- <td>
-                                                    @if ($child->deskripsi)
-                                                        {{ Str::limit($child->deskripsi, 50) }}
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td> --}}
-                                                <td>
-                                                    <span class="badge badge-info">{{ $kategori->nama }}</span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-primary">
-                                                        {{ $child->proyeks_count ?? 0 }}
-                                                    </span>
-                                                    @if (($child->proyeks_count ?? 0) > 0)
-                                                        <br><small class="text-muted">
-                                                            <a href="{{ route('psn.kategori.show', $child->id) }}"
-                                                                class="text-decoration-none">
-                                                                Lihat Proyek
-                                                            </a>
-                                                        </small>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-secondary">0</span>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
@@ -280,7 +221,7 @@
                                     @endif
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="4" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada kategori PSN yang dibuat</p>
@@ -295,6 +236,7 @@
                             </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>

@@ -274,7 +274,7 @@
             </div>
         </li>
 
-        <!-- POKIR DPRD -->
+        <!-- musrembang -->
         @php
             $isMUSRENBANGActive =
                 request()->routeIs('usulan-musrenbang.*') || request()->routeIs('kategori-usulan-musrenbang.*');
@@ -302,7 +302,7 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}"
                             href="{{ route('kategori-usulan-musrenbang.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Musrembang
                         </a>
                     </li>
                 </ul>
