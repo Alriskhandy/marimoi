@@ -38,6 +38,15 @@
 
     <!-- Custom CSS -->
     @stack('styles')
+
+    <style>
+        /* Pastikan Font Awesome marker tidak memiliki frame background Leaflet */
+        .leaflet-fa-icon {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+    </style>
 </head>
 
 <body class="index-page">
