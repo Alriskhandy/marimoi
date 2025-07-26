@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class KategoriPokirDprd extends Model
 {
-     protected $fillable = ['warna','nama', 'deskripsi', 'parent_id'];
+    protected $fillable = ['warna','nama', 'deskripsi', 'parent_id','icon','is_marker'];
 
     public function parent()
     {

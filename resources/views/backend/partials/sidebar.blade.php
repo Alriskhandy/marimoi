@@ -274,15 +274,43 @@
             </div>
         </li>
 
-
-        <!-- Usulan Musrembang (Single Menu) -->
-        <li class="nav-item {{ request()->routeIs('musrembang.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('cooming_soon') }}">
-                <span class="menu-title">Usulan Musrembang</span>
+        <!-- POKIR DPRD -->
+        @php
+            $isMUSRENBANGActive =
+                request()->routeIs('usulan-musrenbang.*') || request()->routeIs('kategori-usulan-musrenbang.*');
+        @endphp
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#usulanmusrenbang"
+                aria-expanded="{{ $isMUSRENBANGActive ? 'true' : 'false' }}" aria-controls="usulanmusrenbang">
+                <span class="menu-title">Usulan Musrenbang</span>
+                <i class="menu-arrow"></i>
                 <i class="mdi mdi-forum menu-icon"></i>
-                <span class="badge badge-warning badge-sm ms-auto">Soon</span>
             </a>
+            <div class="collapse {{ $isMUSRENBANGActive ? 'show' : '' }}" id="usulanmusrenbang">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('usulan-musrenbang.index') ? 'active' : '' }}"
+                            href="{{ route('usulan-musrenbang.index') }}">
+                            <i class="mdi mdi-database me-2"></i>Data Usulan Musrenbang
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}"
+                            href="{{ route('kategori-usulan-musrenbang.index') }}">
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
+
+
+
         <!-- Desk Musrenbang (Coming Soon) -->
         <li class="nav-item">
             <a class="nav-link" href="{{ route('cooming_soon') }}">

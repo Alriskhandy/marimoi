@@ -11,12 +11,7 @@ class KategoriPSN extends Model
 
     protected $table = 'kategori_psn';
 
-    protected $fillable = [
-        'nama',
-        'warna',
-        'parent_id',
-        'deskripsi',
-    ];
+   protected $fillable = ['warna','nama', 'deskripsi', 'parent_id','icon','is_marker'];
 
     protected $casts = [
         'created_at' => 'datetime',

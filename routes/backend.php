@@ -8,9 +8,11 @@ use App\Http\Controllers\MalukuUtaraController;
 use App\Http\Controllers\PokirDprdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\KategoriMusrenbangController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\ProyekStrategisDaerahController;
 use App\Http\Controllers\ProyekStrategisNasionalController;
+use App\Http\Controllers\UsulanMusrenbangController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', function () {
@@ -529,6 +531,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard/peta-pokir', [PokirDprdController::class, 'peta'])->name('pokir-dprd.peta');
      Route::resource('/dashboard/kategori-pokir-dprd', KategoriPokirDprdController::class);
+});
+
+// usulan musrenbang
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard/usulan-musrenbang', [UsulanMusrenbangController::class, 'index'])->name('usulan-musrenbang.index');
+    Route::get('/dashboard/usulan-musrenbang/create', [UsulanMusrenbangController::class, 'create'])->name('usulan-musrenbang.create');
+    Route::post('/dashboard/usulan-musrenbang', [UsulanMusrenbangController::class, 'store'])->name('usulan-musrenbang.store');
+    Route::get('/dashboard/usulan-musrenbang/{id}/edit', [UsulanMusrenbangController::class, 'edit'])->name('usulan-musrenbang.edit');
+    Route::put('/dashboard/usulan-musrenbang/{id}', [UsulanMusrenbangController::class, 'update'])->name('usulan-musrenbang.update');
+    Route::delete('/dashboard/usulan-musrenbang/{id}', [UsulanMusrenbangController::class, 'destroy'])->name('usulan-musrenbang.destroy');
+
+    Route::get('/dashboard/peta-usulan-musrenbang', [UsulanMusrenbangController::class, 'peta'])->name('usulan-musrenbang.peta');
+     Route::resource('/dashboard/kategori-usulan-musrenbang', KategoriMusrenbangController::class);
 });
 // end pokir DPRD
 // end pokir DPRD
