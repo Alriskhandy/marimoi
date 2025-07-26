@@ -45,6 +45,7 @@ const map = L.map("map", {
 let layerGroups = {};
 let currentBaseMap = null;
 let kategoriWarnaMap = {};
+let iconMap = {};
 
 function getStyleForCategory(kategori) {
     const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
@@ -64,19 +65,34 @@ function generateLegend() {
     legendContainer.innerHTML = "";
     const added = new Set();
 
+    // console.log("layerGroups:", layerGroups); // tampilkan isi layerGroups
+    console.log("kategoriWarnaMap:", kategoriWarnaMap);
+    console.log("iconMap:", iconMap);
+
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
             if (!added.has(sub)) {
-                const color =
-                    kategoriWarnaMap[sub] ||
-                    kategoriWarnaMap[kategori] ||
-                    "#ccc";
-                legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 16px; height: 16px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span>${sub}</span>
-                    </div>
-                `;
+                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                const icon = iconMap[sub];
+                
+                if (icon) {
+                    legendContainer.innerHTML += `
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                                <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+                            </div>
+                            <span style="font-size: 0.85rem;">${sub}</span>
+                        </div>
+                    `;
+                } else {
+                    legendContainer.innerHTML += `
+                        <div class="d-flex align-items-center mb-2">
+                            <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                            <span style="font-size: 0.85rem;">${sub}</span>
+                        </div>
+                    `;
+                }
+
                 added.add(sub);
             }
         });
@@ -224,64 +240,65 @@ async function initMap() {
             return showAlert("Data GeoJSON kosong", "warning");
         }
 
-        // Build kategoriWarnaMap
+        // 🔸 Build kategoriWarnaMap dan iconMap
         kategoriWarnaMap = {};
-        if (geoJsonData.all_categories) {
+        iconMap = {};
+
+        if (Array.isArray(geoJsonData.all_categories)) {
             geoJsonData.all_categories.forEach((cat) => {
+                // Pastikan setiap kategori memiliki nama dan warna
                 if (cat.nama && cat.warna) {
                     kategoriWarnaMap[cat.nama] = cat.warna;
+
+                    // Jika kategori adalah marker dan memiliki icon, simpan ke dalam iconMap
+                    if (cat.is_marker === true && cat.icon) {
+                        iconMap[cat.nama] = cat.icon;
+                    }
                 }
             });
         }
 
-        // Reset layer lama
+        // 🔸 Hapus layer lama dari peta
         Object.values(layerGroups).forEach((group) => {
             Object.values(group).forEach((layer) => {
-                if (map.hasLayer(layer)) map.removeLayer(layer);
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
             });
         });
 
         layerGroups = {};
 
-        // ✅ Build hierarchy structure
-        if (
-            geoJsonData.all_categories &&
-            geoJsonData.all_categories.length > 0
-        ) {
-            // Use all_categories with parent_id structure
-            const parentCategories = geoJsonData.all_categories.filter(
+        // 🔸 Bangun struktur layerGroups dari all_categories (parent-child)
+        if (geoJsonData.all_categories?.length) {
+            const parents = geoJsonData.all_categories.filter(
                 (cat) => !cat.parent_id
             );
-            const childCategories = geoJsonData.all_categories.filter(
+            const children = geoJsonData.all_categories.filter(
                 (cat) => cat.parent_id
             );
 
-            // Create layer groups for parent categories
-            parentCategories.forEach((parent) => {
+            parents.forEach((parent) => {
                 layerGroups[parent.nama] = {};
 
-                // Find children of this parent
-                const children = childCategories.filter(
+                const anak = children.filter(
                     (child) => child.parent_id === parent.id
                 );
 
-                if (children.length > 0) {
-                    // Create layers for children
-                    children.forEach((child) => {
+                if (anak.length > 0) {
+                    anak.forEach((child) => {
                         layerGroups[parent.nama][child.nama] = L.layerGroup();
                     });
                 } else {
-                    // Create layer for parent itself if no children
                     layerGroups[parent.nama][parent.nama] = L.layerGroup();
                 }
             });
         } else if (geoJsonData.root_categories) {
-            // Fallback to original root_categories structure
             geoJsonData.root_categories.forEach((cat) => {
                 const kategori = cat.nama;
                 layerGroups[kategori] = {};
 
-                if (cat.children && cat.children.length > 0) {
+                if (Array.isArray(cat.children) && cat.children.length > 0) {
                     cat.children.forEach((sub) => {
                         layerGroups[kategori][sub.nama] = L.layerGroup();
                     });
@@ -291,35 +308,54 @@ async function initMap() {
             });
         }
 
-        // Process features
+        // 🔸 Tambahkan fitur ke layer yang sesuai
         geoJsonData.features.forEach((feature) => {
             const kategori = (feature.properties?.kategori || "").trim();
             if (!kategori) return;
 
             let targetLayer = null;
 
-            // Try to find the target layer
             for (const [parentName, children] of Object.entries(layerGroups)) {
                 if (children[kategori]) {
-                    // Found as child
-                    targetLayer = children[kategori];
+                    targetLayer = children[kategori]; // sebagai child
                     break;
                 } else if (parentName === kategori && children[parentName]) {
-                    // Found as parent
-                    targetLayer = children[parentName];
+                    targetLayer = children[parentName]; // sebagai parent
                     break;
                 }
             }
 
             if (targetLayer) {
+                let iconClass = iconMap[kategori] || null;
+                let iconWarna = kategoriWarnaMap[kategori] || "#333";
+
+                let markerOptions = {};
+                if (iconClass) {
+                    markerOptions.icon = L.divIcon({
+                        html: `
+                            <div class="custom-fa-icon" style="background: transparent; border: none;">
+                                <i class="${iconClass}" style="font-size: 16px; color: ${iconWarna};"></i>
+                            </div>
+                        `,
+                        className: "leaflet-fa-icon",
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32],
+                    });
+                }
+
                 L.geoJSON(feature, {
+                    pointToLayer: (feature, latlng) =>
+                        iconClass
+                            ? L.marker(latlng, markerOptions)
+                            : L.marker(latlng),
                     style: getStyleForCategory(kategori),
                     onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
                 }).addTo(targetLayer);
             }
         });
 
-        // Cleanup empty layers
+        // 🔸 Bersihkan layer kosong
         Object.entries(layerGroups).forEach(([kat, subs]) => {
             Object.entries(subs).forEach(([sub, layer]) => {
                 if (layer.getLayers().length === 0) {
