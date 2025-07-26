@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('nama');
             $table->string('warna');
+             $table->string('icon')->nullable();
+            $table->boolean('is_marker')->default(false);
             $table->text('deskripsi')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('kategori_pokir_dprds')->onDelete('restrict');
             $table->timestamps();

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
                 KategoriPSNSeeder::class,
                 ProjectFeedbackSeeder::class,
                 KategoriPokirDprdSeeder::class,
+                KategoriMusrenbangSeeder::class,
             ]);
         User::factory()->create([
             'name' => 'Admin',
