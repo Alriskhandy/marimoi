@@ -10,7 +10,7 @@ Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
 Route::get('/rpjmd', [FrontendController::class, 'rpjmd'])->name('tampil.rpjmd');
-Route::get('/usulan-musrenbang', [FrontendController::class, 'showMap'])->name('tampil.musrenbang');
+Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
@@ -19,6 +19,7 @@ Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailP
 Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
 Route::get('/rpjmd/{id}', [FrontendController::class, 'detailRpjmd'])->name('detail.rpjmd');
 Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
+Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailMusrenbang'])->name('detail.musrenbang');
 
 // API GEOJSON //
 Route::prefix('geojson')->group(function(){
@@ -26,7 +27,7 @@ Route::prefix('geojson')->group(function(){
     Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psnGeojson']);
     Route::get('/rpjmd', [FrontendController::class, 'rpjmdGeojson']);
     Route::get('/pokir-dprd', [FrontendController::class, 'pokirGeojson']);
-    Route::get('/usulan-musrenbang', [FrontendController::class, 'pokirGeojson']);
+    Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbangGeojson']);
 });
 
 Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
