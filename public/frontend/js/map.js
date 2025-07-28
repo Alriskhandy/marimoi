@@ -130,7 +130,7 @@ function bindPopupContent(feature, layer, urlPath) {
     const geom = feature.geometry;
     if (geom) {
         const type = geom.type;
-        content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
+        content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
         content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
