@@ -1084,7 +1084,7 @@
                         // Gambar
                         if (feedback.laporan_gambar) {
                             $('#show_laporan_gambar').attr('src',
-                                `/storage/feedback_images/${feedback.laporan_gambar}`);
+                                `/storage/public/feedback_images/${feedback.laporan_gambar}`);
                             $('#show_gambar_container').show();
                         } else {
                             $('#show_gambar_container').hide();

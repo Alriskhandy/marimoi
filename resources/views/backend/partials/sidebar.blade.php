@@ -50,7 +50,7 @@
                         <li class="nav-item {{ request()->routeIs('lokasi.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('lokasi.feedbacks.index') }}">
                                 <i class="mdi mdi-comment-multiple me-2"></i>Feedback Lokasi
-                                <span class="badge badge-sm bg-info ms-auto" data-feedback-count="lokasi">0</span>
+
                             </a>
                         </li>
                     @endif
@@ -140,8 +140,7 @@
                         <li class="nav-item {{ request()->routeIs('daerah.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('daerah.feedbacks.index') }}">
                                 <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Daerah
-                                <span class="badge badge-sm bg-info ms-auto"
-                                    data-feedback-count="proyek_strategis_daerah">0</span>
+
                             </a>
                         </li>
                     @endif
@@ -242,8 +241,7 @@
                         <li class="nav-item {{ request()->routeIs('nasional.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('nasional.feedbacks.index') }}">
                                 <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Nasional
-                                <span class="badge badge-sm bg-info ms-auto"
-                                    data-feedback-count="proyek_strategis_nasional">0</span>
+
                             </a>
                         </li>
                     @endif
@@ -301,8 +299,7 @@
                         <li class="nav-item {{ request()->routeIs('pokir.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('pokir.feedbacks.index') }}">
                                 <i class="mdi mdi-comment-multiple me-2"></i>Feedback Pokir DPRD
-                                <span class="badge badge-sm bg-warning ms-auto"
-                                    data-feedback-count="pokir_dprd">0</span>
+
                             </a>
                         </li>
                     @endif
@@ -346,8 +343,7 @@
                         <li class="nav-item {{ request()->routeIs('usulan.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('usulan.feedbacks.index') }}">
                                 <i class="mdi mdi-comment-multiple me-2"></i>Feedback Usulan Musrenbang
-                                <span class="badge badge-sm bg-success ms-auto"
-                                    data-feedback-count="usulan_musrenbang">0</span>
+
                             </a>
                         </li>
                     @endif
