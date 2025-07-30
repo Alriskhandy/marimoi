@@ -49,7 +49,7 @@
                     @if (Route::has('lokasi.feedbacks.index'))
                         <li class="nav-item {{ request()->routeIs('lokasi.feedbacks.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('lokasi.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Lokasi
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback RPJMD
 
                             </a>
                         </li>

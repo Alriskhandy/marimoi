@@ -12,6 +12,8 @@ class PokirDprd extends Model
         'kategori_id',
         'deskripsi',
         'dbf_attributes',
+        'icon',
+        'is_marker',
         'geom'
     ];
 

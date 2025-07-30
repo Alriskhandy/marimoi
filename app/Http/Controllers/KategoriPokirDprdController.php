@@ -45,7 +45,9 @@ class KategoriPokirDprdController extends Controller
             'nama' => 'required|string|max:255',
             'warna' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id'
+            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id',
+            'icon' => 'nullable|string|max:255',
+             'is_marker' => 'nullable|boolean',
         ]);
         
         if ($validator->fails()) {
@@ -102,7 +104,9 @@ class KategoriPokirDprdController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id'
+            'parent_id' => 'nullable|exists:kategori_pokir_dprds,id',
+            'icon' => 'nullable|string|max:255',
+             'is_marker' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
