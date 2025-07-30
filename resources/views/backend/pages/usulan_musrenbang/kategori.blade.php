@@ -135,7 +135,7 @@
                                     <th>No</th>
                                     <th>Nama</th>
                                     <th>Warna</th>
-                                    <th>Parent</th>
+                                    {{-- <th>Parent</th> --}}
                                     <th>Type</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -157,7 +157,7 @@
                                                 <span class="text-muted">-</span>
                                             @endif
                                         </td>
-                                        <td><span class="badge badge-secondary">Root</span></td>
+                                        {{-- <td><span class="badge badge-secondary">Root</span></td> --}}
                                         <td>
                                             @if ($kategori->is_marker)
                                                 <span class="badge badge-warning">
@@ -216,20 +216,12 @@
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
-                                                <td><span class="badge badge-info">{{ $kategori->nama }}</span></td>
+                                                {{-- <td><span class="badge badge-info">{{ $kategori->nama }}</span></td> --}}
                                                 <td>
                                                     @if ($child->is_marker)
                                                         <span class="badge badge-warning">
                                                             <i class="mdi mdi-map-marker"></i> Marker
                                                         </span>
-                                                        @if ($child->icon)
-                                                            <br>
-                                                            <small class="text-muted d-flex align-items-center mt-1">
-                                                                <i class="fa fa-map-marker fa-lg me-1"
-                                                                    title="Icon: {{ $child->icon }}"></i>
-                                                                <span>{{ $child->icon }}</span>
-                                                            </small>
-                                                        @endif
                                                     @else
                                                         <span class="badge badge-info">
                                                             <i class="mdi mdi-layers"></i> Layer

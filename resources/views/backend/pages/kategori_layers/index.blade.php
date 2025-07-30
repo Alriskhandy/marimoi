@@ -113,7 +113,7 @@
                                     <th>No</th>
                                     <th>Nama</th>
                                     <th>Warna</th>
-                                    <th>Parent</th>
+                                    {{-- <th>Parent</th> --}}
                                     <th>Type</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -141,7 +141,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge badge-secondary">Root</span>
+                                            {{-- <span class="badge badge-secondary">Root</span> --}}
                                         </td>
                                         <td>
                                             @if ($kategori->is_marker)
@@ -205,7 +205,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-info">{{ $kategori->nama }}</span>
+                                                    {{-- <span class="badge badge-info">{{ $kategori->nama }}</span> --}}
                                                 </td>
                                                 <td>
                                                     @if ($child->is_marker)
