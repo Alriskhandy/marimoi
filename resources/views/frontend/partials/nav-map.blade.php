@@ -309,7 +309,7 @@
                 </li>
 
                 {{-- Aktifkan Jika RPJMD sudah Siap --}}
-                {{--
+                
                 <li>
                     <a
                         href="{{ route('tampil.rpjmd') }}"
@@ -317,7 +317,7 @@
                         >RPJMD</a
                     >
                 </li>
-                --}}
+               
 
                 <li>
                     <a href="{{ route('tampil.musrenbang') }}"
@@ -327,10 +327,10 @@
                     <a href="{{ route('tampil.pokir') }}"
                         class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir DPRD</a>
                 </li>
-                <li>
+                {{-- <li>
                     <a href="{{ route('tampil.aspirasi') }}"
                         class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a>
-                </li>
+                </li> --}}
             </ul>
 
             <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
