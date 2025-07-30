@@ -10,29 +10,34 @@ const mapConfig = {
             id: "osm",
             label: "OpenStreetMap",
             url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            maxZoom: 19,
         },
         {
             id: "google-roadmap",
             label: "Google Map (ROADMAP)",
             url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 20,
         },
         {
             id: "google-hybrid",
             label: "Google Map (Hybrid)",
             url: "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 20,
         },
         {
             id: "google-terrain",
             label: "Google Map (Terrain)",
             url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 16,
         },
         {
             id: "esri-world-imagery",
             label: "ESRI World Imagery",
             url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 18,
         },
     ],
 };
@@ -72,9 +77,12 @@ function generateLegend() {
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
             if (!added.has(sub)) {
-                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                const color =
+                    kategoriWarnaMap[sub] ||
+                    kategoriWarnaMap[kategori] ||
+                    "#ccc";
                 const icon = iconMap[sub];
-                
+
                 if (icon) {
                     legendContainer.innerHTML += `
                         <div class="d-flex align-items-center mb-2">
@@ -102,7 +110,9 @@ function generateLegend() {
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
     let content = `<div class="py-2" style="max-width: 250px;">
-        <h5 class="fw-bold text-primary" style="font-size: 14px;">${props.kategori || "Feature"}</h5>
+        <h5 class="fw-bold text-primary" style="font-size: 14px;">${
+            props.kategori || "Feature"
+        }</h5>
         <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 150px; object-fit: cover; margin-bottom: 5px;">`;
 
     content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
@@ -225,7 +235,7 @@ function changeBaseMap(baseMapId) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
             minZoom: 4,
-            maxZoom: 19,
+            maxZoom: config.maxZoom,
         }).addTo(map);
     }
 }
@@ -329,19 +339,16 @@ async function initMap() {
             if (targetLayer) {
                 let iconClass = iconMap[kategori] || null;
                 let iconWarna = kategoriWarnaMap[kategori] || "#333";
+                console.log("warnaIcon:", iconWarna);
+                // console.log("warnaMap:", kategoriWarnaMap[kategori]);
 
                 let markerOptions = {};
                 if (iconClass) {
-                    markerOptions.icon = L.divIcon({
-                        html: `
-                            <div class="custom-fa-icon" style="background: transparent; border: none;">
-                                <i class="${iconClass}" style="font-size: 16px; color: ${iconWarna};"></i>
-                            </div>
-                        `,
-                        className: "leaflet-fa-icon",
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 32],
-                        popupAnchor: [0, -32],
+                    markerOptions.icon = L.AwesomeMarkers.icon({
+                        icon: iconClass,
+                        prefix: "fa",
+                        markerColor: iconWarna,
+                        iconColor: "white",
                     });
                 }
 
@@ -661,7 +668,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showStep(step) {
         guideSteps.forEach((stepDiv) => {
-            stepDiv.classList.toggle("d-none", parseInt(stepDiv.dataset.step) !== step);
+            stepDiv.classList.toggle(
+                "d-none",
+                parseInt(stepDiv.dataset.step) !== step
+            );
         });
 
         btnPrev.disabled = step === 1;
@@ -669,13 +679,27 @@ document.addEventListener("DOMContentLoaded", () => {
         clearHighlights();
 
         switch (step) {
-            case 3: controlButtons[0]?.classList.add("highlighted-control"); break;
-            case 4: controlButtons[1]?.classList.add("highlighted-control"); break;
-            case 5: controlButtons[2]?.classList.add("highlighted-control"); break;
-            case 6: controlButtons[3]?.classList.add("highlighted-control"); break;
-            case 7: controlButtons[4]?.classList.add("highlighted-control"); break;
-            case 8: controlButtons[5]?.classList.add("highlighted-control"); break;
-            case 9: controlButtons[6]?.classList.add("highlighted-control"); break;
+            case 3:
+                controlButtons[0]?.classList.add("highlighted-control");
+                break;
+            case 4:
+                controlButtons[1]?.classList.add("highlighted-control");
+                break;
+            case 5:
+                controlButtons[2]?.classList.add("highlighted-control");
+                break;
+            case 6:
+                controlButtons[3]?.classList.add("highlighted-control");
+                break;
+            case 7:
+                controlButtons[4]?.classList.add("highlighted-control");
+                break;
+            case 8:
+                controlButtons[5]?.classList.add("highlighted-control");
+                break;
+            case 9:
+                controlButtons[6]?.classList.add("highlighted-control");
+                break;
         }
     }
 
@@ -684,12 +708,16 @@ document.addEventListener("DOMContentLoaded", () => {
         modalInstance?.hide();
 
         document.body.classList.remove("modal-open");
-        document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+        document
+            .querySelectorAll(".modal-backdrop")
+            .forEach((el) => el.remove());
         document.querySelector(".guide-overlay")?.remove();
     }
 
     btnToggleHelp?.addEventListener("click", () => {
-        const modalInstance = bootstrap.Modal.getInstance(guideModal) || new bootstrap.Modal(guideModal);
+        const modalInstance =
+            bootstrap.Modal.getInstance(guideModal) ||
+            new bootstrap.Modal(guideModal);
         const isVisible = guideModal.classList.contains("show");
 
         closeAllSidebars();
@@ -781,7 +809,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const childLabels = group.querySelectorAll(".bg-light label");
             let hasMatch = false;
 
-            if (parentLabel && parentLabel.textContent.toLowerCase().includes(searchTerm)) hasMatch = true;
+            if (
+                parentLabel &&
+                parentLabel.textContent.toLowerCase().includes(searchTerm)
+            )
+                hasMatch = true;
 
             childLabels.forEach((label) => {
                 if (label.textContent.toLowerCase().includes(searchTerm)) {
@@ -789,7 +821,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            group.style.display = hasMatch || searchTerm === "" ? "block" : "none";
+            group.style.display =
+                hasMatch || searchTerm === "" ? "block" : "none";
         });
     });
 });
