@@ -10,29 +10,34 @@ const mapConfig = {
             id: "osm",
             label: "OpenStreetMap",
             url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            maxZoom: 19,
         },
         {
             id: "google-roadmap",
             label: "Google Map (ROADMAP)",
             url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 20,
         },
         {
             id: "google-hybrid",
             label: "Google Map (Hybrid)",
             url: "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 20,
         },
         {
             id: "google-terrain",
             label: "Google Map (Terrain)",
             url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
+            maxZoom: 16,
         },
         {
             id: "esri-world-imagery",
             label: "ESRI World Imagery",
             url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 18,
         },
     ],
 };
@@ -72,9 +77,12 @@ function generateLegend() {
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
             if (!added.has(sub)) {
-                const color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+                const color =
+                    kategoriWarnaMap[sub] ||
+                    kategoriWarnaMap[kategori] ||
+                    "#ccc";
                 const icon = iconMap[sub];
-                
+
                 if (icon) {
                     legendContainer.innerHTML += `
                         <div class="d-flex align-items-center mb-2">
@@ -101,10 +109,13 @@ function generateLegend() {
 
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
-    let content = `<div class="p-2" style="max-width: 300px;">
-        <h5 class="fw-bold text-primary">${props.kategori || "Feature"}</h5>`;
+    let content = `<div class="py-2" style="max-width: 250px;">
+        <h5 class="fw-bold text-primary" style="font-size: 14px;">${
+            props.kategori || "Feature"
+        }</h5>
+        <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 150px; object-fit: cover; margin-bottom: 5px;">`;
 
-    content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
+    content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
     Object.entries(props).forEach(([key, value]) => {
         if (
             value &&
@@ -129,7 +140,7 @@ function bindPopupContent(feature, layer, urlPath) {
     const geom = feature.geometry;
     if (geom) {
         const type = geom.type;
-        content += `<hr><table class="table table-sm table-borderless" style="font-size: 12px; width: 100%;">`;
+        content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
         content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
@@ -224,7 +235,7 @@ function changeBaseMap(baseMapId) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
             minZoom: 4,
-            maxZoom: 19,
+            maxZoom: config.maxZoom,
         }).addTo(map);
     }
 }
@@ -328,19 +339,16 @@ async function initMap() {
             if (targetLayer) {
                 let iconClass = iconMap[kategori] || null;
                 let iconWarna = kategoriWarnaMap[kategori] || "#333";
+                console.log("warnaIcon:", iconWarna);
+                // console.log("warnaMap:", kategoriWarnaMap[kategori]);
 
                 let markerOptions = {};
                 if (iconClass) {
-                    markerOptions.icon = L.divIcon({
-                        html: `
-                            <div class="custom-fa-icon" style="background: transparent; border: none;">
-                                <i class="${iconClass}" style="font-size: 16px; color: ${iconWarna};"></i>
-                            </div>
-                        `,
-                        className: "leaflet-fa-icon",
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 32],
-                        popupAnchor: [0, -32],
+                    markerOptions.icon = L.AwesomeMarkers.icon({
+                        icon: iconClass,
+                        prefix: "fa",
+                        markerColor: iconWarna,
+                        iconColor: "white",
                     });
                 }
 
@@ -603,7 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
     changeBaseMap("esri-world-imagery");
     setupUI();
 
-    // Simplified sidebar controls
+    // Sidebar Elements
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
@@ -612,6 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
         help: document.getElementById("guideModal"),
     };
 
+    // Toggle Buttons
     const toggleButtons = {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
@@ -620,18 +629,139 @@ document.addEventListener("DOMContentLoaded", () => {
         help: document.getElementById("btn-toggle-sidebar-help"),
     };
 
+    const guideModal = document.getElementById("guideModal");
+    const guideSteps = document.querySelectorAll(".guide-step");
+    const btnPrev = document.getElementById("btnPrev");
+    const btnNext = document.getElementById("btnNext");
+    const btnSkip = document.getElementById("btnSkip");
+    const btnToggleHelp = toggleButtons.help;
+
+    const controlButtons = [
+        toggleButtons.help,
+        toggleButtons.legend,
+        toggleButtons.basemap,
+        toggleButtons.layer,
+        toggleButtons.download,
+        document.getElementById("btn-fullscreen"),
+        document.getElementById("btn-default-zoom"),
+    ];
+
     function closeAllSidebars() {
-        Object.values(sidebarElements).forEach((element) => {
-            if (element) element.style.display = "none";
+        Object.values(sidebarElements).forEach((el) => {
+            if (el && el !== guideModal) el.style.display = "none";
         });
     }
 
+    let currentStep = 1;
+    const totalSteps = guideSteps.length;
+
+    function clearHighlights() {
+        controlButtons.forEach((btn) => {
+            if (btn) {
+                btn.classList.remove("highlighted-control");
+                btn.style.position = "";
+                btn.style.zIndex = "";
+                btn.style.padding = "";
+            }
+        });
+    }
+
+    function showStep(step) {
+        guideSteps.forEach((stepDiv) => {
+            stepDiv.classList.toggle(
+                "d-none",
+                parseInt(stepDiv.dataset.step) !== step
+            );
+        });
+
+        btnPrev.disabled = step === 1;
+        btnNext.textContent = step === totalSteps ? "Finish" : "Next";
+        clearHighlights();
+
+        switch (step) {
+            case 3:
+                controlButtons[0]?.classList.add("highlighted-control");
+                break;
+            case 4:
+                controlButtons[1]?.classList.add("highlighted-control");
+                break;
+            case 5:
+                controlButtons[2]?.classList.add("highlighted-control");
+                break;
+            case 6:
+                controlButtons[3]?.classList.add("highlighted-control");
+                break;
+            case 7:
+                controlButtons[4]?.classList.add("highlighted-control");
+                break;
+            case 8:
+                controlButtons[5]?.classList.add("highlighted-control");
+                break;
+            case 9:
+                controlButtons[6]?.classList.add("highlighted-control");
+                break;
+        }
+    }
+
+    function hideGuideModal() {
+        const modalInstance = bootstrap.Modal.getInstance(guideModal);
+        modalInstance?.hide();
+
+        document.body.classList.remove("modal-open");
+        document
+            .querySelectorAll(".modal-backdrop")
+            .forEach((el) => el.remove());
+        document.querySelector(".guide-overlay")?.remove();
+    }
+
+    btnToggleHelp?.addEventListener("click", () => {
+        const modalInstance =
+            bootstrap.Modal.getInstance(guideModal) ||
+            new bootstrap.Modal(guideModal);
+        const isVisible = guideModal.classList.contains("show");
+
+        closeAllSidebars();
+        clearHighlights();
+
+        if (!isVisible) {
+            currentStep = 1;
+            showStep(currentStep);
+            modalInstance.show();
+        } else {
+            modalInstance.hide();
+        }
+    });
+
+    btnPrev?.addEventListener("click", () => {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    btnNext?.addEventListener("click", () => {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            showStep(currentStep);
+        } else {
+            hideGuideModal();
+            clearHighlights();
+        }
+    });
+
+    btnSkip?.addEventListener("click", () => {
+        hideGuideModal();
+        clearHighlights();
+    });
+
+    // Sidebar toggles
     Object.entries(toggleButtons).forEach(([key, button]) => {
         if (button && sidebarElements[key]) {
             button.addEventListener("click", () => {
                 const sidebar = sidebarElements[key];
                 const isVisible = sidebar.style.display === "block";
                 closeAllSidebars();
+
                 if (key === "help" && window.bootstrap) {
                     const modal = new bootstrap.Modal(sidebar);
                     if (!isVisible) modal.show();
@@ -642,7 +772,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Close buttons
+    // Close sidebar buttons
     ["layer", "basemap", "legend", "download"].forEach((type) => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
@@ -654,61 +784,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Fullscreen toggle
     const btnFullscreen = document.getElementById("btn-fullscreen");
-    if (btnFullscreen) {
-        btnFullscreen.addEventListener("click", () => {
-            if (!document.fullscreenElement) {
-                document.documentElement
-                    .requestFullscreen()
-                    .catch(console.error);
-            } else {
-                document.exitFullscreen().catch(console.error);
-            }
-        });
-    }
+    btnFullscreen?.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(console.error);
+        } else {
+            document.exitFullscreen().catch(console.error);
+        }
+    });
 
-    // Default zoom
+    // Zoom reset
     const btnDefaultZoom = document.getElementById("btn-default-zoom");
-    if (btnDefaultZoom) {
-        btnDefaultZoom.addEventListener("click", () => {
-            map.setView(mapConfig.center, mapConfig.zoom);
-        });
-    }
+    btnDefaultZoom?.addEventListener("click", () => {
+        map.setView(mapConfig.center, mapConfig.zoom);
+    });
 
-    // Search functionality
+    // Search layer
     const layerSearchInput = document.getElementById("layer-search");
-    if (layerSearchInput) {
-        layerSearchInput.addEventListener("input", (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const layerGroups = document.querySelectorAll(".layer-group");
+    layerSearchInput?.addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const layerGroups = document.querySelectorAll(".layer-group");
 
-            layerGroups.forEach((group) => {
-                const parentLabel = group.querySelector(".fw-bold");
-                const childLabels = group.querySelectorAll(".bg-light label");
+        layerGroups.forEach((group) => {
+            const parentLabel = group.querySelector(".fw-bold");
+            const childLabels = group.querySelectorAll(".bg-light label");
+            let hasMatch = false;
 
-                let hasMatch = false;
+            if (
+                parentLabel &&
+                parentLabel.textContent.toLowerCase().includes(searchTerm)
+            )
+                hasMatch = true;
 
-                // Check parent
-                if (
-                    parentLabel &&
-                    parentLabel.textContent.toLowerCase().includes(searchTerm)
-                ) {
+            childLabels.forEach((label) => {
+                if (label.textContent.toLowerCase().includes(searchTerm)) {
                     hasMatch = true;
                 }
-
-                // Check children
-                childLabels.forEach((childLabel) => {
-                    if (
-                        childLabel.textContent
-                            .toLowerCase()
-                            .includes(searchTerm)
-                    ) {
-                        hasMatch = true;
-                    }
-                });
-
-                group.style.display =
-                    hasMatch || searchTerm === "" ? "block" : "none";
             });
+
+            group.style.display =
+                hasMatch || searchTerm === "" ? "block" : "none";
         });
-    }
+    });
 });
