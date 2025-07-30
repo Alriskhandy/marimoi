@@ -222,9 +222,39 @@ function bindPopupContent(feature, layer, urlPath) {
         const zoomButton = popupNode.querySelector(".zoomToBtn");
         if (zoomButton) {
             zoomButton.addEventListener("click", function () {
-                const lat = parseFloat(this.getAttribute("data-lat"));
-                const lng = parseFloat(this.getAttribute("data-lng"));
-                layer._map.setView([lat, lng], 15);
+                const geom = feature.geometry;
+                if (!geom) return;
+                const mapInstance = layer._map;
+                if (geom.type === "Point") {
+                    const lat = parseFloat(this.getAttribute("data-lat"));
+                    const lng = parseFloat(this.getAttribute("data-lng"));
+                    mapInstance.setView([lat, lng], 15);
+                } else if (geom.type === "LineString") {
+                    // Fit bounds to line
+                    const latlngs = geom.coordinates.map(([lng, lat]) => [
+                        lat,
+                        lng,
+                    ]);
+                    mapInstance.fitBounds(latlngs);
+                } else if (geom.type === "Polygon") {
+                    // Fit bounds to polygon
+                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [
+                        lat,
+                        lng,
+                    ]);
+                    mapInstance.fitBounds(latlngs);
+                } else if (geom.type === "MultiPolygon") {
+                    // Gabungkan semua koordinat polygon
+                    let allLatLngs = [];
+                    geom.coordinates.forEach((poly) => {
+                        poly[0].forEach(([lng, lat]) => {
+                            allLatLngs.push([lat, lng]);
+                        });
+                    });
+                    if (allLatLngs.length > 0) {
+                        mapInstance.fitBounds(allLatLngs);
+                    }
+                }
             });
         }
     });
