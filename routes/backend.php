@@ -548,3 +548,59 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // end pokir DPRD
 // end pokir DPRD
 // require __DIR__.'/auth.php';
+
+
+// ========================================
+// ROUTES CONFIGURATION (COMPATIBLE)
+// ========================================
+
+Route::prefix('dashboard')->middleware(['auth'])->group(function() {
+    // General project feedbacks (all types)
+    Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('project-feedbacks.index');
+    Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('project-feedbacks.store');
+    Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('project-feedbacks.show');
+    Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('project-feedbacks.respond');
+    Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('project-feedbacks.destroy');
+    Route::get('project-feedbacks/statistics', [ProjectFeedbackController::class, 'statistics'])->name('project-feedbacks.statistics');
+
+    // Scoped project feedbacks (per project type) - NO DEFAULTS, using URL detection
+    Route::prefix('pokir')->group(function() {
+        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('pokir.feedbacks.index');
+        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('pokir.feedbacks.store');
+        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('pokir.feedbacks.show');
+        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('pokir.feedbacks.respond');
+        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('pokir.feedbacks.destroy');
+    });
+
+    Route::prefix('usulan')->group(function() {
+        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('usulan.feedbacks.index');
+        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('usulan.feedbacks.store');
+        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('usulan.feedbacks.show');
+        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('usulan.feedbacks.respond');
+        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('usulan.feedbacks.destroy');
+    });
+
+    Route::prefix('nasional')->group(function() {
+        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('nasional.feedbacks.index');
+        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('nasional.feedbacks.store');
+        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('nasional.feedbacks.show');
+        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('nasional.feedbacks.respond');
+        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('nasional.feedbacks.destroy');
+    });
+
+    Route::prefix('daerah')->group(function() {
+        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('daerah.feedbacks.index');
+        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('daerah.feedbacks.store');
+        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('daerah.feedbacks.show');
+        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('daerah.feedbacks.respond');
+        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('daerah.feedbacks.destroy');
+    });
+
+    Route::prefix('lokasi')->group(function() {
+        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('lokasi.feedbacks.index');
+        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('lokasi.feedbacks.store');
+        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('lokasi.feedbacks.show');
+        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('lokasi.feedbacks.respond');
+        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('lokasi.feedbacks.destroy');
+    });
+});

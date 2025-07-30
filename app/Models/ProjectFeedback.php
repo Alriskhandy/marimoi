@@ -1,20 +1,19 @@
 <?php
 
+// app/Models/ProjectFeedback.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class ProjectFeedback extends Model
 {
     use HasFactory;
-
-    protected $table = 'project_feedbacks';
-
+protected $table = 'project_feedbacks';
     protected $fillable = [
-        'nama_proyek',
         'nama_pemberi_aspirasi',
+        'nama_proyek',
         'kabupaten_kota',
         'kecamatan',
         'latitude',
@@ -26,223 +25,357 @@ class ProjectFeedback extends Model
         'email',
         'phone',
         'response_admin',
-        'responded_at'
-    ];
-
-    // Konstanta untuk Maluku Utara
-    const PROVINSI = 'Maluku Utara';
-    
-    const KABUPATEN_KOTA = [
-        'Ternate',
-        'Tidore Kepulauan',
-        'Halmahera Barat',
-        'Halmahera Timur',
-        'Halmahera Utara',
-        'Halmahera Selatan',
-        'Kepulauan Sula',
-        'Halmahera Tengah',
-        'Pulau Morotai',
-        'Pulau Taliabu'
-    ];
-
-    const KECAMATAN_BY_KABUPATEN = [
-        'Ternate' => [
-            'Ternate Tengah', 'Ternate Utara', 'Ternate Selatan', 
-            'Pulau Ternate', 'Moti', 'Pulau Batang Dua'
-        ],
-        'Tidore Kepulauan' => [
-            'Tidore', 'Tidore Timur', 'Tidore Utara', 'Oba',
-            'Oba Utara', 'Oba Tengah', 'Oba Selatan'
-        ],
-        'Halmahera Barat' => [
-            'Jailolo', 'Jailolo Selatan', 'Sahu', 'Ibu',
-            'Ibu Utara', 'Sahu Timur', 'Loloda'
-        ],
-        'Halmahera Timur' => [
-            'Maba', 'Maba Selatan', 'Wasile', 'Wasile Timur',
-            'Wasile Tengah', 'Maba Utara'
-        ],
-        'Halmahera Utara' => [
-            'Tobelo', 'Tobelo Barat', 'Tobelo Timur', 'Galela',
-            'Galela Barat', 'Tobelo Tengah', 'Tobelo Selatan',
-            'Kao', 'Kao Utara', 'Kao Teluk', 'Malifut', 'Loloda Utara'
-        ],
-        'Halmahera Selatan' => [
-            'Labuha', 'Bacan', 'Bacan Timur', 'Makian',
-            'Kayoa', 'Gane Timur', 'Obi Selatan', 'Obi',
-            'Bacan Barat', 'Kasiruta Timur', 'Kasiruta Barat',
-            'Makian Barat', 'Kayoa Utara'
-        ],
-        'Kepulauan Sula' => [
-            'Sanana', 'Mangole', 'Taliabu', 'Sulabesi',
-            'Mangole Utara', 'Mangole Timur', 'Mangole Tengah',
-            'Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara',
-            'Taliabu Selatan', 'Lisiela', 'Seho'
-        ],
-        'Halmahera Tengah' => [
-            'Weda', 'Patani', 'Patani Barat', 'Gane Barat',
-            'Gane Barat Selatan', 'Gane Barat Utara',
-            'Weda Utara', 'Weda Tengah', 'Weda Selatan'
-        ],
-        'Pulau Morotai' => [
-            'Morotai Selatan', 'Morotai Timur', 'Morotai Utara',
-            'Morotai Jaya', 'Morotai Barat'
-        ],
-        'Pulau Taliabu' => [
-            'Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara',
-            'Taliabu Selatan'
-        ]
+        'responded_at',
+        'feedbackable_id',
+        'feedbackable_type'
     ];
 
     protected $casts = [
+        'responded_at' => 'datetime',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'responded_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
     ];
 
-    // Accessor untuk koordinat dalam format string
-    protected function coordinates(): Attribute
+    /**
+     * Polymorphic relationship - feedback bisa terkait ke berbagai model
+     */
+    public function feedbackable()
     {
-        return Attribute::make(
-            get: fn () => $this->latitude && $this->longitude 
-                ? "{$this->latitude}, {$this->longitude}" 
-                : null,
-        );
+        return $this->morphTo();
     }
 
-    // Accessor untuk URL gambar lengkap
-    protected function imageUrl(): Attribute
+    /**
+     * Scope untuk filter berdasarkan jenis model
+     */
+    public function scopeForUsulanMusrenbang($query)
     {
-        return Attribute::make(
-            get: fn () => $this->laporan_gambar 
-                ? asset('storage/feedback_images/' . $this->laporan_gambar)
-                : null,
-        );
+        return $query->where('feedbackable_type', UsulanMusrenbang::class);
     }
 
-    // Scope untuk filter berdasarkan status
-    public function scopeByStatus($query, $status)
+    public function scopeForProyekStrategisNasional($query)
     {
-        return $query->where('status', $status);
+        return $query->where('feedbackable_type', ProyekStrategisNasional::class);
     }
 
-    // Scope untuk filter berdasarkan jenis tanggapan
-    public function scopeByJenisTanggapan($query, $jenis)
+    public function scopeForProyekStrategisDaerah($query)
     {
-        return $query->where('jenis_tanggapan', $jenis);
+        return $query->where('feedbackable_type', ProyekStrategisDaerah::class);
     }
 
-    // Accessor untuk provinsi (selalu Maluku Utara)
-    protected function provinsi(): Attribute
+    public function scopeForPokirDprd($query)
     {
-        return Attribute::make(
-            get: fn () => self::PROVINSI,
-        );
+        return $query->where('feedbackable_type', PokirDprd::class);
     }
 
-    // Scope untuk filter berdasarkan kabupaten/kota (validasi otomatis)
-    public function scopeByKabupatenKota($query, $kabupatenKota)
+    public function scopeForLokasi($query)
     {
-        if (!in_array($kabupatenKota, self::KABUPATEN_KOTA)) {
-            throw new \InvalidArgumentException("Kabupaten/Kota '$kabupatenKota' tidak valid untuk Maluku Utara");
-        }
-        return $query->where('kabupaten_kota', $kabupatenKota);
+        return $query->where('feedbackable_type', Lokasi::class);
     }
 
-    // Method untuk validasi kecamatan berdasarkan kabupaten
-    public function validateKecamatan($kecamatan, $kabupaten)
+    /**
+     * Scope untuk filter berdasarkan status
+     */
+    public function scopePending($query)
     {
-        $validKecamatan = self::KECAMATAN_BY_KABUPATEN[$kabupaten] ?? [];
-        return in_array($kecamatan, $validKecamatan);
+        return $query->where('status', 'pending');
     }
 
-    // Method untuk mendapatkan semua kecamatan di suatu kabupaten
-    public static function getKecamatanByKabupaten($kabupaten)
+    public function scopeDitinjau($query)
     {
-        return self::KECAMATAN_BY_KABUPATEN[$kabupaten] ?? [];
+        return $query->where('status', 'ditinjau');
     }
 
-    // Boot method untuk auto-set provinsi
-    protected static function boot()
+    public function scopeDitindaklanjuti($query)
     {
-        parent::boot();
-        
-        static::creating(function ($model) {
-            // Validasi kabupaten sebelum create
-            if (!in_array($model->kabupaten_kota, self::KABUPATEN_KOTA)) {
-                throw new \InvalidArgumentException("Kabupaten/Kota '{$model->kabupaten_kota}' tidak valid untuk Maluku Utara");
-            }
-            
-            // Validasi kecamatan jika ada
-            if ($model->kecamatan && !$model->validateKecamatan($model->kecamatan, $model->kabupaten_kota)) {
-                throw new \InvalidArgumentException("Kecamatan '{$model->kecamatan}' tidak valid untuk {$model->kabupaten_kota}");
-            }
-        });
+        return $query->where('status', 'ditindaklanjuti');
     }
 
-    // Scope untuk filter berdasarkan proyek
-    public function scopeByProject($query, $projectName)
+    public function scopeSelesai($query)
     {
-        return $query->where('nama_proyek', 'like', "%{$projectName}%");
+        return $query->where('status', 'selesai');
     }
 
-    // Scope untuk feedback terbaru
-    public function scopeRecent($query, $days = 30)
+    /**
+     * Scope untuk filter berdasarkan jenis tanggapan
+     */
+    public function scopeKeluhan($query)
     {
-        return $query->where('created_at', '>=', now()->subDays($days));
+        return $query->where('jenis_tanggapan', 'keluhan');
     }
 
-    // Method untuk menandai tanggapan sebagai selesai
-    public function markAsSelesai($adminResponse = null)
+    public function scopeSaran($query)
     {
-        $this->update([
-            'status' => 'selesai',
-            'response_admin' => $adminResponse,
-            'responded_at' => now()
-        ]);
+        return $query->where('jenis_tanggapan', 'saran');
     }
 
-    // Method untuk mendapatkan jarak dari koordinat tertentu (dalam km)
-    public function getDistanceFrom($latitude, $longitude)
+    public function scopeApresiasi($query)
     {
-        if (!$this->latitude || !$this->longitude) {
+        return $query->where('jenis_tanggapan', 'apresiasi');
+    }
+
+    public function scopePertanyaan($query)
+    {
+        return $query->where('jenis_tanggapan', 'pertanyaan');
+    }
+
+    /**
+     * Helper methods untuk mengecek jenis project yang terkait
+     */
+    public function isUsulanMusrenbang()
+    {
+        return $this->feedbackable_type === UsulanMusrenbang::class;
+    }
+
+    public function isProyekStrategisNasional()
+    {
+        return $this->feedbackable_type === ProyekStrategisNasional::class;
+    }
+
+    public function isProyekStrategisDaerah()
+    {
+        return $this->feedbackable_type === ProyekStrategisDaerah::class;
+    }
+
+    public function isPokirDprd()
+    {
+        return $this->feedbackable_type === PokirDprd::class;
+    }
+
+    public function isLokasi()
+    {
+        return $this->feedbackable_type === Lokasi::class;
+    }
+
+    /**
+     * Get model type name for display
+     */
+    public function getModelTypeNameAttribute()
+    {
+        $names = [
+            UsulanMusrenbang::class => 'Usulan Musrenbang',
+            ProyekStrategisNasional::class => 'Proyek Strategis Nasional',
+            ProyekStrategisDaerah::class => 'Proyek Strategis Daerah',
+            PokirDprd::class => 'Pokir DPRD',
+            Lokasi::class => 'Lokasi',
+        ];
+
+        return $names[$this->feedbackable_type] ?? 'Unknown';
+    }
+
+    /**
+     * Get status badge class
+     */
+    public function getStatusBadgeClassAttribute()
+    {
+        $classes = [
+            'pending' => 'badge-warning',
+            'ditinjau' => 'badge-info',
+            'ditindaklanjuti' => 'badge-primary',
+            'selesai' => 'badge-success'
+        ];
+
+        return $classes[$this->status] ?? 'badge-secondary';
+    }
+
+    /**
+     * Get jenis tanggapan badge class
+     */
+    public function getJenisBadgeClassAttribute()
+    {
+        $classes = [
+            'keluhan' => 'badge-danger',
+            'saran' => 'badge-info',
+            'apresiasi' => 'badge-success',
+            'pertanyaan' => 'badge-warning'
+        ];
+
+        return $classes[$this->jenis_tanggapan] ?? 'badge-secondary';
+    }
+
+    /**
+     * Check if feedback has coordinates
+     */
+    public function hasCoordinates()
+    {
+        return !is_null($this->latitude) && !is_null($this->longitude);
+    }
+
+    /**
+     * Get Google Maps URL
+     */
+    public function getGoogleMapsUrlAttribute()
+    {
+        if (!$this->hasCoordinates()) {
             return null;
         }
 
-        $earthRadius = 6371; // radius bumi dalam km
-        
-        $latDiff = deg2rad($this->latitude - $latitude);
-        $lonDiff = deg2rad($this->longitude - $longitude);
-        
-        $a = sin($latDiff / 2) * sin($latDiff / 2) +
-             cos(deg2rad($latitude)) * cos(deg2rad($this->latitude)) *
-             sin($lonDiff / 2) * sin($lonDiff / 2);
-        
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
-        return $earthRadius * $c;
+        return "https://www.google.com/maps/search/?api=1&query={$this->latitude},{$this->longitude}";
     }
-    public function getJenisBadgeClassAttribute()
-{
-    return match ($this->jenis_tanggapan) {
-        'positif' => 'success',
-        'negatif' => 'danger',
-        'netral'  => 'secondary',
-        default   => 'light',
-    };
+
+    /**
+     * Check if feedback has admin response
+     */
+    public function hasResponse()
+    {
+        return !is_null($this->response_admin) && !is_null($this->responded_at);
+    }
+
+    /**
+     * Get image URL
+     */
+    public function getImageUrlAttribute()
+    {
+        if (!$this->laporan_gambar) {
+            return null;
+        }
+
+        return asset('storage/feedback_images/' . $this->laporan_gambar);
+    }
+
+    /**
+     * Static method untuk mendapatkan statistik
+     */
+    public static function getStatistics()
+    {
+        return [
+            'total' => self::count(),
+            'pending' => self::pending()->count(),
+            'ditinjau' => self::ditinjau()->count(),
+            'ditindaklanjuti' => self::ditindaklanjuti()->count(),
+            'selesai' => self::selesai()->count(),
+            'keluhan' => self::keluhan()->count(),
+            'saran' => self::saran()->count(),
+            'apresiasi' => self::apresiasi()->count(),
+            'pertanyaan' => self::pertanyaan()->count(),
+            'model_types' => [
+                'usulan_musrenbang' => self::forUsulanMusrenbang()->count(),
+                'proyek_strategis_nasional' => self::forProyekStrategisNasional()->count(),
+                'proyek_strategis_daerah' => self::forProyekStrategisDaerah()->count(),
+                'pokir_dprd' => self::forPokirDprd()->count(),
+                'lokasi' => self::forLokasi()->count(),
+            ]
+        ];
+    }
+
+    /**
+     * Static method untuk mendapatkan statistik berdasarkan region
+     */
+    public static function getRegionStatistics()
+    {
+        return self::selectRaw('kabupaten_kota, count(*) as total')
+            ->groupBy('kabupaten_kota')
+            ->orderBy('total', 'desc')
+            ->get()
+            ->pluck('total', 'kabupaten_kota')
+            ->toArray();
+    }
 }
 
-public function getStatusBadgeClassAttribute()
+// ========================================
+// UPDATE MODEL YANG SUDAH ADA
+// ========================================
+
+// app/Models/UsulanMusrenbang.php - Tambahkan method ini
+class UsulanMusrenbang extends Model
 {
-    return match ($this->status) {
-        'diajukan' => 'warning',
-        'diproses' => 'primary',
-        'diterima' => 'success',
-        'ditolak'  => 'danger',
-        default    => 'secondary',
-    };
+    // existing code...
+
+    /**
+     * Polymorphic relationship - usulan bisa punya banyak feedback
+     */
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }
 
+// app/Models/ProyekStrategisNasional.php - Tambahkan method ini
+class ProyekStrategisNasional extends Model
+{
+    // existing code...
+
+    /**
+     * Polymorphic relationship - proyek nasional bisa punya banyak feedback
+     */
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }
+
+// app/Models/ProyekStrategisDaerah.php - Tambahkan method ini
+class ProyekStrategisDaerah extends Model
+{
+    // existing code...
+
+    /**
+     * Polymorphic relationship - proyek daerah bisa punya banyak feedback
+     */
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
+}
+
+// app/Models/PokirDprd.php - Tambahkan method ini
+class PokirDprd extends Model
+{
+    // existing code...
+
+    /**
+     * Polymorphic relationship - pokir bisa punya banyak feedback
+     */
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
+}
+
+// app/Models/Lokasi.php - Tambahkan method ini
+class Lokasi extends Model
+{
+    // existing code...
+
+    /**
+     * Polymorphic relationship - lokasi bisa punya banyak feedback
+     */
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
+}
+
+// ========================================
+// TESTING COMMANDS
+// ========================================
+
+/*
+Untuk testing model relationships di Tinker:
+
+php artisan tinker
+
+// Test polymorphic relationship
+>>> $feedback = ProjectFeedback::first()
+>>> $feedback->feedbackable
+>>> $feedback->model_type_name
+
+// Test reverse relationship
+>>> $pokir = PokirDprd::first()
+>>> $pokir->feedbacks
+
+// Test scopes
+>>> ProjectFeedback::forPokirDprd()->count()
+>>> ProjectFeedback::pending()->count()
+>>> ProjectFeedback::keluhan()->count()
+
+// Test statistics
+>>> ProjectFeedback::getStatistics()
+>>> ProjectFeedback::getRegionStatistics()
+
+// Test helper methods
+>>> $feedback = ProjectFeedback::first()
+>>> $feedback->hasCoordinates()
+>>> $feedback->google_maps_url
+>>> $feedback->image_url
+>>> $feedback->hasResponse()
+*/

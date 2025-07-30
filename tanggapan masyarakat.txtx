@@ -1,3 +1,569 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('project_feedbacks', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_proyek');
+            $table->string('nama_pemberi_aspirasi');
+            $table->string('kabupaten_kota');
+            $table->string('kecamatan')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
+            $table->string('laporan_gambar')->nullable();
+            $table->text('tanggapan');
+            $table->enum('jenis_tanggapan', ['keluhan', 'saran', 'apresiasi', 'pertanyaan'])->default('saran');
+            $table->enum('status', ['pending', 'ditinjau', 'ditindaklanjuti', 'selesai'])->default('pending');
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->text('response_admin')->nullable();
+            $table->timestamp('responded_at')->nullable();
+            $table->timestamps();
+            
+            // Indexes khusus untuk Maluku Utara
+            $table->index(['kabupaten_kota', 'status']);
+            $table->index(['nama_proyek', 'jenis_tanggapan']);
+            $table->index(['created_at']);
+            $table->index(['latitude', 'longitude']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('project_feedbacks');
+    }
+};
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
+class ProjectFeedback extends Model
+{
+    use HasFactory;
+
+    protected $table = 'project_feedbacks';
+
+    protected $fillable = [
+        'nama_proyek',
+        'nama_pemberi_aspirasi',
+        'kabupaten_kota',
+        'kecamatan',
+        'latitude',
+        'longitude',
+        'laporan_gambar',
+        'tanggapan',
+        'jenis_tanggapan',
+        'status',
+        'email',
+        'phone',
+        'response_admin',
+        'responded_at'
+    ];
+
+    // Konstanta untuk Maluku Utara
+    const PROVINSI = 'Maluku Utara';
+    
+    const KABUPATEN_KOTA = [
+        'Ternate',
+        'Tidore Kepulauan',
+        'Halmahera Barat',
+        'Halmahera Timur',
+        'Halmahera Utara',
+        'Halmahera Selatan',
+        'Kepulauan Sula',
+        'Halmahera Tengah',
+        'Pulau Morotai',
+        'Pulau Taliabu'
+    ];
+
+    const KECAMATAN_BY_KABUPATEN = [
+        'Ternate' => [
+            'Ternate Tengah', 'Ternate Utara', 'Ternate Selatan', 
+            'Pulau Ternate', 'Moti', 'Pulau Batang Dua'
+        ],
+        'Tidore Kepulauan' => [
+            'Tidore', 'Tidore Timur', 'Tidore Utara', 'Oba',
+            'Oba Utara', 'Oba Tengah', 'Oba Selatan'
+        ],
+        'Halmahera Barat' => [
+            'Jailolo', 'Jailolo Selatan', 'Sahu', 'Ibu',
+            'Ibu Utara', 'Sahu Timur', 'Loloda'
+        ],
+        'Halmahera Timur' => [
+            'Maba', 'Maba Selatan', 'Wasile', 'Wasile Timur',
+            'Wasile Tengah', 'Maba Utara'
+        ],
+        'Halmahera Utara' => [
+            'Tobelo', 'Tobelo Barat', 'Tobelo Timur', 'Galela',
+            'Galela Barat', 'Tobelo Tengah', 'Tobelo Selatan',
+            'Kao', 'Kao Utara', 'Kao Teluk', 'Malifut', 'Loloda Utara'
+        ],
+        'Halmahera Selatan' => [
+            'Labuha', 'Bacan', 'Bacan Timur', 'Makian',
+            'Kayoa', 'Gane Timur', 'Obi Selatan', 'Obi',
+            'Bacan Barat', 'Kasiruta Timur', 'Kasiruta Barat',
+            'Makian Barat', 'Kayoa Utara'
+        ],
+        'Kepulauan Sula' => [
+            'Sanana', 'Mangole', 'Taliabu', 'Sulabesi',
+            'Mangole Utara', 'Mangole Timur', 'Mangole Tengah',
+            'Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara',
+            'Taliabu Selatan', 'Lisiela', 'Seho'
+        ],
+        'Halmahera Tengah' => [
+            'Weda', 'Patani', 'Patani Barat', 'Gane Barat',
+            'Gane Barat Selatan', 'Gane Barat Utara',
+            'Weda Utara', 'Weda Tengah', 'Weda Selatan'
+        ],
+        'Pulau Morotai' => [
+            'Morotai Selatan', 'Morotai Timur', 'Morotai Utara',
+            'Morotai Jaya', 'Morotai Barat'
+        ],
+        'Pulau Taliabu' => [
+            'Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara',
+            'Taliabu Selatan'
+        ]
+    ];
+
+    protected $casts = [
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'responded_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
+
+    // Accessor untuk koordinat dalam format string
+    protected function coordinates(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->latitude && $this->longitude 
+                ? "{$this->latitude}, {$this->longitude}" 
+                : null,
+        );
+    }
+
+    // Accessor untuk URL gambar lengkap
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->laporan_gambar 
+                ? asset('storage/feedback_images/' . $this->laporan_gambar)
+                : null,
+        );
+    }
+
+    // Scope untuk filter berdasarkan status
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    // Scope untuk filter berdasarkan jenis tanggapan
+    public function scopeByJenisTanggapan($query, $jenis)
+    {
+        return $query->where('jenis_tanggapan', $jenis);
+    }
+
+    // Accessor untuk provinsi (selalu Maluku Utara)
+    protected function provinsi(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => self::PROVINSI,
+        );
+    }
+
+    // Scope untuk filter berdasarkan kabupaten/kota (validasi otomatis)
+    public function scopeByKabupatenKota($query, $kabupatenKota)
+    {
+        if (!in_array($kabupatenKota, self::KABUPATEN_KOTA)) {
+            throw new \InvalidArgumentException("Kabupaten/Kota '$kabupatenKota' tidak valid untuk Maluku Utara");
+        }
+        return $query->where('kabupaten_kota', $kabupatenKota);
+    }
+
+    // Method untuk validasi kecamatan berdasarkan kabupaten
+    public function validateKecamatan($kecamatan, $kabupaten)
+    {
+        $validKecamatan = self::KECAMATAN_BY_KABUPATEN[$kabupaten] ?? [];
+        return in_array($kecamatan, $validKecamatan);
+    }
+
+    // Method untuk mendapatkan semua kecamatan di suatu kabupaten
+    public static function getKecamatanByKabupaten($kabupaten)
+    {
+        return self::KECAMATAN_BY_KABUPATEN[$kabupaten] ?? [];
+    }
+
+    // Boot method untuk auto-set provinsi
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($model) {
+            // Validasi kabupaten sebelum create
+            if (!in_array($model->kabupaten_kota, self::KABUPATEN_KOTA)) {
+                throw new \InvalidArgumentException("Kabupaten/Kota '{$model->kabupaten_kota}' tidak valid untuk Maluku Utara");
+            }
+            
+            // Validasi kecamatan jika ada
+            if ($model->kecamatan && !$model->validateKecamatan($model->kecamatan, $model->kabupaten_kota)) {
+                throw new \InvalidArgumentException("Kecamatan '{$model->kecamatan}' tidak valid untuk {$model->kabupaten_kota}");
+            }
+        });
+    }
+
+    // Scope untuk filter berdasarkan proyek
+    public function scopeByProject($query, $projectName)
+    {
+        return $query->where('nama_proyek', 'like', "%{$projectName}%");
+    }
+
+    // Scope untuk feedback terbaru
+    public function scopeRecent($query, $days = 30)
+    {
+        return $query->where('created_at', '>=', now()->subDays($days));
+    }
+
+    // Method untuk menandai tanggapan sebagai selesai
+    public function markAsSelesai($adminResponse = null)
+    {
+        $this->update([
+            'status' => 'selesai',
+            'response_admin' => $adminResponse,
+            'responded_at' => now()
+        ]);
+    }
+
+    // Method untuk mendapatkan jarak dari koordinat tertentu (dalam km)
+    public function getDistanceFrom($latitude, $longitude)
+    {
+        if (!$this->latitude || !$this->longitude) {
+            return null;
+        }
+
+        $earthRadius = 6371; // radius bumi dalam km
+        
+        $latDiff = deg2rad($this->latitude - $latitude);
+        $lonDiff = deg2rad($this->longitude - $longitude);
+        
+        $a = sin($latDiff / 2) * sin($latDiff / 2) +
+             cos(deg2rad($latitude)) * cos(deg2rad($this->latitude)) *
+             sin($lonDiff / 2) * sin($lonDiff / 2);
+        
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        
+        return $earthRadius * $c;
+    }
+    public function getJenisBadgeClassAttribute()
+{
+    return match ($this->jenis_tanggapan) {
+        'positif' => 'success',
+        'negatif' => 'danger',
+        'netral'  => 'secondary',
+        default   => 'light',
+    };
+}
+
+public function getStatusBadgeClassAttribute()
+{
+    return match ($this->status) {
+        'diajukan' => 'warning',
+        'diproses' => 'primary',
+        'diterima' => 'success',
+        'ditolak'  => 'danger',
+        default    => 'secondary',
+    };
+}
+
+}
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\ProjectFeedback;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+
+class ProjectFeedbackController extends Controller
+{
+    /**
+     * Display a listing of the feedbacks
+     */
+    public function index(Request $request)
+    {
+        // Get query parameters for filtering (optional, for URL-based filtering)
+        $status = $request->get('status');
+        $jenis = $request->get('jenis');
+        $search = $request->get('search');
+        $kabupaten = $request->get('kabupaten');
+
+        // Build query
+        $query = ProjectFeedback::query()
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters if needed for URL-based filtering
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($jenis) {
+            $query->where('jenis_tanggapan', $jenis);
+        }
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nama_pemberi_aspirasi', 'LIKE', "%{$search}%")
+                  ->orWhere('nama_proyek', 'LIKE', "%{$search}%")
+                  ->orWhere('tanggapan', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($kabupaten) {
+            $query->where('kabupaten_kota', $kabupaten);
+        }
+
+        // Paginate results
+        $feedbacks = $query->paginate(15);
+
+        // Get statistics
+        $stats = [
+            'pending' => ProjectFeedback::where('status', 'pending')->count(),
+            'ditinjau' => ProjectFeedback::where('status', 'ditinjau')->count(),
+            'ditindaklanjuti' => ProjectFeedback::where('status', 'ditindaklanjuti')->count(),
+            'selesai' => ProjectFeedback::where('status', 'selesai')->count(),
+        ];
+
+        // Get kabupaten list for filter dropdown
+        $kabupaten_list = $this->getKabupatenList();
+
+        return view('backend.pages.aspirasi.project_feedback', compact('feedbacks', 'stats', 'kabupaten_list'));
+    }
+
+    /**
+     * Store a newly created feedback
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama_pemberi_aspirasi' => 'required|string|max:255',
+            'nama_proyek' => 'required|string|max:255',
+            'kabupaten_kota' => 'required|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
+            'tanggapan' => 'required|string',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'laporan_gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ], [
+            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
+            'nama_proyek.required' => 'Nama proyek wajib diisi',
+            'kabupaten_kota.required' => 'Kabupaten/Kota wajib dipilih',
+            'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
+            'jenis_tanggapan.in' => 'Jenis tanggapan tidak valid',
+            'tanggapan.required' => 'Tanggapan wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'laporan_gambar.image' => 'File harus berupa gambar',
+            'laporan_gambar.max' => 'Ukuran gambar maksimal 2MB'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $data = $request->all();
+            $data['status'] = 'pending'; // Default status
+
+            // Handle image upload
+            if ($request->hasFile('laporan_gambar')) {
+                $image = $request->file('laporan_gambar');
+                $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $image->storeAs('public/feedback_images', $imageName);
+                $data['laporan_gambar'] = $imageName;
+            }
+
+            $feedback = ProjectFeedback::create($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tanggapan berhasil ditambahkan',
+                'data' => $feedback
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show specific feedback for modal detail
+     */
+    public function show($id)
+    {
+        try {
+            $feedback = ProjectFeedback::findOrFail($id);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $feedback
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
+    }
+
+    /**
+     * Update feedback with admin response
+     */
+    public function respond(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:ditinjau,ditindaklanjuti,selesai',
+            'response_admin' => 'required|string'
+        ], [
+            'status.required' => 'Status wajib dipilih',
+            'status.in' => 'Status tidak valid',
+            'response_admin.required' => 'Response admin wajib diisi'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $feedback = ProjectFeedback::findOrFail($id);
+
+            $feedback->update([
+                'status' => $request->status,
+                'response_admin' => $request->response_admin,
+                'responded_at' => Carbon::now()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Response berhasil dikirim',
+                'data' => $feedback
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete feedback
+     */
+    public function destroy($id)
+    {
+        try {
+            $feedback = ProjectFeedback::findOrFail($id);
+
+            // Delete image if exists
+            if ($feedback->laporan_gambar) {
+                Storage::delete('public/feedback_images/' . $feedback->laporan_gambar);
+            }
+
+            $feedback->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tanggapan berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get statistics for AJAX calls
+     */
+    public function statistics()
+    {
+        try {
+            $stats = [
+                'pending' => ProjectFeedback::where('status', 'pending')->count(),
+                'ditinjau' => ProjectFeedback::where('status', 'ditinjau')->count(),
+                'ditindaklanjuti' => ProjectFeedback::where('status', 'ditindaklanjuti')->count(),
+                'selesai' => ProjectFeedback::where('status', 'selesai')->count(),
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil statistik'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get kabupaten list for Maluku Utara
+     */
+    private function getKabupatenList()
+    {
+        return [
+            'Halmahera Barat',
+            'Halmahera Tengah', 
+            'Halmahera Timur',
+            'Halmahera Selatan',
+            'Halmahera Utara',
+            'Kepulauan Sula',
+            'Pulau Morotai',
+            'Ternate',
+            'Tidore Kepulauan'
+        ];
+    }
+}
+
 @extends('backend.partials.main')
 
 @section('main')
@@ -6,91 +572,22 @@
 
     <div class="page-header">
         <h3 class="page-title">
-            <span class="page-title-icon bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white me-2">
-                <i class="{{ $projectTypeInfo['icon'] ?? 'mdi-comment-multiple-outline' }}"></i>
-            </span> {{ $projectTypeInfo['name'] ?? 'Tanggapan Masyarakat' }}
+            <span class="page-title-icon bg-gradient-primary text-white me-2">
+                <i class="mdi mdi-comment-multiple-outline"></i>
+            </span> Tanggapan Masyarakat
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
                 <li class="breadcrumb-item">
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
-                @if (isset($projectType) && $projectType !== 'all')
-                    <li class="breadcrumb-item">
-                        {{ $projectTypeInfo['name'] }}
-                    </li>
-                    <li class="breadcrumb-item active" aria-current="page">
-                        Feedback
-                    </li>
-                @else
-                    <li class="breadcrumb-item active" aria-current="page">
-                        <span></span>Tanggapan Masyarakat
-                    </li>
-                @endif
+                <li class="breadcrumb-item active" aria-current="page">
+                    <span></span>Tanggapan Masyarakat
+                </li>
             </ul>
         </nav>
     </div>
 
-    <!-- Project Type Info Banner (untuk scoped view) -->
-    @if (isset($projectType) && $projectType !== 'all')
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert alert-{{ $projectTypeInfo['color'] }} alert-dismissible fade show" role="alert">
-                    <i class="{{ $projectTypeInfo['icon'] }} me-2"></i>
-                    <strong>{{ $projectTypeInfo['name'] }}</strong> - {{ $projectTypeInfo['description'] }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- Navigation Links untuk All View -->
-    @if (isset($projectType) && $projectType === 'all')
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="mdi mdi-view-list me-2"></i>Akses Cepat per Jenis Proyek</h5>
-                        <div class="row">
-                            <div class="col-md-2 mb-2">
-                                <a href="{{ route('pokir.feedbacks.index') }}" class="btn btn-gradient-warning btn-block">
-                                    <i class="mdi mdi-gavel me-2"></i>Pokir DPRD
-                                    <br><small>({{ $modelStats['pokir_dprd'] ?? 0 }} feedback)</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 mb-2">
-                                <a href="{{ route('usulan.feedbacks.index') }}" class="btn btn-gradient-success btn-block">
-                                    <i class="mdi mdi-account-group me-2"></i>Usulan Musrenbang
-                                    <br><small>({{ $modelStats['usulan_musrenbang'] ?? 0 }} feedback)</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 mb-2">
-                                <a href="{{ route('nasional.feedbacks.index') }}"
-                                    class="btn btn-gradient-primary btn-block">
-                                    <i class="mdi mdi-flag me-2"></i>Proyek Nasional
-                                    <br><small>({{ $modelStats['proyek_strategis_nasional'] ?? 0 }} feedback)</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 mb-2">
-                                <a href="{{ route('daerah.feedbacks.index') }}" class="btn btn-gradient-info btn-block">
-                                    <i class="mdi mdi-map-marker me-2"></i>Proyek Daerah
-                                    <br><small>({{ $modelStats['proyek_strategis_daerah'] ?? 0 }} feedback)</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 mb-2">
-                                <a href="{{ route('lokasi.feedbacks.index') }}" class="btn btn-gradient-danger btn-block">
-                                    <i class="mdi mdi-map me-2"></i>Lokasi
-                                    <br><small>({{ $modelStats['lokasi'] ?? 0 }} feedback)</small>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
             <div class="card bg-gradient-warning card-img-holder text-white">
@@ -153,63 +650,22 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+
     <div class="row">
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title">
-                            @if (isset($projectType) && $projectType !== 'all')
-                                <i class="{{ $projectTypeInfo['icon'] }} me-2"></i>
-                                Feedback {{ $projectTypeInfo['name'] }}
-                            @else
-                                Daftar Tanggapan Masyarakat
-                            @endif
-                        </h4>
+                        <h4 class="card-title">Daftar Tanggapan Masyarakat</h4>
                         <div class="d-flex gap-2">
-                            <!-- Navigation to Other Types (untuk scoped view) -->
-                            @if (isset($projectType) && $projectType !== 'all')
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown">
-                                        <i class="mdi mdi-swap-horizontal"></i> Jenis Lain
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="{{ route('usulan.feedbacks.index') }}">
-                                                <i class="mdi mdi-account-group me-2"></i>Usulan Musrenbang
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="{{ route('nasional.feedbacks.index') }}">
-                                                <i class="mdi mdi-flag me-2"></i>Proyek Strategis Nasional
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="{{ route('daerah.feedbacks.index') }}">
-                                                <i class="mdi mdi-map-marker me-2"></i>Proyek Strategis Daerah
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="{{ route('pokir.feedbacks.index') }}">
-                                                <i class="mdi mdi-gavel me-2"></i>Pokir DPRD
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="{{ route('lokasi.feedbacks.index') }}">
-                                                <i class="mdi mdi-map me-2"></i>Lokasi
-                                            </a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        <li><a class="dropdown-item" href="{{ route('project-feedbacks.index') }}">
-                                                <i class="mdi mdi-view-list me-2"></i>Semua Feedback
-                                            </a></li>
-                                    </ul>
-                                </div>
-                            @endif
-
                             <!-- Filter Dropdown -->
                             <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                    id="filterDropdown" data-bs-toggle="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown"
+                                    data-bs-toggle="dropdown">
                                     <i class="mdi mdi-filter"></i> Filter
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="all">Semua</a>
-                                    </li>
+                                    <li><a class="dropdown-item filter-item" href="#" data-filter="all">Semua</a></li>
                                     <li>
                                         <hr class="dropdown-divider">
                                     </li>
@@ -240,19 +696,14 @@
                                             data-filter="pertanyaan">Pertanyaan</a></li>
                                 </ul>
                             </div>
-                            <button type="button" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}"
-                                data-bs-toggle="modal" data-bs-target="#addModal">
-                                <i class="mdi mdi-plus"></i> Tambah
-                                @if (isset($projectType) && $projectType !== 'all')
-                                    Feedback
-                                @else
-                                    Tanggapan
-                                @endif
+                            <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
+                                data-bs-target="#addModal">
+                                <i class="mdi mdi-plus"></i> Tambah Tanggapan
                             </button>
                         </div>
                     </div>
 
-                    <!-- search Box -->
+                    <!-- Search Box -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="input-group">
@@ -285,10 +736,6 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Nama Pemberi</th>
-                                    @if (isset($projectType) && $projectType !== 'all')
-                                        <th>Proyek Terkait</th>
-                                    @endif
-                                    <th>Deskripsi</th>
                                     <th>Jenis</th>
                                     <th>Status</th>
                                     <th>Tanggal</th>
@@ -308,26 +755,6 @@
                                                 <br><small class="text-muted">{{ $feedback->email }}</small>
                                             @endif
                                         </td>
-
-                                        @if (isset($projectType) && $projectType !== 'all')
-                                            <td>
-                                                <div class="d-flex flex-column">
-                                                    <strong>{{ $feedback->nama_proyek }}</strong>
-
-                                                </div>
-                                            </td>
-                                        @endif
-
-                                        @if (isset($projectType) && $projectType !== 'all')
-                                            <td>
-                                                @if ($feedback->feedbackable)
-                                                    <small class="text-muted">
-                                                        {{-- <i class="{{ $projectTypeInfo['icon'] }} me-1"></i> --}}
-                                                        {{ Str::limit($feedback->feedbackable->deskripsi ?? 'No description', 50) }}
-                                                    </small>
-                                                @endif
-                                            </td>
-                                        @endif
 
                                         <td>
                                             @php
@@ -380,18 +807,10 @@
                                     </tr>
                                 @empty
                                     <tr id="no-data-row">
-                                        <td colspan="{{ isset($projectType) && $projectType !== 'all' ? '7' : '6' }}"
-                                            class="text-center">
+                                        <td colspan="6" class="text-center">
                                             <div class="py-4">
-                                                <i
-                                                    class="{{ $projectTypeInfo['icon'] ?? 'mdi-comment-remove-outline' }} mdi-48px text-muted"></i>
-                                                <p class="text-muted mt-2">
-                                                    @if (isset($projectType) && $projectType !== 'all')
-                                                        Tidak ada feedback untuk {{ $projectTypeInfo['name'] }}
-                                                    @else
-                                                        Tidak ada data tanggapan masyarakat
-                                                    @endif
-                                                </p>
+                                                <i class="mdi mdi-comment-remove-outline mdi-48px text-muted"></i>
+                                                <p class="text-muted mt-2">Tidak ada data tanggapan masyarakat</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -423,45 +842,16 @@
     <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="addModalLabel">
-                        <i class="{{ $projectTypeInfo['icon'] ?? 'mdi-plus' }} me-2"></i>
-                        @if (isset($projectType) && $projectType !== 'all')
-                            Tambah Feedback {{ $projectTypeInfo['name'] }}
-                        @else
-                            Tambah Tanggapan Masyarakat
-                        @endif
+                        <i class="mdi mdi-plus"></i> Tambah Tanggapan Masyarakat
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addForm"
-                    action="{{ isset($projectType) && $projectType !== 'all' ? request()->url() : route('project-feedbacks.store') }}"
-                    method="POST" enctype="multipart/form-data">
+                <form id="addForm" action="{{ route('project-feedbacks.store') }}" method="POST"
+                    enctype="multipart/form-data">
                     @csrf
-                    @if (isset($projectType) && $projectType !== 'all')
-                        <input type="hidden" name="project_type" value="{{ $projectType }}">
-                    @endif
                     <div class="modal-body">
-                        @if (isset($projectType) && $projectType !== 'all' && !empty($availableProjects))
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-group mb-3">
-                                        <label for="feedbackable_id" class="form-label">Pilih
-                                            {{ $projectTypeInfo['name'] }} <span class="text-danger">*</span></label>
-                                        <select class="form-control" id="feedbackable_id" name="feedbackable_id"
-                                            required>
-                                            <option value="">-- Pilih {{ $projectTypeInfo['name'] }} --</option>
-                                            @foreach ($availableProjects as $project)
-                                                <option value="{{ $project->id }}">{{ $project->deskripsi }}</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
@@ -526,13 +916,9 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="add_laporan_gambar" class="form-label">Laporan Gambar @if (isset($projectType) && $projectType === 'all')
-                                            <span class="text-danger">*</span>
-                                        @endif
-                                    </label>
+                                    <label for="add_laporan_gambar" class="form-label">Laporan Gambar</label>
                                     <input type="file" class="form-control" id="add_laporan_gambar"
-                                        name="laporan_gambar" accept="image/*"
-                                        @if (isset($projectType) && $projectType === 'all') required @endif>
+                                        name="laporan_gambar" accept="image/*">
                                     <small class="text-muted">Maksimal 2MB (JPG, PNG, GIF)</small>
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -557,7 +943,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <div class="form-group mb-3">
                                     <label for="add_latitude" class="form-label">Latitude</label>
                                     <input type="number" step="any" class="form-control" id="add_latitude"
@@ -565,7 +951,7 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <div class="form-group mb-3">
                                     <label for="add_longitude" class="form-label">Longitude</label>
                                     <input type="number" step="any" class="form-control" id="add_longitude"
@@ -573,6 +959,17 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
+                            {{-- <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Dapatkan Lokasi</label>
+                                    <div class="d-flex gap-2">
+                                        <!-- Sesudah -->
+                                        <a id="openMapBtn" class="btn btn-info btn-sm" target="_blank"
+                                            rel="noopener noreferrer">Lokasi Saat Ini</a>
+
+                                    </div>
+                                </div>
+                            </div> --}}
                         </div>
 
                         <div class="form-group mb-3">
@@ -584,7 +981,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}">
+                        <button type="submit" class="btn btn-gradient-primary">
                             <i class="mdi mdi-content-save"></i> Simpan
                         </button>
                     </div>
@@ -597,30 +994,18 @@
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="showModalLabel">
-                        <i class="{{ $projectTypeInfo['icon'] ?? 'mdi-eye' }} me-2"></i>
-                        @if (isset($projectType) && $projectType !== 'all')
-                            Detail Feedback {{ $projectTypeInfo['name'] }}
-                        @else
-                            Detail Tanggapan Masyarakat
-                        @endif
+                        <i class="mdi mdi-eye"></i> Detail Tanggapan Masyarakat
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="card">
                                 <div class="card-header">
-                                    <h6 class="mb-0">Informasi
-                                        @if (isset($projectType) && $projectType !== 'all')
-                                            Feedback
-                                        @else
-                                            Tanggapan
-                                        @endif
-                                    </h6>
+                                    <h6 class="mb-0">Informasi Tanggapan</h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -657,14 +1042,6 @@
                                             <p id="show_phone" class="text-muted"></p>
                                         </div>
                                     </div>
-                                    @if (isset($projectType) && $projectType !== 'all')
-                                        <div class="row">
-                                            <div class="col-12">
-                                                <strong>{{ $projectTypeInfo['name'] }} Terkait:</strong>
-                                                <p id="show_project_description" class="text-muted"></p>
-                                            </div>
-                                        </div>
-                                    @endif
                                     <div class="row">
                                         <div class="col-12">
                                             <strong>Tanggapan:</strong>
@@ -683,10 +1060,10 @@
                                                 title="Klik untuk copy koordinat"></p>
                                         </div>
                                         <div class="col-12 mt-2">
+                                            <!-- Sesudah -->
                                             <a id="openMapBtn" class="btn btn-info btn-sm" target="_blank"
-                                                rel="noopener noreferrer">
-                                                <i class="mdi mdi-map-marker"></i> Lihat di Peta
-                                            </a>
+                                                rel="noopener noreferrer">Lokasi Saat Ini</a>
+
                                         </div>
                                     </div>
                                 </div>
@@ -723,9 +1100,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button"
-                        class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} btn-respond"
-                        id="btnRespond">
+                    <button type="button" class="btn btn-gradient-warning btn-respond" id="btnRespond">
                         <i class="mdi mdi-reply"></i> Beri Response
                     </button>
                 </div>
@@ -737,12 +1112,11 @@
     <div class="modal fade" id="responseModal" tabindex="-1" aria-labelledby="responseModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="responseModalLabel">
-                        <i class="mdi mdi-reply me-2"></i> Beri Response Admin
+                        <i class="mdi mdi-reply"></i> Beri Response Admin
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="responseForm" method="POST">
                     @csrf
@@ -763,13 +1137,13 @@
                             <label for="response_admin" class="form-label">Response Admin <span
                                     class="text-danger">*</span></label>
                             <textarea class="form-control" id="response_admin" name="response_admin" rows="4" required
-                                placeholder="Berikan response/tanggapan admin terhadap feedback ini..."></textarea>
+                                placeholder="Berikan response/tanggapan admin terhadap Tanggapan Masyarakat..."></textarea>
                             <div class="invalid-feedback"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}">
+                        <button type="submit" class="btn btn-gradient-success">
                             <i class="mdi mdi-send"></i> Kirim Response
                         </button>
                     </div>
@@ -782,9 +1156,6 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
-            const projectType = '{{ $projectType ?? 'all' }}';
-            const currentUrl = window.location.pathname;
-
             // Data kecamatan untuk setiap kabupaten di Maluku Utara
             const kecamatanData = {
                 'Halmahera Barat': ['Jailolo', 'Jailolo Selatan', 'Loloda', 'Sahu', 'Sahu Timur', 'Ibu',
@@ -819,7 +1190,7 @@
                 ]
             };
 
-            // Helper Functions
+            // Show Alert Function
             function showAlert(message, type = 'success') {
                 const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' :
                     'alert-danger');
@@ -834,40 +1205,6 @@
                 setTimeout(function() {
                     $('#alertContainer .alert').alert('close');
                 }, 5000);
-            }
-
-            function clearFormErrors(form) {
-                form.find('.is-invalid').removeClass('is-invalid');
-                form.find('.invalid-feedback').text('');
-            }
-
-            function showFormErrors(form, errors) {
-                clearFormErrors(form);
-                $.each(errors, function(field, messages) {
-                    const input = form.find(`[name="${field}"]`);
-                    input.addClass('is-invalid');
-                    input.siblings('.invalid-feedback').text(messages[0]);
-                });
-            }
-
-            function getStatusClass(status) {
-                const statusClasses = {
-                    'pending': 'warning',
-                    'ditinjau': 'info',
-                    'ditindaklanjuti': 'primary',
-                    'selesai': 'success'
-                };
-                return statusClasses[status] || 'secondary';
-            }
-
-            function getJenisClass(jenis) {
-                const jenisClasses = {
-                    'keluhan': 'danger',
-                    'saran': 'info',
-                    'apresiasi': 'success',
-                    'pertanyaan': 'warning'
-                };
-                return jenisClasses[jenis] || 'secondary';
             }
 
             // Load Kecamatan based on Kabupaten selection
@@ -893,7 +1230,6 @@
                 const activeFilter = $('.filter-item.active').data('filter') || 'all';
 
                 let visibleCount = 0;
-                const totalCols = projectType !== 'all' ? 7 : 6;
 
                 $('#feedbackTable tbody tr').each(function() {
                     const $row = $(this);
@@ -944,18 +1280,12 @@
                 // Show/hide no data message
                 const $noDataRow = $('#no-data-row');
                 if (visibleCount === 0 && $noDataRow.length === 0) {
-                    const icon = projectType !== 'all' ?
-                        '{{ $projectTypeInfo['icon'] ?? 'mdi-comment-remove-outline' }}' :
-                        'mdi-comment-remove-outline';
-                    const message = projectType !== 'all' ? 'Tidak ada data yang cocok dengan filter' :
-                        'Tidak ada data yang cocok dengan filter';
-
                     $('#feedbackTable tbody').append(`
                         <tr id="no-data-row">
-                            <td colspan="${totalCols}" class="text-center">
+                            <td colspan="6" class="text-center">
                                 <div class="py-4">
-                                    <i class="${icon} mdi-48px text-muted"></i>
-                                    <p class="text-muted mt-2">${message}</p>
+                                    <i class="mdi mdi-comment-remove-outline mdi-48px text-muted"></i>
+                                    <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
                                 </div>
                             </td>
                         </tr>
@@ -963,6 +1293,41 @@
                 } else if (visibleCount > 0) {
                     $noDataRow.remove();
                 }
+            }
+
+            // Helper Functions
+            function getStatusClass(status) {
+                const statusClasses = {
+                    'pending': 'warning',
+                    'ditinjau': 'info',
+                    'ditindaklanjuti': 'primary',
+                    'selesai': 'success'
+                };
+                return statusClasses[status] || 'secondary';
+            }
+
+            function getJenisClass(jenis) {
+                const jenisClasses = {
+                    'keluhan': 'danger',
+                    'saran': 'info',
+                    'apresiasi': 'success',
+                    'pertanyaan': 'warning'
+                };
+                return jenisClasses[jenis] || 'secondary';
+            }
+
+            function clearFormErrors(form) {
+                form.find('.is-invalid').removeClass('is-invalid');
+                form.find('.invalid-feedback').text('');
+            }
+
+            function showFormErrors(form, errors) {
+                clearFormErrors(form);
+                $.each(errors, function(field, messages) {
+                    const input = form.find(`[name="${field}"]`);
+                    input.addClass('is-invalid');
+                    input.siblings('.invalid-feedback').text(messages[0]);
+                });
             }
 
             // Event Handlers
@@ -1013,6 +1378,7 @@
                         if (response.status === 'success') {
                             $('#addModal').modal('hide');
                             showAlert(response.message);
+                            // Reload page to show new data
                             setTimeout(function() {
                                 location.reload();
                             }, 1500);
@@ -1028,12 +1394,11 @@
                 });
             });
 
-            // Show Modal - Load data via AJAX
+            // Show Modal - Load data via AJAX only for viewing
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
-                const showUrl = projectType !== 'all' ? `${currentUrl}/${id}` : `/project-feedbacks/${id}`;
 
-                $.get(showUrl, function(data) {
+                $.get(`/project-feedbacks/${id}`, function(data) {
                     if (data.status === 'success') {
                         const feedback = data.data;
 
@@ -1046,14 +1411,6 @@
                         $('#show_tanggapan').text(feedback.tanggapan);
                         $('#show_created_at').text(new Date(feedback.created_at).toLocaleDateString(
                             'id-ID'));
-
-                        // Project description (untuk scoped view)
-                        if (projectType !== 'all' && feedback.feedbackable && feedback.feedbackable
-                            .deskripsi) {
-                            $('#show_project_description').text(feedback.feedbackable.deskripsi);
-                        } else if (projectType !== 'all') {
-                            $('#show_project_description').text('-');
-                        }
 
                         // Jenis tanggapan badge
                         const jenisClass = getJenisClass(feedback.jenis_tanggapan);
@@ -1074,12 +1431,31 @@
                             $('#show_longitude').text(feedback.longitude);
                             $('#show_koordinat_row').show();
 
+                            console.log('Setting coordinates data:', feedback.latitude, feedback
+                                .longitude);
+
+                            // Store coordinates as data attribute (cara aman)
+                            $('#openMapBtn').attr('data-lat', feedback.latitude);
+                            $('#openMapBtn').attr('data-lng', feedback.longitude);
+
+                            // Backup ke jQuery data
+                            $('#openMapBtn').data('lat', feedback.latitude);
+                            $('#openMapBtn').data('lng', feedback.longitude);
+
+                            // Global variable (opsional)
+                            window.currentLat = feedback.latitude;
+                            window.currentLng = feedback.longitude;
+
+                            // Buat URL Google Maps dan set ke tombol (misal tombol itu <a>)
                             const googleMapsUrl =
                                 `https://www.google.com/maps/search/?api=1&query=${feedback.latitude},${feedback.longitude}`;
                             $('#openMapBtn').attr('href', googleMapsUrl);
+                            $('#openMapBtn').attr('target', '_blank'); // agar buka di tab baru
+
                         } else {
                             $('#show_koordinat_row').hide();
                         }
+
 
                         // Gambar
                         if (feedback.laporan_gambar) {
@@ -1112,8 +1488,8 @@
             $(document).on('click', '.btn-respond, #btnRespond', function() {
                 const id = $(this).data('id');
                 $('#response_id').val(id);
-                $('#responseForm')[0].reset();
-                clearFormErrors($('#responseForm'));
+                $('#responseForm')[0].reset(); // Reset form
+                clearFormErrors($('#responseForm')); // Clear any previous errors
                 $('#responseModal').modal('show');
                 $('#showModal').modal('hide');
             });
@@ -1124,6 +1500,7 @@
                 const form = $(this);
                 const id = $('#response_id').val();
 
+                // Clear previous errors
                 clearFormErrors(form);
 
                 const formData = {
@@ -1133,23 +1510,22 @@
                     _method: 'PUT'
                 };
 
-                const respondUrl = projectType !== 'all' ? `${currentUrl}/${id}/respond` :
-                    `/project-feedbacks/${id}/respond`;
-
                 $.ajax({
-                    url: respondUrl,
+                    url: `/project-feedbacks/${id}/respond`,
                     type: 'POST',
                     data: formData,
                     success: function(response) {
                         if (response.status === 'success') {
                             $('#responseModal').modal('hide');
                             showAlert(response.message);
+                            // Reload page to show updated data
                             setTimeout(function() {
                                 location.reload();
                             }, 1500);
                         }
                     },
                     error: function(xhr) {
+                        console.log('Error:', xhr.responseJSON);
                         if (xhr.status === 422) {
                             showFormErrors(form, xhr.responseJSON.errors);
                         } else {
@@ -1163,11 +1539,8 @@
             // Delete function
             window.deleteFeedback = function(id) {
                 if (confirm('Yakin ingin menghapus tanggapan ini?')) {
-                    const deleteUrl = projectType !== 'all' ? `${currentUrl}/${id}` :
-                        `/project-feedbacks/${id}`;
-
                     $.ajax({
-                        url: deleteUrl,
+                        url: `/project-feedbacks/${id}`,
                         type: 'POST',
                         data: {
                             _method: 'DELETE',
@@ -1176,13 +1549,15 @@
                         success: function(response) {
                             if (response.status === 'success') {
                                 showAlert(response.message);
+                                // Remove row from table
                                 $(`tr[data-id="${id}"]`).fadeOut(function() {
                                     $(this).remove();
-                                    filterTable();
+                                    filterTable(); // Reapply filters and renumber
                                 });
                             }
                         },
                         error: function(xhr) {
+                            console.log('Delete Error:', xhr.responseJSON);
                             showAlert('Terjadi kesalahan saat menghapus data: ' + (xhr.responseJSON
                                 ?.message || 'Unknown error'), 'error');
                         }
@@ -1201,6 +1576,55 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
+        .card-stats .card-header {
+            border: none;
+            background: transparent;
+            padding: 1.5rem;
+        }
+
+        .card-stats .card-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-stats .card-icon i {
+            font-size: 24px;
+        }
+
+        .card-stats .card-category {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .card-stats .card-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .card-header-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .card-header-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .card-header-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-header-success {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
         .table-responsive {
             border-radius: 10px;
             overflow: hidden;
@@ -1208,6 +1632,7 @@
         }
 
         .table th {
+            /* background: linear-gradient(135deg, #5E50F9 0%, #b66dff 0%) !important; */
             color: #000000;
             border: none;
             font-weight: 600;
@@ -1237,29 +1662,18 @@
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
 
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
         .form-control:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
 
-        .filter-item.active {
-            background-color: #667eea;
-            color: white;
-        }
-
         .btn-gradient-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-        }
-
-        .btn-gradient-success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            border: none;
-            color: white;
-        }
-
-        .btn-gradient-info {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             color: white;
@@ -1271,27 +1685,19 @@
             color: white;
         }
 
-        .btn-gradient-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee4757 100%);
+        .btn-gradient-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             border: none;
             color: white;
         }
 
-        .stat-item {
-            padding: 1rem;
-            text-align: center;
+        .filter-item.active {
+            background-color: #667eea;
+            color: white;
         }
 
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
+        a:hover {
+            color: #b66dff !important;
         }
     </style>
 @endsection

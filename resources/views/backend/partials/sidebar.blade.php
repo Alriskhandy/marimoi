@@ -23,17 +23,9 @@
             </a>
         </li>
 
-        {{-- <!-- Peta Interaktif -->
-        <li class="nav-item {{ request()->routeIs('lokasi.peta') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('lokasi.peta') }}">
-                <span class="menu-title">Peta Interaktif</span>
-                <i class="mdi mdi-map menu-icon"></i>
-            </a>
-        </li> --}}
-
         <!-- Data Peta Tematik -->
         @php
-            $isPetaTematikActive = request()->routeIs('lokasi.index') || request()->routeIs('kategori-layers.index');
+            $isPetaTematikActive = request()->routeIs('lokasi.*') || request()->routeIs('kategori-layers.index');
         @endphp
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
@@ -54,23 +46,30 @@
                             <i class="mdi mdi-format-list-bulleted me-2"></i>Kategori Peta RPJMD
                         </a>
                     </li>
+                    @if (Route::has('lokasi.feedbacks.index'))
+                        <li class="nav-item {{ request()->routeIs('lokasi.feedbacks.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('lokasi.feedbacks.index') }}">
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Lokasi
+                                <span class="badge badge-sm bg-info ms-auto" data-feedback-count="lokasi">0</span>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
 
-        {{-- Helper untuk Menu Dinamis --}}
-        {{-- File: resources/views/partials/menu-psd.blade.php --}}
-
-
         <!-- Proyek Strategis Daerah -->
         @php
-            // Dapatkan tahun yang tersedia dari database
-            $availableYears = \App\Models\ProyekStrategisDaerah::select('tahun')
-                ->distinct()
-                ->orderBy('tahun', 'desc')
-                ->pluck('tahun');
+            try {
+                $availableYears = \App\Models\ProyekStrategisDaerah::select('tahun')
+                    ->distinct()
+                    ->orderBy('tahun', 'desc')
+                    ->pluck('tahun');
+            } catch (Exception $e) {
+                $availableYears = collect();
+            }
 
-            $isPSDActive = request()->routeIs('psd.*');
+            $isPSDActive = request()->routeIs('psd.*') || request()->routeIs('daerah.feedbacks.*');
             $currentYear = request()->route('year') ?? date('Y');
         @endphp
         <li class="nav-item">
@@ -89,13 +88,29 @@
                     @if ($availableYears->count() > 0)
                         @foreach ($availableYears as $year)
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('psd.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
-                                    href="{{ route('psd.tahun.show', $year) }}">
-                                    <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                    <span class="badge badge-sm bg-primary ms-auto">
-                                        {{ \App\Models\ProyekStrategisDaerah::where('tahun', $year)->count() }}
+                                @if (Route::has('psd.tahun.show'))
+                                    <a class="nav-link {{ request()->routeIs('psd.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
+                                        href="{{ route('psd.tahun.show', $year) }}">
+                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
+                                        <span class="badge badge-sm bg-primary ms-auto"
+                                            data-year-count="{{ $year }}">
+                                            @php
+                                                try {
+                                                    echo \App\Models\ProyekStrategisDaerah::where(
+                                                        'tahun',
+                                                        $year,
+                                                    )->count();
+                                                } catch (Exception $e) {
+                                                    echo '0';
+                                                }
+                                            @endphp
+                                        </span>
+                                    </a>
+                                @else
+                                    <span class="nav-link">
+                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
                                     </span>
-                                </a>
+                                @endif
                             </li>
                         @endforeach
                     @else
@@ -110,45 +125,55 @@
                         <hr class="dropdown-divider">
                     </li>
 
-                    {{-- Menu kategori --}}
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('psd.kategori.*') ? 'active' : '' }}"
-                            href="{{ route('psd.kategori.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Daerah
-                        </a>
-                    </li>
+                    <!-- Menu kategori -->
+                    @if (Route::has('psd.kategori.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('psd.kategori.*') ? 'active' : '' }}"
+                                href="{{ route('psd.kategori.index') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Daerah
+                            </a>
+                        </li>
+                    @endif
 
-                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
-                        </a>
-                    </li>
+                    <!-- Feedback Proyek Strategis Daerah -->
+                    @if (Route::has('daerah.feedbacks.index'))
+                        <li class="nav-item {{ request()->routeIs('daerah.feedbacks.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('daerah.feedbacks.index') }}">
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Daerah
+                                <span class="badge badge-sm bg-info ms-auto"
+                                    data-feedback-count="proyek_strategis_daerah">0</span>
+                            </a>
+                        </li>
+                    @endif
 
-
-                    {{-- Menu tambah data baru --}}
+                    <!-- Menu tambah data baru -->
                     <li class="nav-item">
                         <hr class="dropdown-divider">
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('psd.create') ? 'active' : '' }}"
-                            href="{{ route('psd.create') }}">
-                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
-                        </a>
-                    </li>
+                    @if (Route::has('psd.create'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('psd.create') ? 'active' : '' }}"
+                                href="{{ route('psd.create') }}">
+                                <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
 
         <!-- Proyek Strategis Nasional -->
         @php
-            // Dapatkan tahun yang tersedia dari database
-            $availableYears = \App\Models\ProyekStrategisNasional::select('tahun')
-                ->distinct()
-                ->orderBy('tahun', 'desc')
-                ->pluck('tahun');
+            try {
+                $availableYearsNasional = \App\Models\ProyekStrategisNasional::select('tahun')
+                    ->distinct()
+                    ->orderBy('tahun', 'desc')
+                    ->pluck('tahun');
+            } catch (Exception $e) {
+                $availableYearsNasional = collect();
+            }
 
-            $isPSNActive = request()->routeIs('psn.*');
-            $currentYear = request()->route('year') ?? date('Y');
+            $isPSNActive = request()->routeIs('psn.*') || request()->routeIs('nasional.feedbacks.*');
         @endphp
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
@@ -163,16 +188,31 @@
                         <h6 class="sub-menu-header">Data per Tahun</h6>
                     </li>
 
-                    @if ($availableYears->count() > 0)
-                        @foreach ($availableYears as $year)
+                    @if ($availableYearsNasional->count() > 0)
+                        @foreach ($availableYearsNasional as $year)
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('psn.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
-                                    href="{{ route('psn.tahun.show', $year) }}">
-                                    <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                    <span class="badge badge-sm bg-primary ms-auto">
-                                        {{ \App\Models\ProyekStrategisNasional::where('tahun', $year)->count() }}
+                                @if (Route::has('psn.tahun.show'))
+                                    <a class="nav-link {{ request()->routeIs('psn.tahun.show') && request()->route('year') == $year ? 'active' : '' }}"
+                                        href="{{ route('psn.tahun.show', $year) }}">
+                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
+                                        <span class="badge badge-sm bg-primary ms-auto">
+                                            @php
+                                                try {
+                                                    echo \App\Models\ProyekStrategisNasional::where(
+                                                        'tahun',
+                                                        $year,
+                                                    )->count();
+                                                } catch (Exception $e) {
+                                                    echo '0';
+                                                }
+                                            @endphp
+                                        </span>
+                                    </a>
+                                @else
+                                    <span class="nav-link">
+                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
                                     </span>
-                                </a>
+                                @endif
                             </li>
                         @endforeach
                     @else
@@ -187,61 +227,49 @@
                         <hr class="dropdown-divider">
                     </li>
 
-                    {{-- Menu kategori --}}
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('psn.kategori.*') ? 'active' : '' }}"
-                            href="{{ route('psn.kategori.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Nasional
-                        </a>
-                    </li>
+                    <!-- Menu kategori -->
+                    @if (Route::has('psn.kategori.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('psn.kategori.*') ? 'active' : '' }}"
+                                href="{{ route('psn.kategori.index') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Nasional
+                            </a>
+                        </li>
+                    @endif
 
+                    <!-- Feedback Proyek Strategis Nasional -->
+                    @if (Route::has('nasional.feedbacks.index'))
+                        <li class="nav-item {{ request()->routeIs('nasional.feedbacks.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('nasional.feedbacks.index') }}">
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Nasional
+                                <span class="badge badge-sm bg-info ms-auto"
+                                    data-feedback-count="proyek_strategis_nasional">0</span>
+                            </a>
+                        </li>
+                    @endif
 
-
-                    {{-- Menu tambah data baru --}}
+                    <!-- Menu tambah data baru -->
                     <li class="nav-item">
                         <hr class="dropdown-divider">
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('psn.create') ? 'active' : '' }}"
-                            href="{{ route('psn.create') }}">
-                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
-                        </a>
-                    </li>
+                    @if (Route::has('psn.create'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('psn.create') ? 'active' : '' }}"
+                                href="{{ route('psn.create') }}">
+                                <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
 
-        {{-- JavaScript untuk auto-refresh menu jika ada data baru --}}
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Auto refresh available years setiap 30 detik (opsional)
-                setInterval(function() {
-                    fetch('{{ route('psd.api.years') }}')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.years.length > 0) {
-                                // Update badge counts
-                                data.years.forEach(yearData => {
-                                    const yearLink = document.querySelector(
-                                        `a[href*="tahun/${yearData.year}"]`);
-                                    if (yearLink) {
-                                        const badge = yearLink.querySelector('.badge');
-                                        if (badge) {
-                                            badge.textContent = yearData.count;
-                                        }
-                                    }
-                                });
-                            }
-                        })
-                        .catch(error => console.log('Error updating year counts:', error));
-                }, 30000); // 30 seconds
-            });
-        </script>
-
-
         <!-- POKIR DPRD -->
         @php
-            $isPOKIRActive = request()->routeIs('pokir-dprd.*') || request()->routeIs('kategori-pokir-dprd.*');
+            $isPOKIRActive =
+                request()->routeIs('pokir-dprd.*') ||
+                request()->routeIs('kategori-pokir-dprd.*') ||
+                request()->routeIs('pokir.feedbacks.*');
         @endphp
 
         <li class="nav-item">
@@ -249,35 +277,45 @@
                 aria-expanded="{{ $isPOKIRActive ? 'true' : 'false' }}" aria-controls="pokirMenu">
                 <span class="menu-title">Pokir DPRD</span>
                 <i class="menu-arrow"></i>
-                <i class="mdi mdi-account-group menu-icon"></i>
+                <i class="mdi mdi-gavel menu-icon"></i>
             </a>
             <div class="collapse {{ $isPOKIRActive ? 'show' : '' }}" id="pokirMenu">
                 <ul class="nav flex-column sub-menu">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('pokir-dprd.index') ? 'active' : '' }}"
-                            href="{{ route('pokir-dprd.index') }}">
-                            <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
-                        </a>
-                    </li>
-                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}"
-                            href="{{ route('kategori-pokir-dprd.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
-                        </a>
-                    </li>
+                    @if (Route::has('pokir-dprd.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('pokir-dprd.index') ? 'active' : '' }}"
+                                href="{{ route('pokir-dprd.index') }}">
+                                <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
+                            </a>
+                        </li>
+                    @endif
+                    @if (Route::has('kategori-pokir-dprd.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}"
+                                href="{{ route('kategori-pokir-dprd.index') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
+                            </a>
+                        </li>
+                    @endif
+                    @if (Route::has('pokir.feedbacks.index'))
+                        <li class="nav-item {{ request()->routeIs('pokir.feedbacks.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('pokir.feedbacks.index') }}">
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Pokir DPRD
+                                <span class="badge badge-sm bg-warning ms-auto"
+                                    data-feedback-count="pokir_dprd">0</span>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
 
-        <!-- musrembang -->
+        <!-- Usulan Musrenbang -->
         @php
             $isMUSRENBANGActive =
-                request()->routeIs('usulan-musrenbang.*') || request()->routeIs('kategori-usulan-musrenbang.*');
+                request()->routeIs('usulan-musrenbang.*') ||
+                request()->routeIs('kategori-usulan-musrenbang.*') ||
+                request()->routeIs('usulan.feedbacks.*');
         @endphp
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="collapse" href="#usulanmusrenbang"
@@ -288,83 +326,69 @@
             </a>
             <div class="collapse {{ $isMUSRENBANGActive ? 'show' : '' }}" id="usulanmusrenbang">
                 <ul class="nav flex-column sub-menu">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('usulan-musrenbang.index') ? 'active' : '' }}"
-                            href="{{ route('usulan-musrenbang.index') }}">
-                            <i class="mdi mdi-database me-2"></i>Data Usulan Musrenbang
-                        </a>
-                    </li>
-                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}"
-                            href="{{ route('kategori-usulan-musrenbang.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Musrembang
-                        </a>
-                    </li>
+                    @if (Route::has('usulan-musrenbang.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('usulan-musrenbang.index') ? 'active' : '' }}"
+                                href="{{ route('usulan-musrenbang.index') }}">
+                                <i class="mdi mdi-database me-2"></i>Data Usulan Musrenbang
+                            </a>
+                        </li>
+                    @endif
+                    @if (Route::has('kategori-usulan-musrenbang.index'))
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}"
+                                href="{{ route('kategori-usulan-musrenbang.index') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Musrenbang
+                            </a>
+                        </li>
+                    @endif
+                    @if (Route::has('usulan.feedbacks.index'))
+                        <li class="nav-item {{ request()->routeIs('usulan.feedbacks.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('usulan.feedbacks.index') }}">
+                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Usulan Musrenbang
+                                <span class="badge badge-sm bg-success ms-auto"
+                                    data-feedback-count="usulan_musrenbang">0</span>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
-
-
 
         <!-- Desk Musrenbang (Coming Soon) -->
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('cooming_soon') }}">
-                <span class="menu-title">Desk Forum PD</span>
-                <i class="mdi mdi-city-variant-outline menu-icon"></i>
-                <span class="badge badge-warning badge-sm ms-auto">Soon</span>
-            </a>
-        </li>
-
-        <!-- Partisipasi Masyarakat -->
-        @php
-            $isPartisipasiActive = request()->routeIs('project-feedbacks.*') || request()->routeIs('Musrenbang.*');
-        @endphp
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#partisipasiMenu"
-                aria-expanded="{{ $isPartisipasiActive ? 'true' : 'false' }}" aria-controls="partisipasiMenu">
-                <span class="menu-title">Partisipasi Masyarakat</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-account-heart menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isPartisipasiActive ? 'show' : '' }}" id="partisipasiMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Tanggapan Masyarakat
-                        </a>
-                    </li>
-
-                </ul>
-            </div>
-        </li>
+        @if (Route::has('cooming_soon'))
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('cooming_soon') }}">
+                    <span class="menu-title">Desk Forum PD</span>
+                    <i class="mdi mdi-city-variant-outline menu-icon"></i>
+                    <span class="badge badge-warning badge-sm ms-auto">Soon</span>
+                </a>
+            </li>
+        @endif
 
         <!-- Upload Dokumen -->
         @php
             $isDokumenActive = request()->routeIs('dokumen.*');
         @endphp
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
-                aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
-                <span class="menu-title">Upload Dokumen</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-file-document-multiple menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('dokumen.index') }}">
-                            <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
-                        </a>
-                    </li>
-
-                </ul>
-            </div>
-        </li>
+        @if (Route::has('dokumen.index'))
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
+                    aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
+                    <span class="menu-title">Upload Dokumen</span>
+                    <i class="menu-arrow"></i>
+                    <i class="mdi mdi-file-document-multiple menu-icon"></i>
+                </a>
+                <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
+                    <ul class="nav flex-column sub-menu">
+                        <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('dokumen.index') }}">
+                                <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+        @endif
 
         <!-- Divider -->
         <li class="nav-item nav-category">
@@ -394,10 +418,90 @@
                             <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
                         </a>
                     </li>
-
-
                 </ul>
             </div>
         </li>
     </ul>
+
+    <!-- JavaScript untuk badge counts yang aman -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Safely update feedback counts via AJAX
+            function updateFeedbackCounts() {
+                // Only fetch if API route exists
+                if (typeof feedbackStatsUrl !== 'undefined' || document.querySelector('[data-feedback-count]')) {
+                    fetch('/api/feedback-stats')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // Safely update badge counts
+                                updateBadgeCount('total', data.total || 0);
+                                updateBadgeCount('pokir_dprd', data.pokir_dprd || 0);
+                                updateBadgeCount('usulan_musrenbang', data.usulan_musrenbang || 0);
+                                updateBadgeCount('proyek_strategis_nasional', data.proyek_strategis_nasional ||
+                                    0);
+                                updateBadgeCount('proyek_strategis_daerah', data.proyek_strategis_daerah || 0);
+                                updateBadgeCount('lokasi', data.lokasi || 0);
+                            }
+                        })
+                        .catch(error => {
+                            // Silently handle errors - don't break the sidebar
+                            console.log('Feedback stats update failed:', error);
+                        });
+                }
+            }
+
+            function updateBadgeCount(type, count) {
+                const badges = document.querySelectorAll(`[data-feedback-count="${type}"]`);
+                badges.forEach(badge => {
+                    if (badge) {
+                        badge.textContent = count;
+                        // Add subtle animation
+                        badge.classList.add('badge-updated');
+                        setTimeout(() => badge.classList.remove('badge-updated'), 500);
+                    }
+                });
+            }
+
+            // Initial load with delay to avoid blocking page render
+            setTimeout(updateFeedbackCounts, 2000);
+
+            // Update every 60 seconds (reduced frequency to avoid performance issues)
+            setInterval(updateFeedbackCounts, 60000);
+        });
+    </script>
+
+    <style>
+        /* Safe badge animation */
+        .badge-updated {
+            animation: gentle-pulse 0.5s ease-in-out;
+        }
+
+        @keyframes gentle-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Ensure sidebar doesn't break on small screens */
+        .sidebar .nav .nav-item .nav-link {
+            word-wrap: break-word;
+        }
+
+        .badge {
+            min-width: 20px;
+            text-align: center;
+        }
+    </style>
 </nav>

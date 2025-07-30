@@ -4,165 +4,167 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\ProjectFeedback;
+use App\Models\UsulanMusrenbang;
+use App\Models\ProyekStrategisNasional;
+use App\Models\ProyekStrategisDaerah;
+use App\Models\PokirDprd;
+use App\Models\Lokasi;
 
 class ProjectFeedbackSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
-        $feedbacks = [
+        // Sample feedback data untuk masing-masing jenis proyek
+        $sampleFeedbacks = [
+            // Feedback untuk Pokir DPRD
             [
-                'nama_proyek' => 'Sistem Informasi Pelayanan Publik Maluku Utara',
-                'nama_pemberi_aspirasi' => 'Ahmad Bahar',
+                'feedbackable_type' => PokirDprd::class,
+                'feedbackable_id' => 1, // Pastikan ada data Pokir dengan ID 1
+                'nama_pemberi_aspirasi' => 'Ahmad Salam',
+                'nama_proyek' => 'Pokir Pembangunan Jalan Desa',
                 'kabupaten_kota' => 'Ternate',
-                'kecamatan' => 'Ternate Tengah',
-                'latitude' => 0.7881,
-                'longitude' => 127.3781,
-                'laporan_gambar' => 'screenshot_pelayanan_ternate.jpg',
-                'tanggapan' => 'Setelah migrasi ke Laravel 10, loading website pelayanan publik menjadi lebih cepat. Namun masih ada kendala pada fitur upload dokumen KTP yang sering timeout.',
-                'jenis_tanggapan' => 'keluhan',
+                'kecamatan' => 'Ternate Selatan',
+                'latitude' => 0.7893,
+                'longitude' => 127.3774,
+                'tanggapan' => 'Usulan Pokir ini sangat bagus untuk kemajuan desa kami. Mohon segera direalisasikan.',
+                'jenis_tanggapan' => 'saran',
                 'status' => 'pending',
-                'email' => 'ahmad.bahar@ternate.go.id',
-                'phone' => '082188001234'
+                'email' => 'ahmad.salam@email.com',
+                'phone' => '081234567890'
             ],
+            
+            // Feedback untuk Usulan Musrenbang
             [
-                'nama_proyek' => 'Portal E-Commerce UMKM Maluku Utara',
-                'nama_pemberi_aspirasi' => 'Siti Halima Tutuarima',
+                'feedbackable_type' => UsulanMusrenbang::class,
+                'feedbackable_id' => 1,
+                'nama_pemberi_aspirasi' => 'Siti Rahma',
+                'nama_proyek' => 'Usulan Perbaikan Drainase',
                 'kabupaten_kota' => 'Tidore Kepulauan',
                 'kecamatan' => 'Tidore',
-                'latitude' => 0.6781,
-                'longitude' => 127.4020,
-                'laporan_gambar' => 'dashboard_umkm_tidore.jpg',
-                'tanggapan' => 'Tampilan dashboard UMKM lebih modern dan mudah digunakan. Fitur katalog produk lokal seperti pala dan cengkeh jadi lebih menarik untuk pembeli dari luar daerah.',
+                'latitude' => 0.6848,
+                'longitude' => 127.4041,
+                'tanggapan' => 'Usulan ini sangat diperlukan karena daerah kami sering banjir saat hujan deras.',
                 'jenis_tanggapan' => 'apresiasi',
                 'status' => 'ditinjau',
-                'email' => 'halima.umkm@tidorekepulauan.go.id',
-                'phone' => '082188002345'
+                'email' => 'siti.rahma@email.com',
+                'phone' => '081234567891'
             ],
+            
+            // Feedback untuk Proyek Strategis Nasional
             [
-                'nama_proyek' => 'Aplikasi Presensi ASN Halmahera Barat',
-                'nama_pemberi_aspirasi' => 'Budi Sangadji',
+                'feedbackable_type' => ProyekStrategisNasional::class,
+                'feedbackable_id' => 1,
+                'nama_pemberi_aspirasi' => 'Budi Santoso',
+                'nama_proyek' => 'Proyek Jalan Trans Halmahera',
                 'kabupaten_kota' => 'Halmahera Barat',
                 'kecamatan' => 'Jailolo',
-                'latitude' => 1.0147,
-                'longitude' => 127.7334,
-                'laporan_gambar' => 'presensi_jailolo.jpg',
-                'tanggapan' => 'Aplikasi presensi berjalan baik setelah migrasi. Namun untuk wilayah terpencil seperti desa-desa di Halmahera masih sulit akses internet, apakah bisa dibuat mode offline?',
-                'jenis_tanggapan' => 'saran',
-                'status' => 'pending',
-                'email' => 'budi.sangadji@halmaherabarat.go.id',
-                'phone' => '082188003456'
+                'tanggapan' => 'Proyek jalan ini sangat strategis untuk menghubungkan wilayah utara dan selatan Halmahera.',
+                'jenis_tanggapan' => 'apresiasi',
+                'status' => 'ditindaklanjuti',
+                'email' => 'budi.santoso@email.com'
             ],
+            
+            // Feedback untuk Proyek Strategis Daerah
             [
-                'nama_proyek' => 'Sistem Informasi Pendidikan Halmahera Timur',
-                'nama_pemberi_aspirasi' => 'Dr. Maya Wattimena',
+                'feedbackable_type' => ProyekStrategisDaerah::class,
+                'feedbackable_id' => 1,
+                'nama_pemberi_aspirasi' => 'Maria Karim',
+                'nama_proyek' => 'Pengembangan Pelabuhan Perikanan',
                 'kabupaten_kota' => 'Halmahera Timur',
                 'kecamatan' => 'Maba',
-                'latitude' => 1.4853,
-                'longitude' => 127.8492,
-                'laporan_gambar' => 'sistem_pendidikan_maba.jpg',
-                'tanggapan' => 'Sistem informasi sekolah sangat membantu monitoring siswa di wilayah kepulauan. Data kehadiran dan nilai siswa dari pulau-pulau terpencil bisa terpantau real-time.',
-                'jenis_tanggapan' => 'apresiasi',
-                'status' => 'selesai',
-                'email' => 'maya.wattimena@halmaheratimur.go.id',
-                'phone' => '082188004567',
-                'response_admin' => 'Terima kasih atas feedback positifnya. Kami akan terus mengembangkan sistem pendidikan untuk daerah kepulauan.',
-                'responded_at' => now()->subDays(2)
+                'tanggapan' => 'Pembangunan pelabuhan ini berjalan lambat. Mohon dipercepat karena musim ikan sudah dekat.',
+                'jenis_tanggapan' => 'keluhan',
+                'status' => 'pending',
+                'email' => 'maria.karim@email.com',
+                'phone' => '081234567892'
             ],
+            
+            // Feedback untuk Lokasi
             [
-                'nama_proyek' => 'Platform Booking Kapal Antar Pulau',
-                'nama_pemberi_aspirasi' => 'Andi Papilaya',
-                'kabupaten_kota' => 'Kepulauan Sula',
-                'kecamatan' => 'Sanana',
-                'latitude' => -1.9833,
-                'longitude' => 125.9667,
-                'laporan_gambar' => 'booking_kapal_sula.jpg',
-                'tanggapan' => 'Fitur booking kapal sangat membantu masyarakat Sula untuk reservasi transportasi antar pulau. Bisa ditambahkan info cuaca dan gelombang laut tidak?',
+                'feedbackable_type' => Lokasi::class,
+                'feedbackable_id' => 1,
+                'nama_pemberi_aspirasi' => 'Yusuf Ibrahim',
+                'nama_proyek' => 'Penataan Kawasan Wisata Danau Tolire',
+                'kabupaten_kota' => 'Ternate',
+                'kecamatan' => 'Ternate Utara',
+                'latitude' => 0.8371,
+                'longitude' => 127.3737,
+                'tanggapan' => 'Penataan kawasan wisata ini perlu melibatkan masyarakat sekitar agar berkelanjutan.',
+                'jenis_tanggapan' => 'saran',
+                'status' => 'selesai',
+                'response_admin' => 'Terima kasih atas sarannya. Tim kami akan melakukan koordinasi dengan masyarakat sekitar.',
+                'responded_at' => now()->subDays(5),
+                'email' => 'yusuf.ibrahim@email.com'
+            ],
+            
+            // Feedback tambahan untuk variasi data
+            [
+                'feedbackable_type' => PokirDprd::class,
+                'feedbackable_id' => 1,
+                'nama_pemberi_aspirasi' => 'Fatimah Usman',
+                'nama_proyek' => 'Pokir Bantuan Alat Pertanian',
+                'kabupaten_kota' => 'Halmahera Selatan',
+                'kecamatan' => 'Bacan',
+                'tanggapan' => 'Kapan bantuan alat pertanian dari pokir ini akan disalurkan? Petani sudah menunggu lama.',
                 'jenis_tanggapan' => 'pertanyaan',
                 'status' => 'ditinjau',
-                'email' => 'andi.papilaya@kepulauansula.go.id',
-                'phone' => '082188005678'
-            ],
-            [
-                'nama_proyek' => 'Sistem Monitoring Hasil Laut Halmahera Selatan',
-                'nama_pemberi_aspirasi' => 'Fatima Leiwakabessy',
-                'kabupaten_kota' => 'Halmahera Selatan',
-                'kecamatan' => 'Labuha',
-                'latitude' => -0.9500,
-                'longitude' => 127.4833,
-                'laporan_gambar' => 'monitoring_laut_labuha.jpg',
-                'tanggapan' => 'Aplikasi monitoring hasil tangkapan ikan dan budidaya rumput laut bekerja dengan baik. Sangat membantu nelayan dalam pelaporan hasil ke Dinas Kelautan.',
-                'jenis_tanggapan' => 'apresiasi',
-                'status' => 'pending',
-                'email' => 'fatima.kelautan@halmaheraselatan.go.id',
-                'phone' => '082188006789'
-            ],
-            [
-                'nama_proyek' => 'Portal Wisata Bahari Maluku Utara',
-                'nama_pemberi_aspirasi' => 'Rahman Loloda',
-                'kabupaten_kota' => 'Halmahera Utara',
-                'kecamatan' => 'Tobelo',
-                'latitude' => 1.7281,
-                'longitude' => 128.0139,
-                'laporan_gambar' => 'portal_wisata_tobelo.jpg',
-                'tanggapan' => 'Portal wisata bahari sangat bagus untuk promosi destinasi diving dan snorkeling di Maluku Utara. Content management system-nya mudah digunakan untuk update konten.',
-                'jenis_tanggapan' => 'apresiasi',
-                'status' => 'selesai',
-                'email' => 'rahman.wisata@halmaherautara.go.id',
-                'phone' => '082188007890',
-                'response_admin' => 'Senang mendengar portal wisata bahari membantu promosi pariwisata daerah. Kami akan terus update fitur untuk mendukung sektor pariwisata.',
-                'responded_at' => now()->subDays(1)
-            ],
-            [
-                'nama_proyek' => 'Aplikasi Perizinan Tambang Maluku Utara',
-                'nama_pemberi_aspirasi' => 'Dewi Soleman',
-                'kabupaten_kota' => 'Pulau Morotai',
-                'kecamatan' => 'Morotai Selatan',
-                'latitude' => 2.3167,
-                'longitude' => 128.4167,
-                'laporan_gambar' => 'perizinan_tambang_morotai.jpg',
-                'tanggapan' => 'Sistem perizinan tambang sudah lebih transparan dan trackable. Proses verifikasi dokumen lingkungan juga lebih cepat setelah digitalisasi.',
-                'jenis_tanggapan' => 'apresiasi',
-                'status' => 'ditindaklanjuti',
-                'email' => 'dewi.soleman@pulaumorotai.go.id',
-                'phone' => '082188008901'
-            ],
-            [
-                'nama_proyek' => 'Sistem Keuangan Daerah Halmahera Tengah',
-                'nama_pemberi_aspirasi' => 'Ir. Ruslan Taher',
-                'kabupaten_kota' => 'Halmahera Tengah',
-                'kecamatan' => 'Weda',
-                'latitude' => -0.2167,
-                'longitude' => 127.8833,
-                'laporan_gambar' => 'keuangan_weda.jpg',
-                'tanggapan' => 'Sistem keuangan daerah lebih terintegrasi dan transparan. Laporan APBD bisa diakses real-time oleh masyarakat. Namun perlu pelatihan untuk operator tingkat desa.',
-                'jenis_tanggapan' => 'saran',
-                'status' => 'ditindaklanjuti',
-                'email' => 'ruslan.taher@halmaheratengah.go.id',
-                'phone' => '082188009012'
-            ],
-            [
-                'nama_proyek' => 'Portal Layanan Masyarakat Pulau Taliabu',
-                'nama_pemberi_aspirasi' => 'Hj. Aminah Salampessy',
-                'kabupaten_kota' => 'Pulau Taliabu',
-                'kecamatan' => 'Taliabu Timur',
-                'latitude' => -1.8333,
-                'longitude' => 124.7833,
-                'laporan_gambar' => 'layanan_taliabu.jpg',
-                'tanggapan' => 'Portal layanan masyarakat sangat membantu warga Taliabu yang jauh dari ibukota kabupaten. Fitur pengajuan surat online menghemat biaya dan waktu perjalanan.',
-                'jenis_tanggapan' => 'apresiasi',
-                'status' => 'selesai',
-                'email' => 'aminah.salampessy@pulautaliabu.go.id',
-                'phone' => '082188010123',
-                'response_admin' => 'Senang portal layanan membantu masyarakat di daerah terpencil. Akan kami perluas fitur-fitur layanan digital.',
-                'responded_at' => now()->subDays(3)
+                'phone' => '081234567893'
             ]
         ];
 
-        foreach ($feedbacks as $feedback) {
-            ProjectFeedback::create($feedback);
+        foreach ($sampleFeedbacks as $feedbackData) {
+            ProjectFeedback::create($feedbackData);
         }
     }
 }
+
+// ========================================
+// COMMAND UNTUK MENJALANKAN MIGRATION
+// ========================================
+
+/*
+Jalankan perintah berikut di terminal:
+
+1. Buat migration file (jika belum ada):
+   php artisan make:migration create_project_feedbacks_table
+
+2. Jalankan migration:
+   php artisan migrate
+
+3. Buat seeder (jika ingin data sample):
+   php artisan make:seeder ProjectFeedbackSeeder
+
+4. Jalankan seeder:
+   php artisan db:seed --class=ProjectFeedbackSeeder
+
+Atau jalankan semua seeder:
+   php artisan db:seed
+*/
+
+// ========================================
+// TROUBLESHOOTING COMMANDS
+// ========================================
+
+/*
+Jika ada masalah dengan migration:
+
+1. Lihat status migration:
+   php artisan migrate:status
+
+2. Rollback migration terakhir:
+   php artisan migrate:rollback
+
+3. Rollback semua migration:
+   php artisan migrate:reset
+
+4. Fresh migration (hapus semua tabel dan buat ulang):
+   php artisan migrate:fresh
+
+5. Fresh migration dengan seeder:
+   php artisan migrate:fresh --seed
+
+6. Cek tabel yang ada di database:
+   php artisan tinker
+   >>> Schema::hasTable('project_feedbacks')
+   >>> DB::select('SELECT * FROM information_schema.tables WHERE table_schema = \'public\'')
+*/
