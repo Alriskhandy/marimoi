@@ -79,7 +79,7 @@
                             </div>
                             <div class="col-md-2 mb-2">
                                 <a href="{{ route('lokasi.feedbacks.index') }}" class="btn btn-gradient-danger btn-block">
-                                    <i class="mdi mdi-map me-2"></i>Lokasi
+                                    <i class="mdi mdi-map me-2"></i>RPJMD
                                     <br><small>({{ $modelStats['lokasi'] ?? 0 }} feedback)</small>
                                 </a>
                             </div>
@@ -189,14 +189,14 @@
                                                 <i class="mdi mdi-gavel me-2"></i>Pokir DPRD
                                             </a></li>
                                         <li><a class="dropdown-item" href="{{ route('lokasi.feedbacks.index') }}">
-                                                <i class="mdi mdi-map me-2"></i>Lokasi
+                                                <i class="mdi mdi-map me-2"></i>RPJMD
                                             </a></li>
                                         <li>
                                             <hr class="dropdown-divider">
                                         </li>
-                                        <li><a class="dropdown-item" href="{{ route('project-feedbacks.index') }}">
+                                        {{-- <li><a class="dropdown-item" href="{{ route('project-feedbacks.index') }}">
                                                 <i class="mdi mdi-view-list me-2"></i>Semua Feedback
-                                            </a></li>
+                                            </a></li> --}}
                                     </ul>
                                 </div>
                             @endif
@@ -1211,6 +1211,10 @@
             color: #000000;
             border: none;
             font-weight: 600;
+        }
+
+        .dropdown-item:hover {
+            color: #000000 !important;
         }
 
         .table td {

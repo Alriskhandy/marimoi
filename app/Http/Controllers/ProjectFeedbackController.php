@@ -569,8 +569,8 @@ class ProjectFeedbackController extends Controller
                 'color' => 'warning'
             ],
             'lokasi' => [
-                'name' => 'Lokasi',
-                'description' => 'Feedback untuk lokasi-lokasi tertentu',
+                'name' => 'RPJMD',
+                'description' => 'Feedback untuk RPJMD-RPJMD tertentu',
                 'icon' => 'mdi-map',
                 'color' => 'danger'
             ],
