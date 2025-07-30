@@ -5,7 +5,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-layers"></i>
-            </span> Kategori Usulan Musrembang Layer
+            </span> Kategori Usulan Musrenbang Layer
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
@@ -13,7 +13,7 @@
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">
-                    Kategori Usulan Musrembang Layer
+                    Kategori Usulan Musrenbang Layer
                 </li>
             </ul>
         </nav>
