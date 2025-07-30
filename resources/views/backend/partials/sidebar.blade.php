@@ -23,6 +23,22 @@
             </a>
         </li>
 
+
+
+        <!-- Divider -->
+        <li class="nav-item nav-category">
+            <span
+                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
+                style="cursor: default;">
+                <i class="mdi mdi-database-outline me-2 fs-5 opacity-50"></i>
+                Master Data
+            </span>
+        </li>
+
+
+
+
+
         <!-- Data Peta Tematik -->
         @php
             $isPetaTematikActive = request()->routeIs('lokasi.*') || request()->routeIs('kategori-layers.index');
@@ -386,10 +402,18 @@
             </li>
         @endif
 
-        <!-- Divider -->
+
+
         <li class="nav-item nav-category">
-            <span class="nav-link">Sistem</span>
+            <span
+                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
+                style="cursor: default;">
+                <i class="mdi mdi-lan me-2 fs-5 opacity-50"></i>
+                Sistem
+            </span>
         </li>
+
+
 
         <!-- Sistem & Pengguna -->
         @php
@@ -417,9 +441,12 @@
                 </ul>
             </div>
         </li>
+
+
+
     </ul>
 
-    <!-- JavaScript untuk badge counts yang aman -->
+    {{-- <!-- JavaScript untuk badge counts yang aman -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Safely update feedback counts via AJAX
@@ -470,8 +497,8 @@
             // Update every 60 seconds (reduced frequency to avoid performance issues)
             setInterval(updateFeedbackCounts, 60000);
         });
-    </script>
-
+    </script> --}}
+    {{-- 
     <style>
         /* Safe badge animation */
         .badge-updated {
@@ -498,6 +525,29 @@
         .badge {
             min-width: 20px;
             text-align: center;
+        }
+    </style> --}}
+    <style>
+        .nav-section-divider {
+            height: 1px;
+            background-color: #bdbdbd;
+            margin: 0.75rem 1rem;
+            border: none;
+        }
+
+
+
+        .nav-category .nav-link {
+            pointer-events: none;
+            cursor: default;
+            color: #6c757d !important;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-category .mdi {
+            opacity: 0.5;
+            font-size: 1.1rem;
         }
     </style>
 </nav>
