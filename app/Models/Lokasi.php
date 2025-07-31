@@ -73,4 +73,9 @@ class Lokasi extends Model
     {
         return $this->belongsTo(KategoriLayer::class, 'kategori_id');
     }
+
+      public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }

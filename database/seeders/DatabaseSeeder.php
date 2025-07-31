@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
                 KategoriLayerSeeder::class,
                 KategoriPSDSeeder::class,
                 KategoriPSNSeeder::class,
-                // ProjectFeedbackSeeder::class,
+                ProjectFeedbackSeeder::class,
                 KategoriPokirDprdSeeder::class,
                 KategoriMusrenbangSeeder::class,
             ]);

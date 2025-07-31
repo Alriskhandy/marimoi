@@ -70,4 +70,10 @@ class UsulanMusrenbang extends Model
     {
         return $this->belongsTo(KategoriMusrenbang::class, 'kategori_id');
     }
+
+     
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }

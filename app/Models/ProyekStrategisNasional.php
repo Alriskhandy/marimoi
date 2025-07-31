@@ -72,4 +72,9 @@ class ProyekStrategisNasional extends Model
     {
         return $this->belongsTo(KategoriPSN::class, 'kategori_id');
     }
+
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }

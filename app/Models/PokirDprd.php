@@ -73,4 +73,9 @@ class PokirDprd extends Model
     {
         return $this->belongsTo(KategoriPokirDprd::class, 'kategori_id');
     }
+
+    public function feedbacks()
+    {
+        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
+    }
 }

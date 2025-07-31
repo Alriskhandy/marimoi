@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LokasiController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,13 @@ Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojs
 
 // TAHAP PENGEMBANGAN //
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
+
+// Routes untuk project-specific feedback
+Route::post('pokir/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('pokir.feedback.store');
+Route::post('usulan/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('usulan.feedback.store');
+Route::post('nasional/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('nasional.feedback.store');
+Route::post('daerah/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('daerah.feedback.store');
+Route::post('lokasi/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('lokasi.feedback.store');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';
