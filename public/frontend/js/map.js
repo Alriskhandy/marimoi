@@ -443,21 +443,31 @@ async function initMap() {
                     isMarker = true;
                     iconClass = catObj.icon || null;
                     iconWarna = catObj.warna || iconWarna;
+                    console.log('objek', catObj.warna, iconWarna);
                 }
             }
             if (isMarker && iconClass) {
-                markerOptionsMap[kategori] = L.AwesomeMarkers.icon({
+                // Menggunakan AwesomeMarkers untuk marker
+                markerOptionsMap[kategori] = L.ExtraMarkers.icon({
                     icon: iconClass,
                     prefix: "fa",
-                    markerColor: undefined,
+                    svg: true,
+                    markerColor: iconWarna || "red", // default ke green jika tidak ada warna
                     iconColor: "white",
-                    extraClasses: "",
-                    html: `<i class='fa ${iconClass}' style='color:white'></i>`,
-                    markerStyle: {
-                        backgroundColor: iconWarna,
-                        border: "2px solid #fff",
-                    },
+                    shape: "circle",
+                    html: `<i class='fa ${iconClass}' style='color:white, background: blue;'></i>`,
                 });
+
+                // Menggunakan custom divIcon untuk marker
+                // markerOptionsMap[kategori] = L.divIcon({
+                //     className: "custom-marker",
+                //     html: `<div style="background:${iconWarna};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                //     <i class="fa ${iconClass}" style="color:white;"></i>
+                //     </div>`,
+                //     iconSize: [30, 30],
+                //     iconAnchor: [15, 30],
+                // });
+
             } else {
                 markerOptionsMap[kategori] = null;
             }
