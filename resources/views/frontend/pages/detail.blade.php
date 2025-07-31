@@ -90,9 +90,8 @@
 
                 <div class="col-lg-8">
                     <h4 class="text-center text-secondary mb-3">Formulir Tanggapan</h4>
-                    <form id="addForm"
-                        action="{{ route('feedback.store', $project->id) }}"
-                        method="POST" enctype="multipart/form-data">
+                    <form id="addForm" action="{{ route('feedback.store', $project->id) }}" method="POST"
+                        enctype="multipart/form-data">
                         @csrf
 
                         @if (isset($projectType))
@@ -110,15 +109,15 @@
                             @if (isset($project))
                                 <input type="hidden" name="feedbackable_id" value="{{ $project->id }}">
                                 <input type="hidden" name="nama_proyek"
-                                    value="{{ $project->dbf_attributes['KEGIATAN'] ?? 'TANPA DESKRIPSI' }}">
+                                    value="{{ $project->dbf_attributes['KEGIATAN'] ?? 'FIELD KOSONG' }}">
                                 <input type="hidden" name="kabupaten_kota"
-                                    value="{{ $project->dbf_attributes['KABUPATEN'] ?? ($project->dbf_attributes['KOTA'] ?? '') }}">
+                                    value="{{ $project->dbf_attributes['KABUPATEN'] ?? ($project->dbf_attributes['KOTA'] ?? 'FIELD KOSONG') }}">
                                 <input type="hidden" name="kecamatan"
-                                    value="{{ $project->dbf_attributes['KECAMATAN'] ?? 'TANPA LOKASI' }}">
+                                    value="{{ $project->dbf_attributes['KECAMATAN'] ?? 'FIELD KOSONG' }}">
                                 <input type="hidden" name="latitude"
-                                    value="{{ $koordinat['coordinates'][1] ?? '' }}">
+                                    value="{{ $koordinat['coordinates'][1] ?? '0.786934' }}">
                                 <input type="hidden" name="longitude"
-                                    value="{{ $koordinat['coordinates'][0] ?? '' }}">
+                                    value="{{ $koordinat['coordinates'][0] ?? '127.365772' }}">
                             @else
                                 {{-- Jika tidak ada project, user harus pilih/input manual --}}
                                 <div class="row">

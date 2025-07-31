@@ -124,7 +124,7 @@ function generateLegend() {
 
 /**
  * Membuat dan mengikat konten popup pada setiap fitur peta.
- * Menampilkan info properti, gambar, dan tombol zoom/detail.
+ * Menampilkan info properti, gambar, tombol zoom dan tombol detail.
  * @param {object} feature - GeoJSON feature
  * @param {object} layer - Leaflet layer
  * @param {string} urlPath - Path untuk link detail
