@@ -454,7 +454,7 @@ async function initMap() {
                 }
             }
             if (isMarker && iconClass) {
-                // Menggunakan AwesomeMarkers untuk marker
+                // Menggunakan ExtraMarkers untuk marker
                 markerOptionsMap[kategori] = L.ExtraMarkers.icon({
                     icon: iconClass,
                     prefix: "fa",

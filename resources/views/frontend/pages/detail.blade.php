@@ -94,7 +94,7 @@
                         action="{{ route('feedback.store', $project->id) }}"
                         method="POST" enctype="multipart/form-data">
                         @csrf
-                        
+
                         @if (isset($projectType))
                             <input type="hidden" name="project_type" value="{{ $projectType }}">
                         @endif
@@ -110,7 +110,7 @@
                             @if (isset($project))
                                 <input type="hidden" name="feedbackable_id" value="{{ $project->id }}">
                                 <input type="hidden" name="nama_proyek"
-                                    value="{{ $project->dbf_attributes['KEGIATAN'] ?? '' }}">
+                                    value="{{ $project->dbf_attributes['KEGIATAN'] ?? 'TANPA DESKRIPSI' }}">
                                 <input type="hidden" name="kabupaten_kota"
                                     value="{{ $project->dbf_attributes['KABUPATEN'] ?? ($project->dbf_attributes['KOTA'] ?? '') }}">
                                 <input type="hidden" name="kecamatan"
