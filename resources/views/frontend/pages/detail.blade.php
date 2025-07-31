@@ -90,80 +90,208 @@
 
                 <div class="col-lg-8">
                     <h4 class="text-center text-secondary mb-3">Formulir Tanggapan</h4>
-                    <form action="#" method="post" enctype="multipart/form-data" class="php-email-form"
-                        data-aos="fade-up" data-aos-delay="200" id="complaintForm">
+                    <form id="addForm"
+                        action="{{ route('feedback.store', $project->id) }}"
+                        method="POST" enctype="multipart/form-data">
                         @csrf
-                        <div class="row gy-4">
+                        
+                        @if (isset($projectType))
+                            <input type="hidden" name="project_type" value="{{ $projectType }}">
+                        @endif
 
-                            <div class="col-md-6">
-                                <input type="text" name="name" class="form-control" placeholder="Nama" required>
+                        @php
+                            $koordinat = is_string($project->geojson)
+                                ? json_decode($project->geojson, true)
+                                : (array) $project->geojson;
+                        @endphp
+
+                        <div class="modal-body">
+                            {{-- Jika ada project, maka pakai hidden --}}
+                            @if (isset($project))
+                                <input type="hidden" name="feedbackable_id" value="{{ $project->id }}">
+                                <input type="hidden" name="nama_proyek"
+                                    value="{{ $project->dbf_attributes['KEGIATAN'] ?? '' }}">
+                                <input type="hidden" name="kabupaten_kota"
+                                    value="{{ $project->dbf_attributes['KABUPATEN'] ?? ($project->dbf_attributes['KOTA'] ?? '') }}">
+                                <input type="hidden" name="kecamatan"
+                                    value="{{ $project->dbf_attributes['KECAMATAN'] ?? 'TANPA LOKASI' }}">
+                                <input type="hidden" name="latitude"
+                                    value="{{ $koordinat['coordinates'][1] ?? '' }}">
+                                <input type="hidden" name="longitude"
+                                    value="{{ $koordinat['coordinates'][0] ?? '' }}">
+                            @else
+                                {{-- Jika tidak ada project, user harus pilih/input manual --}}
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group mb-3">
+                                            <label for="feedbackable_id" class="form-label">Pilih Proyek <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" id="feedbackable_id" name="feedbackable_id"
+                                                required>
+                                                <option value="">-- Pilih Proyek --</option>
+                                                @foreach ($availableProjects ?? [] as $p)
+                                                    <option value="{{ $p->id }}">{{ $p->deskripsi }}</option>
+                                                @endforeach
+                                            </select>
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Nama Pemberi Aspirasi --}}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="add_nama_pemberi_aspirasi" class="form-label">Nama Pemberi Aspirasi
+                                            <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="add_nama_pemberi_aspirasi"
+                                            name="nama_pemberi_aspirasi" required>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+
+                                {{-- Nama Proyek (ditampilkan jika tidak hidden) --}}
+                                @unless (isset($project))
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="add_nama_proyek" class="form-label">Nama Proyek <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="add_nama_proyek" name="nama_proyek"
+                                                required>
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+                                @endunless
                             </div>
 
-                            <div class="col-md-6">
-                                <input type="email" name="email" class="form-control" placeholder="Email Aktif"
-                                    required>
+                            <div class="row">
+                                @unless (isset($project))
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="add_kabupaten_kota" class="form-label">Kabupaten/Kota <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-control" id="add_kabupaten_kota" name="kabupaten_kota"
+                                                required>
+                                                <option value="">-- Pilih Kabupaten/Kota --</option>
+                                                @foreach ($kabupaten_list ?? [] as $kab)
+                                                    <option value="{{ $kab }}">{{ $kab }}</option>
+                                                @endforeach
+                                            </select>
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="add_kecamatan" class="form-label">Kecamatan</label>
+                                            <select class="form-control" id="add_kecamatan" name="kecamatan">
+                                                <option value="">-- Pilih Kecamatan --</option>
+                                            </select>
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+                                @endunless
                             </div>
 
-                            <div class="col-md-6">
-                                <input type="text" name="whatsapp" class="form-control" placeholder="No WhatsApp"
-                                    required pattern="^\+?\d{10,15}$" title="Masukkan nomor WhatsApp yang valid">
+                            {{-- Jenis Tanggapan --}}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="add_jenis_tanggapan" class="form-label">Jenis Tanggapan <span
+                                                class="text-danger">*</span></label>
+                                        <select class="form-control" id="add_jenis_tanggapan" name="jenis_tanggapan"
+                                            required>
+                                            <option value="">-- Pilih Jenis --</option>
+                                            <option value="keluhan">Pengaduan</option>
+                                            <option value="saran">Saran</option>
+                                            <option value="apresiasi">Apresiasi</option>
+                                            <option value="pertanyaan">Pertanyaan</option>
+                                        </select>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="add_laporan_gambar" class="form-label">Lampiran Gambar (wajib untuk
+                                            keluhan)</label>
+                                        <input type="file" class="form-control" id="add_laporan_gambar"
+                                            name="laporan_gambar" accept="image/*">
+                                        <small class="text-muted">Maksimal 2MB. JPG/PNG/PDF</small>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="col-md-6">
-                                <select name="type" id="type" class="form-select" required>
-                                    <option class="text-muted" value="" disabled selected>-- Pilih Kategori --
-                                    </option>
-                                    <option value="aspirasi">Aspirasi</option>
-                                    <option value="pengaduan">Pengaduan</option>
-                                </select>
+                            {{-- Email dan Telepon --}}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="add_email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="add_email" name="email">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="add_phone" class="form-label">No. WhatsApp</label>
+                                        <input type="text" class="form-control" id="add_phone" name="phone"
+                                            pattern="^\+?\d{10,15}$" title="Masukkan nomor WhatsApp yang valid">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="col-md-12">
-                                <textarea name="message" class="form-control" rows="6" placeholder="Isi Teks" required></textarea>
+                            {{-- Latitude & Longitude jika manual --}}
+                            @unless (isset($project))
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="add_latitude" class="form-label">Latitude</label>
+                                            <input type="number" step="any" class="form-control" id="add_latitude"
+                                                name="latitude" placeholder="0.7881">
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="add_longitude" class="form-label">Longitude</label>
+                                            <input type="number" step="any" class="form-control" id="add_longitude"
+                                                name="longitude" placeholder="127.3781">
+                                            <div class="invalid-feedback"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endunless
+
+                            {{-- Tanggapan --}}
+                            <div class="form-group mb-3">
+                                <label for="add_tanggapan" class="form-label">Tanggapan <span
+                                        class="text-danger">*</span></label>
+                                <textarea class="form-control" id="add_tanggapan" name="tanggapan" rows="4" required></textarea>
+                                <div class="invalid-feedback"></div>
                             </div>
 
-                            <div class="col-md-12">
-                                <label for="attachment" class="form-label">Lampiran (drawing atau foto) <span
-                                        class="text-danger fw-bold">* Wajib Unggah Lampiran Untuk Jenis
-                                        Pengaduan</span></label>
-                                <input type="file" name="attachment" id="attachment" class="form-control"
-                                    accept="image/*,.pdf,.dwg,.dxf">
-                            </div>
+                            {{-- Captcha --}}
+                            {{-- <div class="form-group mb-3">
+                                <label for="captcha" class="form-label">Verifikasi Gambar (Captcha)</label>
+                                <div class="mb-2">
+                                    <img src="{{ asset('storage/captcha.png') }}" alt="Captcha" class="img-fluid"
+                                        style="max-width: 250px;">
+                                </div>
+                                <input type="text" name="captcha" id="captcha" class="form-control"
+                                    placeholder="Masukkan teks pada gambar" required>
+                            </div> --}}
+                        </div>
 
-                            <div class="col-md-12 text-center d-grid gap-2">
-                                <button type="submit" class="btn btn-md btn-outline-primary">Kirim</button>
-                                {{-- <div class="loading">Loading</div> --}}
-                                {{-- <div class="error-message"></div> --}}
-                                <div class="sent-message"
-                                    style="display: none; opacity: 0; transition: opacity 1s ease-in-out, visibility 1s ease-in-out; visibility: hidden;">
-                                    Tanggapan Anda telah dikirim. Terima kasih!</div>
-                            </div>
-
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="mdi mdi-content-save"></i> Kirim
+                            </button>
                         </div>
                     </form>
-                    <script>
-                        document.getElementById('complaintForm').addEventListener('submit', function(event) {
-                            var type = document.getElementById('type').value;
-                            var attachment = document.getElementById('attachment');
-                            if (type === 'pengaduan' && attachment.files.length === 0) {
-                                event.preventDefault();
-                                alert('Lampiran wajib diisi untuk jenis pengaduan.');
-                                attachment.focus();
-                            } else {
-                                // Menampilkan pesan sukses untuk dummy
-                                var sentMessage = document.querySelector('.sent-message');
-                                sentMessage.style.display = 'block'; // Tampilkan elemen
-                                sentMessage.style.opacity = 1; // Set opacity ke 1 untuk tampak terlihat
-                                sentMessage.style.visibility = 'visible'; // Set visibility menjadi visible
-
-                                // Menyembunyikan pesan setelah 2 detik (2000 ms) dengan transisi
-                                setTimeout(function() {
-                                    sentMessage.style.opacity = 0; // Gradual hide dengan opacity
-                                    sentMessage.style.visibility = 'hidden'; // Gradual hide dengan visibility
-                                }, 2000); // 2000 ms = 2 detik
-                            }
-                        });
-                    </script>
                 </div><!-- End Form -->
 
                 <div class="col-lg-4">
@@ -199,7 +327,7 @@
                         id: "esri-world-imagery",
                         label: "ESRI World Imagery",
                         minZoom: 6,
-                        maxZoom: 20,
+                        maxZoom: 18,
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(map);
 

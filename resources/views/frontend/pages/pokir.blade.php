@@ -1,7 +1,7 @@
 @extends('frontend.layouts.main')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.awesome-markers.css') }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
@@ -142,7 +142,7 @@
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
                         <div class="mb-3 ms-2">
-                            <label for="transparency" class="form-label">Transparansi Layer</label>
+                            <label for="transparency" class="form-label text-sm">Transparansi Layer</label>
                             <input type="range" class="form-range" min="0" max="100" value="100"
                                 id="transparency">
                         </div>
@@ -184,7 +184,7 @@
                     <div id="sidebar-download" class="sidebar bg-white text-dark position-absolute"
                         style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
                         <div class="d-flex justify-content-between align-items-center mb-3 gradient-purple">
-                            <h6 class="text-white mb-0">Download Peta</h6>
+                            <h6 class="text-white mb-0">Unduh Data/Informasi</h6>
                             <button id="btn-close-sidebar-download" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
@@ -231,7 +231,7 @@
                         aria-label="Sidebar Control Buttons"
                         style="bottom: 30px; right: 10px; z-index: 99; background-color: rgb(90, 90, 90); box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
                         <button id="btn-toggle-sidebar-download" type="button" class="btn btn-sm border-white"
-                            title="Download Peta" style="color: white;" data-bs-toggle="tooltip"
+                            title="Unduh Data/Informasi" style="color: white;" data-bs-toggle="tooltip"
                             data-bs-placement="bottom" data-bs-title="Download Peta">
                             <i class="bi bi-file-earmark-arrow-down-fill"></i>
                         </button>
@@ -259,6 +259,6 @@
 @push('scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="{{ asset('frontend/js/leaflet.awesome-markers.min.js') }}"></script>
-    <script type="module" src="{{ asset('frontend/js/map.js') }}"></script>
+    <script src="{{ asset('frontend/js/leaflet.extra-markers.min.js') }}"></script>
+    <script src="{{ asset('frontend/js/map.js') }}"></script>
 @endpush

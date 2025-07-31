@@ -1,13 +1,6 @@
 // map-app.js - Fixed version based on working original code
-/**
- * map-app.js - Fixed version based on working original code
- * Entry point utama aplikasi peta frontend.
- */
 console.log("map-app.js loaded");
 
-/**
- * Konfigurasi utama peta, termasuk daftar basemap, center, zoom, dan style default.
- */
 const mapConfig = {
     weight: 6,
     center: [0.735485, 128.028201],
@@ -49,9 +42,6 @@ const mapConfig = {
     ],
 };
 
-/**
- * Inisialisasi objek Leaflet map dengan konfigurasi awal.
- */
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
@@ -62,12 +52,6 @@ let currentBaseMap = null;
 let kategoriWarnaMap = {};
 let iconMap = {};
 
-/**
- * Menghasilkan style untuk kategori tertentu.
- * Digunakan untuk styling fitur non-marker (polygon/line).
- * @param {string} kategori - Nama kategori
- * @returns {object} Style Leaflet
- */
 function getStyleForCategory(kategori) {
     const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
     return {
@@ -79,10 +63,6 @@ function getStyleForCategory(kategori) {
     };
 }
 
-/**
- * Membuat dan menampilkan legend pada UI berdasarkan kategori dan icon/warna.
- * Hanya menampilkan kategori yang memiliki data dan icon jika marker.
- */
 function generateLegend() {
     const legendContainer = document.getElementById("legend-content");
     if (!legendContainer) return;
@@ -90,45 +70,43 @@ function generateLegend() {
     legendContainer.innerHTML = "";
     const added = new Set();
 
+    // console.log("layerGroups:", layerGroups); // tampilkan isi layerGroups
+    console.log("kategoriWarnaMap:", kategoriWarnaMap);
+    console.log("iconMap:", iconMap);
+
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
-            if (added.has(sub)) return;
+            if (!added.has(sub)) {
+                const color =
+                    kategoriWarnaMap[sub] ||
+                    kategoriWarnaMap[kategori] ||
+                    "#ccc";
+                const icon = iconMap[sub];
 
-            // Cek apakah sub adalah marker (point) dan punya icon
-            let icon = iconMap[sub] || null;
-            let color =
-                kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
-
-            // Jika marker, gunakan icon dan warna kategori
-            if (icon) {
-                legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
-                            <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+                if (icon) {
+                    legendContainer.innerHTML += `
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                                <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+                            </div>
+                            <span style="font-size: 0.85rem;">${sub}</span>
                         </div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
-                    </div>
-                `;
-            } else {
-                legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
-                    </div>
-                `;
+                    `;
+                } else {
+                    legendContainer.innerHTML += `
+                        <div class="d-flex align-items-center mb-2">
+                            <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                            <span style="font-size: 0.85rem;">${sub}</span>
+                        </div>
+                    `;
+                }
+
+                added.add(sub);
             }
-            added.add(sub);
         });
     });
 }
 
-/**
- * Membuat dan mengikat konten popup pada setiap fitur peta.
- * Menampilkan info properti, gambar, dan tombol zoom/detail.
- * @param {object} feature - GeoJSON feature
- * @param {object} layer - Leaflet layer
- * @param {string} urlPath - Path untuk link detail
- */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
     let content = `<div class="py-2" style="max-width: 250px;">
@@ -207,12 +185,11 @@ function bindPopupContent(feature, layer, urlPath) {
         content += `</table>`;
     }
 
-    // Pastikan id adalah string/number, bukan array/object
-    const id = props.id | "";
-    console.log("Feature ID:", id);
+    const id = props.id || "";
     content += `
         <div class="d-flex justify-content-between mt-3">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button> <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -221,57 +198,16 @@ function bindPopupContent(feature, layer, urlPath) {
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
         const zoomButton = popupNode.querySelector(".zoomToBtn");
-        
         if (zoomButton) {
             zoomButton.addEventListener("click", function () {
-                // const lat = parseFloat(this.getAttribute("data-lat"));
-                // const lng = parseFloat(this.getAttribute("data-lng"));
-                // layer._map.setView([lat, lng], 15);
-
-                // PERUBAHAN UNTUK PERBAIKAN BUG ZOOM TO
-                const geom = feature.geometry;
-                if (!geom) return;
-                const mapInstance = layer._map;
-                if (geom.type === "Point") {
-                    const lat = parseFloat(this.getAttribute("data-lat"));
-                    const lng = parseFloat(this.getAttribute("data-lng"));
-                    mapInstance.setView([lat, lng], 15);
-                } else if (geom.type === "LineString") {
-                    // Fit bounds to line
-                    const latlngs = geom.coordinates.map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "Polygon") {
-                    // Fit bounds to polygon
-                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "MultiPolygon") {
-                    // Gabungkan semua koordinat polygon
-                    let allLatLngs = [];
-                    geom.coordinates.forEach((poly) => {
-                        poly[0].forEach(([lng, lat]) => {
-                            allLatLngs.push([lat, lng]);
-                        });
-                    });
-                    if (allLatLngs.length > 0) {
-                        mapInstance.fitBounds(allLatLngs);
-                    }
-                }
+                const lat = parseFloat(this.getAttribute("data-lat"));
+                const lng = parseFloat(this.getAttribute("data-lng"));
+                layer._map.setView([lat, lng], 15);
             });
         }
     });
 }
 
-/**
- * Menampilkan alert/toast pada UI dan log ke console.
- * @param {string} message - Pesan yang ditampilkan
- * @param {string} [type="info"] - Jenis alert (info, warning, danger, dll)
- */
 function showAlert(message, type = "info") {
     console.log(`${type}: ${message}`);
     const toastContainer = document.getElementById("toast-container");
@@ -292,31 +228,19 @@ function showAlert(message, type = "info") {
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
 }
 
-/**
- * Mengganti basemap yang aktif sesuai pilihan user.
- * @param {string} baseMapId - ID basemap yang dipilih
- */
 function changeBaseMap(baseMapId) {
-    if (currentBaseMap) {
-        map.removeLayer(currentBaseMap);
-    }
-
+    if (currentBaseMap) map.removeLayer(currentBaseMap);
     const config = mapConfig.baseMapsList.find((bm) => bm.id === baseMapId);
     if (config) {
         currentBaseMap = L.tileLayer(config.url, {
             subdomains: config.subdomains || [],
-            minZoom: config.minZoom || 4,
-            maxZoom: config.maxZoom || 18,
-        });
-        currentBaseMap.addTo(map);
+            minZoom: 4,
+            maxZoom: config.maxZoom,
+        }).addTo(map);
     }
 }
 
 // ✅ Modified initMap with proper hierarchy using all_categories
-/**
- * Inisialisasi peta, memuat data GeoJSON, membangun struktur layer, dan menambahkan fitur ke peta.
- * Melakukan mapping kategori, marker, dan legend secara efisien.
- */
 async function initMap() {
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
@@ -333,11 +257,14 @@ async function initMap() {
 
         if (Array.isArray(geoJsonData.all_categories)) {
             geoJsonData.all_categories.forEach((cat) => {
-                if (!cat.nama || !cat.warna) return;
-                kategoriWarnaMap[cat.nama] = cat.warna;
-                // Jika marker dan punya icon, simpan icon
-                if (cat.is_marker === true && cat.icon) {
-                    iconMap[cat.nama] = cat.icon;
+                // Pastikan setiap kategori memiliki nama dan warna
+                if (cat.nama && cat.warna) {
+                    kategoriWarnaMap[cat.nama] = cat.warna;
+
+                    // Jika kategori adalah marker dan memiliki icon, simpan ke dalam iconMap
+                    if (cat.is_marker === true && cat.icon) {
+                        iconMap[cat.nama] = cat.icon;
+                    }
                 }
             });
         }
@@ -391,108 +318,48 @@ async function initMap() {
                 }
             });
         }
-        // 🔸 Kelompokkan fitur berdasarkan kategori yang ada datanya
-        const kategoriFiturMap = {};
+
+        // 🔸 Tambahkan fitur ke layer yang sesuai
         geoJsonData.features.forEach((feature) => {
             const kategori = (feature.properties?.kategori || "").trim();
             if (!kategori) return;
-            if (!kategoriFiturMap[kategori]) kategoriFiturMap[kategori] = [];
-            kategoriFiturMap[kategori].push(feature);
-        });
-        console.log("kategoriFiturMap:", kategoriFiturMap);
-        // 🔸 Proses hanya kategori yang punya data fitur
-        /**
-         * =============================
-         * 1. Mapping kategori ke targetLayer dan markerOptions
-         * =============================
-         *
-         * - targetLayerMap: Menyimpan referensi layer untuk setiap kategori (baik parent maupun child).
-         * - markerOptionsMap: Menyimpan opsi marker (icon, warna) untuk kategori marker.
-         * - Proses ini hanya dilakukan satu kali per kategori agar efisien dan mudah maintenance.
-         */
-        const targetLayerMap = {};
-        const markerOptionsMap = {};
 
-        Object.entries(kategoriFiturMap).forEach(([kategori, fiturList]) => {
-            /**
-             * Cari layer child pada layerGroups.
-             * Jika tidak ditemukan, cek apakah kategori adalah parent dan punya layer sendiri.
-             * Simpan hasil ke targetLayerMap agar tidak perlu pencarian berulang.
-             */
             let targetLayer = null;
+
             for (const [parentName, children] of Object.entries(layerGroups)) {
                 if (children[kategori]) {
-                    targetLayer = children[kategori];
+                    targetLayer = children[kategori]; // sebagai child
+                    break;
+                } else if (parentName === kategori && children[parentName]) {
+                    targetLayer = children[parentName]; // sebagai parent
                     break;
                 }
             }
-            if (
-                !targetLayer &&
-                layerGroups[kategori] &&
-                layerGroups[kategori][kategori]
-            ) {
-                targetLayer = layerGroups[kategori][kategori];
-            }
-            targetLayerMap[kategori] = targetLayer;
 
-            /**
-             * Tentukan markerOptions hanya sekali per kategori.
-             * Jika kategori adalah marker dan punya icon, simpan opsi marker ke markerOptionsMap.
-             */
-            let isMarker = false;
-            let iconClass = null;
-            let iconWarna = kategoriWarnaMap[kategori];
-            if (Array.isArray(geoJsonData.all_categories)) {
-                const catObj = geoJsonData.all_categories.find(
-                    (c) => c.nama === kategori
-                );
-                if (catObj && catObj.is_marker === true) {
-                    isMarker = true;
-                    iconClass = catObj.icon || null;
-                    iconWarna = catObj.warna || iconWarna;
-                    console.log("objek", catObj.warna, iconWarna);
-                }
-            }
-            if (isMarker && iconClass) {
-                // Menggunakan AwesomeMarkers untuk marker
-                markerOptionsMap[kategori] = L.ExtraMarkers.icon({
-                    icon: iconClass,
-                    prefix: "fa",
-                    svg: true,
-                    markerColor: iconWarna || "red", // default ke green jika tidak ada warna
-                    iconColor: "white",
-                    shape: "circle",
-                    html: `<i class='fa ${iconClass}' style='color:white, background: blue;'></i>`,
-                });
-            } else {
-                markerOptionsMap[kategori] = null;
-            }
-        });
-
-        /**
-         * =============================
-         * 2. Penambahan fitur ke layer sesuai kategori
-         * =============================
-         *
-         * - Menggunakan targetLayer dan markerOptions yang sudah di-cache.
-         * - Clean code: tidak ada pemanggilan berulang dan mudah untuk penambahan fitur baru.
-         * - Jika ingin menambah fitur (misal: clustering, filter, custom popup), cukup tambahkan di blok ini.
-         */
-        Object.entries(kategoriFiturMap).forEach(([kategori, fiturList]) => {
-            const targetLayer = targetLayerMap[kategori];
-            const markerOptions = markerOptionsMap[kategori];
             if (targetLayer) {
-                fiturList.forEach((feature) => {
-                    L.geoJSON(feature, {
-                        pointToLayer: (feature, latlng) =>
-                            markerOptions
-                                ? L.marker(latlng, { icon: markerOptions })
-                                : L.marker(latlng),
-                        style: getStyleForCategory(kategori),
-                        onEachFeature: (f, l) =>
-                            bindPopupContent(f, l, urlPath),
-                    }).addTo(targetLayer);
-                });
+                let iconClass = iconMap[kategori] || null;
+                let iconWarna = kategoriWarnaMap[kategori] || "#333";
+                console.log("warnaIcon:", iconWarna);
+                // console.log("warnaMap:", kategoriWarnaMap[kategori]);
+
+                let markerOptions = {};
+                if (iconClass) {
+                    markerOptions.icon = L.AwesomeMarkers.icon({
+                        icon: iconClass,
+                        prefix: "fa",
+                        markerColor: iconWarna,
+                        iconColor: "white",
+                    });
+                }
+
+                L.geoJSON(feature, {
+                    pointToLayer: (feature, latlng) =>
+                        iconClass
+                            ? L.marker(latlng, markerOptions)
+                            : L.marker(latlng),
+                    style: getStyleForCategory(kategori),
+                    onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
+                }).addTo(targetLayer);
             }
         });
 
@@ -517,10 +384,6 @@ async function initMap() {
 }
 
 // ✅ Enhanced updateLayerList with dropdown hierarchy
-/**
- * Membuat dan memperbarui daftar layer pada sidebar UI.
- * Menampilkan struktur parent-child kategori dan kontrol checkbox untuk setiap layer.
- */
 function updateLayerList() {
     const container = document.getElementById("layer-list");
     if (!container) return;
@@ -636,25 +499,43 @@ function updateLayerList() {
             label.className = "form-check-label";
             label.htmlFor = subId;
             label.textContent = subname;
-
             // Parent Row (pastikan ada)
             row.style.cssText = `
-                display: flex;
-                align-items: center;
-                width: 100%;
-                gap: 0.5rem;
-            `;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+`;
 
             // Label
             label.style.cssText = `
-                font-size: 0.75rem;              /* kecilkan teks */
-                white-space: normal;             /* izinkan teks membungkus */
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                flex: 1;                         /* isi ruang tersedia */
-                max-width: calc(100% - 40px);    /* sisakan ruang untuk checkbox dan colorIndicator */
-                line-height: 1.2;
-            `;
+    font-size: 0.75rem;              /* kecilkan teks */
+    white-space: normal;             /* izinkan teks membungkus */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    flex: 1;                         /* isi ruang tersedia */
+    max-width: calc(100% - 40px);    /* sisakan ruang untuk checkbox dan colorIndicator */
+    line-height: 1.2;
+`;
+
+            // Color indicator
+            // const colorIndicator = document.createElement("div");
+            // Color indicator
+            // colorIndicator.style.cssText = `
+            //     width: 16px;
+            //     height: 16px;
+            //     flex-shrink: 0;                  /* jangan menyusutkan kotak warna */
+            //     background-color: ${kategoriWarnaMap[subname] || kategoriWarnaMap[kategori] || "#ccc"};
+            //     border: 1px solid #333;
+            //     border-radius: 3px;
+            //     margin-left: 0.5rem;
+            // `;
+
+            // colorIndicator.style.cssText = `
+            //     width: 16px; height: 16px;
+            //     background-color: ${kategoriWarnaMap[subname] || kategoriWarnaMap[kategori] || "#ccc"};
+            //     border: 1px solid #333; border-radius: 3px; margin-left: auto;
+            // // `;
 
             row.appendChild(checkbox);
             row.appendChild(label);
@@ -682,10 +563,6 @@ function updateLayerList() {
     });
 }
 
-/**
- * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll).
- * Mengatur interaksi user dengan kontrol peta dan sidebar.
- */
 function setupUI() {
     const transparencySlider = document.getElementById("transparency");
     if (transparencySlider) {
@@ -729,10 +606,6 @@ function setupUI() {
     }
 }
 
-/**
- * Entry point aplikasi frontend peta.
- * Menjalankan inisialisasi peta, basemap, dan UI saat DOM siap.
- */
 document.addEventListener("DOMContentLoaded", () => {
     initMap();
     changeBaseMap("esri-world-imagery");

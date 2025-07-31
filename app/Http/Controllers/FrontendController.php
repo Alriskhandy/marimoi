@@ -7,11 +7,13 @@ use App\Models\KategoriLayer;
 use App\Models\KategoriPSD;
 use App\Models\Lokasi;
 use App\Models\PokirDprd;
+use App\Models\ProjectFeedback;
 use App\Models\ProyekStrategisDaerah;
 use App\Models\ProyekStrategisNasional;
 use App\Models\UsulanMusrenbang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class FrontendController extends Controller
 {
@@ -476,12 +478,15 @@ class FrontendController extends Controller
         $project->geojson = json_decode($project->geojson);
         return view('frontend.pages.detail', compact('project'));
     }
-    public function detailPsd($id)
+    public function detailPsd(Request $request, $id)
     {
         $project = ProyekStrategisDaerah::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
             ->findOrFail($id);
         $project->geojson = json_decode($project->geojson);
-        return view('frontend.pages.detail', compact('project'));
+        $projectType = $this->getProjectTypeFromRequest($request);
+        // $attr = json_decode($project->dbf_attributes, true);
+        // dd($projectType);
+        return view('frontend.pages.detail', compact('project', 'projectType'));
     }
     public function detailPsn($id)
     {
@@ -503,5 +508,204 @@ class FrontendController extends Controller
             ->findOrFail($id);
         $project->geojson = json_decode($project->geojson);
         return view('frontend.pages.detail', compact('project'));
+    }
+
+
+    // PENGADUAN
+    /**
+     * Store feedback for specific project type
+     */
+    public function store(Request $request)
+    {
+        // dd($request->all());
+        $projectType = $this->getProjectTypeFromRequest($request);
+        
+        // If specific project type, validate and store accordingly
+        if ($projectType && $projectType !== 'all') {
+            return $this->storeScopedFeedback($request, $projectType);
+        }
+        
+        // Original store method for general feedback
+        return $this->storeGeneralFeedback($request);
+    }
+
+    /**
+     * Store scoped feedback
+     */
+    private function storeScopedFeedback(Request $request, $projectType)
+    {
+        $modelClass = $this->getModelClass($projectType);
+        
+        if (!$modelClass) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid project type'
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'feedbackable_id' => 'required|integer',
+            'nama_pemberi_aspirasi' => 'required|string|max:255',
+            'nama_proyek' => 'required|string|max:255',
+            'kabupaten_kota' => 'required|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
+            'tanggapan' => 'required|string',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'laporan_gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ], [
+            'feedbackable_id.required' => 'Proyek wajib dipilih',
+            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
+            'nama_proyek.required' => 'Nama proyek wajib diisi',
+            'kabupaten_kota.required' => 'Kabupaten/Kota wajib dipilih',
+            'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
+            'tanggapan.required' => 'Tanggapan wajib diisi',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Validate that the project exists
+            if (!$modelClass::find($request->feedbackable_id)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Proyek yang dipilih tidak ditemukan'
+                ], 404);
+            }
+
+            $data = $request->all();
+            $data['status'] = 'pending';
+            $data['feedbackable_type'] = $modelClass;
+
+            // Handle image upload
+            if ($request->hasFile('laporan_gambar')) {
+                $image = $request->file('laporan_gambar');
+                $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $image->storeAs('public/feedback_images', $imageName);
+                $data['laporan_gambar'] = $imageName;
+            }
+
+            $feedback = ProjectFeedback::create($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tanggapan berhasil ditambahkan',
+                'data' => $feedback->load('feedbackable')
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store general feedback (original method) - ASPIRASI
+     */
+    private function storeGeneralFeedback(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama_pemberi_aspirasi' => 'required|string|max:255',
+            'nama_proyek' => 'required|string|max:255',
+            'kabupaten_kota' => 'required|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
+            'tanggapan' => 'required|string',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'laporan_gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ], [
+            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
+            'nama_proyek.required' => 'Nama proyek wajib diisi',
+            'kabupaten_kota.required' => 'Kabupaten/Kota wajib dipilih',
+            'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
+            'tanggapan.required' => 'Tanggapan wajib diisi',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $data = $request->all();
+            $data['status'] = 'pending';
+
+            // Handle image upload
+            if ($request->hasFile('laporan_gambar')) {
+                $image = $request->file('laporan_gambar');
+                $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $image->storeAs('public/feedback_images', $imageName);
+                $data['laporan_gambar'] = $imageName;
+            }
+
+            $feedback = ProjectFeedback::create($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tanggapan berhasil ditambahkan',
+                'data' => $feedback
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getModelClass($type)
+    {
+        $modelMap = [
+            'usulan_musrenbang' => 'App\\Models\\UsulanMusrenbang',
+            'proyek_strategis_nasional' => 'App\\Models\\ProyekStrategisNasional',
+            'proyek_strategis_daerah' => 'App\\Models\\ProyekStrategisDaerah',
+            'pokir_dprd' => 'App\\Models\\PokirDprd',
+            'lokasi' => 'App\\Models\\Lokasi',
+        ];
+
+        return $modelMap[$type] ?? null;
+    }
+
+    private function getProjectTypeFromRequest(Request $request)
+    {
+        // Check if project_type is passed as parameter
+        if ($request->has('project_type')) {
+            return $request->get('project_type');
+        }
+        
+        // Determine from URL path
+        $path = $request->path();
+        
+        if (strpos($path, 'pokir/') !== false) {
+            return 'pokir_dprd';
+        } elseif (strpos($path, 'usulan/') !== false) {
+            return 'usulan_musrenbang';
+        } elseif (strpos($path, 'nasional/') !== false) {
+            return 'proyek_strategis_nasional';
+        } elseif (strpos($path, 'daerah/') !== false) {
+            return 'proyek_strategis_daerah';
+        } elseif (strpos($path, 'lokasi/') !== false) {
+            return 'lokasi';
+        }
+        
+        return 'all'; // Default to show all
     }
 }
