@@ -95,7 +95,7 @@
                                 @csrf
 
                                 <!-- Hidden fields sesuai contoh data -->
-                                <input type="hidden" name="project_type" value="usulan_musrenbang">
+                                <input type="hidden" name="project_type" value="proyek_strategis_daerah">
                                 <input type="hidden" name="feedbackable_id" value="1">
                                 <input type="hidden" name="nama_proyek" value="Pokir Pembangunan Jalan Desa">
                                 <input type="hidden" name="kabupaten_kota" value="Ternate">
