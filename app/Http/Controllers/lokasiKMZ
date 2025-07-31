@@ -608,7 +608,7 @@ class LokasiController extends Controller
         });
     }
 
-    // BBOX
+    
     if ($request->has('bbox') && !empty($request->bbox)) {
         $bbox = explode(',', $request->bbox);
         if (count($bbox) === 4) {
