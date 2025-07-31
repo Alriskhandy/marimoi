@@ -22,7 +22,7 @@ Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPokir'])->name
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailMusrenbang'])->name('detail.musrenbang');
 
 // FEEDBACK //
-Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('store');
+Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('feedback.store');
 
 // API GEOJSON //
 Route::prefix('geojson')->group(function(){

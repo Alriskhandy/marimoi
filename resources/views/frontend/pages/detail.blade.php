@@ -91,10 +91,11 @@
                 <div class="col-lg-8">
                     <h4 class="text-center text-secondary mb-3">Formulir Tanggapan</h4>
                     <form id="addForm"
-                        action="{{ isset($projectType) && $projectType !== 'all' ? request()->url() . $project->id : route('project-feedbacks.store') }}"
+                        action="{{ route('feedback.store', $project->id) }}"
                         method="POST" enctype="multipart/form-data">
                         @csrf
-                        @if (isset($projectType) && $projectType !== 'all')
+                        
+                        @if (isset($projectType))
                             <input type="hidden" name="project_type" value="{{ $projectType }}">
                         @endif
 
@@ -103,8 +104,6 @@
                                 ? json_decode($project->geojson, true)
                                 : (array) $project->geojson;
                         @endphp
-
-                        <p class="text-danger">{{ $koordinat['coordinates'][1] ?? '' }}</p>
 
                         <div class="modal-body">
                             {{-- Jika ada project, maka pakai hidden --}}
@@ -115,7 +114,7 @@
                                 <input type="hidden" name="kabupaten_kota"
                                     value="{{ $project->dbf_attributes['KABUPATEN'] ?? ($project->dbf_attributes['KOTA'] ?? '') }}">
                                 <input type="hidden" name="kecamatan"
-                                    value="{{ $project->dbf_attributes['KECAMATAN'] ?? '' }}">
+                                    value="{{ $project->dbf_attributes['KECAMATAN'] ?? 'TANPA LOKASI' }}">
                                 <input type="hidden" name="latitude"
                                     value="{{ $koordinat['coordinates'][1] ?? '' }}">
                                 <input type="hidden" name="longitude"

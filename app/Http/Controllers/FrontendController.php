@@ -517,7 +517,7 @@ class FrontendController extends Controller
      */
     public function store(Request $request)
     {
-        dd($request->all());
+        // dd($request->all());
         $projectType = $this->getProjectTypeFromRequest($request);
         
         // If specific project type, validate and store accordingly
@@ -611,7 +611,7 @@ class FrontendController extends Controller
     }
 
     /**
-     * Store general feedback (original method)
+     * Store general feedback (original method) - ASPIRASI
      */
     private function storeGeneralFeedback(Request $request)
     {

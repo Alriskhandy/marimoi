@@ -207,11 +207,12 @@ function bindPopupContent(feature, layer, urlPath) {
         content += `</table>`;
     }
 
-    const id = props.id || "";
+    // Pastikan id adalah string/number, bukan array/object
+    const id = props.id | "";
+    console.log("Feature ID:", id);
     content += `
         <div class="d-flex justify-content-between mt-3">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button>
-            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button> <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -220,8 +221,14 @@ function bindPopupContent(feature, layer, urlPath) {
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
         const zoomButton = popupNode.querySelector(".zoomToBtn");
+        
         if (zoomButton) {
             zoomButton.addEventListener("click", function () {
+                // const lat = parseFloat(this.getAttribute("data-lat"));
+                // const lng = parseFloat(this.getAttribute("data-lng"));
+                // layer._map.setView([lat, lng], 15);
+
+                // PERUBAHAN UNTUK PERBAIKAN BUG ZOOM TO
                 const geom = feature.geometry;
                 if (!geom) return;
                 const mapInstance = layer._map;
@@ -443,7 +450,7 @@ async function initMap() {
                     isMarker = true;
                     iconClass = catObj.icon || null;
                     iconWarna = catObj.warna || iconWarna;
-                    console.log('objek', catObj.warna, iconWarna);
+                    console.log("objek", catObj.warna, iconWarna);
                 }
             }
             if (isMarker && iconClass) {
@@ -457,17 +464,6 @@ async function initMap() {
                     shape: "circle",
                     html: `<i class='fa ${iconClass}' style='color:white, background: blue;'></i>`,
                 });
-
-                // Menggunakan custom divIcon untuk marker
-                // markerOptionsMap[kategori] = L.divIcon({
-                //     className: "custom-marker",
-                //     html: `<div style="background:${iconWarna};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                //     <i class="fa ${iconClass}" style="color:white;"></i>
-                //     </div>`,
-                //     iconSize: [30, 30],
-                //     iconAnchor: [15, 30],
-                // });
-
             } else {
                 markerOptionsMap[kategori] = null;
             }
