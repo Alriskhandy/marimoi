@@ -79,8 +79,8 @@
     <section class="section py-4">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="card">
+                <div class="col-lg-7">
+                    <div class="card h-100">
                         <div class="card-header">
                             <h5>Form Feedback - Testing</h5>
                         </div>
@@ -148,7 +148,7 @@
                                     </label>
                                     <input type="file" class="form-control" id="laporan_gambar" name="laporan_gambar"
                                         accept="image/jpeg,image/png,image/jpg,image/gif">
-                                    <small class="text-muted">Maksimal 2MB. Format: JPG, PNG, GIF.
+                                    <small class="text-muted">Maksimal 2MB. Format: JPG, JPEG, PNG.
                                         <span id="image_note">Wajib untuk pengaduan.</span>
                                     </small>
                                 </div>
@@ -159,6 +159,34 @@
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card h-100 border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Keterangan &amp; Petunjuk</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-3">
+                                <li><strong>Form ini digunakan untuk memberikan feedback, saran, pengaduan, atau apresiasi
+                                        terkait proyek yang sedang berjalan.</strong></li>
+                                <li>Isi data dengan benar dan lengkap agar tanggapan Anda dapat diproses dengan baik.</li>
+                                <li>Jika memilih <span class="fw-bold text-danger">Pengaduan</span>, lampiran gambar <span
+                                        class="fw-bold text-danger">wajib</span> diunggah.</li>
+                                <li>Pastikan nomor WhatsApp aktif untuk komunikasi lebih lanjut.</li>
+                                <li>Feedback Anda akan diteruskan ke tim terkait untuk ditindaklanjuti.</li>
+                            </ul>
+                            <hr>
+                            <div class="mb-2">
+                                <strong>Kontak Bantuan:</strong><br>
+                                <span class="d-block"><i class="bi bi-envelope"></i> info@marimoi.id</span>
+                                <span class="d-block"><i class="bi bi-whatsapp"></i> 0812-3456-7890</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Privasi:</strong><br>
+                                Data Anda aman dan hanya digunakan untuk keperluan tindak lanjut feedback.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -267,7 +295,7 @@
                     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                         id: "esri-world-imagery",
                         label: "ESRI World Imagery",
-                        minZoom: 6,
+                        minZoom: 7,
                         maxZoom: 18,
                         attribution: '&copy; OpenStreetMap contributors'
                     }).addTo(map);
@@ -280,7 +308,7 @@
                 if (geometry.type === 'Point') {
                     var coords = [geometry.coordinates[1], geometry.coordinates[0]];
                     layer = L.marker(coords).addTo(map);
-                    map.setView(coords, 15);
+                    map.setView(coords, 16);
                 } else if (geometry.type === 'LineString') {
                     var latlngs = geometry.coordinates.map(function(coord) {
                         return [coord[1], coord[0]];
@@ -296,9 +324,9 @@
                 }
 
                 // Add popup with feature title
-                if (layer) {
-                    layer.bindPopup("{{ $project->kategori->nama ?? 'Feature' }}").openPopup();
-                }
+                // if (layer) {
+                //     layer.bindPopup("{{ $project->kategori->nama ?? 'Feature' }}").openPopup();
+                // }
             @endif
         });
     </script>

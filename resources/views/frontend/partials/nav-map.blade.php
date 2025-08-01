@@ -252,7 +252,7 @@
 <header id="header" class="header d-flex align-items-center shadow-lg border-bottom border-dark">
     <div class="container-fluid container-xl d-flex align-items-center py-2 py-md-0">
         <a href="{{ route('beranda') }}" class="logo d-flex align-items-center me-auto">
-            <img src="{{ asset('frontend/img/logo.svg') }}" alt="Logo Bappeda" style="height: 24px; margin-right: 8px" />
+            <img src="{{ asset('frontend/img/logo.webp') }}" alt="Logo Bappeda" style="height: 24px; margin-right: 8px" />
             <h1 class="sitename fs-5 fs-md-1">MARIMOI</h1>
         </a>
 
