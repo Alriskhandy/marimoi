@@ -160,6 +160,8 @@ function bindPopupContent(feature, layer, urlPath) {
     content += `</table>`;
 
     const geom = feature.geometry;
+    let center = null;
+
     if (geom) {
         const type = geom.type;
         content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
@@ -187,19 +189,23 @@ function bindPopupContent(feature, layer, urlPath) {
             )} km</td></tr>`;
         }
 
-        let center;
-        if (geom.type === "Point") {
+        // Hitung center
+        if (type === "Point") {
             center = geom.coordinates;
-        } else if (geom.type === "LineString") {
+        } else if (type === "LineString") {
             const mid = Math.floor(geom.coordinates.length / 2);
             center = geom.coordinates[mid];
-        } else if (geom.type === "Polygon") {
+        } else if (type === "Polygon") {
             const poly = geom.coordinates[0];
+            const mid = Math.floor(poly.length / 2);
+            center = poly[mid];
+        } else if (type === "MultiPolygon") {
+            const poly = geom.coordinates[0][0];
             const mid = Math.floor(poly.length / 2);
             center = poly[mid];
         }
 
-        if (center) {
+        if (center && center.length >= 2) {
             content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
                 5
             )}, ${center[0].toFixed(5)}</td></tr>`;
@@ -207,12 +213,14 @@ function bindPopupContent(feature, layer, urlPath) {
         content += `</table>`;
     }
 
-    // Pastikan id adalah string/number, bukan array/object
-    const id = props.id | "";
-    console.log("Feature ID:", id);
+    const id = props.id || "";
+    const lat = center?.[1] || 0;
+    const lng = center?.[0] || 0;
+
     content += `
         <div class="d-flex justify-content-between mt-3">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${feature.geometry.coordinates[1]}" data-lng="${feature.geometry.coordinates[0]}">Zoom To</button> <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}">Zoom To</button>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -221,37 +229,30 @@ function bindPopupContent(feature, layer, urlPath) {
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
         const zoomButton = popupNode.querySelector(".zoomToBtn");
-        
+
         if (zoomButton) {
             zoomButton.addEventListener("click", function () {
-                // const lat = parseFloat(this.getAttribute("data-lat"));
-                // const lng = parseFloat(this.getAttribute("data-lng"));
-                // layer._map.setView([lat, lng], 15);
-
-                // PERUBAHAN UNTUK PERBAIKAN BUG ZOOM TO
                 const geom = feature.geometry;
                 if (!geom) return;
+
                 const mapInstance = layer._map;
                 if (geom.type === "Point") {
                     const lat = parseFloat(this.getAttribute("data-lat"));
                     const lng = parseFloat(this.getAttribute("data-lng"));
                     mapInstance.setView([lat, lng], 15);
                 } else if (geom.type === "LineString") {
-                    // Fit bounds to line
                     const latlngs = geom.coordinates.map(([lng, lat]) => [
                         lat,
                         lng,
                     ]);
                     mapInstance.fitBounds(latlngs);
                 } else if (geom.type === "Polygon") {
-                    // Fit bounds to polygon
                     const latlngs = geom.coordinates[0].map(([lng, lat]) => [
                         lat,
                         lng,
                     ]);
                     mapInstance.fitBounds(latlngs);
                 } else if (geom.type === "MultiPolygon") {
-                    // Gabungkan semua koordinat polygon
                     let allLatLngs = [];
                     geom.coordinates.forEach((poly) => {
                         poly[0].forEach(([lng, lat]) => {
