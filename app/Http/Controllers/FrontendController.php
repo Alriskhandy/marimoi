@@ -49,7 +49,7 @@ class FrontendController extends Controller
     public function prioritas()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.peta', compact('documents'));
+        return view('frontend.pages.prioritas', compact('documents'));
     }
 
     public function pokir()
