@@ -319,6 +319,11 @@ function changeBaseMap(baseMapId) {
  * Melakukan mapping kategori, marker, dan legend secara efisien.
  */
 async function initMap() {
+    // Tampilkan loading di sidebar layer
+    const layerListContainer = document.getElementById("layer-list");
+    if (layerListContainer) {
+        layerListContainer.innerHTML = `<div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+    }
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const response = await fetch("/geojson" + urlPath);
@@ -510,6 +515,9 @@ async function initMap() {
         });
 
         updateLayerList();
+        // Sembunyikan loading setelah selesai
+        const loadingDiv = document.getElementById("layer-loading");
+        if (loadingDiv) loadingDiv.remove();
         generateLegend();
     } catch (error) {
         console.error("Error:", error);
