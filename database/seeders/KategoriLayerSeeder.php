@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\KategoriLayer;
@@ -11,28 +12,31 @@ class KategoriLayerSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-      public function run(): void
+ public function run(): void
     {
-        $kategoris = [
-            'Ekonomi',
-            'Infrastruktur',
-            'Kemiskinan',
-            'Kependudukan',
-            'Kesehatan',
-            'Lingkungan Hidup',
-            'Pariwisata & Kebudayaan',
-            'Pendidikan',
-            'Sosial',
-            'Peta Dasar',
+        $data = [
+            // Layers (Lokasi)
+            ['type' => 'layers', 'nama' => 'Pendidikan', 'warna' => '#FF5733', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Lokasi sekolah dan kampus'],
+            ['type' => 'layers', 'nama' => 'Kesehatan', 'warna' => '#33C1FF', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Fasilitas layanan kesehatan'],
+
+            // Musrenbang
+            ['type' => 'musrenbangs', 'nama' => 'Infrastruktur', 'warna' => '#FFC300', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan pembangunan infrastruktur'],
+            ['type' => 'musrenbangs', 'nama' => 'Ekonomi', 'warna' => '#DAF7A6', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan sektor ekonomi'],
+
+            // Pokir DPRD
+            ['type' => 'pokir_dprds', 'nama' => 'Fasilitas Umum', 'warna' => '#C70039', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Program Pokir terkait fasilitas umum'],
+
+            // Proyek Strategis Daerah (PSD)
+            ['type' => 'psd', 'nama' => 'Jalan Provinsi', 'warna' => '#900C3F', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Pembangunan jalan provinsi'],
+            ['type' => 'psd', 'nama' => 'Irigasi', 'warna' => '#581845', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Proyek irigasi daerah'],
+
+            // Proyek Strategis Nasional (PSN)
+            ['type' => 'psn', 'nama' => 'Bandara', 'warna' => '#28A745', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Pembangunan bandara nasional'],
+            ['type' => 'psn', 'nama' => 'Pelabuhan', 'warna' => '#6C757D', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Proyek pelabuhan nasional'],
         ];
 
-        foreach ($kategoris as $nama) {
-            KategoriLayer::create([
-                'nama' => $nama,
-                'warna' => 'blue',
-                'parent_id' => null,
-                'deskripsi' => null,
-            ]);
+        foreach ($data as $item) {
+            Category::create($item);
         }
     }
 }

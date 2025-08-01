@@ -16,11 +16,7 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
                 KategoriLayerSeeder::class,
-                KategoriPSDSeeder::class,
-                KategoriPSNSeeder::class,
-                ProjectFeedbackSeeder::class,
-                KategoriPokirDprdSeeder::class,
-                KategoriMusrenbangSeeder::class,
+               
             ]);
         User::factory()->create([
             'name' => 'Admin',
