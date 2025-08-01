@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Dokumen;
 use App\Models\KategoriLayer;
+use App\Models\KategoriMusrenbang;
+use App\Models\KategoriPokirDprd;
 use App\Models\KategoriPSD;
+use App\Models\KategoriPSN;
 use App\Models\Lokasi;
 use App\Models\PokirDprd;
 use App\Models\ProjectFeedback;
@@ -202,14 +205,14 @@ class FrontendController extends Controller
         });
 
         // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriLayer::whereNull('parent_id')
+        $rootCategories = KategoriPSN::whereNull('parent_id')
             ->with(['children' => function($query) {
                 $query->orderBy('nama');
             }])
             ->orderBy('nama')
             ->get();
                     
-        $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
+        $allCategories = KategoriPSN::with('parent')->orderBy('nama')->get();
                     
         return response()->json([
             'type' => 'FeatureCollection',
@@ -362,14 +365,14 @@ class FrontendController extends Controller
         });
 
         // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriLayer::whereNull('parent_id')
+        $rootCategories = KategoriPokirDprd::whereNull('parent_id')
             ->with(['children' => function($query) {
                 $query->orderBy('nama');
             }])
             ->orderBy('nama')
             ->get();
                     
-        $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
+        $allCategories = KategoriPokirDprd::with('parent')->orderBy('nama')->get();
                     
         return response()->json([
             'type' => 'FeatureCollection',
@@ -442,14 +445,14 @@ class FrontendController extends Controller
         });
 
         // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriLayer::whereNull('parent_id')
+        $rootCategories = KategoriMusrenbang::whereNull('parent_id')
             ->with(['children' => function($query) {
                 $query->orderBy('nama');
             }])
             ->orderBy('nama')
             ->get();
                     
-        $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
+        $allCategories = KategoriMusrenbang::with('parent')->orderBy('nama')->get();
                     
         return response()->json([
             'type' => 'FeatureCollection',

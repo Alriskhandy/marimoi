@@ -330,7 +330,16 @@ async function initMap() {
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {
-            return showAlert("Data GeoJSON kosong", "warning");
+            // Tampilkan pesan di sidebar layer jika data kosong
+            const layerListContainer = document.getElementById("layer-list");
+            if (layerListContainer) {
+                layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-muted">Data peta belum tersedia.</span>
+                </div>`;
+            }
+            showAlert("Data GeoJSON kosong", "warning");
+            return;
         }
 
         // 🔸 Build kategoriWarnaMap dan iconMap
@@ -521,6 +530,14 @@ async function initMap() {
         generateLegend();
     } catch (error) {
         console.error("Error:", error);
+        // Tampilkan pesan error di sidebar layer
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
+                <span class="mt-2 text-danger">Terjadi kesalahan saat memuat data peta.</span>
+            </div>`;
+        }
         showAlert("Gagal memuat data peta", "danger");
     }
 }
