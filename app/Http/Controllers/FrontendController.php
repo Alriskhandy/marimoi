@@ -31,36 +31,37 @@ class FrontendController extends Controller
     public function psd()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.psd', compact('documents'));
+        return view('frontend.pages.peta', compact('documents'));
     }
 
     public function psn()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.psn', compact('documents'));
+        return view('frontend.pages.peta', compact('documents'));
     }
 
     public function rpjmd()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.rpjmd', compact('documents'));
+        return view('frontend.pages.peta', compact('documents'));
     }
-
-    public function prioritas()
-    {
-        $documents = Dokumen::all();
-        return view('frontend.pages.prioritas', compact('documents'));
-    }
-
+    
     public function pokir()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.pokir', compact('documents'));
+        return view('frontend.pages.peta', compact('documents'));
     }
     public function musrenbang()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.musrenbang', compact('documents'));
+        return view('frontend.pages.peta', compact('documents'));
+    }
+    
+    // NANTINYA BERISI PETA RPJMD //
+    public function prioritas()
+    {
+        $documents = Dokumen::all();
+        return view('frontend.pages.prioritas', compact('documents'));
     }
 
     // API //
