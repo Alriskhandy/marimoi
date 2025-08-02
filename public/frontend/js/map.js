@@ -131,13 +131,15 @@ function generateLegend() {
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
-    let content = `<div class="py-2" style="max-width: 250px;">
-        <h5 class="fw-bold text-primary" style="font-size: 14px;">${
+    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;">
+        <h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
             props.kategori || "Feature"
         }</h5>
-        <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 150px; object-fit: cover; margin-bottom: 5px;">`;
+        <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px;">`;
 
-    content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
+    content += `<hr style="margin: 5px 0;"><div style="max-height: 100px; overflow-y:auto; padding-right: 5px;">
+        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
+
     Object.entries(props).forEach(([key, value]) => {
         if (
             value &&
@@ -157,14 +159,15 @@ function bindPopupContent(feature, layer, urlPath) {
             content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
-    content += `</table>`;
+
+    content += `</table></div>`;
 
     const geom = feature.geometry;
     let center = null;
 
     if (geom) {
         const type = geom.type;
-        content += `<hr><table class="table table-sm table-borderless" style="font-size: 10px; width: 100%;">`;
+        content += `<hr style="margin: 5px 0;"><table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
         content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
@@ -218,9 +221,9 @@ function bindPopupContent(feature, layer, urlPath) {
     const lng = center?.[0] || 0;
 
     content += `
-        <div class="d-flex justify-content-between mt-3">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}">Zoom To</button>
-            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning">Lihat Detail</a>
+        <div class="d-flex justify-content-between">
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}" style="font-size: 10px; padding: 4px 8px;">Zoom To</button>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning" style="font-size: 10px; padding: 4px 8px;">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -319,13 +322,27 @@ function changeBaseMap(baseMapId) {
  * Melakukan mapping kategori, marker, dan legend secara efisien.
  */
 async function initMap() {
+    // Tampilkan loading di sidebar layer
+    const layerListContainer = document.getElementById("layer-list");
+    if (layerListContainer) {
+        layerListContainer.innerHTML = `<div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+    }
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const response = await fetch("/geojson" + urlPath);
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {
-            return showAlert("Data GeoJSON kosong", "warning");
+            // Tampilkan pesan di sidebar layer jika data kosong
+            const layerListContainer = document.getElementById("layer-list");
+            if (layerListContainer) {
+                layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-muted">Data peta belum tersedia.</span>
+                </div>`;
+            }
+            showAlert("Data GeoJSON kosong", "warning");
+            return;
         }
 
         // 🔸 Build kategoriWarnaMap dan iconMap
@@ -510,9 +527,20 @@ async function initMap() {
         });
 
         updateLayerList();
+        // Sembunyikan loading setelah selesai
+        const loadingDiv = document.getElementById("layer-loading");
+        if (loadingDiv) loadingDiv.remove();
         generateLegend();
     } catch (error) {
         console.error("Error:", error);
+        // Tampilkan pesan error di sidebar layer
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
+                <span class="mt-2 text-danger">Terjadi kesalahan saat memuat data peta.</span>
+            </div>`;
+        }
         showAlert("Gagal memuat data peta", "danger");
     }
 }
