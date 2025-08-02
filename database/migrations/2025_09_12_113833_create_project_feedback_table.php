@@ -28,9 +28,6 @@ return new class extends Migration
                 $table->unsignedBigInteger('data_spatial_id')->nullable();
                 $table->foreign('data_spatial_id')->references('id')->on('data_spatial')->onDelete('set null');
                 
-                // Hapus kolom polymorphic jika tidak dipakai:
-                // $table->unsignedBigInteger('feedbackable_id');
-                // $table->string('feedbackable_type');
                 
                 // Basic info
                 $table->string('nama_pemberi_aspirasi');

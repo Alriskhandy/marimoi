@@ -39,7 +39,8 @@
                 request()->routeIs('lokasi.*') ||
                 (request()->routeIs('data-spatial.*') && request()->get('type') === 'lokasi') ||
                 (request()->routeIs('categories.*') && request()->get('type') == 'layers') ||
-                request()->routeIs('kategori-layers.*');
+                request()->routeIs('kategori-layers.*') ||
+                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'lokasi');
         @endphp
         <li class="nav-item {{ $isPetaTematikActive ? 'active' : '' }}">
             <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
@@ -65,13 +66,26 @@
                         </a>
                     </li>
 
-                    @if (Route::has('lokasi.feedbacks.index'))
-                        <li class="nav-item {{ request()->routeIs('lokasi.feedbacks.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('lokasi.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Tematik
-                            </a>
-                        </li>
-                    @endif
+                    <!-- Feedback RPJMD -->
+                    <li
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'lokasi' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'lokasi']) }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback RPJMD
+                            {{-- <span class="badge badge-sm bg-danger ms-auto">
+                                @php
+                                    try {
+                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
+                                            $q->where('data_type', 'lokasi');
+                                        })->count();
+                                    } catch (Exception $e) {
+                                        echo '0';
+                                    }
+                                @endphp
+                            </span> --}}
+                        </a>
+                    </li>
+
+
                 </ul>
             </div>
         </li>
@@ -92,11 +106,13 @@
 
             $isPSDActive =
                 request()->routeIs('psd.*') ||
-                request()->routeIs('daerah.feedbacks.*') ||
                 (request()->routeIs('data-spatial.*') &&
                     request()->get('type') === 'proyek_strategis' &&
                     request()->get('sub_type') === 'psd') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'psd');
+                (request()->routeIs('categories.*') && request()->get('type') == 'psd') ||
+                (request()->routeIs('project-feedbacks.*') &&
+                    request()->get('type') === 'proyek_strategis' &&
+                    request()->get('sub_type') === 'psd');
             $currentYear = request()->route('year') ?? date('Y');
         @endphp
         <li class="nav-item {{ $isPSDActive ? 'active' : '' }}">
@@ -182,13 +198,24 @@
                     </li>
 
                     <!-- Feedback Proyek Strategis Daerah -->
-                    @if (Route::has('daerah.feedbacks.index'))
-                        <li class="nav-item {{ request()->routeIs('daerah.feedbacks.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('daerah.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Daerah
-                            </a>
-                        </li>
-                    @endif
+                    <li
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psd' ? 'active' : '' }}">
+                        <a class="nav-link"
+                            href="{{ route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']) }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Daerah
+                            {{-- <span class="badge badge-sm bg-info ms-auto">
+                                @php
+                                    try {
+                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
+                                            $q->where('type', 'proyek_strategis_daerah');
+                                        })->count();
+                                    } catch (Exception $e) {
+                                        echo '0';
+                                    }
+                                @endphp
+                            </span> --}}
+                        </a>
+                    </li>
 
                     <!-- Menu tambah data baru -->
                     <li class="nav-item">
@@ -221,11 +248,13 @@
 
             $isPSNActive =
                 request()->routeIs('psn.*') ||
-                request()->routeIs('nasional.feedbacks.*') ||
                 (request()->routeIs('data-spatial.*') &&
                     request()->get('type') === 'proyek_strategis' &&
                     request()->get('sub_type') === 'psn') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'psn');
+                (request()->routeIs('categories.*') && request()->get('type') == 'psn') ||
+                (request()->routeIs('project-feedbacks.*') &&
+                    request()->get('type') === 'proyek_strategis' &&
+                    request()->get('sub_type') === 'psn');
         @endphp
         <li class="nav-item {{ $isPSNActive ? 'active' : '' }}">
             <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
@@ -309,13 +338,24 @@
                     </li>
 
                     <!-- Feedback Proyek Strategis Nasional -->
-                    @if (Route::has('nasional.feedbacks.index'))
-                        <li class="nav-item {{ request()->routeIs('nasional.feedbacks.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('nasional.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Nasional
-                            </a>
-                        </li>
-                    @endif
+                    <li
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psn' ? 'active' : '' }}">
+                        <a class="nav-link"
+                            href="{{ route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']) }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Nasional
+                            {{-- <span class="badge badge-sm bg-primary ms-auto">
+                                @php
+                                    try {
+                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
+                                            $q->where('type', 'proyek_strategis_nasional');
+                                        })->count();
+                                    } catch (Exception $e) {
+                                        echo '0';
+                                    }
+                                @endphp
+                            </span> --}}
+                        </a>
+                    </li>
 
                     <!-- Menu tambah data baru -->
                     <li class="nav-item">
@@ -336,10 +376,10 @@
         @php
             $isPOKIRActive =
                 request()->routeIs('pokir-dprd.*') ||
-                request()->routeIs('pokir.feedbacks.*') ||
                 (request()->routeIs('data-spatial.*') && request()->get('type') === 'pokir_dprd') ||
                 (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprds') ||
-                request()->routeIs('kategori-pokir-dprd.*');
+                request()->routeIs('kategori-pokir-dprd.*') ||
+                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'pokir_dprd');
         @endphp
         <li class="nav-item {{ $isPOKIRActive ? 'active' : '' }}">
             <a class="nav-link" data-bs-toggle="collapse" href="#pokirMenu"
@@ -365,13 +405,24 @@
                         </a>
                     </li>
 
-                    @if (Route::has('pokir.feedbacks.index'))
-                        <li class="nav-item {{ request()->routeIs('pokir.feedbacks.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('pokir.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Pokir DPRD
-                            </a>
-                        </li>
-                    @endif
+                    <!-- Feedback Pokir DPRD -->
+                    <li
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'pokir_dprd' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'pokir_dprd']) }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Pokir DPRD
+                            {{-- <span class="badge badge-sm bg-warning ms-auto">
+                                @php
+                                    try {
+                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
+                                            $q->where('type', 'pokir_dprd');
+                                        })->count();
+                                    } catch (Exception $e) {
+                                        echo '0';
+                                    }
+                                @endphp
+                            </span> --}}
+                        </a>
+                    </li>
                 </ul>
             </div>
         </li>
@@ -380,10 +431,10 @@
         @php
             $isMUSRENBANGActive =
                 request()->routeIs('usulan-musrenbang.*') ||
-                request()->routeIs('usulan.feedbacks.*') ||
                 (request()->routeIs('data-spatial.*') && request()->get('type') === 'usulan_musrenbang') ||
                 (request()->routeIs('categories.*') && request()->get('type') == 'musrenbangs') ||
-                request()->routeIs('kategori-usulan-musrenbang.*');
+                request()->routeIs('kategori-usulan-musrenbang.*') ||
+                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'usulan_musrenbang');
         @endphp
         <li class="nav-item {{ $isMUSRENBANGActive ? 'active' : '' }}">
             <a class="nav-link" data-bs-toggle="collapse" href="#usulanmusrenbang"
@@ -410,27 +461,28 @@
                         </a>
                     </li>
 
-                    @if (Route::has('usulan.feedbacks.index'))
-                        <li class="nav-item {{ request()->routeIs('usulan.feedbacks.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('usulan.feedbacks.index') }}">
-                                <i class="mdi mdi-comment-multiple me-2"></i>Feedback Usulan Musrenbang
-                            </a>
-                        </li>
-                    @endif
+                    <!-- Feedback Usulan Musrenbang -->
+                    <li
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'usulan_musrenbang' ? 'active' : '' }}">
+                        <a class="nav-link"
+                            href="{{ route('project-feedbacks.index', ['type' => 'usulan_musrenbang']) }}">
+                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Usulan Musrenbang
+                            {{-- <span class="badge badge-sm bg-success ms-auto">
+                                @php
+                                    try {
+                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
+                                            $q->where('type', 'usulan_musrenbang');
+                                        })->count();
+                                    } catch (Exception $e) {
+                                        echo '0';
+                                    }
+                                @endphp
+                            </span> --}}
+                        </a>
+                    </li>
                 </ul>
             </div>
         </li>
-
-        {{-- <!-- Desk Musrenbang (Coming Soon) -->
-        @if (Route::has('cooming_soon'))
-            <li class="nav-item {{ request()->routeIs('cooming_soon') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('cooming_soon') }}">
-                    <span class="menu-title">Desk Forum PD</span>
-                    <i class="mdi mdi-city-variant-outline menu-icon"></i>
-                    <span class="badge badge-warning badge-sm ms-auto">Soon</span>
-                </a>
-            </li>
-        @endif --}}
 
         <!-- Upload Dokumen -->
         @php
@@ -455,6 +507,38 @@
                 </div>
             </li>
         @endif
+
+        {{-- <!-- Divider untuk Feedback -->
+        <li class="nav-item nav-category">
+            <span
+                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
+                style="cursor: default;">
+                <i class="mdi mdi-comment-processing-outline me-2 fs-5 opacity-50"></i>
+                Feedback & Aspirasi
+            </span>
+        </li>
+
+        <!-- Menu Feedback Umum -->
+        @php
+            $isFeedbackUmumActive =
+                request()->routeIs('project-feedbacks.*') &&
+                (request()->get('type') === 'all' || !request()->get('type'));
+        @endphp
+        <li class="nav-item {{ $isFeedbackUmumActive ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
+                <span class="menu-title">Semua Feedback</span>
+                <i class="mdi mdi-comment-multiple-outline menu-icon"></i>
+                <span class="badge badge-sm bg-info ms-auto">
+                    @php
+                        try {
+                            echo \App\Models\ProjectFeedback::count();
+                        } catch (Exception $e) {
+                            echo '0';
+                        }
+                    @endphp
+                </span>
+            </a>
+        </li> --}}
 
         <li class="nav-item nav-category">
             <span
@@ -513,5 +597,71 @@
             opacity: 0.5;
             font-size: 1.1rem;
         }
+
+        .sub-menu-header {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0.5rem 1rem 0.25rem 1rem;
+            font-weight: 600;
+        }
+
+        .badge-sm {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
+
+        .dropdown-divider {
+            border-top: 1px solid #e3e6f0;
+            margin: 0.5rem 1rem;
+        }
+
+        /* Enhanced styling for feedback menu items */
+        .nav-item .nav-link:hover .badge {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Active state for nested items */
+        .nav-item.active>.nav-link .badge {
+            background-color: rgba(255, 255, 255, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Feedback menu styling */
+        .nav-item .nav-link .badge {
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover .nav-link .badge {
+            transform: scale(1.1);
+        }
+
+        /* Color coding for different feedback types */
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+
+        /* RPJMD */
+        .badge.bg-warning {
+            background-color: #ffc107 !important;
+        }
+
+        /* Pokir DPRD */
+        .badge.bg-success {
+            background-color: #28a745 !important;
+        }
+
+        /* Usulan Musrenbang */
+        .badge.bg-primary {
+            background-color: #007bff !important;
+        }
+
+        /* PSN */
+        .badge.bg-info {
+            background-color: #17a2b8 !important;
+        }
+
+        /* PSD & Semua */
     </style>
 </nav>

@@ -141,8 +141,28 @@
                     });
                 });
             });
+
+            // Tampilkan notifikasi jika ada flash message
+            @if (session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: '{{ session('success') }}',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            @endif
+            @if (session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: '{{ session('error') }}',
+                    confirmButtonText: 'OK'
+                });
+            @endif
         });
     </script>
+
 
     <!-- Custom js for this page -->
     <script src="{{ asset('backend/assets/js/dashboard.js') }}"></script>
