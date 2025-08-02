@@ -20,21 +20,23 @@
             @if (isset($project))
                 <div class="row gy-4 align-items-stretch">
                     <!-- Detail Map -->
-                    <div class="col-md-6">
+                    <div class="{{ $project->gambar ? 'col-md-6' : 'col-12' }}">
                         <div id="map-detail" class="rounded shadow-sm h-100"
                             style="width: 100%; min-height: 300px; max-height: 400px; height: 100%;" data-aos="fade-up"
                             data-aos-delay="200">
                         </div>
                     </div>
 
-                    <!-- Gambar -->
-                    <div class="col-md-6">
-                        <div class="h-100">
-                            <img src="{{ asset('frontend/img/kantor-gub-malut.jpeg') }}" alt="Kantor Gubernur Malut"
-                                class="img-fluid rounded shadow-sm w-100"
-                                style="height: 100%; object-fit: cover; min-height: 300px; max-height: 400px;">
+                    <!-- Gambar jika ada -->
+                    @if (!empty($project->gambar))
+                        <div class="col-md-6">
+                            <div class="h-100">
+                                <img src="{{ asset('storage/' . $project->gambar) }}" alt="{{ $project->judul }}"
+                                    class="img-fluid rounded shadow-sm w-100"
+                                    style="height: 100%; object-fit: cover; min-height: 300px; max-height: 400px;">
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
 
                 <!-- Deskripsi -->

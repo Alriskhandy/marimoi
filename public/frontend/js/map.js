@@ -131,36 +131,26 @@ function generateLegend() {
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
-    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;">
-        <h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
+    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;"><h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
             props.kategori || "Feature"
         }</h5>`;
     
     if (props.gambar) {
-        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px;">`;
+        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
     };        
-    content += `<hr style="margin: 5px 0;"><div style="max-height: 100px; overflow-y:auto; padding-right: 5px;">
+    content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
         <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
-
     Object.entries(props).forEach(([key, value]) => {
-        if (
-            value &&
-            ![
-                "geometry",
-                "ID",
-                "Kategori Id",
-                "id",
-                "kategori",
-                "kategori id",
-                "kategori_id",
-            ].includes(key.toLowerCase())
-        ) {
+        const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
+
+        if (allowedKeys.includes(key.toUpperCase()) && value) {
             const label = key
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase());
             content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
+
 
     content += `</table></div>`;
 
