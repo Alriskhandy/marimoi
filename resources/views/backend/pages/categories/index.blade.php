@@ -75,7 +75,7 @@
                         @endif
                     </div>
 
-                    @if (session('success'))
+                    {{-- @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show">
                             {{ session('success') }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -87,7 +87,7 @@
                             {{ session('error') }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                    @endif
+                    @endif --}}
 
                     <!-- Statistics Cards -->
                     @if ($categories->count() > 0)
@@ -336,7 +336,7 @@
                                 <div class="form-group mb-3">
                                     <label for="add_type" class="form-label">Tipe Kategori <span
                                             class="text-danger">*</span></label>
-                                    <select class="form-control" id="add_type" name="type" required>
+                                    <select class="form-control" id="add_type" name="type" required disabled>
                                         <option value="">-- Pilih Tipe --</option>
                                         <option value="layers" {{ request('type') == 'layers' ? 'selected' : '' }}>Layers
                                             (Lokasi)</option>
@@ -350,6 +350,9 @@
                                             {{ request('type') == 'musrenbangs' ? 'selected' : '' }}>Musenbang (Usulan
                                             Musrenbang)</option>
                                     </select>
+
+                                    <!-- Hidden input untuk memastikan value tetap terkirim -->
+                                    <input type="hidden" name="type" value="{{ request('type') }}">
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
@@ -449,7 +452,7 @@
                                 <div class="form-group mb-3">
                                     <label for="edit_type" class="form-label">Tipe Kategori <span
                                             class="text-danger">*</span></label>
-                                    <select class="form-control" id="edit_type" name="type" required>
+                                    <select class="form-control" id="edit_type" name="type" required disabled>
                                         <option value="">-- Pilih Tipe --</option>
                                         <option value="layers">Layers (Lokasi)</option>
                                         <option value="psd">PSD (Proyek Strategis Daerah)</option>
@@ -460,6 +463,7 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
+
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="edit_nama" class="form-label">Nama Kategori <span
@@ -649,19 +653,18 @@
         $(document).ready(function() {
             // Show Alert Function
             function showAlert(message, type = 'success') {
-                const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-                const alertHtml = `
-                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                $('.card-body').first().prepend(alertHtml);
+                const icon = type === 'success' ? 'success' : 'error';
+                const title = type === 'success' ? 'Berhasil!' : 'Error!';
 
-                // Auto hide after 3 seconds
-                setTimeout(function() {
-                    $('.alert').alert('close');
-                }, 3000);
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: icon,
+                    timer: 4000,
+                    showConfirmButton: false,
+                    allowOutsideClick: true,
+                    allowEscapeKey: true
+                });
             }
 
             // Clear form errors
@@ -943,7 +946,10 @@
                         if (response.success) {
                             $('#addModal').modal('hide');
                             showAlert(response.message);
-                            location.reload();
+                            // Tunggu 2 detik sebelum reload
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
                         }
                     },
                     error: function(xhr) {
@@ -1010,7 +1016,10 @@
                         if (response.success) {
                             $('#editModal').modal('hide');
                             showAlert(response.message);
-                            location.reload();
+                            // Tunggu 2 detik sebelum reload
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
                         }
                     },
                     error: function(xhr) {
