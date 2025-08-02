@@ -452,7 +452,7 @@
                                 <div class="form-group mb-3">
                                     <label for="edit_type" class="form-label">Tipe Kategori <span
                                             class="text-danger">*</span></label>
-                                    <select class="form-control" id="edit_type" name="type" required disabled>
+                                    <select class="form-control" id="edit_type" name="type" required>
                                         <option value="">-- Pilih Tipe --</option>
                                         <option value="layers">Layers (Lokasi)</option>
                                         <option value="psd">PSD (Proyek Strategis Daerah)</option>
@@ -463,7 +463,6 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
-
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="edit_nama" class="form-label">Nama Kategori <span
