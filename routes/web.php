@@ -16,11 +16,12 @@ Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.po
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
 // HALAMAN DETAIL //
-Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPsd'])->name('detail.psd');
-Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
-Route::get('/rpjmd/{id}', [FrontendController::class, 'detailRpjmd'])->name('detail.rpjmd');
-Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
-Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailMusrenbang'])->name('detail.musrenbang');
+Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psd');
+Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psn');
+Route::get('/peta-tematik/{id}', [FrontendController::class, 'detailPeta'])->name('detail.rpjmd');
+Route::get('/rpjmd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.rpjmd');
+Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.pokir');
+Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
 // FEEDBACK //
 Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('feedback.store');

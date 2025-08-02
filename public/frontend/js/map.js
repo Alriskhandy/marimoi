@@ -134,9 +134,11 @@ function bindPopupContent(feature, layer, urlPath) {
     let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;">
         <h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
             props.kategori || "Feature"
-        }</h5>
-        <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px;">`;
-
+        }</h5>`;
+    
+    if (props.gambar) {
+        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px;">`;
+    };        
     content += `<hr style="margin: 5px 0;"><div style="max-height: 100px; overflow-y:auto; padding-right: 5px;">
         <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
 
@@ -216,7 +218,7 @@ function bindPopupContent(feature, layer, urlPath) {
         content += `</table>`;
     }
 
-    const id = props.id || "";
+    const id = props.uuid || "";
     const lat = center?.[1] || 0;
     const lng = center?.[0] || 0;
 
@@ -334,7 +336,7 @@ function getDataType(urlPath) {
         case "/peta-tematik":
             return { type: "layers", sub_type: null, year: null };
         case "/usulan-musrenbang":
-            return { type: "musrenbangs", sub_type: null, year: null };
+            return { type: "usulan_musrenbang", sub_type: null, year: null };
         case "/pokir-dprd":
             return { type: "pokir_dprds", sub_type: null, year: null };
         default:
@@ -361,7 +363,6 @@ async function initMap() {
         const subType = tipeLayer.sub_type || null;
         const year = tipeLayer.year || null;
 
-        // SESUAIKAN DARI SINI //
         // Build query string for API call
         let queryString = "?";
         if (dataType) queryString += `type=${dataType}`;
