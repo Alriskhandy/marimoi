@@ -10,8 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 class ProjectFeedback extends Model
 {
     use HasFactory;
-protected $table = 'project_feedbacks';
+
+    protected $table = 'project_feedbacks';
+    
     protected $fillable = [
+        'data_spatial_id',
         'nama_pemberi_aspirasi',
         'nama_proyek',
         'kabupaten_kota',
@@ -26,8 +29,6 @@ protected $table = 'project_feedbacks';
         'phone',
         'response_admin',
         'responded_at',
-        'feedbackable_id',
-        'feedbackable_type'
     ];
 
     protected $casts = [
@@ -37,39 +38,11 @@ protected $table = 'project_feedbacks';
     ];
 
     /**
-     * Polymorphic relationship - feedback bisa terkait ke berbagai model
+     * Relationship ke data_spatial
      */
-    public function feedbackable()
+    public function dataSpatial()
     {
-        return $this->morphTo();
-    }
-
-    /**
-     * Scope untuk filter berdasarkan jenis model
-     */
-    public function scopeForUsulanMusrenbang($query)
-    {
-        return $query->where('feedbackable_type', UsulanMusrenbang::class);
-    }
-
-    public function scopeForProyekStrategisNasional($query)
-    {
-        return $query->where('feedbackable_type', ProyekStrategisNasional::class);
-    }
-
-    public function scopeForProyekStrategisDaerah($query)
-    {
-        return $query->where('feedbackable_type', ProyekStrategisDaerah::class);
-    }
-
-    public function scopeForPokirDprd($query)
-    {
-        return $query->where('feedbackable_type', PokirDprd::class);
-    }
-
-    public function scopeForLokasi($query)
-    {
-        return $query->where('feedbackable_type', Lokasi::class);
+        return $this->belongsTo(DataSpatial::class, 'data_spatial_id');
     }
 
     /**
@@ -116,50 +89,6 @@ protected $table = 'project_feedbacks';
     public function scopePertanyaan($query)
     {
         return $query->where('jenis_tanggapan', 'pertanyaan');
-    }
-
-    /**
-     * Helper methods untuk mengecek jenis project yang terkait
-     */
-    public function isUsulanMusrenbang()
-    {
-        return $this->feedbackable_type === UsulanMusrenbang::class;
-    }
-
-    public function isProyekStrategisNasional()
-    {
-        return $this->feedbackable_type === ProyekStrategisNasional::class;
-    }
-
-    public function isProyekStrategisDaerah()
-    {
-        return $this->feedbackable_type === ProyekStrategisDaerah::class;
-    }
-
-    public function isPokirDprd()
-    {
-        return $this->feedbackable_type === PokirDprd::class;
-    }
-
-    public function isLokasi()
-    {
-        return $this->feedbackable_type === Lokasi::class;
-    }
-
-    /**
-     * Get model type name for display
-     */
-    public function getModelTypeNameAttribute()
-    {
-        $names = [
-            UsulanMusrenbang::class => 'Usulan Musrenbang',
-            ProyekStrategisNasional::class => 'Proyek Strategis Nasional',
-            ProyekStrategisDaerah::class => 'Proyek Strategis Daerah',
-            PokirDprd::class => 'Pokir DPRD',
-            Lokasi::class => 'Lokasi',
-        ];
-
-        return $names[$this->feedbackable_type] ?? 'Unknown';
     }
 
     /**
@@ -247,13 +176,6 @@ protected $table = 'project_feedbacks';
             'saran' => self::saran()->count(),
             'apresiasi' => self::apresiasi()->count(),
             'pertanyaan' => self::pertanyaan()->count(),
-            'model_types' => [
-                'usulan_musrenbang' => self::forUsulanMusrenbang()->count(),
-                'proyek_strategis_nasional' => self::forProyekStrategisNasional()->count(),
-                'proyek_strategis_daerah' => self::forProyekStrategisDaerah()->count(),
-                'pokir_dprd' => self::forPokirDprd()->count(),
-                'lokasi' => self::forLokasi()->count(),
-            ]
         ];
     }
 
@@ -270,112 +192,3 @@ protected $table = 'project_feedbacks';
             ->toArray();
     }
 }
-
-// ========================================
-// UPDATE MODEL YANG SUDAH ADA
-// ========================================
-
-// app/Models/UsulanMusrenbang.php - Tambahkan method ini
-class UsulanMusrenbang extends Model
-{
-    // existing code...
-
-    /**
-     * Polymorphic relationship - usulan bisa punya banyak feedback
-     */
-    public function feedbacks()
-    {
-        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
-    }
-}
-
-// app/Models/ProyekStrategisNasional.php - Tambahkan method ini
-class ProyekStrategisNasional extends Model
-{
-    // existing code...
-
-    /**
-     * Polymorphic relationship - proyek nasional bisa punya banyak feedback
-     */
-    public function feedbacks()
-    {
-        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
-    }
-}
-
-// app/Models/ProyekStrategisDaerah.php - Tambahkan method ini
-class ProyekStrategisDaerah extends Model
-{
-    // existing code...
-
-    /**
-     * Polymorphic relationship - proyek daerah bisa punya banyak feedback
-     */
-    public function feedbacks()
-    {
-        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
-    }
-}
-
-// app/Models/PokirDprd.php - Tambahkan method ini
-class PokirDprd extends Model
-{
-    // existing code...
-
-    /**
-     * Polymorphic relationship - pokir bisa punya banyak feedback
-     */
-    public function feedbacks()
-    {
-        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
-    }
-}
-
-// app/Models/Lokasi.php - Tambahkan method ini
-class Lokasi extends Model
-{
-    // existing code...
-
-    /**
-     * Polymorphic relationship - lokasi bisa punya banyak feedback
-     */
-    public function feedbacks()
-    {
-        return $this->morphMany(ProjectFeedback::class, 'feedbackable');
-    }
-}
-
-// ========================================
-// TESTING COMMANDS
-// ========================================
-
-/*
-Untuk testing model relationships di Tinker:
-
-php artisan tinker
-
-// Test polymorphic relationship
->>> $feedback = ProjectFeedback::first()
->>> $feedback->feedbackable
->>> $feedback->model_type_name
-
-// Test reverse relationship
->>> $pokir = PokirDprd::first()
->>> $pokir->feedbacks
-
-// Test scopes
->>> ProjectFeedback::forPokirDprd()->count()
->>> ProjectFeedback::pending()->count()
->>> ProjectFeedback::keluhan()->count()
-
-// Test statistics
->>> ProjectFeedback::getStatistics()
->>> ProjectFeedback::getRegionStatistics()
-
-// Test helper methods
->>> $feedback = ProjectFeedback::first()
->>> $feedback->hasCoordinates()
->>> $feedback->google_maps_url
->>> $feedback->image_url
->>> $feedback->hasResponse()
-*/
