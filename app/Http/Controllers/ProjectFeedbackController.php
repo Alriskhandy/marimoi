@@ -12,35 +12,46 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectFeedbackController extends Controller
 {
-    /**
- * Display a listing of the resource.
- */
-public function index(Request $request)
+    public function index(Request $request)
 {
-    $type = $request->get('type', 'all');
+    $type = $request->get('type');
     $subType = $request->get('sub_type');
+
+    // Validasi type yang diizinkan
+    $allowedTypes = ['lokasi', 'pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
+    
+    // Jika type tidak ada atau tidak valid, redirect back dengan error
+    if (!$type || !in_array($type, $allowedTypes)) {
+        return redirect()->back()->with('error', 'Halaman tidak ditemukan. Tipe proyek tidak valid.');
+    }
+
+    // Validasi sub_type untuk proyek_strategis
+    if ($type === 'proyek_strategis') {
+        $allowedSubTypes = ['psn', 'psd'];
+        if ($subType && !in_array($subType, $allowedSubTypes)) {
+            return redirect()->back()->with('error', 'Sub-tipe proyek strategis tidak valid.');
+        }
+    }
 
     // Build query based on type and sub_type
     $query = ProjectFeedback::with('dataSpatial');
 
-    // Filter berdasarkan type
-    if ($type !== 'all') {
-        $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
-            if ($type === 'proyek_strategis') {
-                // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
-                $q->where('data_type', 'proyek_strategis');
-                if ($subType === 'psn') {
-                    $q->where('sub_type', 'nasional');
-                } elseif ($subType === 'psd') {
-                    $q->where('sub_type', 'daerah');
-                }
-                // Jika tidak ada sub_type, tampilkan semua proyek strategis
-            } else {
-                // Untuk type lainnya, gunakan data_type
-                $q->where('data_type', $type);
+    // Filter berdasarkan type yang sudah divalidasi
+    $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
+        if ($type === 'proyek_strategis') {
+            // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
+            $q->where('data_type', 'proyek_strategis');
+            if ($subType === 'psn') {
+                $q->where('sub_type', 'nasional');
+            } elseif ($subType === 'psd') {
+                $q->where('sub_type', 'daerah');
             }
-        });
-    }
+            // Jika tidak ada sub_type, tampilkan semua proyek strategis
+        } else {
+            // Untuk type lainnya, gunakan data_type
+            $q->where('data_type', $type);
+        }
+    });
 
     $feedbacks = $query->orderBy('created_at', 'desc')->paginate(15);
 
@@ -66,26 +77,81 @@ public function index(Request $request)
 }
 
 /**
+ * Get project type information based on type and sub_type
+ */
+private function getProjectTypeInfo($type, $subType = null)
+{
+    $typeInfo = [
+        'lokasi' => [
+            'name' => 'RPJMD',
+            'color' => 'danger',
+            'icon' => 'mdi-map',
+            'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
+        ],
+        'pokir_dprd' => [
+            'name' => 'Pokir DPRD',
+            'color' => 'warning',
+            'icon' => 'mdi-gavel',
+            'description' => 'Feedback untuk Pokok Pikiran DPRD'
+        ],
+        'usulan_musrenbang' => [
+            'name' => 'Usulan Musrenbang',
+            'color' => 'success',
+            'icon' => 'mdi-account-group',
+            'description' => 'Feedback untuk Usulan Musyawarah Perencanaan Pembangunan'
+        ],
+        'proyek_strategis' => [
+            'name' => 'Proyek Strategis',
+            'color' => 'info',
+            'icon' => 'mdi-flag',
+            'description' => 'Feedback untuk Proyek Strategis'
+        ]
+    ];
+
+    // Handle proyek strategis sub-types
+    if ($type === 'proyek_strategis' && $subType) {
+        if ($subType === 'psn') {
+            return [
+                'name' => 'Proyek Strategis Nasional',
+                'color' => 'primary',
+                'icon' => 'mdi-flag',
+                'description' => 'Feedback untuk Proyek Strategis Nasional'
+            ];
+        } elseif ($subType === 'psd') {
+            return [
+                'name' => 'Proyek Strategis Daerah',
+                'color' => 'info',
+                'icon' => 'mdi-map-marker',
+                'description' => 'Feedback untuk Proyek Strategis Daerah'
+            ];
+        }
+    }
+
+    return $typeInfo[$type] ?? [
+        'name' => 'Unknown Type',
+        'color' => 'secondary',
+        'icon' => 'mdi-help-circle',
+        'description' => 'Tipe proyek tidak dikenal'
+    ];
+}
+
+/**
  * Get filtered statistics based on type and sub_type
  */
 private function getFilteredStatistics($type, $subType = null)
 {
-    $query = ProjectFeedback::query();
-
-    if ($type !== 'all') {
-        $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
-            if ($type === 'proyek_strategis') {
-                $q->where('data_type', 'proyek_strategis');
-                if ($subType === 'psn') {
-                    $q->where('sub_type', 'nasional');
-                } elseif ($subType === 'psd') {
-                    $q->where('sub_type', 'daerah');
-                }
-            } else {
-                $q->where('data_type', $type);
+    $query = ProjectFeedback::whereHas('dataSpatial', function ($q) use ($type, $subType) {
+        if ($type === 'proyek_strategis') {
+            $q->where('data_type', 'proyek_strategis');
+            if ($subType === 'psn') {
+                $q->where('sub_type', 'nasional');
+            } elseif ($subType === 'psd') {
+                $q->where('sub_type', 'daerah');
             }
-        });
-    }
+        } else {
+            $q->where('data_type', $type);
+        }
+    });
 
     return [
         'total' => $query->count(),
@@ -105,14 +171,6 @@ private function getFilteredStatistics($type, $subType = null)
  */
 private function getAvailableProjects($type, $subType = null)
 {
-    if ($type === 'all') {
-        // Ambil semua data spatial yang memiliki deskripsi (tidak kosong)
-        return DataSpatial::whereNotNull('deskripsi')
-            ->where('deskripsi', '!=', '')
-            ->orderBy('deskripsi')
-            ->get();
-    }
-
     $query = DataSpatial::whereNotNull('deskripsi')
         ->where('deskripsi', '!=', '');
 
@@ -332,65 +390,65 @@ private function getAvailableProjects($type, $subType = null)
         }
     }
 
-    /**
-     * Get project type information based on type and sub_type
-     */
-    private function getProjectTypeInfo($type, $subType = null)
-    {
-        $typeInfo = [
-            'all' => [
-                'name' => 'Semua Tanggapan Masyarakat',
-                'color' => 'primary',
-                'icon' => 'mdi-comment-multiple-outline',
-                'description' => 'Menampilkan semua feedback dari berbagai jenis proyek'
-            ],
-            'lokasi' => [
-                'name' => 'RPJMD',
-                'color' => 'danger',
-                'icon' => 'mdi-map',
-                'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
-            ],
-            'pokir_dprd' => [
-                'name' => 'Pokir DPRD',
-                'color' => 'warning',
-                'icon' => 'mdi-gavel',
-                'description' => 'Feedback untuk Pokok Pikiran DPRD'
-            ],
-            'usulan_musrenbang' => [
-                'name' => 'Usulan Musrenbang',
-                'color' => 'success',
-                'icon' => 'mdi-account-group',
-                'description' => 'Feedback untuk Usulan Musyawarah Perencanaan Pembangunan'
-            ],
-            'proyek_strategis' => [
-                'name' => 'Proyek Strategis',
-                'color' => 'info',
-                'icon' => 'mdi-flag',
-                'description' => 'Feedback untuk Proyek Strategis'
-            ]
-        ];
+    // /**
+    //  * Get project type information based on type and sub_type
+    //  */
+    // private function getProjectTypeInfo($type, $subType = null)
+    // {
+    //     $typeInfo = [
+    //         'all' => [
+    //             'name' => 'Semua Tanggapan Masyarakat',
+    //             'color' => 'primary',
+    //             'icon' => 'mdi-comment-multiple-outline',
+    //             'description' => 'Menampilkan semua feedback dari berbagai jenis proyek'
+    //         ],
+    //         'lokasi' => [
+    //             'name' => 'RPJMD',
+    //             'color' => 'danger',
+    //             'icon' => 'mdi-map',
+    //             'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
+    //         ],
+    //         'pokir_dprd' => [
+    //             'name' => 'Pokir DPRD',
+    //             'color' => 'warning',
+    //             'icon' => 'mdi-gavel',
+    //             'description' => 'Feedback untuk Pokok Pikiran DPRD'
+    //         ],
+    //         'usulan_musrenbang' => [
+    //             'name' => 'Usulan Musrenbang',
+    //             'color' => 'success',
+    //             'icon' => 'mdi-account-group',
+    //             'description' => 'Feedback untuk Usulan Musyawarah Perencanaan Pembangunan'
+    //         ],
+    //         'proyek_strategis' => [
+    //             'name' => 'Proyek Strategis',
+    //             'color' => 'info',
+    //             'icon' => 'mdi-flag',
+    //             'description' => 'Feedback untuk Proyek Strategis'
+    //         ]
+    //     ];
 
-        // Handle proyek strategis sub-types
-        if ($type === 'proyek_strategis' && $subType) {
-            if ($subType === 'psn') {
-                return [
-                    'name' => 'Proyek Strategis Nasional',
-                    'color' => 'primary',
-                    'icon' => 'mdi-flag',
-                    'description' => 'Feedback untuk Proyek Strategis Nasional'
-                ];
-            } elseif ($subType === 'psd') {
-                return [
-                    'name' => 'Proyek Strategis Daerah',
-                    'color' => 'info',
-                    'icon' => 'mdi-map-marker',
-                    'description' => 'Feedback untuk Proyek Strategis Daerah'
-                ];
-            }
-        }
+    //     // Handle proyek strategis sub-types
+    //     if ($type === 'proyek_strategis' && $subType) {
+    //         if ($subType === 'psn') {
+    //             return [
+    //                 'name' => 'Proyek Strategis Nasional',
+    //                 'color' => 'primary',
+    //                 'icon' => 'mdi-flag',
+    //                 'description' => 'Feedback untuk Proyek Strategis Nasional'
+    //             ];
+    //         } elseif ($subType === 'psd') {
+    //             return [
+    //                 'name' => 'Proyek Strategis Daerah',
+    //                 'color' => 'info',
+    //                 'icon' => 'mdi-map-marker',
+    //                 'description' => 'Feedback untuk Proyek Strategis Daerah'
+    //             ];
+    //         }
+    //     }
 
-        return $typeInfo[$type] ?? $typeInfo['all'];
-    }
+    //     return $typeInfo[$type] ?? $typeInfo['all'];
+    // }
 
 
     /**

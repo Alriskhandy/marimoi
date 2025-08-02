@@ -1234,10 +1234,16 @@
                         success: function(response) {
                             if (response.status === 'success') {
                                 $('#responseModal').modal('hide');
-                                showAlert(response.message);
-                                setTimeout(function() {
+
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
                                     location.reload();
-                                }, 1500);
+                                });
                             }
                         },
                         error: function(xhr) {

@@ -152,6 +152,14 @@
                     showConfirmButton: false
                 });
             @endif
+            @if (session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: '{{ session('error') }}',
+                    confirmButtonText: 'OK'
+                });
+            @endif
         });
     </script>
 
