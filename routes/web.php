@@ -26,15 +26,9 @@ Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailMusrenb
 Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('feedback.store');
 
 // API GEOJSON //
-Route::prefix('geojson')->group(function(){
-    Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psdGeojson']);
-    Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psnGeojson']);
-    Route::get('/rpjmd', [FrontendController::class, 'rpjmdGeojson']);
-    Route::get('/pokir-dprd', [FrontendController::class, 'pokirGeojson']);
-    Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbangGeojson']);
-});
+Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
-Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
+
 
 // TAHAP PENGEMBANGAN //
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');

@@ -316,6 +316,32 @@ function changeBaseMap(baseMapId) {
     }
 }
 
+// ✅ getDataType function to determine data type based on URL path
+/**
+ * Menentukan tipe data berdasarkan path URL.
+ * @param {string} urlPath - Path URL yang digunakan
+ * @returns {object} Objek dengan properti type dan sub_type
+ */
+function getDataType(urlPath) {
+    // Default return value
+    const defaultResult = { type: "layers", sub_type: null, year: null };
+
+    switch (urlPath) {
+        case "/proyek-strategis-daerah":
+            return { type: "proyek_strategis", sub_type: "psd", year: null };
+        case "/proyek-strategis-nasional":
+            return { type: "proyek_strategis", sub_type: "psn", year: null };
+        case "/peta-tematik":
+            return { type: "layers", sub_type: null, year: null };
+        case "/usulan-musrenbang":
+            return { type: "musrenbangs", sub_type: null, year: null };
+        case "/pokir-dprd":
+            return { type: "pokir_dprds", sub_type: null, year: null };
+        default:
+            return defaultResult;
+    }
+}
+
 // ✅ Modified initMap with proper hierarchy using all_categories
 /**
  * Inisialisasi peta, memuat data GeoJSON, membangun struktur layer, dan menambahkan fitur ke peta.
@@ -329,7 +355,20 @@ async function initMap() {
     }
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
-        const response = await fetch("/geojson" + urlPath);
+        const tipeLayer = getDataType(urlPath);
+
+        const dataType = tipeLayer.type;
+        const subType = tipeLayer.sub_type || null;
+        const year = tipeLayer.year || null;
+
+        // SESUAIKAN DARI SINI //
+        // Build query string for API call
+        let queryString = "?";
+        if (dataType) queryString += `type=${dataType}`;
+        if (subType) queryString += `&sub_type=${subType}`;
+        if (year) queryString += `&year=${year}`;
+
+        const response = await fetch(`/geojson${queryString}`);
         const geoJsonData = await response.json();
 
         if (!geoJsonData?.features?.length) {
@@ -395,6 +434,7 @@ async function initMap() {
                     layerGroups[parent.nama][parent.nama] = L.layerGroup();
                 }
             });
+
         } else if (geoJsonData.root_categories) {
             geoJsonData.root_categories.forEach((cat) => {
                 const kategori = cat.nama;
@@ -409,6 +449,7 @@ async function initMap() {
                 }
             });
         }
+
         // 🔸 Kelompokkan fitur berdasarkan kategori yang ada datanya
         const kategoriFiturMap = {};
         geoJsonData.features.forEach((feature) => {
@@ -417,7 +458,6 @@ async function initMap() {
             if (!kategoriFiturMap[kategori]) kategoriFiturMap[kategori] = [];
             kategoriFiturMap[kategori].push(feature);
         });
-        console.log("kategoriFiturMap:", kategoriFiturMap);
         // 🔸 Proses hanya kategori yang punya data fitur
         /**
          * =============================
@@ -431,19 +471,19 @@ async function initMap() {
         const targetLayerMap = {};
         const markerOptionsMap = {};
 
+        // perbaiki penambahan layer ke sidebar Cyz//
         Object.entries(kategoriFiturMap).forEach(([kategori, fiturList]) => {
-            /**
-             * Cari layer child pada layerGroups.
-             * Jika tidak ditemukan, cek apakah kategori adalah parent dan punya layer sendiri.
-             * Simpan hasil ke targetLayerMap agar tidak perlu pencarian berulang.
-             */
             let targetLayer = null;
+
+            // Cari layer yang sesuai di dalam layerGroups
             for (const [parentName, children] of Object.entries(layerGroups)) {
                 if (children[kategori]) {
                     targetLayer = children[kategori];
                     break;
                 }
             }
+
+            // Jika belum ditemukan, cek apakah layerGroups[kategori] adalah parent layer
             if (
                 !targetLayer &&
                 layerGroups[kategori] &&
@@ -451,36 +491,42 @@ async function initMap() {
             ) {
                 targetLayer = layerGroups[kategori][kategori];
             }
+
+            // Jika tetap tidak ditemukan, buat layer baru
+            if (!targetLayer) {
+                targetLayer = L.layerGroup();
+                if (!layerGroups[kategori]) {
+                    layerGroups[kategori] = {};
+                }
+                layerGroups[kategori][kategori] = targetLayer;
+            }
+
             targetLayerMap[kategori] = targetLayer;
 
-            /**
-             * Tentukan markerOptions hanya sekali per kategori.
-             * Jika kategori adalah marker dan punya icon, simpan opsi marker ke markerOptionsMap.
-             */
+            // --- Tentukan markerOptions ---
             let isMarker = false;
             let iconClass = null;
-            let iconWarna = kategoriWarnaMap[kategori];
-            if (Array.isArray(geoJsonData.all_categories)) {
+            let iconWarna = kategoriWarnaMap[kategori] || "blue"; // Default warna jika tidak ada
+            if (geoJsonData && Array.isArray(geoJsonData.all_categories)) {
                 const catObj = geoJsonData.all_categories.find(
                     (c) => c.nama === kategori
                 );
-                if (catObj && catObj.is_marker === true) {
-                    isMarker = true;
+                if (catObj) {
+                    isMarker = !!catObj.is_marker;
                     iconClass = catObj.icon || null;
                     iconWarna = catObj.warna || iconWarna;
-                    console.log("objek", catObj.warna, iconWarna);
                 }
             }
+
             if (isMarker && iconClass) {
-                // Menggunakan ExtraMarkers untuk marker
                 markerOptionsMap[kategori] = L.ExtraMarkers.icon({
                     icon: iconClass,
                     prefix: "fa",
                     svg: true,
-                    markerColor: iconWarna || "red", // default ke green jika tidak ada warna
+                    markerColor: iconWarna,
                     iconColor: "white",
                     shape: "circle",
-                    html: `<i class='fa ${iconClass}' style='color:white, background: blue;'></i>`,
+                    html: `<i class='fa ${iconClass}' style='color:white; background: blue;'></i>`, // titik koma diperbaiki
                 });
             } else {
                 markerOptionsMap[kategori] = null;
@@ -538,7 +584,7 @@ async function initMap() {
         if (layerListContainer) {
             layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
                 <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
-                <span class="mt-2 text-danger">Terjadi kesalahan saat memuat data peta.</span>
+                <span class="mt-2 text-muted">Terjadi kesalahan saat memuat data peta.</span>
             </div>`;
         }
         showAlert("Gagal memuat data peta", "danger");

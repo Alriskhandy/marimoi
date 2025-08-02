@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Dokumen;
 use App\Models\KategoriLayer;
 use App\Models\KategoriMusrenbang;
@@ -49,13 +50,7 @@ class FrontendController extends Controller
         $documents = Dokumen::all();
         return view('frontend.pages.peta', compact('documents'));
     }
-
-    public function prioritas()
-    {
-        $documents = Dokumen::all();
-        return view('frontend.pages.prioritas', compact('documents'));
-    }
-
+    
     public function pokir()
     {
         $documents = Dokumen::all();
@@ -66,58 +61,86 @@ class FrontendController extends Controller
         $documents = Dokumen::all();
         return view('frontend.pages.peta', compact('documents'));
     }
-
-    // API //
-    public function psdGeojson(Request $request)
+    
+    // NANTINYA DIISI PETA RPJMD //
+    public function prioritas()
     {
-        // Variabel dinamis untuk nama tabel dan kolom
-        $tableName = 'proyek_strategis_daerahs'; // Nama tabel utama
-        $categoryTable = 'kategori_psd'; // Nama tabel kategori
-        $categoryColumn = 'nama'; // Nama kolom kategori
-        
-        // Membuat cache key berdasarkan parameter request untuk hasil query geojson
-        $cacheKey = 'psd_geojson_' . md5(json_encode($request->all()));
+        $documents = Dokumen::all();
+        return view('frontend.pages.prioritas', compact('documents'));
+    }
 
-        // Cek apakah data sudah ada di cache
-        $lokasis = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($tableName, $categoryTable, $categoryColumn, $request) {
-            // Query dinamis berdasarkan variabel
-            $query = DB::table($tableName)
-                ->join($categoryTable, "$tableName.kategori_id", '=', "$categoryTable.id")
+    // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE //
+    public function getGeojsonByDataType(Request $request)
+    {
+        // dd($request);
+        $dataType = $request->get('type');
+        $subType = $request->get('sub_type');
+        $year = $request->get('year');
+        
+
+        $cacheKey = 'geojson_' . md5(json_encode($request->all()));
+
+        $lokasis = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($dataType, $subType, $year, $request) {
+            $query = DB::table('data_spatial')
+                ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
                 ->select(
-                    "$tableName.id",
-                    "$tableName.kategori_id",
-                    "$categoryTable.$categoryColumn as kategori", // Menggunakan variabel untuk kategori
-                    "$tableName.deskripsi",
-                    "$tableName.dbf_attributes",
-                    DB::raw("ST_AsGeoJSON($tableName.geom) as geojson")
+                    'data_spatial.id',
+                    'data_spatial.data_type',
+                    'data_spatial.sub_type',
+                    'data_spatial.kategori_id',
+                    'data_spatial.tahun',
+                    'categories.nama as kategori',
+                    'data_spatial.deskripsi',
+                    'data_spatial.dbf_attributes',
+                    'categories.icon',
+                    'categories.warna',
+                    'categories.is_marker',
+                    DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson')
                 );
 
-            // Filter kategori
-            if ($request->has('kategori') && !empty($request->kategori)) {
-                $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-                $query->whereIn("$categoryTable.$categoryColumn", $categories); // Dinamis berdasarkan kategori
+            if ($dataType) {
+                $query->where('data_spatial.data_type', $dataType);
             }
 
-            // Filter atribut DBF
+            if ($subType) {
+                $query->where('data_spatial.sub_type', $subType);
+            }
+
+            if ($year) {
+                $query->where('data_spatial.tahun', $year);
+            }
+
+            if ($request->has('kategori') && !empty($request->kategori)) {
+                $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
+                $query->whereIn('categories.nama', $categories);
+            }
+
             if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
                 foreach ($request->dbf_filter as $attribute => $value) {
                     $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
                 }
             }
 
-            // BBOX
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('categories.nama', 'ILIKE', "%{$search}%")
+                      ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
+                      ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+                });
+            }
+
             if ($request->has('bbox') && !empty($request->bbox)) {
                 $bbox = explode(',', $request->bbox);
                 if (count($bbox) === 4) {
-                    $query->whereRaw("ST_Intersects($tableName.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+                    $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
                 }
             }
 
-            // Ambil hasil query dari database
             return $query->get();
         });
+        // dd($lokasis);
 
-        // Map data dari database untuk fitur geojson
         $features = $lokasis->map(function ($lokasi) {
             $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
 
@@ -125,35 +148,49 @@ class FrontendController extends Controller
                 'type' => 'Feature',
                 'properties' => array_merge([
                     'id' => $lokasi->id,
+                    'data_type' => $lokasi->data_type,
+                    'sub_type' => $lokasi->sub_type,
                     'kategori_id' => $lokasi->kategori_id,
                     'kategori' => $lokasi->kategori,
+                    'tahun' => $lokasi->tahun,
                     'deskripsi' => $lokasi->deskripsi,
+                    'icon' => $lokasi->icon,
+                    'warna' => $lokasi->warna,
+                    'is_marker' => (bool) $lokasi->is_marker,
                 ], $dbfAttributes),
                 'geometry' => json_decode($lokasi->geojson),
             ];
         });
 
-        // Cache untuk kategori
-        $rootCategories = Cache::remember('root_categories', now()->addMinutes(10), function () {
-            return KategoriPSD::whereNull('parent_id')
+        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+        
+        $rootCategories = Cache::remember('root_categories_' . $dataType . $subType . $year, now()->addMinutes(10), function () use ($categoryType) {
+            return Category::where('type', $categoryType)
                 ->with(['children' => function($query) {
                     $query->orderBy('nama');
                 }])
+                ->roots()
+                ->orderBy('nama')
+                ->get();
+        });
+        
+        $allCategories = Cache::remember('all_categories_' . $dataType . $subType . $year, now()->addMinutes(10), function () use ($categoryType) {
+            return Category::where('type', $categoryType)
+                ->with('parent')
                 ->orderBy('nama')
                 ->get();
         });
 
-        $allCategories = Cache::remember('all_categories', now()->addMinutes(10), function () {
-            return KategoriPSD::with('parent')->orderBy('nama')->get();
-        });
-
-        // Mengembalikan response dengan data yang sudah diproses
         return response()->json([
             'type' => 'FeatureCollection',
             'features' => $features,
             'root_categories' => $rootCategories,
             'all_categories' => $allCategories,
             'meta' => [
+                'data_type' => $dataType,
+                'sub_type' => $subType,
+                'year' => $year,
+                'total_features' => $features->count(),
                 'total_root_categories' => $rootCategories->count(),
                 'total_categories' => $allCategories->count(),
                 'generated_at' => now()->toISOString()
@@ -161,325 +198,15 @@ class FrontendController extends Controller
         ]);
     }
 
-
-    public function psnGeojson(Request $request)
+    public function getCategoryTypeByDataType($dataType, $subType)
     {
-        // Variabel dinamis untuk nama tabel dan kolom
-        $tableName = 'proyek_strategis_nasionals'; // Nama tabel utama
-        $categoryTable = 'kategori_psn'; // Nama tabel kategori
-        $categoryColumn = 'nama'; // Nama kolom kategori
-        
-        // Query dinamis berdasarkan variabel
-        $query = DB::table($tableName)
-            ->join($categoryTable, "$tableName.kategori_id", '=', "$categoryTable.id")
-            ->select(
-                "$tableName.id",
-                "$tableName.kategori_id",
-                "$categoryTable.$categoryColumn as kategori", // Menggunakan variabel untuk kategori
-                "$tableName.deskripsi",
-                "$tableName.dbf_attributes",
-                DB::raw("ST_AsGeoJSON($tableName.geom) as geojson")
-            );
-
-        // Filter kategori
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn("$categoryTable.$categoryColumn", $categories); // Dinamis berdasarkan kategori
-        }
-
-        // Filter atribut DBF
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        // BBOX
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects($tableName.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriPSN::whereNull('parent_id')
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->orderBy('nama')
-            ->get();
-                    
-        $allCategories = KategoriPSN::with('parent')->orderBy('nama')->get();
-                    
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
-            'meta' => [
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
-        ]);
-    }
-
-    public function rpjmdGeojson(Request $request)
-    {
-        // Variabel dinamis untuk nama tabel dan kolom
-        $tableName = 'lokasis'; // Nama tabel utama
-        $categoryTable = 'kategori_layers'; // Nama tabel kategori
-        $categoryColumn = 'nama'; // Nama kolom kategori
-        
-        // Query dinamis berdasarkan variabel
-        $query = DB::table($tableName)
-            ->join($categoryTable, "$tableName.kategori_id", '=', "$categoryTable.id")
-            ->select(
-                "$tableName.id",
-                "$tableName.kategori_id",
-                "$categoryTable.$categoryColumn as kategori", // Menggunakan variabel untuk kategori
-                "$tableName.deskripsi",
-                "$tableName.dbf_attributes",
-                DB::raw("ST_AsGeoJSON($tableName.geom) as geojson")
-            );
-
-        // Filter kategori
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn("$categoryTable.$categoryColumn", $categories); // Dinamis berdasarkan kategori
-        }
-
-        // Filter atribut DBF
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        // BBOX
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects($tableName.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriLayer::whereNull('parent_id')
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->orderBy('nama')
-            ->get();
-                    
-        $allCategories = KategoriLayer::with('parent')->orderBy('nama')->get();
-                    
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
-            'meta' => [
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
-        ]);
-    }
-
-    public function pokirGeojson(Request $request)
-    {
-        // Variabel dinamis untuk nama tabel dan kolom
-        $tableName = 'pokir_dprds'; // Nama tabel utama
-        $categoryTable = 'kategori_pokir_dprds'; // Nama tabel kategori
-        $categoryColumn = 'nama'; // Nama kolom kategori
-        
-        // Query dinamis berdasarkan variabel
-        $query = DB::table($tableName)
-            ->join($categoryTable, "$tableName.kategori_id", '=', "$categoryTable.id")
-            ->select(
-                "$tableName.id",
-                "$tableName.kategori_id",
-                "$categoryTable.$categoryColumn as kategori", // Menggunakan variabel untuk kategori
-                "$tableName.deskripsi",
-                "$tableName.dbf_attributes",
-                DB::raw("ST_AsGeoJSON($tableName.geom) as geojson")
-            );
-
-        // Filter kategori
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn("$categoryTable.$categoryColumn", $categories); // Dinamis berdasarkan kategori
-        }
-
-        // Filter atribut DBF
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        // BBOX
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects($tableName.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriPokirDprd::whereNull('parent_id')
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->orderBy('nama')
-            ->get();
-                    
-        $allCategories = KategoriPokirDprd::with('parent')->orderBy('nama')->get();
-                    
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
-            'meta' => [
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
-        ]);
-    }
-    
-    public function musrenbangGeojson(Request $request)
-    {
-        // Variabel dinamis untuk nama tabel dan kolom
-        $tableName = 'usulan_musrenbangs'; // Nama tabel utama
-        $categoryTable = 'kategori_musrenbangs'; // Nama tabel kategori
-        $categoryColumn = 'nama'; // Nama kolom kategori 
-        
-        // Query dinamis berdasarkan variabel
-        $query = DB::table($tableName)
-            ->join($categoryTable, "$tableName.kategori_id", '=', "$categoryTable.id")
-            ->select(
-                "$tableName.id",
-                "$tableName.kategori_id",
-                "$categoryTable.$categoryColumn as kategori", // Menggunakan variabel untuk kategori
-                "$tableName.deskripsi",
-                "$tableName.dbf_attributes",
-                DB::raw("ST_AsGeoJSON($tableName.geom) as geojson")
-            );
-
-        // Filter kategori
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn("$categoryTable.$categoryColumn", $categories); // Dinamis berdasarkan kategori
-        }
-
-        // Filter atribut DBF
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        // BBOX
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects($tableName.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get();
-
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'deskripsi' => $lokasi->deskripsi,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        // Menggunakan variabel yang lebih dinamis untuk kategori
-        $rootCategories = KategoriMusrenbang::whereNull('parent_id')
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->orderBy('nama')
-            ->get();
-                    
-        $allCategories = KategoriMusrenbang::with('parent')->orderBy('nama')->get();
-                    
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
-            'meta' => [
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
-        ]);
+        return match ($dataType) {
+            'lokasi' => 'layers',
+            'usulan_musrenbang' => 'musrenbangs',
+            'pokir_dprd' => 'pokir_dprds',
+            'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
+            default => 'layers',
+        };
     }
 
 
