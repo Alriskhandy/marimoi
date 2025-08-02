@@ -15,9 +15,9 @@
         <div class="container position-relative" style="z-index: 2;">
             <div class="row gy-4 d-flex justify-content-center">
                 <div class="col-lg-10 order-2 order-lg-1 d-flex flex-column justify-content-center">
-                    <h2 class="text-center text-white" data-aos="fade-up">SISTEM INFORMASI MANAJEMEN AKSELERASI
+                    <h2 class="text-center text-white" data-aos="fade-in" data-aos-delay="100">SISTEM INFORMASI MANAJEMEN AKSELERASI
                         INFRASTRUKTUR UNTUK MONITORING DAN INTEGRASI WILAYAH</h2>
-                    <p class="text-white text-center" data-aos="fade-up" data-aos-delay="100">Sistem digital terpadu
+                    <p class="text-white text-center" data-aos="fade-in" data-aos-delay="200">Sistem digital terpadu
                         berbasis web dan mobile yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan
                         evaluasi pembangunan infrastruktur daerah secara lebih efektif, partisipatif, dan terintegrasi.
                         Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah
@@ -36,7 +36,7 @@
     <!--Indikator Pembangunan Section -->
     <section id="featured-services" class="featured-services section pt-3 pb-5">
         <!-- Section Title -->
-        <div class="container section-title" data-aos="fade-up">
+        <div class="container section-title" data-aos="fade-up" data-aos-delay="200">
             <span>Indikator Pembangunan Strategis<br></span>
             <h2>Indikator Pembangunan Strategis</h2>
             <p>Kontribusi MARIMOI Terhadap Indikator-Indikator Pembangunan Strategis</p>

@@ -71,7 +71,7 @@
 
         <!-- Map Section -->
         <section class="section pb-0" style="padding-top: 0;">
-            <div class="container-fluid p-0" data-aos="fade-up" data-aos-delay="100" style="height: calc(100vh - 57px)">
+            <div class="container-fluid p-0" data-aos="fade-in" data-aos-delay="100" style="height: calc(100vh - 57px)">
                 <div class="position-relative" style="height: 100%;">
 
                     <!-- Modal Panduan Awal -->
