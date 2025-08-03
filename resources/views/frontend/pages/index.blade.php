@@ -272,23 +272,28 @@
 
                 <div class="project-grid" id="projectGrid">
                     @foreach ($dataPsd as $data)
-                        
-                    <div class="project-card" data-status="{{ $data->sub_type }}">
-                        <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] }}</h4>
-                        <p class="project-location">
-                            <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] }}
-                        </p>
-                        <p>Realiasi Fisik</p>
-                        <p class="progress-text">75%</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 75%"></div>
+                        <div class="project-card" data-status="{{ $data->sub_type }}">
+                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] }}</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] }}
+                            </p>
+
+                            <div class="progress-group">
+                                <p class="progress-label">Realisasi Fisik</p>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                                <p class="progress-text">75%</p>
+                            </div>
+
+                            <div class="progress-group">
+                                <p class="progress-label">Realisasi Anggaran</p>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                                <p class="progress-text">75%</p>
+                            </div>
                         </div>
-                        <p>Realisasi Anggaran</p>
-                        <p class="progress-text">75%</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 75%"></div>
-                        </div>
-                    </div>
                     @endforeach
 
                 </div>

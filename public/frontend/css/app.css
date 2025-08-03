@@ -692,7 +692,7 @@ body {
 .project-card {
     background: #f8fafc;
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     border-left: 4px solid var(--primary-blue);
     transition: all 0.3s ease;
     cursor: pointer;
@@ -716,6 +716,16 @@ body {
     margin-bottom: 12px;
 }
 
+.progress-group {
+  margin-bottom: 1rem;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
 .progress-bar {
     width: 100%;
     height: 6px;
@@ -734,8 +744,9 @@ body {
 
 .progress-text {
     font-size: 0.85rem;
-    color: var(--text-secondary);
-    text-align: right;
+    color: var(--gray-dark);
+    margin-top: 0.25rem;
+    /* text-align: right; */
 }
 
 .interactive-map {
