@@ -35,14 +35,8 @@
     <!-- Navigation -->
     @include('frontend.partials.navbar')
 
-    <!-- Hero Section -->
-    @include('frontend.partials.hero')
-
     <!-- Main Content -->
     @yield('main')
-
-    <!-- Footer -->
-    @include('frontend.partials.footer')
 
     <!-- Vendor JS Files -->
     <script src="{{ asset('frontend/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>

@@ -1,4 +1,4 @@
-@extends('frontend.layouts.main')
+@extends('frontend.layouts.app')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
@@ -67,7 +67,7 @@
     <div class="container-fluid p-0" style="height: 100vh;">
 
         <!-- Page Title -->
-        @include('frontend.partials.nav-map')
+        @include('frontend.partials.navbar')
 
         <!-- Map Section -->
         <section class="section pb-0" style="padding-top: 0;">
