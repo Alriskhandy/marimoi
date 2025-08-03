@@ -14,8 +14,15 @@ class FrontendController extends Controller
 {
     public function index()
     {
-        return view('frontend.pages.index');
+        $dataPsd = DataSpatial::select('uuid', 'data_type', 'sub_type', 'kategori_id', 'tahun', 'dbf_attributes')
+            ->where('data_type', 'proyek_strategis')
+            ->where('sub_type', 'psd')
+            ->limit(6)
+            ->get();
+        // dd($dataPsd);
+        return view('frontend.pages.index', compact('dataPsd'));
     }
+
     public function aspirasi()
     {
         return view('frontend.pages.aspirasi');

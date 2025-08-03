@@ -116,7 +116,7 @@ window.addEventListener("load", function () {
 });
 
 // Project filtering
-function filterProjects(status) {
+function filterProjects(kategori) {
     const cards = document.querySelectorAll(".project-card");
     const buttons = document.querySelectorAll(".status-btn");
 
@@ -126,7 +126,7 @@ function filterProjects(status) {
 
     // Filter cards
     cards.forEach((card) => {
-        if (status === "semua" || card.getAttribute("data-status") === status) {
+        if (kategori === "psd" || card.getAttribute("data-status") === kategori) {
             card.style.display = "block";
             card.style.animation = "fadeIn 0.5s ease";
         } else {
