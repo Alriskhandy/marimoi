@@ -1,55 +1,86 @@
-<footer id="footer" class="footer dark-background">
-
-    <div class="container footer-top">
-        <div class="row gy-4">
-            <div class="col-lg-6 col-md-12 footer-about">
-                <a href="index.html" class="logo d-flex align-items-center">
-                    <span class="sitename">MARIMOI</span>
-                </a>
-                <p>MARIMOI (Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah) adalah sistem digital terpadu berbasis web dan mobile yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktur daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.</p>
-                <div class="social-links d-flex mt-4">
-                    <a href=""><i class="bi bi-facebook"></i></a>
-                    <a href=""><i class="bi bi-instagram"></i></a>
-                    <a href="https://bappeda.malutprov.go.id"><i class="bi bi-link-45deg"></i></a>
-                </div>
+<footer id="contact" class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <h5>
+                    <img width="50" src="public\frontend\img\logo.webp" alt="" />
+                    MARIMOI
+                </h5>
+                <p class="mb-4">
+                    Sistem Informasi Manajemen Akselerasi Infrastruktur
+                    untuk Monitoring dan Integrasi Wilayah Provinsi
+                    Maluku Utara.
+                </p>
+                <p>
+                    <strong>Bappeda Provinsi Maluku Utara</strong><br />
+                    Jl. Raya Ternate-Tobelo, Sofifi<br />
+                    Maluku Utara 97815
+                </p>
             </div>
 
-            <div class="col-lg-2 col-6 footer-links">
-                <h4>Jumlah Pengunjung</h4>
-                <ul>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Hari Ini : 0</p>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5>Menu Utama</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#home">Beranda</a></li>
+                    <li class="mb-2"><a href="#features">Fitur</a></li>
+                    <li class="mb-2">
+                        <a href="#monitoring">Monitoring</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Minggu Ini : 0</p>
+                    <li class="mb-2"><a href="#about">Tentang</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Kategori Proyek</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="#">Proyek Strategis Daerah</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Bulan Ini : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Proyek Strategis Nasional</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Tahun Ini : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Prioritas Daerah</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Total : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Usulan Musrenbang</a>
                     </li>
                 </ul>
             </div>
 
-            <div class="col-lg-4 col-md-12 footer-contact text-center text-md-justify">
-                <h4>Bappeda Provinsi Maluku Utara</h4>
-                <p>Jl. Trans Halmahera,</p>
-                <p>Guraping, Oba Utara, </p>
-                <p>Kota Tidore Kepulauan, Maluku Utara</p>
-                <p><strong>Email:</strong> <span>bappedamalut@gmail.com</span></p>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Kontak</h5>
+                <p class="mb-2">
+                    <i class="fas fa-phone me-2"></i>+62 921 123 4567
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-envelope me-2"></i>bappeda@malutprov.go.id
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-globe me-2"></i>www.bappeda.malutprov.go.id
+                </p>
+                <div class="mt-3">
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-decoration-none"><i class="fab fa-youtube"></i></a>
+                </div>
             </div>
+        </div>
 
+        <hr class="my-4" style="border-color: #374151" />
+
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    &copy; 2025 MARIMOI - Bappeda Provinsi Maluku Utara.
+                    All rights reserved.
+                </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="#" class="me-3">Kebijakan Privasi</a>
+                <a href="#">Syarat & Ketentuan</a>
+            </div>
         </div>
     </div>
-
-    <div class="container copyright text-center mt-4">
-        <p>© <span>Copyright</span> <strong class="px-1 sitename">MARIMOI</strong> <span>All Rights Reserved</span></p>
-        <p><span>Beta Version 1.0 | Developed By</span> <strong class="px-1 sitename"><a href="https://heartware-digital.my.id">Heartware Digital</a></strong></p>
-
-    </div>
-
 </footer>
