@@ -230,11 +230,11 @@ class FrontendController extends Controller
     public function getCategoryTypeByDataType($dataType, $subType)
     {
         return match ($dataType) {
-            'lokasi' => 'layer',
+            'tematik' => 'tematik',
             'usulan_musrenbang' => 'usulan_musrenbang',
             'pokir_dprd' => 'pokir_dprd',
             'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
-            default => 'layer',
+            default => 'tematik',
         };
     }
 

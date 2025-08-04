@@ -316,7 +316,7 @@ function changeBaseMap(baseMapId) {
  */
 function getDataType(urlPath) {
     // Default return value
-    const defaultResult = { type: "layers", sub_type: null, year: null };
+    const defaultResult = { type: "tematik", sub_type: null, year: null };
 
     switch (urlPath) {
         case "/proyek-strategis-daerah":
@@ -324,7 +324,7 @@ function getDataType(urlPath) {
         case "/proyek-strategis-nasional":
             return { type: "proyek_strategis", sub_type: "psn", year: null };
         case "/peta-tematik":
-            return { type: "layer", sub_type: null, year: null };
+            return { type: "tematik", sub_type: null, year: null };
         case "/usulan-musrenbang":
             return { type: "usulan_musrenbang", sub_type: null, year: null };
         case "/pokir-dprd":

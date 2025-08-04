@@ -79,6 +79,7 @@
         </div>
     </section><!-- /Detail Section -->
 
+    @if ($project->data_type != 'tematik')
     <!-- Form Feedback Section -->
     <section class="section-with-bg feedback-section">
         <div class="container" data-aos="fade-up">
@@ -215,6 +216,7 @@
             </div>
         </div>
     </section>
+    @endif
 
     <!-- Footer Section -->
     @include('frontend.partials.footer')
