@@ -14,8 +14,51 @@ class FrontendController extends Controller
 {
     public function index()
     {
-        return view('frontend.pages.index');
+        // Ambil 6 data PSD secara random
+        $psd = DataSpatial::where('data_type', 'proyek_strategis')
+        ->where('sub_type', 'psd')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data PSN secara random
+        $psn = DataSpatial::where('data_type', 'proyek_strategis')
+        ->where('sub_type', 'psn')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data Pokir secara random
+        $pokir = DataSpatial::where('data_type', 'pokir_dprd')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data Musrenbang secara random
+        $musrenbang = DataSpatial::where('data_type', 'musrenbang')
+            ->inRandomOrder()->limit(6)->get();
+
+        // Menggabungkan semuanya dengan concat
+        $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
+        
+        $links = [
+            'psd' => 'proyek-strategis-daerah',
+            'psn' => 'proyek-strategis-nasional',
+            'pokir_dprd' => 'pokir-dprd',
+            'usulan_musrenbang' => 'usulan-musrenbang',
+        ];
+        // dd($dataPeta, $links);
+        // Total masing-masing kategori
+        $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
+        $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
+        $totalMusrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')->count();
+        $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
+
+        return view('frontend.pages.index', compact(
+            'dataPeta',
+            'links',
+            'totalPsd',
+            'totalPsn',
+            'totalMusrenbang',
+            'totalPokir'
+        ));
     }
+
+
     public function aspirasi()
     {
         return view('frontend.pages.aspirasi');
@@ -35,7 +78,7 @@ class FrontendController extends Controller
         return view('frontend.pages.peta', compact('documents'));
     }
 
-    public function rpjmd()
+    public function tematik()
     {
         $documents = Dokumen::all();
         return view('frontend.pages.peta', compact('documents'));
@@ -65,6 +108,7 @@ class FrontendController extends Controller
         $dataType = $request->get('type');
         $subType = $request->get('sub_type');
         $year = $request->get('year');
+        // dd($dataType, $subType, $year);
 
         $query = DB::table('data_spatial')
             ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
@@ -125,7 +169,7 @@ class FrontendController extends Controller
         }
 
         $lokasis = $query->get(); // Langsung eksekusi tanpa cache
-
+        
         $features = $lokasis->map(function ($lokasi) {
             $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
 
@@ -164,7 +208,7 @@ class FrontendController extends Controller
             ->with('parent')
             ->orderBy('nama')
             ->get();
-
+        // dd($allCategories, $rootCategories, $categoryType);
         return response()->json([
             'type' => 'FeatureCollection',
             'features' => $features,

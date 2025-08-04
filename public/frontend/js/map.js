@@ -132,12 +132,12 @@ function generateLegend() {
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
     let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;"><h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
-            props.kategori || "Feature"
-        }</h5>`;
-    
+        props.kategori || "Feature"
+    }</h5>`;
+
     if (props.gambar) {
         content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
-    };        
+    };
     content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
         <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
     Object.entries(props).forEach(([key, value]) => {
@@ -324,11 +324,11 @@ function getDataType(urlPath) {
         case "/proyek-strategis-nasional":
             return { type: "proyek_strategis", sub_type: "psn", year: null };
         case "/peta-tematik":
-            return { type: "layers", sub_type: null, year: null };
+            return { type: "layer", sub_type: null, year: null };
         case "/usulan-musrenbang":
             return { type: "usulan_musrenbang", sub_type: null, year: null };
         case "/pokir-dprd":
-            return { type: "pokir_dprds", sub_type: null, year: null };
+            return { type: "pokir_dprd", sub_type: null, year: null };
         default:
             return defaultResult;
     }
@@ -425,7 +425,7 @@ async function initMap() {
                     layerGroups[parent.nama][parent.nama] = L.layerGroup();
                 }
             });
-
+            
         } else if (geoJsonData.root_categories) {
             geoJsonData.root_categories.forEach((cat) => {
                 const kategori = cat.nama;
