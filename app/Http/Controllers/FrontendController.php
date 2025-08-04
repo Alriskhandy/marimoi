@@ -34,7 +34,14 @@ class FrontendController extends Controller
 
         // Menggabungkan semuanya dengan concat
         $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
-
+        
+        $links = [
+            'psd' => 'proyek-strategis-daerah',
+            'psn' => 'proyek-strategis-nasional',
+            'pokir_dprd' => 'pokir-dprd',
+            'usulan_musrenbang' => 'usulan-musrenbang',
+        ];
+        // dd($dataPeta, $links);
         // Total masing-masing kategori
         $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
         $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
@@ -43,6 +50,7 @@ class FrontendController extends Controller
 
         return view('frontend.pages.index', compact(
             'dataPeta',
+            'links',
             'totalPsd',
             'totalPsn',
             'totalMusrenbang',

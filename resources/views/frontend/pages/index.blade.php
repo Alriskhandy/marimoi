@@ -271,6 +271,10 @@
 
                 <div class="project-grid" id="projectGrid">
                     @foreach ($dataPeta as $data)
+                    @php
+                        $status = $data->sub_type ?? $data->data_type;
+                        $slug = $links[$status] ?? '#';
+                    @endphp
                         <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
                             <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] }}</h4>
                             <p class="project-location">
@@ -296,7 +300,7 @@
                                     <div class="progress-fill" style="width: 75%"></div>
                                 </div>
                             </div>
-
+                            <a href="{{ url($slug . '/' . $data->uuid) }}">Lihat Detail</a>
                         </div>
                     @endforeach
 
