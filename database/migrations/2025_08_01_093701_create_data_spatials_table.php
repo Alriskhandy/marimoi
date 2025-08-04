@@ -48,8 +48,12 @@ return new class extends Migration
             
             $table->timestamps();
             
-            // Foreign key ke categories
-            $table->foreign('kategori_id')->references('id')->on('categories');
+           $table->foreign('kategori_id')
+                    ->references('id')
+                    ->on('categories')
+                    ->onDelete('restrict')
+                    ->onUpdate('restrict');
+
             
             // Indexes untuk performance
             $table->index(['data_type', 'sub_type']);
