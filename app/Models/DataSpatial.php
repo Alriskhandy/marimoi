@@ -34,6 +34,7 @@ class DataSpatial extends Model
         'dbf_attributes',
         'tahun',
         'gambar',
+        'views',
         'geom'
     ];
 

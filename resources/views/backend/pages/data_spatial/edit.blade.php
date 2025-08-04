@@ -514,22 +514,35 @@
                 showAlert('Atribut berhasil ditambahkan!', 'success');
             });
 
-            // Remove attribute
             $(document).on('click', '.remove-attribute', function() {
                 const key = $(this).data('key');
 
-                if (confirm(`Apakah Anda yakin ingin menghapus atribut "${key}"?`)) {
-                    delete dbfAttributes[key];
-                    initAttributesForm();
+                Swal.fire({
+                    title: 'Konfirmasi',
+                    text: `Apakah Anda yakin ingin menghapus atribut "${key}"?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        delete dbfAttributes[key];
+                        initAttributesForm();
 
-                    // Update JSON view if active
-                    if (currentView === 'json') {
-                        $('#dbf_attributes_json').val(JSON.stringify(dbfAttributes, null, 2));
+                        // Update JSON view if active
+                        if (currentView === 'json') {
+                            $('#dbf_attributes_json').val(JSON.stringify(dbfAttributes, null, 2));
+                        }
+
+                        // Tampilkan notifikasi sukses
+                        Swal.fire('Berhasil!', 'Atribut berhasil dihapus!', 'success');
                     }
-
-                    showAlert('Atribut berhasil dihapus!', 'success');
-                }
+                });
             });
+
 
             // Update attributes when form input changes
             $(document).on('input', '.attribute-input', function() {

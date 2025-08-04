@@ -18,7 +18,7 @@ class ProjectFeedbackController extends Controller
     $subType = $request->get('sub_type');
 
     // Validasi type yang diizinkan
-    $allowedTypes = ['lokasi', 'pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
+    $allowedTypes = [ 'pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
     
     // Jika type tidak ada atau tidak valid, redirect back dengan error
     if (!$type || !in_array($type, $allowedTypes)) {
@@ -82,12 +82,12 @@ class ProjectFeedbackController extends Controller
 private function getProjectTypeInfo($type, $subType = null)
 {
     $typeInfo = [
-        'lokasi' => [
-            'name' => 'RPJMD',
-            'color' => 'danger',
-            'icon' => 'mdi-map',
-            'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
-        ],
+        // 'lokasi' => [
+        //     'name' => 'RPJMD',
+        //     'color' => 'danger',
+        //     'icon' => 'mdi-map',
+        //     'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
+        // ],
         'pokir_dprd' => [
             'name' => 'Pokir DPRD',
             'color' => 'warning',

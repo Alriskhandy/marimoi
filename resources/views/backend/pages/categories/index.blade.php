@@ -93,7 +93,7 @@
                     <!-- Statistics Cards -->
                     @if ($categories->count() > 0)
                         <div class="row mb-4">
-                            <div class="col-md-3 stretch-card grid-margin">
+                            <div class="col-md-4 stretch-card grid-margin">
                                 <div class="card bg-gradient-primary card-img-holder text-white">
                                     <div class="card-body">
                                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}"
@@ -108,7 +108,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-3 stretch-card grid-margin">
+                            <div class="col-md-4 stretch-card grid-margin">
                                 <div class="card bg-gradient-success card-img-holder text-white">
                                     <div class="card-body">
                                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}"
@@ -123,22 +123,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-3 stretch-card grid-margin">
-                                <div class="card bg-gradient-info card-img-holder text-white">
-                                    <div class="card-body">
-                                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}"
-                                            class="card-img-absolute" alt="circle" />
-                                        <h4 class="font-weight-normal mb-3">
-                                            Total Data
-                                            <i class="mdi mdi-map mdi-24px float-end"></i>
-                                        </h4>
-                                        <h2 class="mb-5">{{ $categories->sum('data_spatials_count') ?? 0 }}</h2>
-                                        <h6 class="card-text">Data yang menggunakan kategori</h6>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3 stretch-card grid-margin">
+                            <div class="col-md-4 stretch-card grid-margin">
                                 <div class="card bg-gradient-warning card-img-holder text-white">
                                     <div class="card-body">
                                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}"

@@ -466,32 +466,32 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
         Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
     });
 
-    // Shortcut routes untuk akses cepat berdasarkan type (opsional)
-    Route::group(['prefix' => 'feedbacks'], function () {
-        Route::get('/tematik', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'tematik']);
-        })->name('feedbacks.tematik');
+    // // Shortcut routes untuk akses cepat berdasarkan type (opsional)
+    // Route::group(['prefix' => 'feedbacks'], function () {
+    //     Route::get('/tematik', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'tematik']);
+    //     })->name('feedbacks.tematik');
         
-        Route::get('/pokir-dprd', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'pokir_dprd']);
-        })->name('feedbacks.pokir-dprd');
+    //     Route::get('/pokir-dprd', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'pokir_dprd']);
+    //     })->name('feedbacks.pokir-dprd');
         
-        Route::get('/usulan-musrenbang', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'usulan_musrenbang']);
-        })->name('feedbacks.usulan-musrenbang');
+    //     Route::get('/usulan-musrenbang', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'usulan_musrenbang']);
+    //     })->name('feedbacks.usulan-musrenbang');
         
-        Route::get('/proyek-strategis', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis']);
-        })->name('feedbacks.proyek-strategis');
+    //     Route::get('/proyek-strategis', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis']);
+    //     })->name('feedbacks.proyek-strategis');
         
-        Route::get('/proyek-strategis-nasional', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']);
-        })->name('feedbacks.proyek-strategis-nasional');
+    //     Route::get('/proyek-strategis-nasional', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']);
+    //     })->name('feedbacks.proyek-strategis-nasional');
         
-        Route::get('/proyek-strategis-daerah', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']);
-        })->name('feedbacks.proyek-strategis-daerah');
-    });
+    //     Route::get('/proyek-strategis-daerah', function () {
+    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']);
+    //     })->name('feedbacks.proyek-strategis-daerah');
+    // });
 
 });
 

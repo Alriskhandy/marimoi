@@ -44,6 +44,7 @@ return new class extends Migration
             
             // Kolom khusus
             $table->integer('tahun')->nullable(); // untuk proyek strategis dan data yang butuh tahun
+            $table->integer('views')->default(0);
             
             $table->timestamps();
             

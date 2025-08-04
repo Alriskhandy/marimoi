@@ -67,11 +67,11 @@
                     </li>
 
                     <!-- Feedback RPJMD -->
-                    <li
+                    {{-- <li
                         class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}">
                         <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
                             <i class="mdi mdi-comment-multiple me-2"></i>Feedback RPJMD
-                            {{-- <span class="badge badge-sm bg-danger ms-auto">
+                            <span class="badge badge-sm bg-danger ms-auto">
                                 @php
                                     try {
                                         echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
@@ -81,9 +81,9 @@
                                         echo '0';
                                     }
                                 @endphp
-                            </span> --}}
+                            </span>
                         </a>
-                    </li>
+                    </li> --}}
 
 
                 </ul>
