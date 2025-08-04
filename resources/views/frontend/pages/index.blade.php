@@ -241,10 +241,9 @@
     <section id="monitoring" class="monitoring-section">
         <div class="container">
             <div class="section-title animate-on-scroll">
-                <h2>Monitoring Real-time</h2>
+                <h2>Proyek Paling Populer</h2>
                 <p>
-                    Pantau progres infrastruktur Maluku Utara secara
-                    langsung
+                    Lihat proyek yang paling menarik perhatian masyarakat.
                 </p>
             </div>
 

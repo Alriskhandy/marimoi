@@ -13,7 +13,7 @@
                         href="{{ route('beranda') }}">Beranda</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('tampil.rpjmd') ? 'active' : '' }}" href="{{ route('tampil.rpjmd') }}">Peta Tematik</a>
+                    <a class="nav-link {{ request()->routeIs('tampil.tematik') ? 'active' : '' }}" href="{{ route('tampil.tematik') }}">Peta Tematik</a>
                 </li>
                 <!-- Dropdown Start -->
                 <li class="nav-item dropdown">

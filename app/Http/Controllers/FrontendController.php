@@ -38,7 +38,7 @@ class FrontendController extends Controller
         // Total masing-masing kategori
         $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
         $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
-        $totalMusrenbang = DataSpatial::where('data_type', 'musrenbang')->count();
+        $totalMusrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')->count();
         $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
 
         return view('frontend.pages.index', compact(
@@ -70,7 +70,7 @@ class FrontendController extends Controller
         return view('frontend.pages.peta', compact('documents'));
     }
 
-    public function rpjmd()
+    public function tematik()
     {
         $documents = Dokumen::all();
         return view('frontend.pages.peta', compact('documents'));
@@ -100,6 +100,7 @@ class FrontendController extends Controller
         $dataType = $request->get('type');
         $subType = $request->get('sub_type');
         $year = $request->get('year');
+        // dd($dataType, $subType, $year);
 
         $query = DB::table('data_spatial')
             ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
@@ -160,7 +161,7 @@ class FrontendController extends Controller
         }
 
         $lokasis = $query->get(); // Langsung eksekusi tanpa cache
-
+        
         $features = $lokasis->map(function ($lokasi) {
             $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
 
@@ -199,7 +200,7 @@ class FrontendController extends Controller
             ->with('parent')
             ->orderBy('nama')
             ->get();
-
+        // dd($allCategories, $rootCategories, $categoryType);
         return response()->json([
             'type' => 'FeatureCollection',
             'features' => $features,

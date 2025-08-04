@@ -1,7 +1,7 @@
 @extends('frontend.layouts.app')
 
 @section('main')
-    <!-- Hero Section -->
+    <!-- Navbar Section -->
     @include('frontend.partials.navbar')
 
     <!-- Form Section -->

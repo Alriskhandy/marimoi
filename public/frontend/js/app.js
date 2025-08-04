@@ -67,11 +67,10 @@ if (statsSection) {
 
 // Typing animation
 const typingWords = [
-    "Monitoring",
-    "Integrasi",
-    "Perencanaan",
-    "Evaluasi",
-    "Transparansi",
+    "Proyek Strategis Daerah",
+    "Proyek Strategis Nasional",
+    "Usulan Musrenbang",
+    "Pokir DPRD",
 ];
 let currentWordIndex = 0;
 let currentCharIndex = 0;
