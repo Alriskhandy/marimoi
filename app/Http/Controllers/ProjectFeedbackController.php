@@ -14,6 +14,7 @@ class ProjectFeedbackController extends Controller
 {
     public function index(Request $request)
 {
+    // dd($request->all());
     $type = $request->get('type');
     $subType = $request->get('sub_type');
 
@@ -42,9 +43,9 @@ class ProjectFeedbackController extends Controller
             // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
             $q->where('data_type', 'proyek_strategis');
             if ($subType === 'psn') {
-                $q->where('sub_type', 'nasional');
+                $q->where('sub_type', 'psn');
             } elseif ($subType === 'psd') {
-                $q->where('sub_type', 'daerah');
+                $q->where('sub_type', 'psd');
             }
             // Jika tidak ada sub_type, tampilkan semua proyek strategis
         } else {
@@ -144,9 +145,9 @@ private function getFilteredStatistics($type, $subType = null)
         if ($type === 'proyek_strategis') {
             $q->where('data_type', 'proyek_strategis');
             if ($subType === 'psn') {
-                $q->where('sub_type', 'nasional');
+                $q->where('sub_type', 'psn');
             } elseif ($subType === 'psd') {
-                $q->where('sub_type', 'daerah');
+                $q->where('sub_type', 'psd');
             }
         } else {
             $q->where('data_type', $type);
@@ -177,9 +178,9 @@ private function getAvailableProjects($type, $subType = null)
     if ($type === 'proyek_strategis') {
         $query->where('data_type', 'proyek_strategis');
         if ($subType === 'psn') {
-            $query->where('sub_type', 'nasional');
+            $query->where('sub_type', 'psn');
         } elseif ($subType === 'psd') {
-            $query->where('sub_type', 'daerah');
+            $query->where('sub_type', 'psd');
         }
     } else {
         $query->where('data_type', $type);
