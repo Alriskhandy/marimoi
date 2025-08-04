@@ -217,19 +217,19 @@
             <div class="stats-container animate-on-scroll">
                 <div class="stats-grid">
                     <div class="stat-item" onclick="animateStatNumbers()">
-                        <span class="stat-number" data-target="127">0</span>
+                        <span class="stat-number" data-target="{{ $totalPsd }}">0</span>
                         <div class="stat-label">Proyek Strategis Daerah</div>
                     </div>
                     <div class="stat-item" onclick="animateStatNumbers()">
-                        <span class="stat-number" data-target="127">0</span>
+                        <span class="stat-number" data-target="{{ $totalPsn }}">0</span>
                         <div class="stat-label">Proyek Strategis Nasional</div>
                     </div>
                     <div class="stat-item" onclick="animateStatNumbers()">
-                        <span class="stat-number" data-target="15">0</span>
+                        <span class="stat-number" data-target="{{ $totalMusrenbang }}">0</span>
                         <div class="stat-label">Usulan Musrenbang</div>
                     </div>
                     <div class="stat-item" onclick="animateStatNumbers()">
-                        <span class="stat-number" data-target="42">0</span>
+                        <span class="stat-number" data-target="{{ $totalPokir }}">0</span>
                         <div class="stat-label">Pokir DPRD</div>
                     </div>
                 </div>
@@ -255,44 +255,49 @@
                         Kategori Proyek
                     </h3>
                     <div class="status-filters">
-                        <button class="status-btn active" onclick="filterProjects('psd')">
+                        <button class="status-btn active" onclick="filterProjects(event, 'psd')">
                             Strategis Daerah
                         </button>
-                        <button class="status-btn" onclick="filterProjects('psn')">
+                        <button class="status-btn" onclick="filterProjects(event, 'psn')">
                             Strategis Nasional
                         </button>
-                        <button class="status-btn" onclick="filterProjects('musrenbang')">
+                        <button class="status-btn" onclick="filterProjects(event, 'musrenbang')">
                             Usulan Musrenbang
                         </button>
-                        <button class="status-btn" onclick="filterProjects('pokir')">
+                        <button class="status-btn" onclick="filterProjects(event, 'pokir_dprd')">
                             Pokir DPRD
                         </button>
                     </div>
                 </div>
 
                 <div class="project-grid" id="projectGrid">
-                    @foreach ($dataPsd as $data)
-                        <div class="project-card" data-status="{{ $data->sub_type }}">
+                    @foreach ($dataPeta as $data)
+                        <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
                             <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] }}</h4>
                             <p class="project-location">
                                 <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] }}
                             </p>
 
                             <div class="progress-group">
-                                <p class="progress-label">Realisasi Fisik</p>
+                                <div class="progress-header">
+                                    <p class="progress-label">Realisasi Fisik</p>
+                                    <p class="progress-text">75%</p>
+                                </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: 75%"></div>
                                 </div>
-                                <p class="progress-text">75%</p>
                             </div>
 
                             <div class="progress-group">
-                                <p class="progress-label">Realisasi Anggaran</p>
+                                <div class="progress-header">
+                                    <p class="progress-label">Realisasi Anggaran</p>
+                                    <p class="progress-text">75%</p>
+                                </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: 75%"></div>
                                 </div>
-                                <p class="progress-text">75%</p>
                             </div>
+
                         </div>
                     @endforeach
 
@@ -353,11 +358,12 @@
                     <div class="animate-on-scroll">
                         <div class="position-relative">
                             <div class="ratio ratio-16x9 rounded-4 border border-primary">
-                                <iframe src="https://www.youtube.com/embed/EQbw-E1ecB8" title="YouTube video player"
-                                    style="border-radius: 0px" frameborder="0"
+                                <iframe 
+                                    src="https://www.youtube-nocookie.com/embed/EQbw-E1ecB8" title="YouTube video player"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowfullscreen referrerpolicy="strict-origin-when-cross-origin">
                                 </iframe>
+
                             </div>
                         </div>
                     </div>
@@ -387,3 +393,7 @@
     <!-- Footer -->
     @include('frontend.partials.footer')
 @endsection
+
+@push('scripts')
+    <script></script>
+@endpush

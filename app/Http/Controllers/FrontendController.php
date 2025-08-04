@@ -14,14 +14,42 @@ class FrontendController extends Controller
 {
     public function index()
     {
-        $dataPsd = DataSpatial::select('uuid', 'data_type', 'sub_type', 'kategori_id', 'tahun', 'dbf_attributes')
-            ->where('data_type', 'proyek_strategis')
-            ->where('sub_type', 'psd')
-            ->limit(6)
-            ->get();
-        // dd($dataPsd);
-        return view('frontend.pages.index', compact('dataPsd'));
+        // Ambil 6 data PSD secara random
+        $psd = DataSpatial::where('data_type', 'proyek_strategis')
+        ->where('sub_type', 'psd')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data PSN secara random
+        $psn = DataSpatial::where('data_type', 'proyek_strategis')
+        ->where('sub_type', 'psn')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data Pokir secara random
+        $pokir = DataSpatial::where('data_type', 'pokir_dprd')
+        ->inRandomOrder()->limit(6)->get();
+        
+        // Ambil 6 data Musrenbang secara random
+        $musrenbang = DataSpatial::where('data_type', 'musrenbang')
+            ->inRandomOrder()->limit(6)->get();
+
+        // Menggabungkan semuanya dengan concat
+        $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
+
+        // Total masing-masing kategori
+        $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
+        $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
+        $totalMusrenbang = DataSpatial::where('data_type', 'musrenbang')->count();
+        $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
+
+        return view('frontend.pages.index', compact(
+            'dataPeta',
+            'totalPsd',
+            'totalPsn',
+            'totalMusrenbang',
+            'totalPokir'
+        ));
     }
+
 
     public function aspirasi()
     {

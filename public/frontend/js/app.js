@@ -116,24 +116,25 @@ window.addEventListener("load", function () {
 });
 
 // Project filtering
-function filterProjects(kategori) {
-    const cards = document.querySelectorAll(".project-card");
-    const buttons = document.querySelectorAll(".status-btn");
+// function filterProjects(kategori) {
+//     const cards = document.querySelectorAll(".project-card");
+//     const buttons = document.querySelectorAll(".status-btn");
 
-    // Update active button
-    buttons.forEach((btn) => btn.classList.remove("active"));
-    event.target.classList.add("active");
+//     // Update active button
+//     buttons.forEach((btn) => btn.classList.remove("active"));
+//     event.target.classList.add("active");
 
-    // Filter cards
-    cards.forEach((card) => {
-        if (kategori === "psd" || card.getAttribute("data-status") === kategori) {
-            card.style.display = "block";
-            card.style.animation = "fadeIn 0.5s ease";
-        } else {
-            card.style.display = "none";
-        }
-    });
-}
+//     // Filter cards
+//     cards.forEach((card) => {
+//         if (card.getAttribute("data-status") === kategori) {
+//             card.style.display = "block";
+//             card.style.animation = "fadeIn 0.5s ease";
+//         } else {
+//             card.style.display = "none";
+//         }
+//     });
+// }
+
 
 // Floating Action Button
 let fabMenuOpen = false;
@@ -232,5 +233,51 @@ document.addEventListener("click", function (event) {
     const fab = document.querySelector(".floating-actions");
     if (!fab.contains(event.target) && fabMenuOpen) {
         toggleFabMenu();
+    }
+});
+
+// Enhanced filterProjects function
+function filterProjects(event, status) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Filter project cards
+    const projectCards = document.querySelectorAll('.project-card');
+    projectCards.forEach(card => {
+        const cardStatus = card.getAttribute('data-status');
+        if (status === 'all' || cardStatus === status) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+            // Show only PSD projects initially
+    const projectCards = document.querySelectorAll('.project-card');
+    projectCards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (status === 'psd') {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Set PSD button as active
+    const psdBtn = document.querySelector(".status-btn[onclick*='psd']");
+    if (psdBtn) {
+        // Remove active class from all buttons
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Add active class to PSD button
+        psdBtn.classList.add('active');
     }
 });
