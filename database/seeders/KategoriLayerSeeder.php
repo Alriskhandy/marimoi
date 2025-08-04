@@ -16,15 +16,15 @@ class KategoriLayerSeeder extends Seeder
     {
         $data = [
             // Layers (Lokasi)
-            ['type' => 'layers', 'nama' => 'Pendidikan', 'warna' => '#FF5733', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Lokasi sekolah dan kampus'],
-            ['type' => 'layers', 'nama' => 'Kesehatan', 'warna' => '#33C1FF', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Fasilitas layanan kesehatan'],
+            ['type' => 'tematik', 'nama' => 'Pendidikan', 'warna' => '#FF5733', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Lokasi sekolah dan kampus'],
+            ['type' => 'tematik', 'nama' => 'Kesehatan', 'warna' => '#33C1FF', 'icon' => null, 'is_marker' => true, 'deskripsi' => 'Fasilitas layanan kesehatan'],
 
             // Musrenbang
-            ['type' => 'musrenbangs', 'nama' => 'Infrastruktur', 'warna' => '#FFC300', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan pembangunan infrastruktur'],
-            ['type' => 'musrenbangs', 'nama' => 'Ekonomi', 'warna' => '#DAF7A6', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan sektor ekonomi'],
+            ['type' => 'usulan_musrenbang', 'nama' => 'Infrastruktur', 'warna' => '#FFC300', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan pembangunan infrastruktur'],
+            ['type' => 'usulan_musrenbang', 'nama' => 'Ekonomi', 'warna' => '#DAF7A6', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Usulan sektor ekonomi'],
 
             // Pokir DPRD
-            ['type' => 'pokir_dprds', 'nama' => 'Fasilitas Umum', 'warna' => '#C70039', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Program Pokir terkait fasilitas umum'],
+            ['type' => 'pokir_dprd', 'nama' => 'Fasilitas Umum', 'warna' => '#C70039', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Program Pokir terkait fasilitas umum'],
 
             // Proyek Strategis Daerah (PSD)
             ['type' => 'psd', 'nama' => 'Jalan Provinsi', 'warna' => '#900C3F', 'icon' => null, 'is_marker' => false, 'deskripsi' => 'Pembangunan jalan provinsi'],

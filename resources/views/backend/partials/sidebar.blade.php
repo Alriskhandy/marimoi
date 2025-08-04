@@ -36,46 +36,46 @@
         <!-- Data Peta Tematik -->
         @php
             $isPetaTematikActive =
-                request()->routeIs('lokasi.*') ||
-                (request()->routeIs('data-spatial.*') && request()->get('type') === 'lokasi') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'layers') ||
-                request()->routeIs('kategori-layers.*') ||
-                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'lokasi');
+                request()->routeIs('tematik.*') ||
+                (request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik') ||
+                (request()->routeIs('categories.*') && request()->get('type') == 'tematik') ||
+                request()->routeIs('kategori-tematik.*') ||
+                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik');
         @endphp
         <li class="nav-item {{ $isPetaTematikActive ? 'active' : '' }}">
             <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
                 aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}" aria-controls="petaTematikMenu">
                 <span class="menu-title">Peta Tematik</span>
                 <i class="menu-arrow"></i>
-                <i class="mdi mdi-layers menu-icon"></i>
+                <i class="mdi mdi-tematik menu-icon"></i>
             </a>
             <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
                 <ul class="nav flex-column sub-menu">
                     <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'lokasi' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('data-spatial.index', ['type' => 'lokasi']) }}">
+                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
                             <i class="mdi mdi-map-outline me-2"></i>Data Peta Tematik
                         </a>
                     </li>
 
                     <!-- Kategori Peta Tematik -->
                     <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'layers') || request()->routeIs('kategori-layers.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'layers']) }}">
+                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'tematik']) }}">
                             <i class="mdi mdi-format-list-bulleted me-2"></i>Kategori Peta Tematik
                         </a>
                     </li>
 
                     <!-- Feedback RPJMD -->
                     <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'lokasi' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'lokasi']) }}">
+                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
                             <i class="mdi mdi-comment-multiple me-2"></i>Feedback RPJMD
                             {{-- <span class="badge badge-sm bg-danger ms-auto">
                                 @php
                                     try {
                                         echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('data_type', 'lokasi');
+                                            $q->where('data_type', 'tematik');
                                         })->count();
                                     } catch (Exception $e) {
                                         echo '0';
@@ -377,7 +377,7 @@
             $isPOKIRActive =
                 request()->routeIs('pokir-dprd.*') ||
                 (request()->routeIs('data-spatial.*') && request()->get('type') === 'pokir_dprd') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprds') ||
+                (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprd') ||
                 request()->routeIs('kategori-pokir-dprd.*') ||
                 (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'pokir_dprd');
         @endphp
@@ -399,8 +399,8 @@
 
                     <!-- Kategori Pokir DPRD -->
                     <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprds') || request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'pokir_dprds']) }}">
+                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprd') || request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'pokir_dprd']) }}">
                             <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
                         </a>
                     </li>
@@ -432,7 +432,7 @@
             $isMUSRENBANGActive =
                 request()->routeIs('usulan-musrenbang.*') ||
                 (request()->routeIs('data-spatial.*') && request()->get('type') === 'usulan_musrenbang') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'musrenbangs') ||
+                (request()->routeIs('categories.*') && request()->get('type') == 'usulan_musrenbang') ||
                 request()->routeIs('kategori-usulan-musrenbang.*') ||
                 (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'usulan_musrenbang');
         @endphp
@@ -455,8 +455,8 @@
 
                     <!-- Kategori Usulan Musrenbang -->
                     <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'musrenbangs') || request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'musrenbangs']) }}">
+                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'usulan_musrenbang') || request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'usulan_musrenbang']) }}">
                             <i class="mdi mdi-tag-multiple me-2"></i>Kategori Musrenbang
                         </a>
                     </li>

@@ -44,17 +44,17 @@ class Category extends Model
     // Scopes berdasarkan type
     public function scopeLayers($query)
     {
-        return $query->where('type', 'layers');
+        return $query->where('type', 'tematik');
     }
 
     public function scopeMusenbangs($query)
     {
-        return $query->where('type', 'musrenbangs');
+        return $query->where('type', 'usulan_musrenbang');
     }
 
     public function scopePokirDprds($query)
     {
-        return $query->where('type', 'pokir_dprds');
+        return $query->where('type', 'pokir_dprd');
     }
 
     public function scopePsd($query)
