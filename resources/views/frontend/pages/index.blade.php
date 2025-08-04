@@ -300,7 +300,7 @@
                                     <div class="progress-fill" style="width: 75%"></div>
                                 </div>
                             </div>
-                            <a href="{{ url($slug . '/' . $data->uuid) }}">Lihat Detail</a>
+                            <a class="project-button" href="{{ url($slug . '/' . $data->uuid) }}">Lihat Detail</a>
                         </div>
                     @endforeach
 

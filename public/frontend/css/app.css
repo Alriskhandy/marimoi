@@ -754,6 +754,24 @@ body {
     transition: width 0.4s ease;
 }
 
+.project-button {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: var(--primary-blue);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.project-button:hover {
+    background: #315cd3;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+}
 
 .interactive-map {
     background: white;
