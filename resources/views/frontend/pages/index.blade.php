@@ -276,9 +276,9 @@
                         $slug = $links[$status] ?? '#';
                     @endphp
                         <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
-                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] }}</h4>
+                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] ?? '' }}</h4>
                             <p class="project-location">
-                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] }}
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] ?? '' }}
                             </p>
 
                             <div class="progress-group">
