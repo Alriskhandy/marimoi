@@ -4,7 +4,7 @@
     <div class="page-header">
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
-                <i class="mdi mdi-layers"></i>
+                <i class="mdi mdi-tematik"></i>
             </span>
             Kategori {{ isset($typeLabel) ? $typeLabel : '' }}
         </h3>
@@ -31,17 +31,18 @@
                                 <label class="form-label">Filter berdasarkan Tipe:</label>
                                 <select id="typeFilter" class="form-select d-inline-block w-auto">
                                     <option value="">Semua Tipe</option>
-                                    <option value="layers" {{ request('type') == 'layers' ? 'selected' : '' }}>Layers
+                                    <option value="tematik" {{ request('type') == 'tematik' ? 'selected' : '' }}>tematik
                                         (Lokasi)
                                     </option>
                                     <option value="psd" {{ request('type') == 'psd' ? 'selected' : '' }}>PSD (Proyek
                                         Strategis Daerah)</option>
                                     <option value="psn" {{ request('type') == 'psn' ? 'selected' : '' }}>PSN (Proyek
                                         Strategis Nasional)</option>
-                                    <option value="pokir_dprds" {{ request('type') == 'pokir_dprds' ? 'selected' : '' }}>
+                                    <option value="pokir_dprd" {{ request('type') == 'pokir_dprd' ? 'selected' : '' }}>
                                         Pokir
                                         DPRD</option>
-                                    <option value="musrenbangs" {{ request('type') == 'musrenbangs' ? 'selected' : '' }}>
+                                    <option value="usulan_musrenbang"
+                                        {{ request('type') == 'usulan_musrenbang' ? 'selected' : '' }}>
                                         Musenbang
                                         (Usulan Musrenbang)</option>
                                 </select>
@@ -196,7 +197,7 @@
                                                 </span>
                                             @else
                                                 <span class="badge badge-info">
-                                                    <i class="mdi mdi-layers"></i> Layer
+                                                    <i class="mdi mdi-tematik"></i> Layer
                                                 </span>
                                             @endif
                                         </td>
@@ -262,7 +263,7 @@
                                                         @endif
                                                     @else
                                                         <span class="badge badge-info">
-                                                            <i class="mdi mdi-layers"></i> Layer
+                                                            <i class="mdi mdi-tematik"></i> Layer
                                                         </span>
                                                     @endif
                                                 </td>
@@ -300,7 +301,7 @@
                                     <tr>
                                         <td colspan="6" class="text-center">
                                             <div class="py-4">
-                                                <i class="mdi mdi-layers mdi-48px text-muted"></i>
+                                                <i class="mdi mdi-tematik mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada kategori yang dibuat</p>
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                     data-bs-target="#addModal">
@@ -338,16 +339,18 @@
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="add_type" name="type" required disabled>
                                         <option value="">-- Pilih Tipe --</option>
-                                        <option value="layers" {{ request('type') == 'layers' ? 'selected' : '' }}>Layers
-                                            (Lokasi)</option>
+                                        <option value="tematik" {{ request('type') == 'tematik' ? 'selected' : '' }}>
+                                            Peta Tematik
+                                        </option>
                                         <option value="psd" {{ request('type') == 'psd' ? 'selected' : '' }}>PSD
                                             (Proyek Strategis Daerah)</option>
                                         <option value="psn" {{ request('type') == 'psn' ? 'selected' : '' }}>PSN
                                             (Proyek Strategis Nasional)</option>
-                                        <option value="pokir_dprds"
-                                            {{ request('type') == 'pokir_dprds' ? 'selected' : '' }}>Pokir DPRD</option>
-                                        <option value="musrenbangs"
-                                            {{ request('type') == 'musrenbangs' ? 'selected' : '' }}>Musenbang (Usulan
+                                        <option value="pokir_dprd"
+                                            {{ request('type') == 'pokir_dprd' ? 'selected' : '' }}>Pokir DPRD</option>
+                                        <option value="usulan_musrenbang"
+                                            {{ request('type') == 'usulan_musrenbang' ? 'selected' : '' }}>Musenbang
+                                            (Usulan
                                             Musrenbang)</option>
                                     </select>
 
@@ -454,11 +457,11 @@
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="edit_type" name="type" required>
                                         <option value="">-- Pilih Tipe --</option>
-                                        <option value="layers">Layers (Lokasi)</option>
+                                        <option value="tematik">Peta Tematik</option>
                                         <option value="psd">PSD (Proyek Strategis Daerah)</option>
                                         <option value="psn">PSN (Proyek Strategis Nasional)</option>
-                                        <option value="pokir_dprds">Pokir DPRD</option>
-                                        <option value="musrenbangs">Musenbang (Usulan Musrenbang)</option>
+                                        <option value="pokir_dprd">Pokir DPRD</option>
+                                        <option value="usulan_musrenbang">Musenbang (Usulan Musrenbang)</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>

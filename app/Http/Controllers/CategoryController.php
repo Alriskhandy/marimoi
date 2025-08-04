@@ -15,7 +15,7 @@ class CategoryController extends Controller
     $type = $request->get('type');
 
     // Daftar tipe yang diperbolehkan
-    $validTypes = ['layers', 'psd', 'psn', 'pokir_dprds', 'musrenbangs'];
+    $validTypes = ['tematik', 'psd', 'psn', 'pokir_dprd', 'usulan_musrenbang'];
 
     // Cek jika type ada dan tidak valid
     if ($type && !in_array($type, $validTypes)) {
@@ -37,11 +37,11 @@ class CategoryController extends Controller
 
     // Label yang akan ditampilkan
     $typeLabels = [
-        'layers' => 'Layers (Lokasi)',
+        'tematik' => 'Peta Tematik',
         'psd' => 'PSD (Proyek Strategis Daerah)',
         'psn' => 'PSN (Proyek Strategis Nasional)',
-        'pokir_dprds' => 'Pokir DPRD',
-        'musrenbangs' => 'Musrenbang (Usulan Musrenbang)'
+        'pokir_dprd' => 'Pokir DPRD',
+        'usulan_musrenbang' => 'Usulan Musrenbang'
     ];
 
     $typeLabel = $type ? ($typeLabels[$type] ?? '') : '';
@@ -62,7 +62,7 @@ class CategoryController extends Controller
         
         // Get available types
         $types = [
-            'peta_tematik' => 'Peta Tematik (Lokasi)',
+            'tematik' => 'Peta Tematik',
             'musrenbang' => 'Usulan Musrenbang', 
             'pokir' => 'POKIR DPRD',
             'psd' => 'Proyek Strategis Daerah',
@@ -84,7 +84,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:layers,musrenbangs,pokir_dprds,psd,psn',
+            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -257,7 +257,7 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
         
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:layers,musrenbangs,pokir_dprds,psd,psn',
+            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -658,7 +658,7 @@ class CategoryController extends Controller
         
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
-            'type' => 'nullable|in:layers,musrenbangs,pokir_dprds,psd,psn',
+            'type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
             'include_children' => 'boolean'
         ]);
 
@@ -739,7 +739,7 @@ class CategoryController extends Controller
         
         $validator = Validator::make($request->all(), [
             'new_parent_id' => 'nullable|exists:categories,id',
-            'new_type' => 'nullable|in:layers,musrenbangs,pokir_dprds,psd,psn'
+            'new_type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn'
         ]);
 
         if ($validator->fails()) {
@@ -905,7 +905,7 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:json,csv',
-            'type' => 'required|in:layers,musrenbangs,pokir_dprds,psd,psn',
+            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
             'overwrite' => 'boolean'
         ]);
 

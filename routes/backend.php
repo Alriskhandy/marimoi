@@ -65,11 +65,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     });
 
-    // === PETA RPJMD (LOKASI) ROUTES ===
-    Route::prefix('lokasi')->name('lokasi.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexLokasi'])->name('index');
+    // === PETA RPJMD (tematik) ROUTES ===
+    Route::prefix('tematik')->name('tematik.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index');
         Route::get('/create', function() {
-            return redirect()->route('data-spatial.create') . '?type=lokasi';
+            return redirect()->route('data-spatial.create') . '?type=tematik';
         })->name('create');
         Route::get('/{uuid}/edit', function($id) {
             return redirect()->route('data-spatial.edit', $id);
@@ -83,19 +83,19 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         
         // API routes
         Route::get('/geojson', [DataSpatialController::class, 'geojson'])
-            ->defaults('data_type', 'lokasi')->name('geojson');
+            ->defaults('data_type', 'tematik')->name('geojson');
         Route::get('/statistics', [DataSpatialController::class, 'getStatistics'])
-            ->defaults('data_type', 'lokasi')->name('statistics');
+            ->defaults('data_type', 'tematik')->name('statistics');
         Route::get('/categories', [DataSpatialController::class, 'getCategories'])
-            ->defaults('data_type', 'lokasi')->name('categories');
+            ->defaults('data_type', 'tematik')->name('categories');
         Route::get('/dbf-columns', [DataSpatialController::class, 'getDbfColumns'])
-            ->defaults('data_type', 'lokasi')->name('dbf.columns');
+            ->defaults('data_type', 'tematik')->name('dbf.columns');
         Route::get('/dbf-columns/{column}/values', [DataSpatialController::class, 'getDbfColumnValues'])
-            ->defaults('data_type', 'lokasi')->name('dbf.values');
+            ->defaults('data_type', 'tematik')->name('dbf.values');
         
         // Peta view
         Route::get('/peta', function() {
-            return view('backend.pages.maps.lokasi');
+            return view('backend.pages.maps.tematik');
         })->name('peta');
     });
 
@@ -293,12 +293,12 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     // === CATEGORY ALIASES FOR BACKWARD COMPATIBILITY ===
     // Redirect old category routes to unified category management
-    Route::prefix('kategori-layers')->name('kategori-layers.')->group(function () {
+    Route::prefix('kategori-tematik')->name('kategori-tematik.')->group(function () {
         Route::get('/', function() {
-            return redirect()->route('categories.index') . '?type=layers';
+            return redirect()->route('categories.index') . '?type=tematik';
         })->name('index');
         Route::get('/create', function() {
-            return redirect()->route('categories.create') . '?type=layers';
+            return redirect()->route('categories.create') . '?type=tematik';
         })->name('create');
         Route::post('/', function() {
             return redirect()->route('categories.store');
@@ -316,10 +316,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('kategori-usulan-musrenbang')->name('kategori-usulan-musrenbang.')->group(function () {
         Route::get('/', function() {
-            return redirect()->route('categories.index') . '?type=musrenbangs';
+            return redirect()->route('categories.index') . '?type=usulan_musrenbang';
         })->name('index');
         Route::get('/create', function() {
-            return redirect()->route('categories.create') . '?type=musrenbangs';
+            return redirect()->route('categories.create') . '?type=usulan_musrenbang';
         })->name('create');
         Route::post('/', function() {
             return redirect()->route('categories.store');
@@ -337,10 +337,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('kategori-pokir-dprd')->name('kategori-pokir-dprd.')->group(function () {
         Route::get('/', function() {
-            return redirect()->route('categories.index') . '?type=pokir_dprds';
+            return redirect()->route('categories.index') . '?type=pokir_dprd';
         })->name('index');
         Route::get('/create', function() {
-            return redirect()->route('categories.create') . '?type=pokir_dprds';
+            return redirect()->route('categories.create') . '?type=pokir_dprd';
         })->name('create');
         Route::post('/', function() {
             return redirect()->route('categories.store');
@@ -468,9 +468,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 
     // Shortcut routes untuk akses cepat berdasarkan type (opsional)
     Route::group(['prefix' => 'feedbacks'], function () {
-        Route::get('/lokasi', function () {
-            return redirect()->route('project-feedbacks.index', ['type' => 'lokasi']);
-        })->name('feedbacks.lokasi');
+        Route::get('/tematik', function () {
+            return redirect()->route('project-feedbacks.index', ['type' => 'tematik']);
+        })->name('feedbacks.tematik');
         
         Route::get('/pokir-dprd', function () {
             return redirect()->route('project-feedbacks.index', ['type' => 'pokir_dprd']);
@@ -514,15 +514,15 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 
 // Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 //     // Old dashboard routes
-//     Route::get('/lokasis', function() {
-//         return redirect()->route('lokasi.index');
+//     Route::get('/tematiks', function() {
+//         return redirect()->route('tematik.index');
 //     });
     
-//     Route::get('/usulan-musrenbangs', function() {
+//     Route::get('/usulan-usulan_musrenbang', function() {
 //         return redirect()->route('usulan-musrenbang.index');
 //     });
     
-//     Route::get('/pokir-dprds', function() {
+//     Route::get('/pokir-dprd', function() {
 //         return redirect()->route('pokir-dprd.index');
 //     });
     
@@ -535,8 +535,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 //     });
     
 //     // Legacy API routes
-//     Route::get('/lokasis/geojson', function() {
-//         return redirect()->route('lokasi.geojson');
+//     Route::get('/tematiks/geojson', function() {
+//         return redirect()->route('tematik.geojson');
 //     });
     
 //     Route::get('/proyek-strategis-daerahs/geojson', function() {
@@ -554,8 +554,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 
 // // Dashboard legacy routes (keeping /dashboard prefix for compatibility)
 // Route::prefix('dashboard')->middleware(['auth'])->group(function () {
-//     Route::get('/lokasi', function() {
-//         return redirect()->route('lokasi.index');
+//     Route::get('/tematik', function() {
+//         return redirect()->route('tematik.index');
 //     });
     
 //     Route::get('/pokir-dprd', function() {
@@ -575,7 +575,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 //     });
     
 //     Route::get('/peta', function() {
-//         return redirect()->route('lokasi.peta');
+//         return redirect()->route('tematik.peta');
 //     });
     
 //     Route::get('/peta-pokir', function() {

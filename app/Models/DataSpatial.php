@@ -53,7 +53,7 @@ class DataSpatial extends Model
     
     public function scopeLokasi($query)
     {
-        return $query->where('data_type', 'lokasi');
+        return $query->where('data_type', 'tematik');
     }
 
     public function scopeUsulanMusrenbang($query)
@@ -75,12 +75,12 @@ class DataSpatial extends Model
     
     public function scopeProyekStrategisDaerah($query)
     {
-        return $query->proyekStrategis()->where('sub_type', 'daerah');
+        return $query->proyekStrategis()->where('sub_type', 'psd');
     }
 
     public function scopeProyekStrategisNasional($query)
     {
-        return $query->proyekStrategis()->where('sub_type', 'nasional');
+        return $query->proyekStrategis()->where('sub_type', 'psn');
     }
 
     // === SCOPES TAMBAHAN ===
@@ -104,7 +104,7 @@ class DataSpatial extends Model
     
     public function isLokasi()
     {
-        return $this->data_type === 'lokasi';
+        return $this->data_type === 'tematik';
     }
 
     public function isProposal()
@@ -132,7 +132,7 @@ class DataSpatial extends Model
     public function getDisplayTypeAttribute()
     {
         $type = match($this->data_type) {
-            'lokasi' => 'Lokasi',
+            'tematik' => 'Tematik',
             'usulan_musrenbang' => 'Usulan Musrenbang',
             'pokir_dprd' => 'Pokir DPRD',
             'proyek_strategis' => 'Proyek Strategis',
@@ -150,11 +150,11 @@ class DataSpatial extends Model
     public function getCategoryTypeAttribute()
     {
         return match($this->data_type) {
-            'lokasi' => 'layers',
-            'usulan_musrenbang' => 'musrenbang',
-            'pokir_dprd' => 'pokir_dprds',
-            'proyek_strategis' => $this->sub_type === 'daerah' ? 'psd' : 'psn',
-            default => 'layers'
+            'tematik' => 'tematik',
+            'usulan_musrenbang' => 'usulan_musrenbang',
+            'pokir_dprd' => 'pokir_dprd',
+            'proyek_strategis' => $this->sub_type === 'psd' ? 'psd' : 'psn',
+            default => 'tematik'
         };
     }
 
@@ -218,19 +218,19 @@ class Lokasi extends DataSpatial
 {
     protected static function booted()
     {
-        static::addGlobalScope('lokasi', function ($query) {
-            $query->where('data_type', 'lokasi');
+        static::addGlobalScope('tematik', function ($query) {
+            $query->where('data_type', 'tematik');
         });
         
         static::creating(function ($model) {
-            $model->data_type = 'lokasi';
+            $model->data_type = 'tematik';
         });
     }
 
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'layers');
+                   ->where('type', 'tematik');
     }
 }
 
@@ -250,7 +250,7 @@ class UsulanMusrenbang extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'musrenbang');
+                   ->where('type', 'usulan_musrenbang');
     }
 }
 
@@ -270,7 +270,7 @@ class PokirDprd extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'pokir_dprds');
+                   ->where('type', 'pokir_dprd');
     }
 }
 
@@ -280,12 +280,12 @@ class ProyekStrategisDaerah extends DataSpatial
     {
         static::addGlobalScope('proyek_strategis_daerah', function ($query) {
             $query->where('data_type', 'proyek_strategis')
-                  ->where('sub_type', 'daerah');
+                  ->where('sub_type', 'psd');
         });
         
         static::creating(function ($model) {
             $model->data_type = 'proyek_strategis';
-            $model->sub_type = 'daerah';
+            $model->sub_type = 'psd';
         });
     }
 
@@ -302,12 +302,12 @@ class ProyekStrategisNasional extends DataSpatial
     {
         static::addGlobalScope('proyek_strategis_nasional', function ($query) {
             $query->where('data_type', 'proyek_strategis')
-                  ->where('sub_type', 'nasional');
+                  ->where('sub_type', 'psn');
         });
         
         static::creating(function ($model) {
             $model->data_type = 'proyek_strategis';
-            $model->sub_type = 'nasional';
+            $model->sub_type = 'psn';
         });
     }
 
