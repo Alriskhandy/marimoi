@@ -23,12 +23,30 @@ class DatabaseSeeder extends Seeder
                 AspirasiSeeder::class,
             ]);
 
-           
-        User::factory()->create([
-            'name' => 'Admin',
+             User::create([
+            'name' => 'Super Admin',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('admin123')
         ]);
+           
+        // User::create([
+        //     'name' => 'Super Admin',
+        //     'role_id' => 1,
+        //     'email' => 'admin@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
+        // User::create([
+        //     'name' => 'BAPPEDA',
+        //     'role_id' => 2,
+        //     'email' => 'bappeda@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
+        // User::create([
+        //     'name' => 'DISPAR',
+        //     'role_id' => 3,
+        //     'email' => 'opd@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
 
         
     }
