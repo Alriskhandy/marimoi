@@ -544,45 +544,46 @@
         </li>
 
 
-        <li class="nav-item nav-category">
-            <span
-                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
-                style="cursor: default;">
-                <i class="mdi mdi-lan me-2 fs-5 opacity-50"></i>
-                Sistem
-            </span>
-        </li>
+
+        @if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'super-admin')
+            <li class="nav-item nav-category">
+                <span
+                    class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
+                    style="cursor: default;">
+                    <i class="mdi mdi-lan me-2 fs-5 opacity-50"></i>
+                    Sistem
+                </span>
+            </li>
 
 
-        <!-- Sistem & Pengguna -->
-        @php
-            $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
-        @endphp
-        <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu"
-                aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
-                <span class="menu-title">Sistem & Pengguna</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-cog-outline menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
-                        </a>
-                    </li>
+            @php
+                $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
+            @endphp
+            <!-- Sistem & Pengguna -->
+            <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
+                <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu"
+                    aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
+                    <span class="menu-title">Sistem & Pengguna</span>
+                    <i class="menu-arrow"></i>
+                    <i class="mdi mdi-cog-outline menu-icon"></i>
+                </a>
+                <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
+                    <ul class="nav flex-column sub-menu">
+                        <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('users.index') }}">
+                                <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('settings.index') }}">
+                                <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+        @endif
 
-
-                    <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="#!">
-                            <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-        </li>
     </ul>
 
     <style>

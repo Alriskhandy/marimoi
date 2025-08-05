@@ -24,10 +24,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// role:
+// super-admin
+// admin-bappeda
+// admin-opd
+
 // Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'role:super-admin'])->name('dashboard');
 
 // Profile Management
 Route::middleware('auth')->group(function () {

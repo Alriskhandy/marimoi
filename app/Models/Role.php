@@ -30,4 +30,6 @@ protected $table = 'roles';
     {
         return $query->where('is_active', true);
     }
+
+    
 }

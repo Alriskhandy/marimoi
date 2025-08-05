@@ -19,13 +19,11 @@ return new class extends Migration
             $table->foreignId('opd_id')->nullable()->constrained('opd')->nullOnDelete();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
 
             // Indexes
             $table->index(['role_id', 'opd_id']);
-            $table->index('is_active');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
