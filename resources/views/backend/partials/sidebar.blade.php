@@ -539,6 +539,13 @@
                 </span>
             </a>
         </li> --}}
+        <!-- Aspirasi -->
+        <li class="nav-item {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('aspirasi.index') }}">
+                <span class="menu-title">Aspirasi</span>
+                <i class="mdi mdi-shield-account menu-icon"></i>
+            </a>
+        </li>
 
         <li class="nav-item nav-category">
             <span
@@ -567,6 +574,17 @@
                             <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
                         </a>
                     </li>
+
+                    <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('opd.index') }}">
+                            <i class="mdi mdi-office-building me-2"></i>OPD
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                         <a class="nav-link" href="#!">
                             <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
@@ -574,6 +592,7 @@
                     </li>
                 </ul>
             </div>
+
         </li>
     </ul>
 

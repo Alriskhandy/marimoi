@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DataSpatialController;
+use App\Http\Controllers\KategoriAspirasiController;
+use App\Http\Controllers\OpdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\MalukuUtaraController;
+use App\Http\Controllers\RoleController;
 use App\Models\DataSpatial;
 use Illuminate\Support\Facades\Route;
 
@@ -492,7 +496,20 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
     //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']);
     //     })->name('feedbacks.proyek-strategis-daerah');
     // });
-
+ // Resource Routes
+    Route::resource('roles', RoleController::class);
+    Route::resource('opd', OpdController::class);
+    Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
+    // Routes untuk Aspirasi
+    // Routes untuk Aspirasi
+    Route::resource('aspirasi', AspirasiController::class);
+    Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
+    Route::get('aspirasi/{aspirasi}/download/{index}', [AspirasiController::class, 'downloadLampiran'])->name('aspirasi.downloadLampiran');    
+    Route::get('api/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('api.categories-by-opd');
+    // Routes untuk Kategori Aspirasi
+    Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
+    Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
+    Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
 });
 
 // /*
@@ -586,3 +603,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
 //         return redirect()->route('usulan-musrenbang.peta');
 //     });
 // });
+
+
+

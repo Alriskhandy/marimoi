@@ -32,6 +32,7 @@ return new class extends Migration
         // Tabel data_spatial untuk semua entitas spatial
         Schema::create('data_spatial', function (Blueprint $table) {
             $table->id();
+             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('uuid')->unique()->nullable();
             // Kolom untuk identifikasi jenis data
             $table->string('data_type'); // 'lokasi', 'usulan_musenbang', 'pokir_dprd', 'proyek_strategis'
@@ -62,6 +63,7 @@ return new class extends Migration
             $table->index(['sub_type', 'tahun']); // khusus untuk proyek strategis
             $table->index('kategori_id');
             $table->index('dbf_attributes', null, 'gin');
+            $table->index('user_id');
         });
         
         // Tambahkan kolom geometri menggunakan PostGIS

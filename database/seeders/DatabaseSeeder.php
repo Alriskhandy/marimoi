@@ -17,12 +17,19 @@ class DatabaseSeeder extends Seeder
         $this->call([
                 KategoriLayerSeeder::class,
                 ProjectFeedbackSeeder::class,
-               
+                RoleSeeder::class,
+                OpdSeeder::class,
+                KategoriAspirasiSeeder::class,
+                AspirasiSeeder::class,
             ]);
+
+           
         User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('admin123')
         ]);
+
+        
     }
 }

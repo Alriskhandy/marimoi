@@ -27,6 +27,8 @@ return new class extends Migration
                 // Relasi ke data_spatial
                 $table->unsignedBigInteger('data_spatial_id')->nullable();
                 $table->foreign('data_spatial_id')->references('id')->on('data_spatial')->onDelete('set null');
+                $table->unsignedBigInteger('opd_id')->nullable();
+                $table->foreign('opd_id')->references('id')->on('opd')->onDelete('set null');
                 
                 
                 // Basic info
