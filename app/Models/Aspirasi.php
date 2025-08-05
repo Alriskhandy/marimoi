@@ -25,7 +25,6 @@ protected $table = 'aspirasi';
         'longitude',
         'tanggapan_admin',
         'status',
-        'prioritas',
         'tanggal_respon',
         'admin_id'
     ];
@@ -74,11 +73,6 @@ protected $table = 'aspirasi';
     public function scopeSelesai($query)
     {
         return $query->where('status', 'selesai');
-    }
-
-    public function scopeByPrioritas($query, $prioritas)
-    {
-        return $query->where('prioritas', $prioritas);
     }
 
     // Accessors

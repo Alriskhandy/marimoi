@@ -27,7 +27,6 @@ class AspirasiSeeder extends Seeder
                 'judul_aspirasi' => 'Jalan Berlubang di Kebon Jeruk',
                 'isi_aspirasi' => 'Jalan di depan rumah saya sudah berlubang besar sejak 2 bulan yang lalu. Mohon segera diperbaiki karena membahayakan pengendara.',
                 'status' => 'pending',
-                'prioritas' => 'tinggi',
                 'latitude' => -6.1889,
                 'longitude' => 106.7778
             ],
@@ -41,7 +40,6 @@ class AspirasiSeeder extends Seeder
                 'judul_aspirasi' => 'Pelayanan Puskesmas Lambat',
                 'isi_aspirasi' => 'Pelayanan di Puskesmas Cempaka Putih sangat lambat. Antrian panjang dan hanya ada 1 dokter yang bertugas.',
                 'status' => 'diproses',
-                'prioritas' => 'sedang',
                 'admin_id' => $admin?->id,
                 'tanggal_respon' => Carbon::now()->subDays(2),
                 'tanggapan_admin' => 'Terima kasih atas laporannya. Kami sedang meninjau dan akan menambah tenaga medis.'
@@ -55,7 +53,6 @@ class AspirasiSeeder extends Seeder
                 'judul_aspirasi' => 'Perbaikan Website Pemda',
                 'isi_aspirasi' => 'Website pemda sering error dan loading lambat. Mohon diperbaiki agar masyarakat dapat mengakses informasi dengan baik.',
                 'status' => 'selesai',
-                'prioritas' => 'sedang',
                 'admin_id' => $admin?->id,
                 'tanggal_respon' => Carbon::now()->subDays(7),
                 'tanggapan_admin' => 'Website telah diperbaiki dan dioptimasi. Terima kasih atas masukannya.'
@@ -70,7 +67,6 @@ class AspirasiSeeder extends Seeder
                 'judul_aspirasi' => 'Penambahan Fasilitas Lab Komputer',
                 'isi_aspirasi' => 'SD Negeri 01 membutuhkan penambahan komputer di lab. Saat ini hanya ada 10 komputer untuk 35 siswa per kelas.',
                 'status' => 'pending',
-                'prioritas' => 'sedang'
             ],
             [
                 'kategori_aspirasi_id' => 1,
@@ -82,7 +78,6 @@ class AspirasiSeeder extends Seeder
                 'judul_aspirasi' => 'Saluran Air Tersumbat',
                 'isi_aspirasi' => 'Saluran air di komplek perumahan tersumbat sampah. Setiap hujan pasti banjir. Mohon segera dibersihkan.',
                 'status' => 'diproses',
-                'prioritas' => 'tinggi',
                 'admin_id' => $admin?->id,
                 'tanggal_respon' => Carbon::now()->subDays(1),
                 'tanggapan_admin' => 'Tim akan segera ke lokasi untuk pembersihan saluran air.'

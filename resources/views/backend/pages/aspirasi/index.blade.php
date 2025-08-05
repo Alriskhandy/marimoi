@@ -132,20 +132,8 @@
                                     </li>
                                     <li><a class="dropdown-item filter-item" href="#" data-filter="saran">Saran</a>
                                     </li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <h6 class="dropdown-header">Prioritas</h6>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="rendah">Rendah</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="sedang">Sedang</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="tinggi">Tinggi</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="urgent">Urgent</a></li>
+
+
                                 </ul>
                             </div>
                             <button type="button" class="btn btn-warning" id="resetFilter">
@@ -197,7 +185,6 @@
                                     <th style="min-width: 150px;">Tertuju</th>
                                     <th class="text-center" style="width: 100px;">Jenis</th>
                                     <th class="text-center" style="width: 100px;">Status</th>
-                                    <th class="text-center" style="width: 100px;">Prioritas</th>
                                     <th class="text-center" style="width: 120px;">Tanggal</th>
                                     <th class="text-center" style="width: 120px;">Aksi</th>
                                 </tr>
@@ -205,7 +192,7 @@
                             <tbody>
                                 @forelse($aspirasi as $index => $item)
                                     <tr data-id="{{ $item->id }}" data-status="{{ $item->status }}"
-                                        data-jenis="{{ $item->jenis_aspirasi }}" data-prioritas="{{ $item->prioritas }}"
+                                        data-jenis="{{ $item->jenis_aspirasi }}"
                                         data-kategori="{{ $item->kategori_aspirasi_id }}"
                                         data-search="{{ strtolower($item->nomor_tiket . ' ' . $item->nama_pengirim . ' ' . $item->email . ' ' . $item->judul_aspirasi) }}"
                                         data-date="{{ $item->created_at->format('Y-m-d') }}">
@@ -261,20 +248,7 @@
                                                 {{ ucfirst($item->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">
-                                            @php
-                                                $prioritasBadge = match (strtolower($item->prioritas)) {
-                                                    'rendah' => 'secondary',
-                                                    'sedang' => 'info',
-                                                    'tinggi' => 'warning',
-                                                    'urgent' => 'danger',
-                                                    default => 'light',
-                                                };
-                                            @endphp
-                                            <span class="badge bg-{{ $prioritasBadge }}">
-                                                {{ ucfirst($item->prioritas) }}
-                                            </span>
-                                        </td>
+
                                         <td class="text-center">
                                             <small>{{ $item->created_at->format('d/m/Y') }}</small>
                                             @if ($item->tanggal_respon)
@@ -283,14 +257,10 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
+                                            <div class="d-flex justify-content-center gap-2">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show"
                                                     data-id="{{ $item->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary btn-status"
-                                                    data-id="{{ $item->id }}" title="Update Status">
-                                                    <i class="mdi mdi-pencil"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
                                                     data-id="{{ $item->id }}"
@@ -299,6 +269,7 @@
                                                 </button>
                                             </div>
                                         </td>
+
                                     </tr>
                                 @empty
                                     <tr id="no-data-row">
@@ -450,7 +421,6 @@
                                     <h6 class="mb-0">Status & Response</h6>
                                     <div>
                                         <span id="show_status" class="badge"></span>
-                                        <span id="show_prioritas" class="badge ms-1"></span>
                                     </div>
                                 </div>
                                 <div class="card-body">
@@ -485,8 +455,9 @@
                         <i class="mdi mdi-close"></i> Tutup
                     </button>
                     <button type="button" class="btn btn-gradient-primary btn-status" id="btnUpdateStatus">
-                        <i class="mdi mdi-pencil"></i> Update Status
+                        <i class="mdi mdi-send"></i> Kirim Respons
                     </button>
+
                 </div>
             </div>
         </div>
@@ -528,7 +499,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-gradient-primary">
-                            <i class="mdi mdi-send"></i> Update Status
+                            <i class="mdi mdi-send"></i> Kirim Respons
                         </button>
                     </div>
                 </form>
@@ -591,15 +562,7 @@
                 return jenisClasses[jenis] || 'secondary';
             }
 
-            function getPrioritasClass(prioritas) {
-                const prioritasClasses = {
-                    'rendah': 'secondary',
-                    'sedang': 'info',
-                    'tinggi': 'warning',
-                    'urgent': 'danger'
-                };
-                return prioritasClasses[prioritas] || 'secondary';
-            }
+
 
             // Copy coordinates function
             function copyToClipboard(text) {
@@ -783,12 +746,12 @@
                             .text(aspirasi.status.charAt(0).toUpperCase() + aspirasi.status
                                 .slice(1));
 
-                        // Prioritas badge
-                        const prioritasClass = getPrioritasClass(aspirasi.prioritas);
-                        $('#show_prioritas').removeClass().addClass(
-                                `badge bg-${prioritasClass}`)
-                            .text(aspirasi.prioritas.charAt(0).toUpperCase() + aspirasi
-                                .prioritas.slice(1));
+                        // // Prioritas badge
+                        // const prioritasClass = getPrioritasClass(aspirasi.prioritas);
+                        // $('#show_prioritas').removeClass().addClass(
+                        //         `badge bg-${prioritasClass}`)
+                        //     .text(aspirasi.prioritas.charAt(0).toUpperCase() + aspirasi
+                        //         .prioritas.slice(1));
 
                         // Koordinat
                         if (aspirasi.latitude && aspirasi.longitude) {

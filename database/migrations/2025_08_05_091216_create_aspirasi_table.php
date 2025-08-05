@@ -27,13 +27,11 @@ return new class extends Migration
             $table->decimal('longitude', 11, 8)->nullable();
             $table->text('tanggapan_admin')->nullable();
             $table->enum('status', ['pending', 'diproses', 'selesai', 'ditolak'])->default('pending');
-            $table->enum('prioritas', ['rendah', 'sedang', 'tinggi', 'urgent'])->default('sedang');
             $table->timestamp('tanggal_respon')->nullable();
             $table->foreignId('admin_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             
             $table->index('status');
-            $table->index('prioritas');
             $table->index(['kategori_aspirasi_id', 'status']);
             $table->index('nomor_tiket');
             $table->index('created_at');

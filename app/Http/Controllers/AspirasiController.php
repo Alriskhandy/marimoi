@@ -27,10 +27,6 @@ class AspirasiController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->has('prioritas') && $request->prioritas != '') {
-            $query->where('prioritas', $request->prioritas);
-        }
-
         if ($request->has('jenis_aspirasi') && $request->jenis_aspirasi != '') {
             $query->where('jenis_aspirasi', $request->jenis_aspirasi);
         }
@@ -84,74 +80,6 @@ class AspirasiController extends Controller
         return view('backend.pages.aspirasi.create', compact('kategoriAspirasi'));
     }
 
-    /**
-     * Store a newly created aspirasi in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'kategori_aspirasi_id' => 'required|exists:kategori_aspirasi,id',
-            'nama_pengirim' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'alamat' => 'required|string',
-            'jenis_aspirasi' => 'required|in:usulan,keluhan,kritik,saran',
-            'judul_aspirasi' => 'required|string|max:255',
-            'isi_aspirasi' => 'required|string',
-            'lampiran.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,gif|max:5120', // 5MB max
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'prioritas' => 'required|in:rendah,sedang,tinggi,urgent',
-        ], [
-            'kategori_aspirasi_id.required' => 'Kategori aspirasi harus dipilih.',
-            'kategori_aspirasi_id.exists' => 'Kategori aspirasi tidak valid.',
-            'nama_pengirim.required' => 'Nama pengirim harus diisi.',
-            'email.required' => 'Email harus diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'alamat.required' => 'Alamat harus diisi.',
-            'jenis_aspirasi.required' => 'Jenis aspirasi harus dipilih.',
-            'jenis_aspirasi.in' => 'Jenis aspirasi tidak valid.',
-            'judul_aspirasi.required' => 'Judul aspirasi harus diisi.',
-            'isi_aspirasi.required' => 'Isi aspirasi harus diisi.',
-            'lampiran.*.mimes' => 'File lampiran harus berformat: pdf, doc, docx, jpg, jpeg, png, gif.',
-            'lampiran.*.max' => 'Ukuran file lampiran maksimal 5MB.',
-            'prioritas.required' => 'Prioritas harus dipilih.',
-            'prioritas.in' => 'Prioritas tidak valid.',
-        ]);
-
-        // Generate nomor tiket unik
-        $validated['nomor_tiket'] = $this->generateNomorTiket();
-
-        // Handle file uploads
-        if ($request->hasFile('lampiran')) {
-            $lampiran = [];
-            foreach ($request->file('lampiran') as $file) {
-                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('aspirasi/lampiran', $filename, 'public');
-                $lampiran[] = [
-                    'original_name' => $file->getClientOriginalName(),
-                    'filename' => $filename,
-                    'path' => $path,
-                    'size' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
-                ];
-            }
-            $validated['lampiran'] = json_encode($lampiran);
-        }
-
-        Aspirasi::create($validated);
-
-        // Return JSON response for AJAX requests
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Aspirasi berhasil ditambahkan dengan nomor tiket: ' . $validated['nomor_tiket']
-            ]);
-        }
-
-        return redirect()->route('aspirasi.index')
-                        ->with('success', 'Aspirasi berhasil ditambahkan dengan nomor tiket: ' . $validated['nomor_tiket']);
-    }
 
     /**
      * Display the specified aspirasi.
@@ -184,75 +112,7 @@ class AspirasiController extends Controller
         return view('backend.pages.aspirasi.edit', compact('aspirasi', 'kategoriAspirasi', 'admins'));
     }
 
-    /**
-     * Update the specified aspirasi in storage.
-     */
-    public function update(Request $request, Aspirasi $aspirasi)
-    {
-        $validated = $request->validate([
-            'kategori_aspirasi_id' => 'required|exists:kategori_aspirasi,id',
-            'nama_pengirim' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'alamat' => 'required|string',
-            'jenis_aspirasi' => 'required|in:usulan,keluhan,kritik,saran',
-            'judul_aspirasi' => 'required|string|max:255',
-            'isi_aspirasi' => 'required|string',
-            'lampiran.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,gif|max:5120',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'status' => 'required|in:pending,diproses,selesai,ditolak',
-            'prioritas' => 'required|in:rendah,sedang,tinggi,urgent',
-            'tanggapan_admin' => 'nullable|string',
-            'admin_id' => 'nullable|exists:users,id',
-        ]);
-
-        // Handle status change
-        if ($request->status != $aspirasi->status) {
-            if (in_array($request->status, ['diproses', 'selesai', 'ditolak'])) {
-                $validated['tanggal_respon'] = now();
-                $validated['admin_id'] = Auth::id();
-            }
-        }
-
-        // Handle new file uploads
-        if ($request->hasFile('lampiran')) {
-            // Delete old files if exists
-            if ($aspirasi->lampiran) {
-                $oldFiles = json_decode($aspirasi->lampiran, true);
-                foreach ($oldFiles as $file) {
-                    Storage::disk('public')->delete($file['path']);
-                }
-            }
-
-            $lampiran = [];
-            foreach ($request->file('lampiran') as $file) {
-                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('aspirasi/lampiran', $filename, 'public');
-                $lampiran[] = [
-                    'original_name' => $file->getClientOriginalName(),
-                    'filename' => $filename,
-                    'path' => $path,
-                    'size' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
-                ];
-            }
-            $validated['lampiran'] = json_encode($lampiran);
-        }
-
-        $aspirasi->update($validated);
-
-        // Return JSON response for AJAX requests
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Aspirasi berhasil diperbarui.'
-            ]);
-        }
-
-        return redirect()->route('aspirasi.index')
-                        ->with('success', 'Aspirasi berhasil diperbarui.');
-    }
+   
 
     /**
      * Remove the specified aspirasi from storage.
