@@ -508,44 +508,41 @@
             </li>
         @endif
 
-        {{-- <!-- Divider untuk Feedback -->
-        <li class="nav-item nav-category">
-            <span
-                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
-                style="cursor: default;">
-                <i class="mdi mdi-comment-processing-outline me-2 fs-5 opacity-50"></i>
-                Feedback & Aspirasi
-            </span>
-        </li>
-
-        <!-- Menu Feedback Umum -->
         @php
-            $isFeedbackUmumActive =
-                request()->routeIs('project-feedbacks.*') &&
-                (request()->get('type') === 'all' || !request()->get('type'));
+            $isAspirasiMenuActive =
+                request()->routeIs('aspirasi.*') ||
+                request()->routeIs('opd.*') ||
+                request()->routeIs('kategori-aspirasi.*');
         @endphp
-        <li class="nav-item {{ $isFeedbackUmumActive ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('project-feedbacks.index') }}">
-                <span class="menu-title">Semua Feedback</span>
-                <i class="mdi mdi-comment-multiple-outline menu-icon"></i>
-                <span class="badge badge-sm bg-info ms-auto">
-                    @php
-                        try {
-                            echo \App\Models\ProjectFeedback::count();
-                        } catch (Exception $e) {
-                            echo '0';
-                        }
-                    @endphp
-                </span>
-            </a>
-        </li> --}}
-        <!-- Aspirasi -->
-        <li class="nav-item {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('aspirasi.index') }}">
+
+        <li class="nav-item {{ $isAspirasiMenuActive ? 'active' : '' }}">
+            <a class="nav-link" data-bs-toggle="collapse" href="#aspirasiMenu"
+                aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}" aria-controls="aspirasiMenu">
                 <span class="menu-title">Aspirasi</span>
+                <i class="menu-arrow"></i>
                 <i class="mdi mdi-shield-account menu-icon"></i>
             </a>
+            <div class="collapse {{ $isAspirasiMenuActive ? 'show' : '' }}" id="aspirasiMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('aspirasi.index') }}">
+                            <i class="mdi mdi-shield-account me-2"></i>Data Aspirasi
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('opd.index') }}">
+                            <i class="mdi mdi-office-building me-2"></i>OPD
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
+                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
+
 
         <li class="nav-item nav-category">
             <span
@@ -555,6 +552,7 @@
                 Sistem
             </span>
         </li>
+
 
         <!-- Sistem & Pengguna -->
         @php
@@ -575,16 +573,7 @@
                         </a>
                     </li>
 
-                    <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('opd.index') }}">
-                            <i class="mdi mdi-office-building me-2"></i>OPD
-                        </a>
-                    </li>
-                    <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
-                        </a>
-                    </li>
+
                     <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                         <a class="nav-link" href="#!">
                             <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem

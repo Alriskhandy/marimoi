@@ -15,19 +15,20 @@ class KategoriAspirasiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
-    {
-        $kategoriAspirasi = KategoriAspirasi::with('opd')->latest()->get();
-        $opd = Opd::all();
+    public function index()
+{
+    $kategoriAspirasi = KategoriAspirasi::with('opd')->get();
+    $opdList = Opd::all(); // pastikan ini dikirim ke view
 
-        // Statistics
-        $stats = [
-            'total' => $kategoriAspirasi->count(),
-            'dengan_opd' => $kategoriAspirasi->whereNotNull('opd_id')->count(),
-            'tanpa_opd' => $kategoriAspirasi->whereNull('opd_id')->count(),
-        ];
+    $stats = [
+        'total' => $kategoriAspirasi->count(),
+        'dengan_opd' => $kategoriAspirasi->whereNotNull('opd_id')->count(),
+        'tanpa_opd' => $kategoriAspirasi->whereNull('opd_id')->count(),
+    ];
 
-        return view('backend.pages.aspirasi.kategori-aspirasi', compact('kategoriAspirasi', 'opd', 'stats'));
+//     return view('backend.kategori.index', compact('kategoriAspirasi', 'opdList', 'stats'));
+// }
+        return view('backend.pages.aspirasi.kategori-aspirasi', compact('kategoriAspirasi', 'opdList', 'stats'));
     }
 
     /**
@@ -36,7 +37,7 @@ class KategoriAspirasiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'opd_id' => 'nullable|exists:opd,id',
+            'opd_id' => 'required|exists:opd,id',
             'nama_kategori' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
         ], [
@@ -62,11 +63,23 @@ class KategoriAspirasiController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(KategoriAspirasi $kategoriAspirasi): View
-    {
-        $kategoriAspirasi->load('opd');
-        return view('backend.pages.kategori-aspirasi.show', compact('kategoriAspirasi'));
+ public function show($id)
+{
+    $kategori = KategoriAspirasi::with('opd')->find($id);
+
+    if (!$kategori) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Kategori tidak ditemukan.'
+        ], 404);
     }
+
+    return response()->json([
+        'success' => true,
+        'data' => $kategori
+    ]);
+}
+
 
     /**
      * Show the form for editing the specified resource.
@@ -109,27 +122,19 @@ class KategoriAspirasiController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(KategoriAspirasi $kategoriAspirasi)
-    {
-        // Check if kategori has aspirasi
-        if ($kategoriAspirasi->aspirasi()->count() > 0) {
-            return redirect()->route('kategori-aspirasi.index')
-                            ->with('error', 'Kategori tidak dapat dihapus karena masih digunakan oleh aspirasi.');
-        }
+   public function destroy($id)
+{
+    $kategori = KategoriAspirasi::find($id);
 
-        $kategoriAspirasi->delete();
-
-        // Return JSON response for AJAX requests
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Kategori aspirasi berhasil dihapus.'
-            ]);
-        }
-
-        return redirect()->route('kategori-aspirasi.index')
-                        ->with('success', 'Kategori aspirasi berhasil dihapus.');
+    if (!$kategori) {
+        return response()->json(['success' => false, 'message' => 'Kategori tidak ditemukan.'], 404);
     }
+
+    $kategori->delete();
+
+    return response()->json(['success' => true, 'message' => 'Kategori berhasil dihapus.']);
+}
+
 
     public function apiOptions(): JsonResponse
     {

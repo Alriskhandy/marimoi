@@ -1,4 +1,4 @@
-@extends('backend.partials.main', ['title' => 'Kategori'])
+@extends('backend.partials.main', ['title' => $typeLabel ?? 'Kategori'])
 
 @section('main')
     <div class="page-header">

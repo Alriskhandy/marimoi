@@ -470,35 +470,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
         Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
     });
 
-    // // Shortcut routes untuk akses cepat berdasarkan type (opsional)
-    // Route::group(['prefix' => 'feedbacks'], function () {
-    //     Route::get('/tematik', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'tematik']);
-    //     })->name('feedbacks.tematik');
-        
-    //     Route::get('/pokir-dprd', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'pokir_dprd']);
-    //     })->name('feedbacks.pokir-dprd');
-        
-    //     Route::get('/usulan-musrenbang', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'usulan_musrenbang']);
-    //     })->name('feedbacks.usulan-musrenbang');
-        
-    //     Route::get('/proyek-strategis', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis']);
-    //     })->name('feedbacks.proyek-strategis');
-        
-    //     Route::get('/proyek-strategis-nasional', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']);
-    //     })->name('feedbacks.proyek-strategis-nasional');
-        
-    //     Route::get('/proyek-strategis-daerah', function () {
-    //         return redirect()->route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']);
-    //     })->name('feedbacks.proyek-strategis-daerah');
-    // });
+   
  // Resource Routes
     Route::resource('roles', RoleController::class);
-    Route::resource('opd', OpdController::class);
     Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
     // Routes untuk Aspirasi
     // Routes untuk Aspirasi
@@ -510,99 +484,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
     Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
     Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
     Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
+    // Route::get('kategori-aspirasi/{id}', [KategoriAspirasiController::class, 'show'])->name('kategori-aspirasi.show');
+
+    Route::resource('opd', OpdController::class);
+    Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
+    Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
+    Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+
 });
-
-// /*
-// |--------------------------------------------------------------------------
-// | Maluku Utara Reference Data Routes
-// |--------------------------------------------------------------------------
-// */
-
-// Route::prefix('maluku-utara')->name('maluku-utara.')->middleware(['auth'])->group(function () {
-//     Route::get('/reference', [MalukuUtaraController::class, 'reference'])->name('reference');
-//     Route::get('/kecamatan/{kabupaten}', [MalukuUtaraController::class, 'kecamatan'])->name('kecamatan');
-// });
-
-// /*
-// |--------------------------------------------------------------------------
-// | Backward Compatibility & Legacy Route Redirects
-// |--------------------------------------------------------------------------
-// */
-
-// Route::prefix('dashboard')->middleware(['auth'])->group(function () {
-//     // Old dashboard routes
-//     Route::get('/tematiks', function() {
-//         return redirect()->route('tematik.index');
-//     });
-    
-//     Route::get('/usulan-usulan_musrenbang', function() {
-//         return redirect()->route('usulan-musrenbang.index');
-//     });
-    
-//     Route::get('/pokir-dprd', function() {
-//         return redirect()->route('pokir-dprd.index');
-//     });
-    
-//     Route::get('/proyek-strategis-daerahs', function() {
-//         return redirect()->route('psd.index');
-//     });
-    
-//     Route::get('/proyek-strategis-nasionals', function() {
-//         return redirect()->route('psn.index');
-//     });
-    
-//     // Legacy API routes
-//     Route::get('/tematiks/geojson', function() {
-//         return redirect()->route('tematik.geojson');
-//     });
-    
-//     Route::get('/proyek-strategis-daerahs/geojson', function() {
-//         return redirect()->route('psd.geojson');
-//     });
-    
-//     Route::get('/proyek-strategis-daerahs/tahun/{year}', function($year) {
-//         return redirect()->route('psd.tahun.show', $year);
-//     });
-    
-//     Route::get('/proyek-strategis-nasionals/tahun/{year}', function($year) {
-//         return redirect()->route('psn.tahun.show', $year);
-//     });
-// });
-
-// // Dashboard legacy routes (keeping /dashboard prefix for compatibility)
-// Route::prefix('dashboard')->middleware(['auth'])->group(function () {
-//     Route::get('/tematik', function() {
-//         return redirect()->route('tematik.index');
-//     });
-    
-//     Route::get('/pokir-dprd', function() {
-//         return redirect()->route('pokir-dprd.index');
-//     });
-    
-//     Route::get('/usulan-musrenbang', function() {
-//         return redirect()->route('usulan-musrenbang.index');
-//     });
-    
-//     Route::get('/psd', function() {
-//         return redirect()->route('psd.index');
-//     });
-    
-//     Route::get('/psn', function() {
-//         return redirect()->route('psn.index');
-//     });
-    
-//     Route::get('/peta', function() {
-//         return redirect()->route('tematik.peta');
-//     });
-    
-//     Route::get('/peta-pokir', function() {
-//         return redirect()->route('pokir-dprd.peta');
-//     });
-    
-//     Route::get('/peta-usulan-musrenbang', function() {
-//         return redirect()->route('usulan-musrenbang.peta');
-//     });
-// });
-
-
-

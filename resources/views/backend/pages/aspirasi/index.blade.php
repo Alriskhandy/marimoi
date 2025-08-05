@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Aspirasi Masyarakat'])
 
 @section('main')
     <!-- Add CSRF token to meta for AJAX requests -->
@@ -132,8 +132,6 @@
                                     </li>
                                     <li><a class="dropdown-item filter-item" href="#" data-filter="saran">Saran</a>
                                     </li>
-
-
                                 </ul>
                             </div>
                             <button type="button" class="btn btn-warning" id="resetFilter">
@@ -142,13 +140,13 @@
                         </div>
                     </div>
 
-                    <!-- Search and Filter Box -->
+                    <!-- Enhanced Search and Filter Box -->
                     <div class="row mb-3">
-                        <div class="col-lg-4 col-md-6 mb-2">
+                        <div class="col-lg-3 col-md-6 mb-2">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
                                 <input type="text" class="form-control" id="searchInput"
-                                    placeholder="Cari berdasarkan nomor tiket, nama, email...">
+                                    placeholder="Cari nomor tiket, nama, email...">
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-2">
@@ -164,10 +162,42 @@
                         </div>
                         <div class="col-lg-3 col-md-6 mb-2">
                             <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-office-building"></i></span>
+                                <select class="form-control" id="opdFilter">
+                                    <option value="">Semua OPD</option>
+                                    @php
+                                        $opdList = collect($kategoriAspirasi)
+                                            ->map(function ($kategori) {
+                                                return $kategori->opd;
+                                            })
+                                            ->filter()
+                                            ->unique('id')
+                                            ->sortBy('name');
+                                    @endphp
+                                    @foreach ($opdList as $opd)
+                                        <option value="{{ $opd->id }}">{{ $opd->singkatan }} - {{ $opd->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-2">
+                            <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-calendar"></i></span>
                                 <input type="date" class="form-control" id="tanggalFilter"
                                     placeholder="Filter Tanggal">
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Results Info -->
+                    <div id="searchInfo" class="d-none mb-3">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="mdi mdi-information-outline me-2"></i>
+                            <span id="searchResultText"></span>
+                            <button type="button" class="btn btn-sm btn-outline-info ms-auto" id="clearAllFilters">
+                                Clear All
+                            </button>
                         </div>
                     </div>
 
@@ -179,14 +209,14 @@
                         <table class="table table-hover table-striped" id="aspirasiTable" style="min-width: 1200px;">
                             <thead class="table">
                                 <tr>
-                                    <th class="text-center" style="width: 50px;">No</th>
+                                    <th class="text-center" style="width: 50px; min-width: 50px;">No</th>
                                     <th style="min-width: 150px;">Nomor Tiket</th>
                                     <th style="min-width: 200px;">Pengirim</th>
                                     <th style="min-width: 150px;">Tertuju</th>
-                                    <th class="text-center" style="width: 100px;">Jenis</th>
-                                    <th class="text-center" style="width: 100px;">Status</th>
-                                    <th class="text-center" style="width: 120px;">Tanggal</th>
-                                    <th class="text-center" style="width: 120px;">Aksi</th>
+                                    <th class="text-center" style="width: 100px; min-width: 100px;">Jenis</th>
+                                    <th class="text-center" style="width: 100px; min-width: 100px;">Status</th>
+                                    <th class="text-center" style="width: 120px; min-width: 120px;">Tanggal</th>
+                                    <th class="text-center" style="width: 120px; min-width: 120px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -194,7 +224,8 @@
                                     <tr data-id="{{ $item->id }}" data-status="{{ $item->status }}"
                                         data-jenis="{{ $item->jenis_aspirasi }}"
                                         data-kategori="{{ $item->kategori_aspirasi_id }}"
-                                        data-search="{{ strtolower($item->nomor_tiket . ' ' . $item->nama_pengirim . ' ' . $item->email . ' ' . $item->judul_aspirasi) }}"
+                                        data-opd="{{ $item->kategoriAspirasi?->opd_id ?? '' }}"
+                                        data-search="{{ strtolower($item->nomor_tiket . ' ' . $item->nama_pengirim . ' ' . $item->email . ' ' . $item->judul_aspirasi . ' ' . ($item->kategoriAspirasi?->opd?->name ?? '') . ' ' . ($item->kategoriAspirasi?->opd?->singkatan ?? '')) }}"
                                         data-date="{{ $item->created_at->format('Y-m-d') }}">
                                         <td class="text-center">{{ $aspirasi->firstItem() + $index }}</td>
                                         <td>
@@ -212,12 +243,16 @@
                                             </div>
                                         </td>
                                         <td>
-                                            {{ $item->kategoriAspirasi?->opd?->singkatan ?? 'N/A' }}
-                                            {{-- <div class="text-truncate" style="max-width: 250px;"
-                                                title="{{ $item->judul_aspirasi }}">
-                                                {{ $item->judul_aspirasi }}
-                                            </div>
-                                            <small class="text-muted">{{ Str::limit($item->isi_aspirasi, 50) }}</small> --}}
+                                            @if ($item->kategoriAspirasi?->opd)
+                                                <div class="d-flex flex-column">
+                                                    <strong
+                                                        class="text-info">{{ $item->kategoriAspirasi->opd->singkatan }}</strong>
+                                                    <small
+                                                        class="text-muted">{{ Str::limit($item->kategoriAspirasi->opd->name, 25) }}</small>
+                                                </div>
+                                            @else
+                                                <span class="badge bg-secondary">Umum</span>
+                                            @endif
                                         </td>
                                         <td class="text-center">
                                             @php
@@ -257,7 +292,7 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center gap-1">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show"
                                                     data-id="{{ $item->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
@@ -273,7 +308,7 @@
                                     </tr>
                                 @empty
                                     <tr id="no-data-row">
-                                        <td colspan="9" class="text-center">
+                                        <td colspan="8" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Tidak ada data aspirasi</p>
@@ -283,6 +318,14 @@
                                 @endforelse
                             </tbody>
                         </table>
+
+                        <!-- Scroll indicator for mobile -->
+                        <div class="scroll-indicator d-md-none">
+                            <div class="d-flex justify-content-center align-items-center py-2">
+                                <i class="mdi mdi-gesture-swipe-horizontal text-muted me-2"></i>
+                                <small class="text-muted">Geser tabel ke kiri/kanan untuk melihat lebih banyak</small>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Pagination -->
@@ -304,8 +347,6 @@
         </div>
     </div>
 
-
-
     <!-- Show Modal -->
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -318,7 +359,20 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+
+                <!-- Loading State -->
+                <div id="modalLoadingState" class="modal-body text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-3">
+                        <h5 class="text-muted">Memuat detail aspirasi...</h5>
+                        <p class="text-muted small">Mohon tunggu sebentar</p>
+                    </div>
+                </div>
+
+                <!-- Content State (hidden by default) -->
+                <div id="modalContentState" class="modal-body" style="display: none;">
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
@@ -450,14 +504,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" id="modalFooter" style="display: none;">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="mdi mdi-close"></i> Tutup
                     </button>
                     <button type="button" class="btn btn-gradient-primary btn-status" id="btnUpdateStatus">
                         <i class="mdi mdi-send"></i> Kirim Respons
                     </button>
-
                 </div>
             </div>
         </div>
@@ -516,11 +569,11 @@
                 const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' :
                     'alert-danger');
                 const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
                 $('#alertContainer').html(alertHtml);
 
                 setTimeout(function() {
@@ -562,8 +615,6 @@
                 return jenisClasses[jenis] || 'secondary';
             }
 
-
-
             // Copy coordinates function
             function copyToClipboard(text) {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -603,14 +654,16 @@
                 document.body.removeChild(textArea);
             }
 
-            // Client-side filtering functionality
+            // Enhanced filtering functionality
             function filterTable() {
                 const searchTerm = $('#searchInput').val().toLowerCase();
                 const kategoriFilter = $('#kategoriFilter').val();
+                const opdFilter = $('#opdFilter').val();
                 const tanggalFilter = $('#tanggalFilter').val();
                 const activeFilter = $('.filter-item.active').data('filter') || 'all';
 
                 let visibleCount = 0;
+                const totalRows = $('#aspirasiTable tbody tr').not('#no-data-row').length;
 
                 $('#aspirasiTable tbody tr').each(function() {
                     const $row = $(this);
@@ -637,6 +690,14 @@
                         }
                     }
 
+                    // OPD filter
+                    if (opdFilter) {
+                        const rowOpd = $row.data('opd');
+                        if (rowOpd != opdFilter) {
+                            showRow = false;
+                        }
+                    }
+
                     // Tanggal filter
                     if (tanggalFilter) {
                         const rowDate = $row.data('date');
@@ -645,14 +706,12 @@
                         }
                     }
 
-                    // Status/Jenis/Prioritas filter
+                    // Status/Jenis filter
                     if (activeFilter !== 'all') {
                         const rowStatus = $row.data('status');
                         const rowJenis = $row.data('jenis');
-                        const rowPrioritas = $row.data('prioritas');
 
-                        if (rowStatus !== activeFilter && rowJenis !== activeFilter && rowPrioritas !==
-                            activeFilter) {
+                        if (rowStatus !== activeFilter && rowJenis !== activeFilter) {
                             showRow = false;
                         }
                     }
@@ -666,22 +725,68 @@
                     }
                 });
 
+                // Update search info
+                updateSearchInfo(searchTerm, kategoriFilter, opdFilter, tanggalFilter, activeFilter, visibleCount,
+                    totalRows);
+
                 // Show/hide no data message
                 const $noDataRow = $('#no-data-row');
                 if (visibleCount === 0 && $noDataRow.length === 0) {
                     $('#aspirasiTable tbody').append(`
-                <tr id="no-data-row">
-                    <td colspan="9" class="text-center">
-                        <div class="py-4">
-                            <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
-                            <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
-                        </div>
-                    </td>
-                </tr>
-            `);
+                        <tr id="no-data-row">
+                            <td colspan="8" class="text-center">
+                                <div class="py-4">
+                                    <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
+                                    <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
                 } else if (visibleCount > 0) {
                     $noDataRow.remove();
                 }
+            }
+
+            function updateSearchInfo(searchTerm, kategoriFilter, opdFilter, tanggalFilter, activeFilter,
+                visibleCount, totalRows) {
+                const hasActiveFilters = searchTerm || kategoriFilter || opdFilter || tanggalFilter || (
+                    activeFilter !== 'all');
+
+                if (hasActiveFilters) {
+                    let infoText = `Menampilkan ${visibleCount} dari ${totalRows} aspirasi`;
+
+                    const filters = [];
+                    if (searchTerm) filters.push(`pencarian: "${searchTerm}"`);
+                    if (kategoriFilter) {
+                        const kategoriText = $('#kategoriFilter option:selected').text();
+                        filters.push(`kategori: ${kategoriText}`);
+                    }
+                    if (opdFilter) {
+                        const opdText = $('#opdFilter option:selected').text();
+                        filters.push(`OPD: ${opdText}`);
+                    }
+                    if (tanggalFilter) filters.push(`tanggal: ${tanggalFilter}`);
+                    if (activeFilter !== 'all') filters.push(`filter: ${activeFilter}`);
+
+                    if (filters.length > 0) {
+                        infoText += ` (${filters.join(', ')})`;
+                    }
+
+                    $('#searchResultText').text(infoText);
+                    $('#searchInfo').removeClass('d-none');
+                } else {
+                    $('#searchInfo').addClass('d-none');
+                }
+            }
+
+            function clearAllFilters() {
+                $('.filter-item').removeClass('active');
+                $('.filter-item[data-filter="all"]').addClass('active');
+                $('#searchInput').val('');
+                $('#kategoriFilter').val('');
+                $('#opdFilter').val('');
+                $('#tanggalFilter').val('');
+                filterTable();
             }
 
             // Event Handlers
@@ -692,20 +797,24 @@
                 filterTable();
             });
 
-            $('#searchInput, #kategoriFilter, #tanggalFilter').on('input change', filterTable);
+            $('#searchInput, #kategoriFilter, #opdFilter, #tanggalFilter').on('input change', filterTable);
 
-            $('#resetFilter').on('click', function() {
-                $('.filter-item').removeClass('active');
-                $('.filter-item[data-filter="all"]').addClass('active');
-                $('#searchInput').val('');
-                $('#kategoriFilter').val('');
-                $('#tanggalFilter').val('');
-                filterTable();
-            });
+            $('#resetFilter, #clearAllFilters').on('click', clearAllFilters);
 
-            // Show Modal - Load data via AJAX
+            // Show Modal with Loading Effect
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
+
+                // Show modal with loading state
+                $('#modalLoadingState').show();
+                $('#modalContentState').hide();
+                $('#modalFooter').hide();
+                $('#showModal').modal('show');
+
+                // Add loading animation to button
+                const $btn = $(this);
+                const originalHtml = $btn.html();
+                $btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
 
                 $.ajax({
                     url: `{{ route('aspirasi.show', '') }}/${id}`,
@@ -715,113 +824,142 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function(response) {
-                        // Handle both direct data and wrapped response
-                        const aspirasi = response.data || response;
+                        // Simulate minimum loading time for better UX
+                        setTimeout(() => {
+                            // Handle both direct data and wrapped response
+                            const aspirasi = response.data || response;
 
-                        // Basic info
-                        $('#show_opd').text(aspirasi.kategori_aspirasi?.opd?.name ||
-                            'Tidak ada OPD');
-                        $('#show_nomor_tiket').text(aspirasi.nomor_tiket);
-                        $('#show_kategori').text(aspirasi.kategori_aspirasi?.nama ||
-                            'Tanpa Kategori');
-                        $('#show_nama_pengirim').text(aspirasi.nama_pengirim);
-                        $('#show_email').text(aspirasi.email);
-                        $('#show_phone').text(aspirasi.phone || '-');
-                        $('#show_alamat').text(aspirasi.alamat);
-                        $('#show_judul_aspirasi').text(aspirasi.judul_aspirasi);
-                        $('#show_isi_aspirasi').text(aspirasi.isi_aspirasi);
-                        $('#show_created_at').text(new Date(aspirasi.created_at)
-                            .toLocaleDateString('id-ID'));
-
-                        // Jenis aspirasi badge
-                        const jenisClass = getJenisClass(aspirasi.jenis_aspirasi);
-                        $('#show_jenis_aspirasi').removeClass().addClass(
-                                `badge bg-${jenisClass}`)
-                            .text(aspirasi.jenis_aspirasi.charAt(0).toUpperCase() + aspirasi
-                                .jenis_aspirasi.slice(1));
-
-                        // Status badge
-                        const statusClass = getStatusClass(aspirasi.status);
-                        $('#show_status').removeClass().addClass(`badge bg-${statusClass}`)
-                            .text(aspirasi.status.charAt(0).toUpperCase() + aspirasi.status
-                                .slice(1));
-
-                        // // Prioritas badge
-                        // const prioritasClass = getPrioritasClass(aspirasi.prioritas);
-                        // $('#show_prioritas').removeClass().addClass(
-                        //         `badge bg-${prioritasClass}`)
-                        //     .text(aspirasi.prioritas.charAt(0).toUpperCase() + aspirasi
-                        //         .prioritas.slice(1));
-
-                        // Koordinat
-                        if (aspirasi.latitude && aspirasi.longitude) {
-                            $('#show_koordinat_row').show();
-                            const googleMapsUrl =
-                                `https://www.google.com/maps/search/?api=1&query=${aspirasi.latitude},${aspirasi.longitude}`;
-                            $('#openMapBtn').attr('href', googleMapsUrl);
-
-                            $('#copyCoordinates').off('click').on('click', function() {
-                                const coordinates =
-                                    `${aspirasi.latitude}, ${aspirasi.longitude}`;
-                                copyToClipboard(coordinates);
-                            });
-                        } else {
-                            $('#show_koordinat_row').hide();
-                        }
-
-                        // Lampiran
-                        if (aspirasi.lampiran) {
-                            const lampiran = typeof aspirasi.lampiran === 'string' ? JSON.parse(
-                                aspirasi.lampiran) : aspirasi.lampiran;
-                            let lampiranHtml = '';
-                            lampiran.forEach(function(file, index) {
-                                lampiranHtml += `
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="mdi mdi-file-outline me-2"></i>
-                                <span>${file.original_name}</span>
-                                <a href="{{ route('aspirasi.downloadLampiran', ['aspirasi' => '__ID__', 'index' => '__INDEX__']) }}" 
-                                   class="btn btn-outline-primary btn-sm ms-auto" download>
-                                    <i class="mdi mdi-download"></i>
-                                </a>
-                            </div>
-                        `.replace('__ID__', aspirasi.id).replace('__INDEX__', index);
-                            });
-                            $('#show_lampiran_list').html(lampiranHtml);
-                            $('#show_lampiran_container').show();
-                        } else {
-                            $('#show_lampiran_container').hide();
-                        }
-
-                        // Admin info
-                        if (aspirasi.admin) {
-                            $('#show_admin_name').text(aspirasi.admin.name);
-                            $('#show_admin_info').show();
-                        } else {
-                            $('#show_admin_info').hide();
-                        }
-
-                        // Tanggapan admin
-                        if (aspirasi.tanggapan_admin) {
-                            $('#show_tanggapan_admin').text(aspirasi.tanggapan_admin);
-                            $('#show_tanggal_respon').text(new Date(aspirasi.tanggal_respon)
+                            // Basic info
+                            $('#show_opd').text(aspirasi.kategori_aspirasi?.opd?.name ||
+                                'Tidak ada OPD');
+                            $('#show_nomor_tiket').text(aspirasi.nomor_tiket);
+                            $('#show_kategori').text(aspirasi.kategori_aspirasi?.nama ||
+                                'Tanpa Kategori');
+                            $('#show_nama_pengirim').text(aspirasi.nama_pengirim);
+                            $('#show_email').text(aspirasi.email);
+                            $('#show_phone').text(aspirasi.phone || '-');
+                            $('#show_alamat').text(aspirasi.alamat);
+                            $('#show_judul_aspirasi').text(aspirasi.judul_aspirasi);
+                            $('#show_isi_aspirasi').text(aspirasi.isi_aspirasi);
+                            $('#show_created_at').text(new Date(aspirasi.created_at)
                                 .toLocaleDateString('id-ID'));
-                            $('#show_response_container').show();
-                        } else {
-                            $('#show_response_container').hide();
-                        }
 
-                        // Set status button data
-                        $('#btnUpdateStatus').data('id', aspirasi.id);
+                            // Jenis aspirasi badge
+                            const jenisClass = getJenisClass(aspirasi.jenis_aspirasi);
+                            $('#show_jenis_aspirasi').removeClass().addClass(
+                                    `badge bg-${jenisClass}`)
+                                .text(aspirasi.jenis_aspirasi.charAt(0).toUpperCase() +
+                                    aspirasi.jenis_aspirasi.slice(1));
 
-                        // Show modal
-                        $('#showModal').modal('show');
+                            // Status badge
+                            const statusClass = getStatusClass(aspirasi.status);
+                            $('#show_status').removeClass().addClass(
+                                    `badge bg-${statusClass}`)
+                                .text(aspirasi.status.charAt(0).toUpperCase() + aspirasi
+                                    .status.slice(1));
+
+                            // Koordinat
+                            if (aspirasi.latitude && aspirasi.longitude) {
+                                $('#show_koordinat_row').show();
+                                const googleMapsUrl =
+                                    `https://www.google.com/maps/search/?api=1&query=${aspirasi.latitude},${aspirasi.longitude}`;
+                                $('#openMapBtn').attr('href', googleMapsUrl);
+
+                                $('#copyCoordinates').off('click').on('click',
+                                function() {
+                                    const coordinates =
+                                        `${aspirasi.latitude}, ${aspirasi.longitude}`;
+                                    copyToClipboard(coordinates);
+                                });
+                            } else {
+                                $('#show_koordinat_row').hide();
+                            }
+
+                            // Lampiran
+                            if (aspirasi.lampiran) {
+                                const lampiran = typeof aspirasi.lampiran === 'string' ?
+                                    JSON.parse(aspirasi.lampiran) : aspirasi.lampiran;
+                                let lampiranHtml = '';
+                                lampiran.forEach(function(file, index) {
+                                    lampiranHtml += `
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="mdi mdi-file-outline me-2"></i>
+                                            <span>${file.original_name}</span>
+                                            <a href="{{ route('aspirasi.downloadLampiran', ['aspirasi' => '__ID__', 'index' => '__INDEX__']) }}" 
+                                               class="btn btn-outline-primary btn-sm ms-auto" download>
+                                                <i class="mdi mdi-download"></i>
+                                            </a>
+                                        </div>
+                                    `.replace('__ID__', aspirasi.id).replace('__INDEX__', index);
+                                });
+                                $('#show_lampiran_list').html(lampiranHtml);
+                                $('#show_lampiran_container').show();
+                            } else {
+                                $('#show_lampiran_container').hide();
+                            }
+
+                            // Admin info
+                            if (aspirasi.admin) {
+                                $('#show_admin_name').text(aspirasi.admin.name);
+                                $('#show_admin_info').show();
+                            } else {
+                                $('#show_admin_info').hide();
+                            }
+
+                            // Tanggapan admin
+                            if (aspirasi.tanggapan_admin) {
+                                $('#show_tanggapan_admin').text(aspirasi
+                                    .tanggapan_admin);
+                                $('#show_tanggal_respon').text(new Date(aspirasi
+                                        .tanggal_respon).toLocaleDateString(
+                                    'id-ID'));
+                                $('#show_response_container').show();
+                            } else {
+                                $('#show_response_container').hide();
+                            }
+
+                            // Set status button data
+                            $('#btnUpdateStatus').data('id', aspirasi.id);
+
+                            // Show content and hide loading
+                            $('#modalLoadingState').hide();
+                            $('#modalContentState').show();
+                            $('#modalFooter').show();
+
+                        }, 800); // Minimum loading time for smooth UX
                     },
                     error: function(xhr) {
                         console.error('Error loading aspirasi details:', xhr);
+
+                        // Show error in modal
+                        $('#modalLoadingState').html(`
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-alert-circle-outline text-danger" style="font-size: 3rem;"></i>
+                                <div class="mt-3">
+                                    <h5 class="text-danger">Gagal Memuat Data</h5>
+                                    <p class="text-muted">${xhr.responseJSON?.message || 'Terjadi kesalahan saat memuat detail aspirasi'}</p>
+                                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">
+                                        <i class="mdi mdi-close"></i> Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        `);
+
                         showAlert('Gagal memuat data detail: ' + (xhr.responseJSON?.message ||
                             'Unknown error'), 'error');
+                    },
+                    complete: function() {
+                        // Restore button state
+                        $btn.prop('disabled', false).html(originalHtml);
                     }
                 });
+            });
+
+            // Reset modal state when closed
+            $('#showModal').on('hidden.bs.modal', function() {
+                $('#modalLoadingState').show();
+                $('#modalContentState').hide();
+                $('#modalFooter').hide();
             });
 
             // Status Modal
@@ -895,7 +1033,7 @@
                     },
                     complete: function() {
                         submitBtn.prop('disabled', false).html(
-                            '<i class="mdi mdi-send"></i> Update Status');
+                            '<i class="mdi mdi-send"></i> Kirim Respons');
                     }
                 });
             });
@@ -963,110 +1101,210 @@
                     }
                 });
             };
+
+            // Enhanced scroll functionality for table
+            function initTableScroll() {
+                const $tableResponsive = $('.table-responsive');
+
+                if ($tableResponsive.length) {
+                    // Add scroll shadow effect
+                    $tableResponsive.on('scroll', function() {
+                        const scrollLeft = $(this).scrollLeft();
+
+                        // Add scrolled class when user scrolls
+                        if (scrollLeft > 0) {
+                            $(this).addClass('scrolled user-scrolled');
+                        } else {
+                            $(this).removeClass('scrolled');
+                        }
+
+                        // Hide scroll indicator after user interacts
+                        if (scrollLeft > 10) {
+                            $(this).addClass('user-scrolled');
+                        }
+                    });
+
+                    // Auto-hide scroll indicator after 3 seconds on mobile
+                    if (window.innerWidth < 768) {
+                        setTimeout(() => {
+                            $tableResponsive.addClass('user-scrolled');
+                        }, 3000);
+                    }
+                }
+            }
+
+            // Initialize table scroll functionality
+            initTableScroll();
         });
     </script>
 
     <style>
-        /* Existing styles from original file */
-        .input-group .form-control,
-        .input-group .form-select {
-            height: calc(1.5em + .75rem + 2px);
-        }
-
+        /* Enhanced table responsive with horizontal scroll */
         .table-responsive {
             border-radius: 10px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: visible;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table {
+            min-width: 1200px;
+            margin-bottom: 0;
         }
 
         .table th {
-            color: #000000;
+            color: #000000 !important;
             border: none;
             font-weight: 600;
             white-space: nowrap;
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .table td {
             border-color: #e9ecef;
             vertical-align: middle;
+            white-space: nowrap;
         }
 
-        .table tbody tr:hover {
-            background-color: #f9f8fa;
+        /* Allow text wrapping for specific columns */
+        .table td:nth-child(3),
+        /* Pengirim */
+        .table td:nth-child(4) {
+            /* Tertuju */
+            white-space: normal;
+            word-wrap: break-word;
         }
 
+        /* Custom scrollbar */
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-top: 1px solid #dee2e6;
+            border-radius: 0 0 10px 10px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile optimizations */
         @media (max-width: 767px) {
+            .table-responsive {
+                border-radius: 8px;
+                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            }
 
-            .table th,
-            .table td {
-                padding: 0.5rem 0.25rem;
+            .table {
+                min-width: 1000px;
                 font-size: 0.875rem;
             }
 
-            .btn-group .btn {
+            .table th,
+            .table td {
+                padding: 0.5rem 0.75rem;
+            }
+
+            .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.75rem;
             }
 
-            .badge {
-                font-size: 0.65rem;
-                padding: 0.2rem 0.4rem;
+            .scroll-indicator {
+                position: sticky;
+                bottom: 0;
+                background: rgba(248, 249, 250, 0.95);
+                backdrop-filter: blur(10px);
+                z-index: 5;
+                animation: pulse 2s infinite;
             }
         }
 
-        .modal-content {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        /* Hide scroll indicator after user interaction */
+        .table-responsive.user-scrolled .scroll-indicator {
+            display: none;
         }
 
-        .modal-xl {
-            max-width: 95%;
+        /* Loading spinner styles */
+        .spinner-border {
+            animation: spinner-border .75s linear infinite;
         }
 
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        @keyframes spinner-border {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        .filter-item.active {
-            background-color: #667eea;
-            color: white;
+        /* Modal loading state */
+        #modalLoadingState {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
+        /* Enhanced search info styling */
+        #searchInfo .alert {
+            border-left: 4px solid #17a2b8;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+        }
+
+        /* Input group styling */
+        .input-group .form-control,
+        .input-group .form-select {
+            height: calc(1.5em + .75rem + 2px);
+        }
+
+        .input-group-text {
+            border: 1px solid #ced4da;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        /* Enhanced button styling */
         .btn-gradient-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             color: white;
         }
 
-        .badge {
-            font-size: 0.75em;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.375rem;
-        }
-
+        /* Enhanced card styling */
         .card {
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border: none;
-        }
-
-        .text-truncate {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Additional aspirasi-specific styles */
-        .badge-outline-info {
-            border: 1px solid #17a2b8;
-            color: #17a2b8;
-            background-color: transparent;
-        }
-
-        .font-weight-bold {
-            font-weight: 600 !important;
         }
 
         .card-img-holder {
@@ -1079,6 +1317,100 @@
             top: 0;
             right: 0;
             opacity: 0.1;
+        }
+
+        /* Badge styling */
+        .badge {
+            font-size: 0.75em;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+        }
+
+        /* Enhanced modal styling */
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-xl {
+            max-width: 95%;
+        }
+
+        /* Form styling */
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Filter item styling */
+        .filter-item.active {
+            background-color: #667eea;
+            color: white;
+        }
+
+        /* Table hover effects */
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        /* Button hover effects */
+        .btn-outline-info:hover,
+        .btn-outline-danger:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        /* Pulse animation for scroll indicator */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Statistics cards hover effect */
+        .card.card-img-holder:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Loading button state */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+        }
+
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 @endsection
