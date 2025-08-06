@@ -574,11 +574,11 @@
                                 <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                        {{-- <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('settings.index') }}">
                                 <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
                             </a>
-                        </li>
+                        </li> --}}
                     </ul>
                 </div>
             </li>

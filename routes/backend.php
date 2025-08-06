@@ -10,6 +10,7 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\MalukuUtaraController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use App\Models\DataSpatial;
 use Illuminate\Support\Facades\Route;
 
@@ -495,5 +496,12 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function() {
     Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
     Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
     Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+
+     // User Management Routes
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
 });
