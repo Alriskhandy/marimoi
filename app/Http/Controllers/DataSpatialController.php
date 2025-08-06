@@ -1128,93 +1128,234 @@ private function getRedirectAfterUpdate(DataSpatial $data)
     }
 
     public function debugKmz(Request $request)
-    {
-        $request->validate([
-            'kmz_file' => 'required|file|mimes:kmz,kml',
-        ]);
+{
+    $request->validate([
+        'kmz_file' => 'required|file|mimes:kmz,kml',
+    ]);
 
-        try {
-            $file = $request->file('kmz_file');
-            $extension = $file->getClientOriginalExtension();
-            
-            $tempDir = storage_path('app/temp_kmz');
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
+    try {
+        $file = $request->file('kmz_file');
+        $extension = $file->getClientOriginalExtension();
+        
+        // Create temp directory with proper permissions
+        $tempDir = storage_path('app/temp_kmz');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        
+        // Clean directory if it exists
+        if (file_exists($tempDir)) {
             File::cleanDirectory($tempDir);
+        }
 
-            $kmlContent = null;
+        $kmlContent = null;
 
-            if ($extension === 'kmz') {
-                $kmzPath = $tempDir . '/temp.kmz';
-                $file->move($tempDir, 'temp.kmz');
+        if ($extension === 'kmz') {
+            // Save uploaded file to temp directory
+            $kmzPath = $tempDir . '/temp.kmz';
+            $file->move($tempDir, 'temp.kmz');
 
-                $zip = new ZipArchive;
-                if ($zip->open($kmzPath) === TRUE) {
-                    for ($i = 0; $i < $zip->numFiles; $i++) {
-                        $filename = $zip->getNameIndex($i);
-                        if (pathinfo($filename, PATHINFO_EXTENSION) === 'kml') {
-                            $kmlContent = $zip->getFromIndex($i);
+            // Check if file was moved successfully
+            if (!file_exists($kmzPath)) {
+                throw new \Exception('Failed to save KMZ file to temporary directory.');
+            }
+
+            // Extract KML from KMZ
+            $zip = new ZipArchive;
+            $result = $zip->open($kmzPath);
+            
+            if ($result === TRUE) {
+                $kmlFound = false;
+                
+                // Look for KML files in the archive
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $fileExtension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    
+                    // Check for both .kml files and files without extension (some KMZ have KML without extension)
+                    if ($fileExtension === 'kml' || (empty($fileExtension) && !str_contains($filename, '/'))) {
+                        $kmlContent = $zip->getFromIndex($i);
+                        if (!empty($kmlContent)) {
+                            $kmlFound = true;
                             break;
                         }
                     }
+                }
+                
+                $zip->close();
+                
+                if (!$kmlFound) {
+                    // List all files in the archive for debugging
+                    $zip->open($kmzPath);
+                    $files = [];
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $files[] = $zip->getNameIndex($i);
+                    }
                     $zip->close();
+                    
+                    throw new \Exception('No KML file found in KMZ archive. Files found: ' . implode(', ', $files));
                 }
             } else {
-                $kmlContent = file_get_contents($file->getRealPath());
-            }
-
-            if (!$kmlContent) {
-                throw new \Exception('Tidak dapat menemukan file KML dalam arsip.');
-            }
-
-            $dom = new DOMDocument();
-            $dom->loadXML($kmlContent);
-            $xpath = new DOMXPath($dom);
-            $xpath->registerNamespace('kml', 'http://www.opengis.net/kml/2.2');
-
-            $features = [];
-            $placemarks = $xpath->query('//kml:Placemark');
-
-            foreach ($placemarks as $index => $placemark) {
-                if ($index >= 10) break; // Limit preview
-
-                $name = $xpath->query('.//kml:name', $placemark)->item(0);
-                $description = $xpath->query('.//kml:description', $placemark)->item(0);
-                
-                $nameText = $name ? trim($name->textContent) : 'Unnamed';
-                $descText = $description ? trim($description->textContent) : '';
-
-                // Detect geometry type
-                $geometryType = 'Unknown';
-                if ($xpath->query('.//kml:Point', $placemark)->length > 0) {
-                    $geometryType = 'Point';
-                } elseif ($xpath->query('.//kml:LineString', $placemark)->length > 0) {
-                    $geometryType = 'LineString';
-                } elseif ($xpath->query('.//kml:Polygon', $placemark)->length > 0) {
-                    $geometryType = 'Polygon';
-                }
-
-                $features[] = [
-                    'name' => $nameText,
-                    'description' => $descText,
-                    'geometry_type' => $geometryType
+                // Provide more specific error messages
+                $errorMessages = [
+                    ZipArchive::ER_OK => 'No error',
+                    ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+                    ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+                    ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+                    ZipArchive::ER_SEEK => 'Seek error',
+                    ZipArchive::ER_READ => 'Read error',
+                    ZipArchive::ER_WRITE => 'Write error',
+                    ZipArchive::ER_CRC => 'CRC error',
+                    ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+                    ZipArchive::ER_NOENT => 'No such file',
+                    ZipArchive::ER_EXISTS => 'File already exists',
+                    ZipArchive::ER_OPEN => 'Can\'t open file',
+                    ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+                    ZipArchive::ER_ZLIB => 'Zlib error',
+                    ZipArchive::ER_MEMORY => 'Memory allocation failure',
+                    ZipArchive::ER_CHANGED => 'Entry has been changed',
+                    ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+                    ZipArchive::ER_EOF => 'Premature EOF',
+                    ZipArchive::ER_INVAL => 'Invalid argument',
+                    ZipArchive::ER_NOZIP => 'Not a zip archive',
+                    ZipArchive::ER_INTERNAL => 'Internal error',
+                    ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+                    ZipArchive::ER_REMOVE => 'Can\'t remove file',
+                    ZipArchive::ER_DELETED => 'Entry has been deleted',
                 ];
+                
+                $errorMsg = $errorMessages[$result] ?? 'Unknown error';
+                throw new \Exception("Cannot open KMZ file. Error: {$errorMsg} (Code: {$result})");
+            }
+        } else {
+            // Handle KML file directly
+            $kmlContent = file_get_contents($file->getRealPath());
+        }
+
+        if (empty($kmlContent)) {
+            throw new \Exception('KML content is empty or could not be read.');
+        }
+
+        // Validate XML content
+        libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        $dom->formatOutput = true;
+        
+        // Try to load XML with error handling
+        if (!$dom->loadXML($kmlContent)) {
+            $errors = libxml_get_errors();
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = trim($error->message);
+            }
+            throw new \Exception('Invalid XML in KML file: ' . implode(', ', $errorMessages));
+        }
+        
+        libxml_clear_errors();
+
+        // Create XPath with proper namespace handling
+        $xpath = new DOMXPath($dom);
+        
+        // Register multiple possible namespaces
+        $xpath->registerNamespace('kml', 'http://www.opengis.net/kml/2.2');
+        $xpath->registerNamespace('kml21', 'http://earth.google.com/kml/2.1');
+        $xpath->registerNamespace('kml20', 'http://earth.google.com/kml/2.0');
+
+        $features = [];
+        
+        // Try different namespace queries
+        $placemarks = $xpath->query('//kml:Placemark') ?: 
+                     $xpath->query('//kml21:Placemark') ?: 
+                     $xpath->query('//kml20:Placemark') ?:
+                     $xpath->query('//Placemark'); // Fallback without namespace
+
+        if ($placemarks->length === 0) {
+            // Check what elements exist in the document
+            $allElements = $xpath->query('//*');
+            $elementNames = [];
+            foreach ($allElements as $element) {
+                $elementNames[] = $element->nodeName;
+            }
+            $uniqueElements = array_unique($elementNames);
+            
+            throw new \Exception('No Placemark elements found in KML. Elements found: ' . implode(', ', $uniqueElements));
+        }
+
+        foreach ($placemarks as $index => $placemark) {
+            if ($index >= 10) break; // Limit preview
+
+            // Try multiple namespace prefixes for child elements
+            $name = $xpath->query('.//kml:name | .//kml21:name | .//kml20:name | .//name', $placemark)->item(0);
+            $description = $xpath->query('.//kml:description | .//kml21:description | .//kml20:description | .//description', $placemark)->item(0);
+            
+            $nameText = $name ? trim($name->textContent) : 'Unnamed';
+            $descText = $description ? trim($description->textContent) : '';
+
+            // Detect geometry type with multiple namespace support
+            $geometryType = 'Unknown';
+            if ($xpath->query('.//kml:Point | .//kml21:Point | .//kml20:Point | .//Point', $placemark)->length > 0) {
+                $geometryType = 'Point';
+            } elseif ($xpath->query('.//kml:LineString | .//kml21:LineString | .//kml20:LineString | .//LineString', $placemark)->length > 0) {
+                $geometryType = 'LineString';
+            } elseif ($xpath->query('.//kml:Polygon | .//kml21:Polygon | .//kml20:Polygon | .//Polygon', $placemark)->length > 0) {
+                $geometryType = 'Polygon';
+            } elseif ($xpath->query('.//kml:MultiGeometry | .//kml21:MultiGeometry | .//kml20:MultiGeometry | .//MultiGeometry', $placemark)->length > 0) {
+                $geometryType = 'MultiGeometry';
             }
 
-            return response()->json([
-                'success' => true,
-                'features' => $features,
-                'total_features' => $placemarks->length
-            ]);
+            // Extract coordinates for additional validation
+            $coordinates = '';
+            $coordNodes = $xpath->query('.//kml:coordinates | .//kml21:coordinates | .//kml20:coordinates | .//coordinates', $placemark);
+            if ($coordNodes->length > 0) {
+                $coordinates = trim($coordNodes->item(0)->textContent);
+            }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ]);
+            $features[] = [
+                'name' => $nameText,
+                'description' => $descText,
+                'geometry_type' => $geometryType,
+                'has_coordinates' => !empty($coordinates),
+                'coordinate_preview' => substr($coordinates, 0, 100) . (strlen($coordinates) > 100 ? '...' : '')
+            ];
         }
+
+        // Clean up temp files
+        if (file_exists($tempDir)) {
+            File::deleteDirectory($tempDir);
+        }
+
+        return response()->json([
+            'success' => true,
+            'features' => $features,
+            'total_features' => $placemarks->length,
+            'file_info' => [
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'extension' => $extension,
+                'kml_size' => strlen($kmlContent)
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        // Clean up temp files on error
+        if (isset($tempDir) && file_exists($tempDir)) {
+            try {
+                File::deleteDirectory($tempDir);
+            } catch (\Exception $cleanupError) {
+                // Ignore cleanup errors
+            }
+        }
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'file_info' => [
+                'original_name' => $request->file('kmz_file') ? $request->file('kmz_file')->getClientOriginalName() : 'Unknown',
+                'size' => $request->file('kmz_file') ? $request->file('kmz_file')->getSize() : 0,
+            ]
+        ]);
     }
+}
 
     // === STATISTICS AND UTILITIES ===
     
