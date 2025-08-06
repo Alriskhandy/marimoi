@@ -3,14 +3,33 @@
         <!-- User Profile -->
         <li class="nav-item nav-profile">
             <a href="#!" class="nav-link">
-                <div class="nav-profile-image">
-                    <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile" />
-                    <span class="login-status online"></span>
-                </div>
-                <div class="nav-profile-text d-flex flex-column">
-                    <span class="font-weight-bold mb-2">{{ Auth::user()->name }}</span>
-                    <span class="text-secondary text-small">WebGIS MARIMOI</span>
-                </div>
+                @php
+                    $user = auth()->user();
+                    $slug = $user->role->slug;
+                @endphp
+
+                @if (auth()->check() && $user->role)
+                    <div class="nav-profile-image">
+                        @if ($slug === 'admin-opd' && $user->opd && $user->opd->logo)
+                            <img src="{{ asset('storage/' . $user->opd->logo) }}" alt="Logo {{ $user->opd->singkatan }}"
+                                class="rounded logo-img" style="width: 40px; height: 40px; object-fit: contain; ">
+                        @else
+                            <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile"
+                                class="img-fluid rounded-circle"
+                                style="width: 50px; height: 50px; object-fit: cover;" />
+                        @endif
+
+                        <span class="login-status online"></span>
+                    </div>
+
+                    <div class="nav-profile-text d-flex flex-column">
+                        @if ($slug === 'admin-opd' && $user->opd)
+                            <span class="font-weight-bold mb-2">{{ $user->opd->singkatan }}</span>
+                        @endif
+                        <span class="text-secondary text-small">{{ $user->role->name }}</span>
+                    </div>
+                @endif
+
                 <i class="mdi mdi-map-marker text-success nav-profile-badge"></i>
             </a>
         </li>
@@ -523,6 +542,8 @@
                 request()->routeIs('aspirasi.*') ||
                 request()->routeIs('opd.*') ||
                 request()->routeIs('kategori-aspirasi.*');
+
+            $isSuperAdmin = auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'super-admin';
         @endphp
 
         <li class="nav-item {{ $isAspirasiMenuActive ? 'active' : '' }}">
@@ -539,19 +560,23 @@
                             <i class="mdi mdi-shield-account me-2"></i>Data Aspirasi
                         </a>
                     </li>
-                    <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('opd.index') }}">
-                            <i class="mdi mdi-office-building me-2"></i>OPD
-                        </a>
-                    </li>
-                    <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
-                        </a>
-                    </li>
+
+                    @if ($isSuperAdmin)
+                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('opd.index') }}">
+                                <i class="mdi mdi-office-building me-2"></i>OPD
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </li>
+
 
 
 

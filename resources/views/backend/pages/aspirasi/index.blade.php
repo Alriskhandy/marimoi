@@ -149,38 +149,59 @@
                                     placeholder="Cari nomor tiket, nama, email...">
                             </div>
                         </div>
+                        @php
+                            $user = auth()->user();
+                            $role = $user->role->slug;
+                            $filteredKategori = $kategoriAspirasi;
+
+                            if ($role === 'admin-opd') {
+                                $filteredKategori = $kategoriAspirasi->filter(function ($kategori) use ($user) {
+                                    return $kategori->opd_id === $user->opd_id;
+                                });
+                            }
+                        @endphp
+
                         <div class="col-lg-3 col-md-6 mb-2">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-tag"></i></span>
                                 <select class="form-control" id="kategoriFilter">
                                     <option value="">Semua Kategori</option>
-                                    @foreach ($kategoriAspirasi as $kategori)
+                                    @foreach ($filteredKategori as $kategori)
                                         <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-office-building"></i></span>
-                                <select class="form-control" id="opdFilter">
-                                    <option value="">Semua OPD</option>
-                                    @php
-                                        $opdList = collect($kategoriAspirasi)
-                                            ->map(function ($kategori) {
-                                                return $kategori->opd;
-                                            })
-                                            ->filter()
-                                            ->unique('id')
-                                            ->sortBy('name');
-                                    @endphp
-                                    @foreach ($opdList as $opd)
-                                        <option value="{{ $opd->id }}">{{ $opd->singkatan }} - {{ $opd->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+
+                        @php
+                            $user = auth()->user();
+                            $roleSlug = $user->role->slug ?? null;
+                        @endphp
+
+                        @if (in_array($roleSlug, ['super-admin', 'admin-bappeda']))
+                            <div class="col-lg-3 col-md-6 mb-2">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="mdi mdi-office-building"></i></span>
+                                    <select class="form-control" id="opdFilter">
+                                        <option value="">Semua OPD</option>
+                                        @php
+                                            $opdList = collect($kategoriAspirasi)
+                                                ->map(function ($kategori) {
+                                                    return $kategori->opd;
+                                                })
+                                                ->filter()
+                                                ->unique('id')
+                                                ->sortBy('name');
+                                        @endphp
+                                        @foreach ($opdList as $opd)
+                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }} -
+                                                {{ $opd->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
-                        </div>
+                        @endif
+
                         <div class="col-lg-3 col-md-6 mb-2">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-calendar"></i></span>
@@ -866,11 +887,11 @@
                                 $('#openMapBtn').attr('href', googleMapsUrl);
 
                                 $('#copyCoordinates').off('click').on('click',
-                                function() {
-                                    const coordinates =
-                                        `${aspirasi.latitude}, ${aspirasi.longitude}`;
-                                    copyToClipboard(coordinates);
-                                });
+                                    function() {
+                                        const coordinates =
+                                            `${aspirasi.latitude}, ${aspirasi.longitude}`;
+                                        copyToClipboard(coordinates);
+                                    });
                             } else {
                                 $('#show_koordinat_row').hide();
                             }
@@ -911,7 +932,7 @@
                                 $('#show_tanggapan_admin').text(aspirasi
                                     .tanggapan_admin);
                                 $('#show_tanggal_respon').text(new Date(aspirasi
-                                        .tanggal_respon).toLocaleDateString(
+                                    .tanggal_respon).toLocaleDateString(
                                     'id-ID'));
                                 $('#show_response_container').show();
                             } else {

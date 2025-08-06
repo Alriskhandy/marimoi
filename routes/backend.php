@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified', 'role:super-admin'])->name('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +69,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
         
+         
+        // Debug routes for file uploads
+        Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
+        Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz');
+
         // Detail endpoint for modal
         Route::get('/{uuid}/details', function($uuid) {
             $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
@@ -122,18 +127,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/{uuid}', function($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
-        
-        // API routes
-        Route::get('/geojson', [DataSpatialController::class, 'geojson'])
-            ->defaults('data_type', 'usulan_musrenbang')->name('geojson');
-        Route::get('/statistics', [DataSpatialController::class, 'getStatistics'])
-            ->defaults('data_type', 'usulan_musrenbang')->name('statistics');
-        Route::get('/categories', [DataSpatialController::class, 'getCategories'])
-            ->defaults('data_type', 'usulan_musrenbang')->name('categories');
-        Route::get('/dbf-columns', [DataSpatialController::class, 'getDbfColumns'])
-            ->defaults('data_type', 'usulan_musrenbang')->name('dbf.columns');
-        Route::get('/dbf-columns/{column}/values', [DataSpatialController::class, 'getDbfColumnValues'])
-            ->defaults('data_type', 'usulan_musrenbang')->name('dbf.values');
+
+     
     });
 
     /*
@@ -256,19 +251,18 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     
-    // Role Management
-    Route::resource('roles', RoleController::class);
-    
     // Aspirasi Management
     Route::resource('aspirasi', AspirasiController::class);
     Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
     Route::get('aspirasi/{aspirasi}/download/{index}', [AspirasiController::class, 'downloadLampiran'])->name('aspirasi.downloadLampiran');
     
+Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
+
     // Kategori Aspirasi Management
     Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
     Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
     Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
-    
+
     // OPD Management
     Route::resource('opd', OpdController::class);
     Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
@@ -281,6 +275,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+});
+
 
     /*
     |--------------------------------------------------------------------------

@@ -192,9 +192,8 @@
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                                    <span
-                                                        class="d-none d-md-inline text-muted small">{{ $opd->name }}</span>
-                                                    <span class="small">{{ $opd->singkatan }}</span>
+                                                    <span class="d-none d-md-inline text-muted small">{{ $opd->name }}
+                                                        - {{ $opd->singkatan }}</span>
                                                 </div>
                                                 <span class="d-md-none small fw-bold">{{ $opd->name }}</span>
 
