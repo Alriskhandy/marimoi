@@ -1,4 +1,4 @@
-@extends('frontend.layouts.app')
+@extends('frontend.layouts.app', ['title' => 'Prioritas Daerah 2025-2029 - MARIMOI'])
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('frontend/css/prioritas.css') }}">
