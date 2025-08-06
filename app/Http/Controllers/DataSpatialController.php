@@ -15,26 +15,72 @@ use Illuminate\Support\Facades\Validator;
 use ZipArchive;
 use DOMDocument;
 use DOMXPath;
+use Illuminate\Support\Facades\Auth;
 
 class DataSpatialController extends Controller
 {
 
     // === METHODS UMUM ===
     
-  public function index(Request $request)
+//   public function index(Request $request)
+// {
+//     $type = $request->get('type');
+//     $subType = $request->get('sub_type');
+
+//     if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
+//        return redirect()->back();
+//     }
+
+//     if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
+//        return redirect()->back(); // sub_type invalid
+//     }
+
+//     // Lanjut proses seperti biasa
+//     $year = $request->get('year');
+//     $query = DataSpatial::with(['kategori', 'kategori.parent']);
+
+//     $query->where('data_type', $type);
+
+//     if ($subType && $type === 'proyek_strategis') {
+//         $query->where('sub_type', $subType);
+//     }
+
+//     if ($year) {
+//         $query->where('tahun', $year);
+//     }
+
+//     $data = $query->orderBy('created_at', 'desc')->paginate(20);
+
+//     // Ambil kategori
+//     $categoriesQuery = Category::with('children')->roots();
+//     if ($type === 'proyek_strategis') {
+//         $categories = $categoriesQuery->where('type', $subType)->get();
+//     } else {
+//         $categoryType = $this->getCategoryTypeByDataType($type, $subType);
+//         $categories = $categoriesQuery->where('type', $categoryType)->get();
+//     }
+
+//     return view('backend.pages.data_spatial.index', compact(
+//         'data',
+//         'categories',
+//         'type',
+//         'subType',
+//         'year'
+//     ));
+// }
+public function index(Request $request) 
 {
     $type = $request->get('type');
     $subType = $request->get('sub_type');
 
     if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
-       return redirect()->back();
+        return redirect()->back();
     }
 
     if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
-       return redirect()->back(); // sub_type invalid
+        return redirect()->back(); // sub_type invalid
     }
 
-    // Lanjut proses seperti biasa
     $year = $request->get('year');
     $query = DataSpatial::with(['kategori', 'kategori.parent']);
 
@@ -48,10 +94,20 @@ class DataSpatialController extends Controller
         $query->where('tahun', $year);
     }
 
+    // ✅ Filter berdasarkan role pengguna
+    $user = Auth::user();
+    $userRole = $user->role->slug ?? null;
+
+    if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan user_id
+        $query->where('user_id', $user->id);
+    }
+
     $data = $query->orderBy('created_at', 'desc')->paginate(20);
 
     // Ambil kategori
     $categoriesQuery = Category::with('children')->roots();
+
     if ($type === 'proyek_strategis') {
         $categories = $categoriesQuery->where('type', $subType)->get();
     } else {
@@ -735,6 +791,7 @@ public function edit($uuid)
                 'kategori_id' => $request->kategori_id,
                 'deskripsi' => $description,
                 'dbf_attributes' => $dbfAttributes,
+                 'user_id' => Auth::user()->id, // ✅ Tambahkan user_id di sini
                 'geom' => DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$wkt}'), 4326), 4326)")
             ];
 
