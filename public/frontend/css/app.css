@@ -1019,10 +1019,10 @@ body {
 
 /* Backlink Section Styles */
 .backlink-section {
-    background: #dee3e5;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border-light);
-    border-bottom: 1px solid var(--border-light);
+    background: linear-gradient( #F8FAFC 0%, #FFF 100%);
+    padding: 1.5rem 0;
+    border-top: 2px solid var(--border-light);
+    border-bottom: 3px solid var(--border-light);
 }
 
 .web-link {
@@ -1038,9 +1038,8 @@ body {
 
 .web-link:hover {
     color: var(--primary-blue);
-    background: white;
+    background: linear-gradient( #F8FAFC 0%, #FFF 100%);
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .web-link .logo {
