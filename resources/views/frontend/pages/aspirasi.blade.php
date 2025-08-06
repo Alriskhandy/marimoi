@@ -8,13 +8,12 @@
     <section class="section py-5" style="background: #f8fafc;">
         <!-- Section Title -->
         <div class="container section-title pt-5" data-aos="fade-up">
-            <span class="d-block text-primary mb-2">MASUKAN & SARAN</span>
-            <h2 class="mb-3">Kritik & Saran Pengembangan</h2>
-            <p class="mt-3">Kirimkan kritik dan saran Anda untuk membantu kami meningkatkan kualitas layanan</p>
+            <h2 class="mb-3">Usulan Aspirasi Masyarakat</h2>
+            <p class="mt-3">Kirimkan usulan pengembangan infrastruktur atau berikan kritik dan saran anda untuk membantu kami meningkatkan kualitas layanan sistem</p>
         </div><!-- End Section Title -->
-        <div class="container" data-aos="fade-up" data-aos-delay="100">
 
-            <div class="row gy-4 justify-content-center">
+        <div class="container" data-aos="fade-up" data-aos-delay="100">
+            <div class="row gy-4 justify-content-center pt-0">
                 <div class="col-lg-8">
                     <div class="card feedback-card">
                         <div class="card-body p-4 p-md-5">
