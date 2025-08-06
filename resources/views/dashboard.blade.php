@@ -38,11 +38,11 @@
                     <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
                         alt="circle-image" />
                     <h4 class="font-weight-normal mb-3">
-                        Kategori Layer
+                        OPD
                         <i class="mdi mdi-layers mdi-24px float-end"></i>
                     </h4>
-                    <h2 class="mb-5">{{ $totalKategori ?? '0' }}</h2>
-                    <h6 class="card-text">Klasifikasi tema data spasial</h6>
+                    <h2 class="mb-5">{{ $totalOpd ?? '0' }}</h2>
+                    <h6 class="card-text">Jumlah Seluruh OPD Yang Terdaftar</h6>
                 </div>
             </div>
         </div>
@@ -53,11 +53,11 @@
                     <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
                         alt="circle-image" />
                     <h4 class="font-weight-normal mb-3">
-                        Luas Area Tercakup
+                        Aspirasi
                         <i class="mdi mdi-map-outline mdi-24px float-end"></i>
                     </h4>
-                    <h2 class="mb-5">{{ $totalArea ?? '0' }} Km²</h2>
-                    <h6 class="card-text">Estimasi cakupan spasial wilayah</h6>
+                    <h2 class="mb-5">{{ $totalPendingAspirasi ?? '0' }} </h2>
+                    <h6 class="card-text">Jumlah Aspirasi Yang Belum Direspon</h6>
                 </div>
             </div>
         </div>
