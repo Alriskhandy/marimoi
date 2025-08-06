@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\ProjectFeedback;
 use App\Models\DataSpatial;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -34,25 +35,46 @@ class ProjectFeedbackController extends Controller
         }
     }
 
-    // Build query based on type and sub_type
-    $query = ProjectFeedback::with('dataSpatial');
+    // // Build query based on type and sub_type
+    // $query = ProjectFeedback::with('dataSpatial');
 
-    // Filter berdasarkan type yang sudah divalidasi
-    $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
-        if ($type === 'proyek_strategis') {
-            // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
-            $q->where('data_type', 'proyek_strategis');
-            if ($subType === 'psn') {
-                $q->where('sub_type', 'psn');
-            } elseif ($subType === 'psd') {
-                $q->where('sub_type', 'psd');
-            }
-            // Jika tidak ada sub_type, tampilkan semua proyek strategis
-        } else {
-            // Untuk type lainnya, gunakan data_type
-            $q->where('data_type', $type);
+    // // Filter berdasarkan type yang sudah divalidasi
+    // $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
+    //     if ($type === 'proyek_strategis') {
+    //         // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
+    //         $q->where('data_type', 'proyek_strategis');
+    //         if ($subType === 'psn') {
+    //             $q->where('sub_type', 'psn');
+    //         } elseif ($subType === 'psd') {
+    //             $q->where('sub_type', 'psd');
+    //         }
+    //         // Jika tidak ada sub_type, tampilkan semua proyek strategis
+    //     } else {
+    //         // Untuk type lainnya, gunakan data_type
+    //         $q->where('data_type', $type);
+    //     }
+    // });
+     // Build query based on type and sub_type
+$query = ProjectFeedback::with('dataSpatial');
+
+// Filter berdasarkan type yang sudah divalidasi
+$query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
+    if ($type === 'proyek_strategis') {
+        $q->where('data_type', 'proyek_strategis');
+        if ($subType === 'psn') {
+            $q->where('sub_type', 'psn');
+        } elseif ($subType === 'psd') {
+            $q->where('sub_type', 'psd');
         }
-    });
+    } else {
+        $q->where('data_type', $type);
+    }
+
+    // ✅ Tambahkan filter user_id jika Admin OPD
+    if (Auth::user()?->role?->slug === 'admin-opd') {
+        $q->where('user_id', Auth::user()->id);
+    }
+});
 
     $feedbacks = $query->orderBy('created_at', 'desc')->paginate(10);
 

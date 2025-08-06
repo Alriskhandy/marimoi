@@ -35,7 +35,8 @@ class DataSpatial extends Model
         'tahun',
         'gambar',
         'views',
-        'geom'
+        'geom',
+        'user_id'
     ];
 
     protected $casts = [

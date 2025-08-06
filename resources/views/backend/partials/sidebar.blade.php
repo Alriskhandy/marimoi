@@ -93,13 +93,18 @@
         <!-- Proyek Strategis Daerah -->
         @php
             try {
-                $availableYears = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
+                $query = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
                     ->where('sub_type', 'psd')
                     ->select('tahun')
                     ->distinct()
-                    ->whereNotNull('tahun')
-                    ->orderBy('tahun', 'desc')
-                    ->pluck('tahun');
+                    ->whereNotNull('tahun');
+
+                // Filter khusus jika user adalah admin OPD
+                if (auth()->user()?->role?->slug === 'admin-opd') {
+                    $query->where('user_id', auth()->id());
+                }
+
+                $availableYears = $query->orderBy('tahun', 'desc')->pluck('tahun');
             } catch (Exception $e) {
                 $availableYears = collect();
             }
@@ -235,13 +240,18 @@
         <!-- Proyek Strategis Nasional -->
         @php
             try {
-                $availableYearsNasional = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
+                $query = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
                     ->where('sub_type', 'psn')
                     ->select('tahun')
                     ->distinct()
-                    ->whereNotNull('tahun')
-                    ->orderBy('tahun', 'desc')
-                    ->pluck('tahun');
+                    ->whereNotNull('tahun');
+
+                // Filter berdasarkan user_id jika role adalah admin-opd
+                if (auth()->user()?->role?->slug === 'admin-opd') {
+                    $query->where('user_id', auth()->id());
+                }
+
+                $availableYearsNasional = $query->orderBy('tahun', 'desc')->pluck('tahun');
             } catch (Exception $e) {
                 $availableYearsNasional = collect();
             }

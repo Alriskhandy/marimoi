@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Auth;
 class DataSpatialController extends Controller
 {
 
+    protected function isAdminOPD()
+{
+    return Auth::user()?->role?->slug === 'admin-opd';
+}
+
     
 public function index(Request $request) 
 {
@@ -316,12 +321,17 @@ public function edit($uuid)
    public function indexLokasi(Request $request)
 {
     if ($request->get('type') !== 'tematik') {
-       return redirect()->back();
+        return redirect()->back();
     }
 
-    $data = DataSpatial::with('kategori')
-        ->where('data_type', 'tematik')
-        ->get();
+    $query = DataSpatial::with('kategori')
+        ->where('data_type', 'tematik');
+
+    if ($this->isAdminOPD()) {
+        $query->where('user_id', Auth::user()->id);
+    }
+
+    $data = $query->get();
 
     $categories = Category::layers()->with('children')->roots()->get();
     
@@ -330,85 +340,92 @@ public function edit($uuid)
 
 
     public function indexUsulanMusrenbang(Request $request)
-    {
-        if ($request->get('type') !== 'usulan_musrenbang') {
-           return redirect()->back();
-        }
-
-        $data = DataSpatial::with('kategori')
-            ->where('data_type', 'usulan_musrenbang')
-            ->get();
-
-        $categories = Category::musenbangs()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
+{
+    if ($request->get('type') !== 'usulan_musrenbang') {
+        return redirect()->back();
     }
 
+    $query = DataSpatial::with('kategori')
+        ->where('data_type', 'usulan_musrenbang');
 
-   public function indexPokirDprd(Request $request)
+    if ($this->isAdminOPD()) {
+        $query->where('user_id', Auth::user()->id);
+    }
+
+    $data = $query->get();
+
+    $categories = Category::musenbangs()->with('children')->roots()->get();
+
+    return view('backend.pages.data_spatial.index', compact('data', 'categories'));
+}
+
+public function indexPokirDprd(Request $request)
 {
     if ($request->get('type') !== 'pokir_dprd') {
-       return redirect()->back();
+        return redirect()->back();
     }
 
-    $data = DataSpatial::with('kategori')
-        ->where('data_type', 'pokir_dprd')
-        ->get();
+    $query = DataSpatial::with('kategori')
+        ->where('data_type', 'pokir_dprd');
+
+    if ($this->isAdminOPD()) {
+        $query->where('user_id', Auth::user()->id );
+    }
+
+    $data = $query->get();
 
     $categories = Category::pokirDprds()->with('children')->roots()->get();
 
     return view('backend.pages.data_spatial.index', compact('data', 'categories'));
 }
 
+public function indexProyekStrategisDaerah($year = null)
+{
+    $query = DataSpatial::where('sub_type', 'psd');
 
-    public function indexProyekStrategisDaerah($year = null)
-    {
-        // dd($year);
-        $query = DataSpatial::where('tahun', $year)
-                    ->where('sub_type', 'psd');// Pastikan sub_type konsisten
-                  
-        
-        // if ($year) {
-        //     $query->where('tahun', $year);
-            
-        //     // Validasi apakah tahun tersebut ada dalam database
-        //     $yearExists = ProyekStrategisDaerah::where('tahun', $year)->exists();
-        //     if (!$yearExists) {
-        //         return redirect()->route('psd.index')
-        //             ->with('error', "Data untuk tahun {$year} tidak ditemukan.");
-        //     }
-        // }
-        
-        $data = $query->get();
-        $categories = Category::psd()->with('children')->roots()->get();
-        
-        // Statistik untuk tahun tersebut jika ada
-        $statistics = null;
-        if ($year) {
-            $statistics = [
-                'total' => $data->count(),
-                'categories' => $data->groupBy('kategori_id')->map->count(),
-                'year' => $year
-            ];
-        }
-        
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
+    if ($year) {
+        $query->where('tahun', $year);
     }
 
-    public function indexProyekStrategisNasional($year = null)
-    {
-        $query = DataSpatial::where('tahun', $year)
-                    ->where('sub_type', 'psn');// Pastikan sub_type konsisten
-        
-        if ($year) {
-            $query->where('tahun', $year);
-        }
-        
-        $data = $query->get();
-        $categories = Category::psn()->with('children')->roots()->get();
-        
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
+    if ($this->isAdminOPD()) {
+        $query->where('user_id', Auth::user()->id);
     }
+
+    $data = $query->get();
+
+    $categories = Category::psd()->with('children')->roots()->get();
+
+    $statistics = null;
+    if ($year) {
+        $statistics = [
+            'total' => $data->count(),
+            'categories' => $data->groupBy('kategori_id')->map->count(),
+            'year' => $year
+        ];
+    }
+
+    return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
+}
+
+public function indexProyekStrategisNasional($year = null)
+{
+    $query = DataSpatial::where('sub_type', 'psn');
+
+    if ($year) {
+        $query->where('tahun', $year);
+    }
+
+    if ($this->isAdminOPD()) {
+        $query->where('user_id', Auth::user()->id);
+    }
+
+    $data = $query->get();
+
+    $categories = Category::psn()->with('children')->roots()->get();
+
+    return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
+}
+
 
     // === GEOJSON METHODS ===
     
@@ -744,7 +761,7 @@ public function edit($uuid)
                 'kategori_id' => $request->kategori_id,
                 'deskripsi' => $description,
                 'dbf_attributes' => $dbfAttributes,
-                 'user_id' => Auth::user()->id, // ✅ Tambahkan user_id di sini
+              
                 'geom' => DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$wkt}'), 4326), 4326)")
             ];
 
@@ -757,6 +774,7 @@ public function edit($uuid)
                 $data['tahun'] = $request->tahun;
             }
 
+            $data['user_id'] = Auth::user()->id;
             DataSpatial::create($data);
         } catch (\Exception $e) {
             Log::error('Failed to save DataSpatial: ' . $e->getMessage());
