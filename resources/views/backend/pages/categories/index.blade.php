@@ -187,30 +187,37 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-outline-success btn-edit"
-                                                    data-id="{{ $kategori->id }}" data-nama="{{ $kategori->nama }}"
-                                                    data-type="{{ $kategori->type }}"
-                                                    data-parent-id="{{ $kategori->parent_id }}"
-                                                    data-warna="{{ $kategori->warna }}"
-                                                    data-is-marker="{{ $kategori->is_marker }}"
-                                                    data-icon="{{ $kategori->icon }}"
-                                                    data-deskripsi="{{ $kategori->deskripsi }}" data-bs-toggle="modal"
-                                                    data-bs-target="#editModal" title="Edit">
-                                                    <i class="mdi mdi-pencil"></i>
-                                                </button>
-                                                <form action="{{ route('categories.destroy', $kategori->id) }}"
-                                                    method="POST" style="display: inline-block;" data-confirm="delete"
-                                                    data-name="{{ $kategori->nama }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="Hapus kategori">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                            @php
+                                                $user = Auth::user();
+                                                $role = $user->role->slug ?? null;
+                                            @endphp
 
-                                            </div>
+                                            @if ($role === 'super-admin' || $role === 'admin-bappeda' || $kategori->user_id === $user->id)
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                        data-id="{{ $kategori->id }}" data-nama="{{ $kategori->nama }}"
+                                                        data-type="{{ $kategori->type }}"
+                                                        data-parent-id="{{ $kategori->parent_id }}"
+                                                        data-warna="{{ $kategori->warna }}"
+                                                        data-is-marker="{{ $kategori->is_marker }}"
+                                                        data-icon="{{ $kategori->icon }}"
+                                                        data-deskripsi="{{ $kategori->deskripsi }}" data-bs-toggle="modal"
+                                                        data-bs-target="#editModal" title="Edit">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </button>
+                                                    <form action="{{ route('categories.destroy', $kategori->id) }}"
+                                                        method="POST" style="display: inline-block;" data-confirm="delete"
+                                                        data-name="{{ $kategori->nama }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            title="Hapus kategori">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </form>
+
+                                                </div>
+                                            @endif
                                         </td>
                                     </tr>
 
@@ -253,31 +260,39 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button type="button"
-                                                            class="btn btn-sm btn-outline-success btn-edit"
-                                                            data-id="{{ $child->id }}"
-                                                            data-nama="{{ $child->nama }}"
-                                                            data-type="{{ $child->type }}"
-                                                            data-parent-id="{{ $child->parent_id }}"
-                                                            data-warna="{{ $child->warna }}"
-                                                            data-is-marker="{{ $child->is_marker }}"
-                                                            data-icon="{{ $child->icon }}"
-                                                            data-deskripsi="{{ $child->deskripsi }}"
-                                                            data-bs-toggle="modal" data-bs-target="#editModal"
-                                                            title="Edit">
-                                                            <i class="mdi mdi-pencil"></i>
-                                                        </button>
-                                                        <form action="{{ route('categories.destroy', $child->id) }}"
-                                                            method="POST" style="display: inline-block;"
-                                                            onsubmit="return confirm('Yakin ingin menghapus kategori {{ $child->nama }}?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                <i class="mdi mdi-delete"></i>
+                                                    @php
+                                                        $user = Auth::user();
+                                                        $role = $user->role->slug ?? null;
+                                                    @endphp
+
+                                                    @if ($role === 'super-admin' || $role === 'admin-bappeda' || $kategori->user_id === $user->id)
+                                                        <div class="btn-group" role="group">
+                                                            <button type="button"
+                                                                class="btn btn-sm btn-outline-success btn-edit"
+                                                                data-id="{{ $child->id }}"
+                                                                data-nama="{{ $child->nama }}"
+                                                                data-type="{{ $child->type }}"
+                                                                data-parent-id="{{ $child->parent_id }}"
+                                                                data-warna="{{ $child->warna }}"
+                                                                data-is-marker="{{ $child->is_marker }}"
+                                                                data-icon="{{ $child->icon }}"
+                                                                data-deskripsi="{{ $child->deskripsi }}"
+                                                                data-bs-toggle="modal" data-bs-target="#editModal"
+                                                                title="Edit">
+                                                                <i class="mdi mdi-pencil"></i>
                                                             </button>
-                                                        </form>
-                                                    </div>
+                                                            <form action="{{ route('categories.destroy', $child->id) }}"
+                                                                method="POST" style="display: inline-block;"
+                                                                onsubmit="return confirm('Yakin ingin menghapus kategori {{ $child->nama }}?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-outline-danger">
+                                                                    <i class="mdi mdi-delete"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

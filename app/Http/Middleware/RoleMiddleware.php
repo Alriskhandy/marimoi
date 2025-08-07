@@ -35,7 +35,7 @@ class RoleMiddleware
                 ], 403);
             }
   // Redirect dengan pesan ke halaman sebelumnya
-            return redirect()->back()->with('error', 'Akses ditolak. Anda tidak memiliki hak akses.');
+            return abort(403, 'Akses ditolak. Anda tidak memiliki hak akses.');
         }
 
         return $next($request);

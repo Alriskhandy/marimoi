@@ -16,6 +16,7 @@ class Category extends Model
         'warna', 
         'icon',
         'is_marker',
+        'user_id',
         'deskripsi',
         'parent_id'
     ];
