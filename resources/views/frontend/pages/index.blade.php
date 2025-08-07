@@ -204,6 +204,28 @@
         </div>
     </section>
 
+    <!-- Backlink Section -->
+    <section id="backlink" class="backlink-section">
+        <div class="container">
+            <div class="row">
+                <div class="col d-flex flex-wrap justify-content-center align-items-center gap-4">
+                    <a href="https://bappeda.malutprov.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo.webp') }}" alt="Bappeda Maluku Utara" class="logo">
+                        <span>BAPPEDA MALUT</span>
+                    </a>
+                    <a href="https://opendata.malutprov.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-opendata-malut.png') }}" alt="Opendata Maluku Utara" class="logo">
+                        <span>OPENDATA MALUT</span>
+                    </a>
+                    <a href="https://malut.bps.go.id/id" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-bps.webp') }}" alt="BPS Maluku Utara" class="logo">
+                        <span>BADAN PUSAT STATISTIK</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Stats Section -->
     <section id="stats" class="features-section">
         <div class="container">
@@ -271,10 +293,10 @@
 
                 <div class="project-grid" id="projectGrid">
                     @foreach ($dataPeta as $data)
-                    @php
-                        $status = $data->sub_type ?? $data->data_type;
-                        $slug = $links[$status] ?? '#';
-                    @endphp
+                        @php
+                            $status = $data->sub_type ?? $data->data_type;
+                            $slug = $links[$status] ?? '#';
+                        @endphp
                         <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
                             <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] ?? '' }}</h4>
                             <p class="project-location">
@@ -317,7 +339,7 @@
                     <div class="animate-on-scroll">
                         <h2 class="mb-4">Tentang MARIMOI</h2>
                         <p class="mb-4">
-                            MARIMOI (Manajemen Akselerasi Infrastruktur) adalah sistem digital terpadu untuk memperkuat
+                            MARIMOI adalah sistem digital terpadu untuk memperkuat
                             koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan
                             pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung
                             perencanaan lintas sektor secara kolaboratif dan transparan.
@@ -361,8 +383,8 @@
                     <div class="animate-on-scroll">
                         <div class="position-relative">
                             <div class="ratio ratio-16x9 rounded-4 border border-primary">
-                                <iframe 
-                                    src="https://www.youtube-nocookie.com/embed/EQbw-E1ecB8" title="YouTube video player"
+                                <iframe src="https://www.youtube-nocookie.com/embed/EQbw-E1ecB8"
+                                    title="YouTube video player"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowfullscreen referrerpolicy="strict-origin-when-cross-origin">
                                 </iframe>
