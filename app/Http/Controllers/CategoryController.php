@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -169,6 +170,7 @@ class CategoryController extends Controller
 
             $category = Category::create([
                 'type' => $request->type,
+                'user_id' => Auth::user()->id,  
                 'nama' => $request->nama,
                 'warna' => $request->warna,
                 'icon' => $request->icon,
@@ -254,8 +256,15 @@ class CategoryController extends Controller
 
     public function update(Request $request, $id)
     {
-        $category = Category::findOrFail($id);
         
+        $category = Category::findOrFail($id);
+         $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        // ✅ Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus kategori ini.');
+        }
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
             'nama' => 'required|string|max:255',
@@ -425,7 +434,13 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::with(['children', 'dataSpatial'])->findOrFail($id);
-        
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        // ✅ Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus kategori ini.');
+        }
         // Check if category has children
         if ($category->children->count() > 0) {
             return redirect()->back()

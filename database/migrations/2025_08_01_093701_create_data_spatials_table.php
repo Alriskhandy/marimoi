@@ -22,6 +22,9 @@ return new class extends Migration
             $table->boolean('is_marker')->default(false);
             $table->text('deskripsi')->nullable();
             $table->unsignedBigInteger('parent_id')->nullable();
+            // Kolom user_id dengan default 1
+            $table->unsignedBigInteger('user_id')->nullable()->default(1);
+
             $table->timestamps();
             
             $table->foreign('parent_id')->references('id')->on('categories');
