@@ -222,7 +222,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     
-    Route::prefix('upload-dokumen')->name('dokumen.')->group(function () {
+    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->prefix('upload-dokumen')->name('dokumen.')->group(function () {
         Route::get('/', [DokumenController::class, 'index'])->name('index');
         Route::post('/', [DokumenController::class, 'store'])->name('store');
         Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update');

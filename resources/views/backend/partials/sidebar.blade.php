@@ -513,28 +513,31 @@
             </div>
         </li>
 
-        <!-- Upload Dokumen -->
-        @php
-            $isDokumenActive = request()->routeIs('dokumen.*');
-        @endphp
-        @if (Route::has('dokumen.index'))
-            <li class="nav-item {{ $isDokumenActive ? 'active' : '' }}">
-                <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
-                    aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
-                    <span class="menu-title">Upload Dokumen</span>
-                    <i class="menu-arrow"></i>
-                    <i class="mdi mdi-file-document-multiple menu-icon"></i>
-                </a>
-                <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
-                    <ul class="nav flex-column sub-menu">
-                        <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('dokumen.index') }}">
-                                <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+        @if ($slug != 'admin-opd')
+
+            <!-- Upload Dokumen -->
+            @php
+                $isDokumenActive = request()->routeIs('dokumen.*');
+            @endphp
+            @if (Route::has('dokumen.index'))
+                <li class="nav-item {{ $isDokumenActive ? 'active' : '' }}">
+                    <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
+                        aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
+                        <span class="menu-title">Upload Dokumen</span>
+                        <i class="menu-arrow"></i>
+                        <i class="mdi mdi-file-document-multiple menu-icon"></i>
+                    </a>
+                    <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
+                        <ul class="nav flex-column sub-menu">
+                            <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('dokumen.index') }}">
+                                    <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
         @endif
 
         @php
