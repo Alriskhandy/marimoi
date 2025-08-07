@@ -93,18 +93,17 @@
                                 <div id="alertMessage" class="alert" role="alert"></div>
                             </div>
 
-                            <form id="feedbackForm" action="{{ route('usulan.feedback.store') }}" method="POST"
+                            <form id="feedbackForm" action="{{ route('feedback.store') }}" method="POST"
                                 enctype="multipart/form-data">
                                 @csrf
 
                                 <!-- Hidden fields sesuai contoh data -->
-                                <input type="hidden" name="project_type" value="proyek_strategis_daerah">
-                                <input type="hidden" name="feedbackable_id" value="1">
-                                <input type="hidden" name="nama_proyek" value="Pokir Pembangunan Jalan Desa">
-                                <input type="hidden" name="kabupaten_kota" value="Ternate">
-                                <input type="hidden" name="kecamatan" value="Ternate Selatan">
-                                <input type="hidden" name="latitude" value="0.78930000">
-                                <input type="hidden" name="longitude" value="127.37740000">
+                                <input type="hidden" name="data_spatial_id" value="{{ $project->id }}">
+                                <input type="hidden" name="nama_proyek" value="{{ $project->deskripsi ?? ($project->dbf_attributes['KEGIATAN'] ?? 'TANPA NAMA') }}">
+                                <input type="hidden" name="kabupaten_kota" value="{{ $project->dbf_attributes['KABUPATEN'] ?? $project->dbf_attributes['KOTA'] ?? 'TANPA KABUPATEN/KOTA' }}">
+                                <input type="hidden" name="kecamatan" value="{{ $project->dbf_attributes['KECAMATAN'] ?? 'TANPA KECAMATAN' }}">
+                                <input type="hidden" name="latitude" id="latitude" value="">
+                                <input type="hidden" name="longitude" id="longitude" value="">
 
                                 <!-- Form fields yang bisa diisi user -->
                                 <div class="mb-3">
@@ -131,8 +130,8 @@
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="jenis_tanggapan" name="jenis_tanggapan" required>
                                         <option value="">-- Pilih Jenis --</option>
-                                        <option value="keluhan">Pengaduan</option>
                                         <option value="saran" selected>Saran</option>
+                                        <option value="keluhan">Pengaduan</option>
                                         <option value="apresiasi">Apresiasi</option>
                                         <option value="pertanyaan">Pertanyaan</option>
                                     </select>
@@ -239,6 +238,8 @@
             const imagePreviewContainer = document.getElementById('image_preview_container');
             const imagePlaceholder = document.getElementById('image_placeholder');
             const removeImageBtn = document.getElementById('remove_image');
+            const lat = document.getElementById('latitude');
+            const long = document.getElementById('longitude');
 
             // Handle image preview
             laporanGambar.addEventListener('change', function(e) {
@@ -315,13 +316,40 @@
             // Form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-
+                
+                // Get user's current location
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            // Set coordinates in hidden fields
+                            lat.value = position.coords.latitude;
+                            long.value = position.coords.longitude;
+                            
+                            console.log(lat, long);
+                            // Submit form
+                            submitForm();
+                        },
+                        function(error) {
+                            console.error('Error getting location:', error);
+                            // Submit form without coordinates if location is not available
+                            submitForm();
+                        }
+                    );
+                } else {
+                    // Submit form without coordinates if geolocation is not supported
+                    submitForm();
+                }
+            });
+            
+            // Fungsi submit form
+            function submitForm() {
                 submitBtn.disabled = true;
                 submitText.textContent = 'Mengirim...';
 
-                const formData = new FormData(this);
+                const formData = new FormData(form);
+                console.log('form', formData);
 
-                fetch(this.action, {
+                fetch(form.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -362,8 +390,9 @@
                         submitBtn.disabled = false;
                         submitText.textContent = 'Kirim Feedback';
                     });
-            });
+            }
 
+            // Fungsi tampil alert
             function showAlert(type, message) {
                 const alertContainer = document.getElementById('alertContainer');
                 const alertMessage = document.getElementById('alertMessage');

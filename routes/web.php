@@ -24,7 +24,7 @@ Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name(
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
 // FEEDBACK //
-Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('feedback.store');
+Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
 
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
@@ -35,11 +35,11 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
 
 // Routes untuk project-specific feedback
-Route::post('pokir/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('pokir.feedback.store');
-Route::post('usulan/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('usulan.feedback.store');
-Route::post('nasional/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('nasional.feedback.store');
-Route::post('daerah/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('daerah.feedback.store');
-Route::post('lokasi/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('lokasi.feedback.store');
+Route::post('pokir/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('pokir.feedback.store');
+Route::post('usulan/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('usulan.feedback.store');
+Route::post('nasional/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('nasional.feedback.store');
+Route::post('daerah/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('daerah.feedback.store');
+Route::post('lokasi/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('lokasi.feedback.store');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';

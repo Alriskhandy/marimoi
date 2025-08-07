@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\Dokumen;
+use App\Models\Opd;
 use App\Models\ProjectFeedback;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -259,55 +261,32 @@ class FrontendController extends Controller
      */
     public function store(Request $request)
     {
-        $projectType = $this->getProjectTypeFromRequest($request);
-        
-        // If specific project type, validate and store accordingly
-        if ($projectType && $projectType !== 'all') {
-            return $this->storeScopedFeedback($request, $projectType);
-        }
-        
-        // Original store method for general feedback
-        return $this->storeGeneralFeedback($request);
-    }
+        // dd($request->all());
 
-    /**
-     * Store scoped feedback (PENGADUAN)
-     */
-    private function storeScopedFeedback(Request $request, $projectType)
-    {
-        $modelClass = $this->getModelClass($projectType);
-        
-        if (!$modelClass) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid project type'
-            ], 400);
-        }
-
-        // Dynamic validation rules based on whether image is required
+        // Rules untuk validasi inputan user
         $rules = [
-            'feedbackable_id' => 'required|integer',
+            'data_spatial_id' => 'required',
             'nama_pemberi_aspirasi' => 'required|string|max:255',
-            'nama_proyek' => 'nullable|string|max:255',
-            'kabupaten_kota' => 'nullable|string|max:255',
-            'kecamatan' => 'nullable|string|max:255',
-            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
-            'tanggapan' => 'required|string',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
+            'nama_proyek' => 'required|string|max:255',
+            'kabupaten_kota' => 'required|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'jenis_tanggapan' => 'required|in:pengaduan,saran,apresiasi,pertanyaan',
+            'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ];
 
-        // Make image required only for keluhan (complaints)
-        if ($request->jenis_tanggapan === 'keluhan') {
+        // Cek Jenis Tanggapan, jika pengaduan maka wajib ada gambar
+        if ($request->jenis_tanggapan === 'pengaduan') {
             $rules['laporan_gambar'] = 'required|image|mimes:jpeg,png,jpg,gif|max:2048';
         } else {
             $rules['laporan_gambar'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
         }
 
         $messages = [
-            'feedbackable_id.required' => 'Proyek wajib dipilih',
+            'data_spatial_id.required' => 'Id Kegiatan tidak ada',
             'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
             'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
             'jenis_tanggapan.in' => 'Jenis tanggapan tidak valid',
@@ -332,17 +311,20 @@ class FrontendController extends Controller
 
         try {
             // Validate that the project exists using dynamic resolution
-            $projectExists = $this->checkProjectExists($modelClass, $request->feedbackable_id);
-            
-            if (!$projectExists) {
+            $dataSpatialExists = DataSpatial::find($request->data_spatial_id);
+
+            if (!$dataSpatialExists) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Proyek yang dipilih tidak ditemukan'
                 ], 404);
             }
 
+            $user =  User::find($dataSpatialExists->user_id);
+            
+            // Data dari request user
             $data = $request->only([
-                'feedbackable_id',
+                'data_spatial_id',
                 'nama_pemberi_aspirasi',
                 'nama_proyek',
                 'kabupaten_kota',
@@ -355,10 +337,11 @@ class FrontendController extends Controller
                 'longitude'
             ]);
 
+            // Tambahkan data status = pending (default);
             $data['status'] = 'pending';
-            $data['feedbackable_type'] = $modelClass;
+            $data['opd_id'] = $user->opd_id;
 
-            // Handle image upload
+            // Handle Jika ada gambar yang diupload (Pengaduan)
             if ($request->hasFile('laporan_gambar')) {
                 $imageName = $this->handleImageUpload($request->file('laporan_gambar'));
                 if ($imageName) {
@@ -366,15 +349,11 @@ class FrontendController extends Controller
                 }
             }
 
-            $feedback = ProjectFeedback::create($data);
-
-            // Load the feedback with its relationship
-            $feedback->load('feedbackable');
+            ProjectFeedback::create($data);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tanggapan berhasil ditambahkan',
-                'data' => $feedback
             ]);
 
         } catch (\Exception $e) {
@@ -385,99 +364,6 @@ class FrontendController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Store general feedback (ASPIRASI)
-     */
-    private function storeGeneralFeedback(Request $request)
-    {
-        // Dynamic validation rules
-        $rules = [
-            'nama_pemberi_aspirasi' => 'required|string|max:255',
-            'nama_proyek' => 'required|string|max:255',
-            'kabupaten_kota' => 'required|string|max:255',
-            'kecamatan' => 'nullable|string|max:255',
-            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
-            'tanggapan' => 'required|string',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ];
-
-        // Make image required only for keluhan (complaints)
-        if ($request->jenis_tanggapan === 'keluhan') {
-            $rules['laporan_gambar'] = 'required|image|mimes:jpeg,png,jpg,gif|max:2048';
-        } else {
-            $rules['laporan_gambar'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
-        }
-
-        $messages = [
-            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
-            'nama_proyek.required' => 'Nama proyek wajib diisi',
-            'kabupaten_kota.required' => 'Kabupaten/Kota wajib dipilih',
-            'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
-            'jenis_tanggapan.in' => 'Jenis tanggapan tidak valid',
-            'tanggapan.required' => 'Tanggapan wajib diisi',
-            'email.email' => 'Format email tidak valid',
-            'phone.max' => 'Nomor telepon terlalu panjang',
-            'laporan_gambar.required' => 'Lampiran gambar wajib untuk pengaduan',
-            'laporan_gambar.image' => 'File harus berupa gambar',
-            'laporan_gambar.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
-            'laporan_gambar.max' => 'Ukuran gambar maksimal 2MB',
-        ];
-
-        $validator = Validator::make($request->all(), $rules, $messages);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $data = $request->only([
-                'nama_pemberi_aspirasi',
-                'nama_proyek',
-                'kabupaten_kota',
-                'kecamatan',
-                'jenis_tanggapan',
-                'tanggapan',
-                'email',
-                'phone',
-                'latitude',
-                'longitude'
-            ]);
-
-            $data['status'] = 'pending';
-
-            // Handle image upload
-            if ($request->hasFile('laporan_gambar')) {
-                $imageName = $this->handleImageUpload($request->file('laporan_gambar'));
-                if ($imageName) {
-                    $data['laporan_gambar'] = $imageName;
-                }
-            }
-
-            $feedback = ProjectFeedback::create($data);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Tanggapan berhasil ditambahkan',
-                'data' => $feedback
-            ]);
-
-        } catch (\Exception $e) {
-            // \Log::error('Error storing general feedback: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan saat menyimpan data'
-            ], 500);
-        }
-    }
-
     /**
      * Handle image upload
      */
@@ -504,43 +390,13 @@ class FrontendController extends Controller
     /**
      * Check if project exists safely
      */
-    private function checkProjectExists($modelClass, $projectId)
+    private function checkProjectExists($projectId)
     {
         try {
-            if (!class_exists($modelClass)) {
-                return false;
-            }
-            
-            $modelInstance = app($modelClass);
-            return $modelInstance->where('id', $projectId)->exists();
-            
+            return DataSpatial::where('id', $projectId)->exists();
         } catch (\Exception $e) {
-            // \Log::error('Error checking project existence: ' . $e->getMessage());
             return false;
         }
-    }
-
-    /**
-     * Get model class based on project type
-     */
-    private function getModelClass($type)
-    {
-        $modelMap = [
-            'usulan_musrenbang' => 'App\\Models\\UsulanMusrenbang',
-            'proyek_strategis_nasional' => 'App\\Models\\ProyekStrategisNasional',
-            'proyek_strategis_daerah' => 'App\\Models\\ProyekStrategisDaerah',
-            'pokir_dprd' => 'App\\Models\\PokirDprd',
-            'lokasi' => 'App\\Models\\Lokasi',
-        ];
-
-        $className = $modelMap[$type] ?? null;
-        
-        // Check if class exists
-        if ($className && class_exists($className)) {
-            return $className;
-        }
-        
-        return null;
     }
 
     /**
@@ -571,164 +427,4 @@ class FrontendController extends Controller
         return 'all'; // Default to show all
     }
 
-    /**
-     * Get available projects safely based on your model structure
-     */
-    private function getAvailableProjects($projectType)
-    {
-        $modelClass = $this->getModelClass($projectType);
-        
-        if (!$modelClass) {
-            return collect();
-        }
-        
-        try {
-            $modelInstance = app($modelClass);
-            
-            // For your ProyekStrategisDaerah model, use 'deskripsi' column
-            if ($projectType === 'proyek_strategis_daerah') {
-                return $modelInstance->select('id', 'deskripsi', 'tahun', 'dbf_attributes')
-                    ->orderBy('tahun', 'desc')
-                    ->limit(50)
-                    ->get()
-                    ->map(function($item) {
-                        // Use description from deskripsi or dbf_attributes
-                        $description = $item->deskripsi;
-                        if (!$description && $item->dbf_attributes) {
-                            $description = $item->dbf_attributes['KEGIATAN'] ?? 
-                                         $item->dbf_attributes['NAMA'] ?? 
-                                         "Proyek Tahun {$item->tahun}";
-                        }
-                        $item->display_name = $description ?: "Proyek ID: {$item->id}";
-                        return $item;
-                    });
-            }
-            
-            // For other models, try common column names
-            $possibleColumns = ['deskripsi', 'nama', 'title', 'judul'];
-            
-            foreach ($possibleColumns as $column) {
-                try {
-                    return $modelInstance->select('id', $column . ' as deskripsi')
-                        ->limit(50)
-                        ->get()
-                        ->map(function($item) {
-                            $item->display_name = $item->deskripsi ?: "Proyek ID: {$item->id}";
-                            return $item;
-                        });
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-            
-            // Fallback - just get id
-            return $modelInstance->select('id')->limit(50)->get()->map(function($item) {
-                $item->display_name = "Proyek ID: {$item->id}";
-                return $item;
-            });
-            
-        } catch (\Exception $e) {
-            // \Log::error('Error getting available projects: ' . $e->getMessage());
-            return collect();
-        }
-    }
-
-    /**
-     * Load project safely with proper data extraction
-     */
-    private function loadProject($projectType, $projectId)
-    {
-        $modelClass = $this->getModelClass($projectType);
-        
-        if (!$modelClass) {
-            return null;
-        }
-        
-        try {
-            $modelInstance = app($modelClass);
-            $project = $modelInstance->find($projectId);
-            
-            if ($project && $projectType === 'proyek_strategis_daerah') {
-                // Add additional data for ProyekStrategisDaerah
-                $project->geojson = $project->geom; // Assuming geom contains the GeoJSON
-                
-                // Ensure dbf_attributes is properly accessible
-                if (!$project->dbf_attributes) {
-                    $project->dbf_attributes = [];
-                }
-            }
-            
-            return $project;
-        } catch (\Exception $e) {
-            // \Log::error('Error loading project: ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Show form for creating feedback
-     */
-    public function create(Request $request, $projectId = null)
-    {
-        $projectType = $this->getProjectTypeFromRequest($request);
-        $project = null;
-        $availableProjects = collect();
-        
-        // Try to load specific project
-        if ($projectId && $projectType !== 'all') {
-            $project = $this->loadProject($projectType, $projectId);
-        }
-        
-        // If no specific project, get available projects
-        if (!$project) {
-            if ($projectType && $projectType !== 'all') {
-                $availableProjects = $this->getAvailableProjects($projectType);
-            }
-        }
-        
-        // Get kabupaten list from your ProyekStrategisDaerah data or define manually
-        $kabupaten_list = $this->getKabupatenList();
-        
-        return view('feedback.create', compact('project', 'projectType', 'availableProjects', 'kabupaten_list'));
-    }
-
-    /**
-     * Get kabupaten list from database or return default list
-     */
-    private function getKabupatenList()
-    {
-        try {
-            // Try to get unique kabupaten from ProyekStrategisDaerah dbf_attributes
-            $kabupatenFromDb = app('App\\Models\\ProyekStrategisDaerah')
-                ->whereNotNull('dbf_attributes')
-                ->get()
-                ->pluck('dbf_attributes')
-                ->map(function($attr) {
-                    return $attr['KABUPATEN'] ?? $attr['KOTA'] ?? null;
-                })
-                ->filter()
-                ->unique()
-                ->sort()
-                ->values()
-                ->toArray();
-
-            if (!empty($kabupatenFromDb)) {
-                return $kabupatenFromDb;
-            }
-        } catch (\Exception $e) {
-            // \Log::info('Could not load kabupaten from database, using default list');
-        }
-
-        // Default kabupaten list
-        return [
-            'Aceh Barat', 'Aceh Besar', 'Aceh Jaya', 'Aceh Selatan', 'Aceh Singkil',
-            'Badung', 'Bandung', 'Bandung Barat', 'Banjarnegara', 'Bantul',
-            'Bekasi', 'Bogor', 'Cianjur', 'Depok', 'Garut', 'Indramayu',
-            'Jakarta Barat', 'Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Timur', 'Jakarta Utara',
-            'Karawang', 'Kuningan', 'Majalengka', 'Purwakarta', 'Subang', 'Sukabumi', 'Sumedang',
-            'Tangerang', 'Tasikmalaya', 'Yogyakarta'
-        ];
-    }
-
-   
 }

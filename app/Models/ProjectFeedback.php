@@ -29,6 +29,7 @@ class ProjectFeedback extends Model
         'phone',
         'response_admin',
         'responded_at',
+        'opd_id'
     ];
 
     protected $casts = [
