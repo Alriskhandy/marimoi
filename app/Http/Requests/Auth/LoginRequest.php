@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\ValidHCaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,19 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
+        ];
+    }
+
+    /**
+     * Custom the error messges for h-captcha-response.
+     *
+     * @return array<string>
+     */
+    public function messages(): array
+    {
+        return [
+            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
         ];
     }
 

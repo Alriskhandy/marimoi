@@ -34,6 +34,8 @@
     <link href="{{ asset('frontend/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
     <link href="{{ asset('frontend/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
     <!-- Main CSS File -->
     <link href="{{ asset('frontend/css/main.css') }}" rel="stylesheet">
 
@@ -225,7 +227,7 @@
             .login-card {
                 padding: 30px 20px;
             }
-            
+
             .login-title h2 {
                 font-size: 24px;
             }
@@ -247,20 +249,14 @@
 
             <form action="{{ route('login') }}" method="POST">
                 @csrf
-                
+
                 <div class="form-group">
                     <label for="email" class="form-label">Email</label>
                     <div class="input-group">
                         <i class="bi bi-envelope input-icon"></i>
-                        <input type="email" 
-                               class="form-control" 
-                               id="email" 
-                               name="email" 
-                               placeholder="Masukkan email Anda" 
-                               required 
-                               autofocus
-                               value="{{ old('email') }}"
-                               autocomplete="username">
+                        <input type="email" class="form-control" id="email" name="email"
+                            placeholder="Masukkan email Anda" required autofocus value="{{ old('email') }}"
+                            autocomplete="username">
                     </div>
                 </div>
 
@@ -268,28 +264,30 @@
                     <label for="password" class="form-label">Password</label>
                     <div class="input-group">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" 
-                               class="form-control" 
-                               id="password" 
-                               name="password" 
-                               placeholder="Masukkan password Anda" 
-                               required
-                               autocomplete="current-password">
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Masukkan password Anda" required autocomplete="current-password">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-check">
-                        <input type="checkbox" 
-                               class="form-check-input" 
-                               id="remember" 
-                               name="remember">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label class="form-check-label" for="remember">
                             Ingat Saya
                         </label>
                     </div>
                     <a href="#" class="forgot-password">Lupa Password?</a>
                 </div>
+
+                <div class="form-row">
+                    <div class="h-captcha mx-auto" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}">
+                    </div>
+                </div>
+                @error('h-captcha-response')
+                    <div class="invalid-feedback d-block text-center">
+                        {{ $message }}
+                    </div>
+                @enderror
 
                 <button type="submit" class="login-btn">
                     Masuk
