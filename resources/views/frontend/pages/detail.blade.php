@@ -147,7 +147,8 @@
                                         <div class="row g-3">
                                             <div class="col-lg-8 col-md-7 my-auto">
                                                 <label for="laporan_gambar" class="form-label">Lampiran Gambar
-                                                    <span id="image_required" class="text-danger" style="display: none;">*</span>
+                                                    <span id="image_required" class="text-danger"
+                                                        style="display: none;">*</span>
                                                 </label>
                                                 <input type="file" class="form-control" id="laporan_gambar"
                                                     name="laporan_gambar"
@@ -208,33 +209,47 @@
                     </div>
                     <div class="col-lg-5 col-md-12">
                         <div class="feedback-info-card h-100 p-4">
-                            <h3 class="section-title mb-4">Keterangan &amp; Petunjuk</h3>
+                            <h3 class="section-title mb-4">Petunjuk Pengisian</h3>
                             <div class="content">
                                 <ul class="list-unstyled mb-3">
-                                    <li><strong>Form ini digunakan untuk memberikan feedback, saran, pengaduan, atau
-                                            apresiasi
-                                            terkait proyek yang sedang berjalan.</strong></li>
-                                    <li>Isi data dengan benar dan lengkap agar tanggapan Anda dapat diproses dengan baik.
+                                    <li class="text-justify mb-2">Formulir ini digunakan untuk menyampaikan saran,
+                                        pengaduan,
+                                        apresiasi, atau pertanyaan terkait proyek.</li>
+                                        <hr>
+                                    <li><strong>Langkah-langkah pengisian:</strong>
+                                        <ol class="mb-0">
+                                            <li>Isi nama lengkap.</li>
+                                            <li>Masukkan email aktif.</li>
+                                            <li>Isi nomor WhatsApp.</li>
+                                            <li>Pilih jenis tanggapan.</li>
+                                            <li>Tuliskan tanggapan secara jelas.</li>
+                                            <li>Unggah gambar (wajib untuk pengaduan).</li>
+                                        </ol>
                                     </li>
-                                    <li>Jika memilih <span class="fw-bold text-danger">Pengaduan</span>, lampiran gambar
-                                        <span class="fw-bold text-danger">wajib</span> diunggah.
+                                    <hr>
+                                    <li class="mt-3"><strong>Catatan:</strong>
+                                        <ul class="mb-0">
+                                            <li>Gambar penting untuk memperjelas pengaduan.</li>
+                                            <li>Email aktif dibutuhkan untuk tindak lanjut.</li>
+                                            <li>Masukan Anda akan diproses dan ditindaklanjuti.</li>
+                                            <li>Notifikasi akan dikirim lewat email atau WhatsApp.</li>
+                                        </ul>
                                     </li>
-                                    <li>Pastikan nomor WhatsApp aktif untuk komunikasi lebih lanjut.</li>
-                                    <li>Feedback Anda akan diteruskan ke Instansi terkait untuk ditindaklanjuti.</li>
+                                    <li class="mt-3"><strong>Privasi:</strong><br>
+                                        Data Anda aman dan hanya digunakan untuk penanganan masukan.
+                                    </li>
                                 </ul>
                                 <hr>
                                 <div class="mb-2">
                                     <strong>Kontak Bantuan:</strong><br>
-                                    <span class="d-block"><i class="bi bi-envelope"></i> info@marimoi.id</span>
-                                    <span class="d-block"><i class="bi bi-whatsapp"></i> 0812-3456-7890</span>
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Privasi:</strong><br>
-                                    Data Anda aman dan hanya digunakan untuk keperluan tindak lanjut feedback.
+                                    <i class="bi bi-envelope"></i> Email: bappeda@malutprov.go.id<br>
+                                    <i class="bi bi-globe"></i> Web: www.bappeda.malutprov.go.id<br>
+                                    <i class="bi bi-whatsapp"></i> WhatsApp: 0812-3456-7890
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </section>
