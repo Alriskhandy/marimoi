@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\Dokumen;
-use App\Models\Opd;
 use App\Models\ProjectFeedback;
 use App\Models\User;
+use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -276,6 +276,7 @@ class FrontendController extends Controller
             'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada gambar
@@ -297,6 +298,7 @@ class FrontendController extends Controller
             'laporan_gambar.image' => 'File harus berupa gambar',
             'laporan_gambar.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
             'laporan_gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
