@@ -26,20 +26,12 @@ Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])
 // FEEDBACK //
 Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
 
+// USULAN ASPIRASI MASYARAKAT //
+Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi.store');
+
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
-
-
-// TAHAP PENGEMBANGAN //
-Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
-
-// Routes untuk project-specific feedback
-Route::post('pokir/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('pokir.feedback.store');
-Route::post('usulan/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('usulan.feedback.store');
-Route::post('nasional/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('nasional.feedback.store');
-Route::post('daerah/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('daerah.feedback.store');
-Route::post('lokasi/feedback/store/{projectId?}', [FrontendController::class, 'store'])->name('lokasi.feedback.store');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';

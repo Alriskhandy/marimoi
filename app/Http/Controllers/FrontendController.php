@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\Dokumen;
+use App\Models\KategoriAspirasi;
 use App\Models\ProjectFeedback;
 use App\Models\User;
 use App\Rules\ValidHCaptcha;
@@ -64,7 +65,8 @@ class FrontendController extends Controller
 
     public function aspirasi()
     {
-        return view('frontend.pages.aspirasi');
+        $aspirasi = KategoriAspirasi::all();
+        return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
     
     
