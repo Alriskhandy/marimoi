@@ -5,6 +5,7 @@ namespace App\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ValidHCaptcha implements ValidationRule
 {
@@ -19,7 +20,7 @@ class ValidHCaptcha implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $response = Http::asForm()->post('https://hcaptcha.com/siteverify', [
-            'secret'   => env('H_CAPTCHA_SECRET'),
+            'secret'   => config('services.hcaptcha.secret'),
             'response' => $value,
         ]);
 

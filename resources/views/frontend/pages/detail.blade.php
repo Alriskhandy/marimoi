@@ -87,7 +87,7 @@
                 <div class="row justify-content-center g-4">
                     <div class="col-lg-7 col-md-12">
                         <div class="feedback-card h-100 p-4 border-end border-2 border-light">
-                            <h3 class="section-title mb-4">Form Feedback</h3>
+                            <h3 class="section-title mb-4">Formulir Tanggapan Kegiatan</h3>
                             <div class="card-body">
                                 <form id="feedbackForm" action="{{ route('feedback.store') }}" method="POST"
                                     enctype="multipart/form-data">
@@ -143,12 +143,12 @@
                                             placeholder="Usulan Pokir ini sangat bagus untuk kemajuan desa kami. Mohon segera direalisasikan."></textarea>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label for="laporan_gambar" class="form-label">Lampiran Gambar
-                                            <span id="image_required" class="text-danger" style="display: none;">*</span>
-                                        </label>
+                                    <div class="mb-3 pt-3">
                                         <div class="row g-3">
-                                            <div class="col-lg-8 col-md-7">
+                                            <div class="col-lg-8 col-md-7 my-auto">
+                                                <label for="laporan_gambar" class="form-label">Lampiran Gambar
+                                                    <span id="image_required" class="text-danger" style="display: none;">*</span>
+                                                </label>
                                                 <input type="file" class="form-control" id="laporan_gambar"
                                                     name="laporan_gambar"
                                                     accept="image/jpeg,image/png,image/jpg,image/gif">
@@ -157,7 +157,7 @@
                                                     <span id="image_note">Wajib untuk pengaduan.</span>
                                                 </small>
                                             </div>
-                                            <div class="col-lg-4 col-md-5">
+                                            <div class="col-lg-4 col-md-5 my-auto">
                                                 <div id="image_preview_container" class="image-preview-container"
                                                     style="display: none;">
                                                     <img id="image_preview" src="" alt="Preview"
@@ -181,17 +181,22 @@
                                             <img id="mobilePreviewImage" src="" alt="Mobile Preview">
                                         </div>
                                     </div>
+                                    <div class="row">
+                                        <!-- Captcha -->
+                                        <div class="col-12 col-md-6 text-center">
+                                            <div class="h-captcha"
+                                                data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}">
+                                            </div>
+                                        </div>
 
-                                    <div class="mb-3">
-                                        <div class="h-captcha" data-sitekey="e66647b0-979e-4ffa-bb30-cba6c7c43d00"
-                                            name="h-captcha-response"></div>
+                                        <!-- Tombol -->
+                                        <div class="col-12 col-md-6 my-auto">
+                                            <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                                                <span id="submitText">Kirim Feedback</span>
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div class="text-center">
-                                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                                            <span id="submitText">Kirim Feedback</span>
-                                        </button>
-                                    </div>
                                 </form>
 
                                 <!-- Alert container -->
@@ -365,6 +370,13 @@
 
                 const formData = new FormData(form);
 
+                // Ensure hCaptcha response is included in form data
+                // Use hCaptcha API to get the response value
+                const hcaptchaResponse = hcaptcha.getResponse();
+                if (hcaptchaResponse) {
+                    formData.set('h-captcha-response', hcaptchaResponse);
+                }
+
                 fetch(form.action, {
                         method: 'POST',
                         body: formData,
@@ -391,12 +403,19 @@
                             const mobilePreviewImage = document.getElementById('mobilePreviewImage');
                             mobilePreviewImage.src = '';
                             mobilePreview.classList.remove('show');
-                        } else {
-                            console.log(data);
 
+                            // Reset hCaptcha
+                            if (typeof hcaptcha !== 'undefined') {
+                                hcaptcha.reset();
+                            }
+                        } else {
                             if (data.errors) {
                                 if (data.errors['h-captcha-response']) {
                                     showAlert('error', data.errors['h-captcha-response'][0]);
+                                    // Reset hCaptcha on error
+                                    if (typeof hcaptcha !== 'undefined') {
+                                        hcaptcha.reset();
+                                    }
                                 } else {
                                     showAlert('error', data.message);
                                 }

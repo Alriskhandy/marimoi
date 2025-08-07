@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class FrontendController extends Controller
@@ -262,6 +263,9 @@ class FrontendController extends Controller
     public function store(Request $request)
     {
         // dd($request->all());
+        
+        // Log the request data for debugging
+        Log::info('Feedback form submission', $request->all());
 
         // Rules untuk validasi inputan user
         $rules = [
