@@ -82,11 +82,11 @@
 
     @if ($project->data_type != 'tematik')
         <!-- Form Feedback Section -->
-        <section class="section-with-bg feedback-section">
+        <section class="feedback-section" style="background: #f8fafc;">
             <div class="container" data-aos="fade-up">
                 <div class="row justify-content-center g-4">
                     <div class="col-lg-7 col-md-12">
-                        <div class="feedback-card h-100 p-4 border-end border-2 border-light">
+                        <div class="feedback-card h-100 p-4">
                             <h3 class="section-title mb-4">Formulir Tanggapan Kegiatan</h3>
                             <div class="card-body">
                                 <form id="feedbackForm" action="{{ route('feedback.store') }}" method="POST"
@@ -105,43 +105,61 @@
                                     <input type="hidden" name="longitude" id="longitude" value="">
 
                                     <!-- Form fields yang bisa diisi user -->
-                                    <div class="mb-3">
-                                        <label for="nama_pemberi_aspirasi" class="form-label">Nama Pemberi Aspirasi <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="nama_pemberi_aspirasi"
-                                            name="nama_pemberi_aspirasi" required placeholder="Contoh: Ahmad Salam">
+                                    <div class="row gy-4">
+                                        <div class="col-md-6 mt-2">
+                                            <label for="nama_pemberi_aspirasi" class="form-label">Nama Lengkap <span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                                <input type="text" class="form-control" id="nama_pemberi_aspirasi"
+                                                    name="nama_pemberi_aspirasi" required placeholder="Contoh: Ahmad Salam">
+                                            </div>
+                                        </div>
+    
+                                        <div class="col-md-6 mt-2">
+                                            <label for="email" class="form-label">Email Aktif</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    placeholder="Contoh: ahmad.salam@email.com">
+                                            </div>
+                                        </div>
+    
+                                        <div class="col-md-6 mt-2">
+                                            <label for="phone" class="form-label">No. WhatsApp</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-whatsapp"></i></span>
+                                                <input type="text" class="form-control" id="phone" name="phone"
+                                                    placeholder="Contoh: 081234567890">
+                                            </div>
+                                        </div>
+    
+                                        <div class="col-md-6 mt-2">
+                                            <label for="jenis_tanggapan" class="form-label">Jenis Tanggapan <span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                                <select class="form-select" id="jenis_tanggapan" name="jenis_tanggapan" required>
+                                                    <option value="">-- Pilih Jenis --</option>
+                                                    <option value="saran" selected>Saran</option>
+                                                    <option value="keluhan">Pengaduan</option>
+                                                    <option value="apresiasi">Apresiasi</option>
+                                                    <option value="pertanyaan">Pertanyaan</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="tanggapan" class="form-label">Tanggapan <span
+                                                    class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-pencil"></i></span>
+                                                <textarea class="form-control" id="tanggapan" name="tanggapan" rows="4" required
+                                                    placeholder="Usulan Pokir ini sangat bagus untuk kemajuan desa kami. Mohon segera direalisasikan."></textarea>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label for="email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="email" name="email"
-                                            placeholder="Contoh: ahmad.salam@email.com">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="phone" class="form-label">No. WhatsApp</label>
-                                        <input type="text" class="form-control" id="phone" name="phone"
-                                            placeholder="Contoh: 081234567890">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="jenis_tanggapan" class="form-label">Jenis Tanggapan <span
-                                                class="text-danger">*</span></label>
-                                        <select class="form-control" id="jenis_tanggapan" name="jenis_tanggapan" required>
-                                            <option value="">-- Pilih Jenis --</option>
-                                            <option value="saran" selected>Saran</option>
-                                            <option value="keluhan">Pengaduan</option>
-                                            <option value="apresiasi">Apresiasi</option>
-                                            <option value="pertanyaan">Pertanyaan</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="tanggapan" class="form-label">Tanggapan <span
-                                                class="text-danger">*</span></label>
-                                        <textarea class="form-control" id="tanggapan" name="tanggapan" rows="4" required
-                                            placeholder="Usulan Pokir ini sangat bagus untuk kemajuan desa kami. Mohon segera direalisasikan."></textarea>
-                                    </div>
 
                                     <div class="mb-3 pt-3">
                                         <div class="row g-3">
@@ -150,9 +168,12 @@
                                                     <span id="image_required" class="text-danger"
                                                         style="display: none;">*</span>
                                                 </label>
-                                                <input type="file" class="form-control" id="laporan_gambar"
-                                                    name="laporan_gambar"
-                                                    accept="image/jpeg,image/png,image/jpg,image/gif">
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-paperclip"></i></span>
+                                                    <input type="file" class="form-control" id="laporan_gambar"
+                                                        name="laporan_gambar"
+                                                        accept="image/jpeg,image/png,image/jpg,image/gif">
+                                                </div>
                                                 <small class="text-muted d-block mt-1">Maksimal 2MB. Format: JPG, JPEG,
                                                     PNG.
                                                     <span id="image_note">Wajib untuk pengaduan.</span>
@@ -193,7 +214,7 @@
                                         <!-- Tombol -->
                                         <div class="col-12 col-md-6 my-auto">
                                             <button type="submit" class="btn btn-primary w-100" id="submitBtn">
-                                                <span id="submitText">Kirim Feedback</span>
+                                                <i class="bi bi-send me-2"></i><span id="submitText">Kirim Tanggapan</span>
                                             </button>
                                         </div>
                                     </div>
@@ -239,13 +260,6 @@
                                         Data Anda aman dan hanya digunakan untuk penanganan masukan.
                                     </li>
                                 </ul>
-                                <hr>
-                                <div class="mb-2">
-                                    <strong>Kontak Bantuan:</strong><br>
-                                    <i class="bi bi-envelope"></i> Email: bappeda@malutprov.go.id<br>
-                                    <i class="bi bi-globe"></i> Web: www.bappeda.malutprov.go.id<br>
-                                    <i class="bi bi-whatsapp"></i> WhatsApp: 0812-3456-7890
-                                </div>
                             </div>
                         </div>
                     </div>
