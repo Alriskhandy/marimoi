@@ -23,6 +23,15 @@ Route::get('/rpjmd/{id}', [FrontendController::class, 'detailPeta'])->name('deta
 Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.pokir');
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
+// FAQ //
+Route::get('/faq', function(){
+    return view('frontend.pages.faq');
+})->name('faq');
+
+Route::get('/faq', function(){
+    return view('frontend.pages.aspirasi');
+})->name('faq');
+
 // FEEDBACK //
 Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
 

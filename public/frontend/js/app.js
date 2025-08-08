@@ -160,25 +160,16 @@ function reportIssue() {
     toggleFabMenu();
 }
 
-function submitAspiration() {
-    alert(
-        "Fitur pengiriman aspirasi akan segera tersedia!\n\nSampaikan aspirasi Anda untuk pembangunan infrastruktur Maluku Utara."
-    );
+function halamanAspirasi() {
+    window.location.href = '/aspirasi-masyarakat';
     toggleFabMenu();
 }
 
-function viewHelp() {
-    alert(
-        "Bantuan MARIMOI:\n\n1. Gunakan menu navigasi untuk menjelajahi fitur\n2. Klik pada kartu proyek untuk detail\n3. Gunakan filter untuk menyaring data\n4. Hubungi kami jika ada pertanyaan"
-    );
+function halamanFAQ() {
+    window.location.href = '/faq';
     toggleFabMenu();
 }
 
-function openMap() {
-    alert(
-        "Peta interaktif akan segera tersedia!\n\nFitur ini akan menampilkan visualisasi geografis dari semua proyek infrastruktur di Maluku Utara."
-    );
-}
 
 // Navbar background on scroll
 window.addEventListener("scroll", function () {
@@ -195,10 +186,8 @@ window.addEventListener("scroll", function () {
 // Feature card interactions
 document.querySelectorAll(".feature-card").forEach((card) => {
     card.addEventListener("click", function () {
-        const title = this.querySelector("h4").textContent;
-        alert(
-            `Fitur "${title}" akan segera tersedia!\n\nFitur ini akan memberikan akses lengkap untuk mengelola ${title.toLowerCase()}.`
-        );
+        const link = this.querySelector("a").href;
+        window.location.href = link;
     });
 });
 

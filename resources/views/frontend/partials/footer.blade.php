@@ -23,9 +23,8 @@
                 <ul class="list-unstyled">
                     <li class="mb-2"><a href="#home">Beranda</a></li>
                     <li class="mb-2"><a href="#features">Fitur</a></li>
-                    <li class="mb-2">
-                        <a href="#monitoring">Monitoring</a>
-                    </li>
+                    <li class="mb-2"><a href="#monitoring">Proyek Populer</a></li>
+                    <li class="mb-2"><a href="{{ route('tampil.aspirasi') }}">Kirim Aspirasi</a></li>
                     <li class="mb-2"><a href="#about">Tentang</a></li>
                 </ul>
             </div>
