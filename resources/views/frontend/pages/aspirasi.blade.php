@@ -210,6 +210,13 @@
                                         </div>
                                     </div>
 
+                                    <!-- Alert container -->
+                                    <div class="col-md-12 text-center">
+                                        <div id="alertContainer" class="mt-3 alert-container">
+                                            <div id="alertMessage" class="alert" role="alert"></div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </form>
                         </div>
@@ -253,7 +260,7 @@
                     // Show kategori usulan and map container
                     kategoriUsulanContainer.style.display = 'block';
                     mapContainer.style.display = 'block';
-                    
+
                     // Make kategori required
                     kategoriSelect.setAttribute('required', 'required');
 
@@ -263,7 +270,7 @@
                     // Hide kategori usulan and map container
                     kategoriUsulanContainer.style.display = 'none';
                     mapContainer.style.display = 'none';
-                    
+
                     // Remove required attribute and reset value
                     kategoriSelect.removeAttribute('required');
                     kategoriSelect.value = '';
@@ -320,8 +327,7 @@
                                 console.error('Error getting location:', error);
                                 // Submit form without coordinates if location is not available
                                 submitForm();
-                            },
-                            {
+                            }, {
                                 timeout: 5000,
                                 maximumAge: 60000
                             }
@@ -420,29 +426,71 @@
                     });
             }
 
+            // Add CSS for alert animations if not exists
+            if (!document.getElementById('alert-animations')) {
+                const style = document.createElement('style');
+                style.id = 'alert-animations';
+                style.textContent = `
+                    .alert-container {
+                        opacity: 0;
+                        visibility: hidden;
+                        transform: translateY(-20px);
+                        transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+                    }
+                    .alert-container.show {
+                        opacity: 1;
+                        visibility: visible;
+                        transform: translateY(0);
+                    }
+                    .alert {
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border-radius: 8px;
+                        margin-bottom: 0;
+                    }
+                    .alert-success {
+                        animation: pulse 1.5s ease;
+                    }
+                    @keyframes pulse {
+                        0% { transform: scale(0.95); }
+                        50% { transform: scale(1.02); }
+                        100% { transform: scale(1); }
+                    }
+                    .map-alert-overlay {
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                    }
+                    .map-alert-overlay.show {
+                        opacity: 1;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
             // Fungsi tampil alert
             function showAlert(type, message) {
-                // Remove existing alerts first
-                const existingAlerts = document.querySelectorAll('.map-alert-overlay');
-                existingAlerts.forEach(alert => alert.remove());
-                
-                const alertContainer = document.createElement('div');
-                alertContainer.className = 'map-alert-overlay';
-                
-                // Create overlay background for loading
-                if (type === 'info') {
-                    alertContainer.style.position = 'absolute';
-                    alertContainer.style.top = '0';
-                    alertContainer.style.left = '0';
-                    alertContainer.style.width = '100%';
-                    alertContainer.style.height = '100%';
-                    alertContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-                    alertContainer.style.display = 'flex';
-                    alertContainer.style.alignItems = 'center';
-                    alertContainer.style.justifyContent = 'center';
-                    alertContainer.style.zIndex = '9999';
-                    
-                    // Create content container
+                const alertContainer = document.getElementById('alertContainer');
+                const alertMessage = document.getElementById('alertMessage');
+
+                // For loading/info alerts in map
+                if (type === 'info' && document.getElementById('map')) {
+                    // Remove existing map alerts first
+                    const existingAlerts = document.querySelectorAll('.map-alert-overlay');
+                    existingAlerts.forEach(alert => alert.remove());
+
+                    const mapAlertContainer = document.createElement('div');
+                    mapAlertContainer.className = 'map-alert-overlay';
+                    mapAlertContainer.style.position = 'absolute';
+                    mapAlertContainer.style.top = '0';
+                    mapAlertContainer.style.left = '0';
+                    mapAlertContainer.style.width = '100%';
+                    mapAlertContainer.style.height = '100%';
+                    mapAlertContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                    mapAlertContainer.style.display = 'flex';
+                    mapAlertContainer.style.alignItems = 'center';
+                    mapAlertContainer.style.justifyContent = 'center';
+                    mapAlertContainer.style.zIndex = '9999';
+
+                    // Create content container with spinner
                     const contentContainer = document.createElement('div');
                     contentContainer.style.display = 'flex';
                     contentContainer.style.alignItems = 'center';
@@ -450,7 +498,13 @@
                     contentContainer.style.color = 'white';
                     contentContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
                     contentContainer.style.fontWeight = 'bold';
-                    
+                    contentContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                    contentContainer.style.padding = '10px 16px';
+                    contentContainer.style.borderRadius = '8px';
+                    contentContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                    contentContainer.style.transform = 'scale(0.9)';
+                    contentContainer.style.transition = 'transform 0.3s ease';
+
                     // Create spinner
                     const spinner = document.createElement('div');
                     spinner.style.width = '24px';
@@ -459,63 +513,67 @@
                     spinner.style.borderTop = '3px solid white';
                     spinner.style.borderRadius = '50%';
                     spinner.style.animation = 'spin 1s linear infinite';
-                    
+
                     // Add CSS for spinner animation if not exists
                     if (!document.getElementById('spinner-style')) {
                         const style = document.createElement('style');
                         style.id = 'spinner-style';
-                        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}';
+                        style.textContent =
+                            '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}';
                         document.head.appendChild(style);
                     }
-                    
+
                     // Create text element
                     const textElement = document.createElement('span');
-                    textElement.textContent = 'Loading...';
-                    
+                    textElement.textContent = message || 'Loading...';
+
                     contentContainer.appendChild(spinner);
                     contentContainer.appendChild(textElement);
-                    alertContainer.appendChild(contentContainer);
+                    mapAlertContainer.appendChild(contentContainer);
+
+                    // Append to map container
+                    const mapElement = document.getElementById('map');
+                    mapElement.appendChild(mapAlertContainer);
+
+                    // Trigger animations with a small delay
+                    setTimeout(() => {
+                        mapAlertContainer.classList.add('show');
+                        contentContainer.style.transform = 'scale(1)';
+                    }, 10);
+
+                    // Auto hide after appropriate time
+                    setTimeout(() => {
+                        mapAlertContainer.classList.remove('show');
+                        contentContainer.style.transform = 'scale(0.9)';
+                        
+                        // Remove after transition completes
+                        setTimeout(() => {
+                            if (mapAlertContainer.parentNode) {
+                                mapAlertContainer.remove();
+                            }
+                        }, 300);
+                    }, 10000); // Loading stays longer
                 } else {
-                    // For error messages, show simple centered text without background
-                    alertContainer.style.position = 'absolute';
-                    alertContainer.style.top = '50%';
-                    alertContainer.style.left = '50%';
-                    alertContainer.style.transform = 'translate(-50%, -50%)';
-                    alertContainer.style.zIndex = '9999';
-                    alertContainer.style.color = 'white';
-                    alertContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
-                    alertContainer.style.fontWeight = 'bold';
-                    alertContainer.style.textAlign = 'center';
-                    alertContainer.style.padding = '15px';
-                    alertContainer.style.backgroundColor = 'transparent';
-                    alertContainer.style.maxWidth = '80%';
-                    alertContainer.style.wordWrap = 'break-word';
-                    alertContainer.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+                    // For success and error messages, use the standard alert container
+                    alertMessage.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
+                    alertMessage.innerHTML = type === 'success' ?
+                        `<i class="bi bi-check-circle me-2"></i>${message}` :
+                        `<i class="bi bi-exclamation-triangle me-2"></i>${message}`;
                     
-                    // Simplified error message
-                    if (type === 'error') {
-                        alertContainer.textContent = 'Gagal';
-                    } else {
-                        alertContainer.textContent = message;
-                    }
-                }
+                    // Remove any existing classes and add show class
+                    alertContainer.classList.remove('show');
+                    
+                    // Force reflow to ensure animation plays
+                    void alertContainer.offsetWidth;
+                    
+                    // Show the alert with animation
+                    alertContainer.classList.add('show');
 
-                // Append to map container
-                const mapElement = document.getElementById('map');
-                if (mapElement) {
-                    mapElement.appendChild(alertContainer);
-                } else {
-                    // Fallback to body if map container not found
-                    document.body.appendChild(alertContainer);
+                    // Auto hide after 3 seconds
+                    setTimeout(() => {
+                        alertContainer.classList.remove('show');
+                    }, 3000);
                 }
-
-                // Auto hide after appropriate time
-                const hideTime = type === 'info' ? 10000 : 3000; // Loading stays longer
-                setTimeout(() => {
-                    if (alertContainer.parentNode) {
-                        alertContainer.remove();
-                    }
-                }, hideTime);
             }
 
             // Function to initialize the map
@@ -548,7 +606,7 @@
                 } else {
                     window.currentLocationMarker.setLatLng(latlng);
                 }
-                
+
                 // Update hidden form fields with coordinates
                 document.getElementById('latitude').value = latlng.lat;
                 document.getElementById('longitude').value = latlng.lng;
