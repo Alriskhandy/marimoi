@@ -37,19 +37,51 @@ body {
     z-index: 1000;
 }
 
+/* Add padding to container for better mobile spacing */
+.navbar .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
 .navbar-brand {
     font-weight: 700;
     font-size: 1.5rem;
     color: var(--primary-blue) !important;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+/* Improve navbar toggler styling */
+.navbar-toggler {
+    border: none;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.navbar-toggler:focus {
+    box-shadow: none;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(30, 58, 138, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 .nav-link {
     font-weight: 500;
-    margin: 0 0.5rem;
+    margin: 0 0.25rem;
     color: var(--text-secondary) !important;
     transition: all 0.3s ease;
     position: relative;
+    padding: 0.5rem 0.5rem;
+}
+
+.nav-text {
+    display: inline-block;
 }
 
 .nav-link.active {
@@ -77,7 +109,8 @@ body {
     font-weight: 500;
     position: relative;
     transition: all 0.3s ease;
-    margin: 0 0.5rem;
+    margin: 0 0.25rem;
+    padding: 0.5rem 0.5rem;
 }
 
 .navbar .dropdown-toggle i.fa-chevron-down {
@@ -102,6 +135,121 @@ body {
 @media (min-width: 992px) {
     .navbar .nav-item.dropdown:hover .dropdown-toggle i.fa-chevron-down {
         transform: rotate(180deg);
+    }
+}
+
+/* Medium screens (laptops, small desktops) */
+@media (min-width: 992px) and (max-width: 1366px) {
+    .nav-link, .navbar .dropdown-toggle {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.25rem;
+        margin: 0 0.1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.25rem;
+        margin-right: 0.5rem;
+    }
+    
+    .navbar-brand img {
+        width: 32px;
+    }
+    
+    /* Prevent text wrapping for long menu items */
+    .nav-text {
+        white-space: nowrap;
+    }
+    
+    /* Adjust dropdown menu */
+    .dropdown-menu {
+        min-width: 250px;
+    }
+    
+    /* Adjust container padding */
+    .navbar .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+
+/* MacBook Air specific (1280px width) */
+@media (min-width: 1200px) and (max-width: 1300px) {
+    .nav-link, .navbar .dropdown-toggle {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.15rem;
+        margin: 0 0.05rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+        margin-right: 0.25rem;
+    }
+    
+    .navbar-brand img {
+        width: 28px;
+    }
+    
+    /* Adjust container padding */
+    .navbar .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        max-width: 1260px;
+    }
+    
+    /* Ensure dropdown menu is properly positioned */
+    .dropdown-menu {
+        min-width: 220px;
+        transform: translateX(-20px);
+    }
+    
+    /* Reduce font size for dropdown items */
+    .dropdown-item .fw-medium {
+        font-size: 0.85rem;
+    }
+    
+    /* Adjust spacing for dropdown toggle icon */
+    .navbar .dropdown-toggle i.fa-chevron-down {
+        font-size: 0.7rem;
+        margin-left: 0.1rem;
+    }
+}
+
+/* Additional breakpoint for larger laptops (1300-1400px) */
+@media (min-width: 1301px) and (max-width: 1400px) {
+    .nav-link, .navbar .dropdown-toggle {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.2rem;
+        margin: 0 0.1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+    
+    .navbar-brand img {
+        width: 32px;
+    }
+    
+    /* Adjust container padding */
+    .navbar .container {
+        max-width: 1340px;
+    }
+}
+
+/* Ensure dropdown menu is properly positioned across all screen sizes */
+@media (min-width: 992px) {
+    .dropdown-menu {
+        margin-top: 0.5rem;
+    }
+    
+    /* Prevent text overflow in nav items */
+    .nav-text {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
@@ -239,21 +387,80 @@ body {
 
 /* Mobile styles */
 @media (max-width: 991.98px) {
+    /* Improve navbar spacing */
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    /* Adjust brand size for mobile */
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    
+    /* Improve navbar collapse */
+    .mobile-nav-collapse, .navbar-collapse {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    /* Improve nav items spacing */
+    .navbar-nav, .mobile-nav {
+        padding: 0.5rem 0;
+    }
+    
+    .nav-item {
+        margin-bottom: 0.25rem;
+        width: 100%;
+    }
+    
+    .nav-link {
+        padding: 0.75rem 1rem;
+        margin: 0;
+        border-radius: 0.5rem;
+        display: block;
+    }
+    
+    .nav-text {
+        display: inline-block;
+        line-height: 1.3;
+    }
+    
+    .nav-link:hover,
+    .nav-link.active {
+        background-color: var(--gray-light);
+        transform: none;
+    }
+    
+    /* Improve dropdown toggle */
     .navbar .dropdown-toggle {
         width: 100%;
         justify-content: space-between;
-        padding: 0.75rem 0rem;
+        padding: 0.75rem 0.5rem;
+        border-radius: 0.5rem;
+    }
+    
+    .navbar .dropdown-toggle:hover,
+    .navbar .dropdown-toggle.active {
+        background-color: var(--gray-light);
+        transform: none;
     }
 
+    /* Improve dropdown menu */
     .dropdown-menu {
         position: static !important;
+        width: 100%;
         min-width: 100%;
-        margin: 0rem 0.5rem;
+        margin: 0.25rem 0;
         background-color: var(--gray-light);
         border: 1px solid var(--border-light);
         border-radius: 0.5rem;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        padding: 0.5rem;
+        padding: 0.5rem 1rem;
         animation: fadeInDown 0.2s ease;
     }
 
@@ -261,6 +468,15 @@ body {
         padding: 0.75rem 0.75rem;
         border-radius: 0.375rem;
         margin-bottom: 0.25rem;
+    }
+    
+    /* Fix long menu items */
+    .nav-link, .dropdown-toggle, .dropdown-item {
+        white-space: normal;
+        word-wrap: break-word;
+        line-height: 1.3;
+        width: 100%;
+        text-align: left;
     }
 }
 
@@ -1091,5 +1307,51 @@ body {
     
     .web-link:last-child {
         margin-bottom: 0;
+    }
+    
+    /* Additional navbar improvements for small screens */
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .navbar-brand img {
+        width: 32px;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+    .navbar .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .mobile-nav-collapse, .navbar-collapse {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+    
+    .nav-link, .dropdown-toggle {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .dropdown-item {
+        padding: 0.6rem;
+    }
+    
+    .dropdown-item .fw-medium {
+        font-size: 0.85rem;
+    }
+    
+    /* Adjust spacing for very small screens */
+    .navbar-brand span {
+        font-size: 1rem;
+    }
+    
+    .navbar-brand img {
+        width: 30px;
     }
 }
