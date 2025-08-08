@@ -12,19 +12,26 @@
                                 Kebijakan Privasi Website MARIMOI
                             </h2>
                             <p class="text-center text-muted mb-5">
-
                                 Kebijakan ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi data
-                                pribadi Anda.
+                                pribadi Anda ketika menggunakan situs web MARIMOI. Kami berkomitmen untuk menjaga
+                                kerahasiaan
+                                dan keamanan informasi pribadi sesuai dengan peraturan yang berlaku di Republik Indonesia.
                             </p>
 
                             <div class="mb-4">
                                 <h5 class="fw-bold" style="color: var(--primary-color);">1. Pengumpulan Informasi</h5>
                                 <p class="text-muted">
-                                    Kami dapat mengumpulkan informasi pribadi seperti nama, alamat email, nomor telepon, dan
-                                    data lainnya
-                                    ketika Anda mengakses atau menggunakan layanan MARIMOI. Informasi ini dikumpulkan untuk
-                                    keperluan
-                                    verifikasi, komunikasi, dan peningkatan layanan.
+                                    Kami dapat mengumpulkan informasi pribadi seperti nama, alamat email, nomor telepon,
+                                    lokasi geografis, dan data lainnya ketika Anda:
+                                </p>
+                                <ul class="text-muted">
+                                    <li>Mengisi formulir atau mendaftar akun di situs MARIMOI</li>
+                                    <li>Menghubungi kami melalui email, telepon, atau media lainnya</li>
+                                    <li>Menggunakan fitur atau layanan berbasis lokasi</li>
+                                </ul>
+                                <p class="text-muted">
+                                    Informasi ini dikumpulkan untuk keperluan verifikasi, komunikasi, analisis kebutuhan,
+                                    dan peningkatan layanan yang kami berikan.
                                 </p>
                             </div>
 
@@ -34,20 +41,27 @@
                                     Data pribadi yang dikumpulkan digunakan untuk:
                                 </p>
                                 <ul class="text-muted">
-                                    <li>Meningkatkan kualitas layanan</li>
+                                    <li>Meningkatkan kualitas layanan dan pengalaman pengguna</li>
                                     <li>Memberikan informasi terbaru terkait program atau kegiatan MARIMOI</li>
-                                    <li>Memproses permintaan atau pengaduan</li>
+                                    <li>Memproses permintaan, laporan, atau pengaduan pengguna</li>
+                                    <li>Mendukung analisis statistik dan pengembangan kebijakan publik</li>
                                 </ul>
+                                <p class="text-muted">
+                                    Kami tidak akan menggunakan data Anda untuk tujuan komersial tanpa persetujuan Anda.
+                                </p>
                             </div>
 
                             <div class="mb-4">
                                 <h5 class="fw-bold" style="color: var(--primary-color);">3. Keamanan Data</h5>
                                 <p class="text-muted">
-                                    Kami menggunakan langkah-langkah keamanan yang sesuai untuk melindungi data pribadi dari
-                                    akses
-                                    tidak sah, pengungkapan, atau kerusakan. Namun, tidak ada metode transmisi data melalui
-                                    internet
-                                    yang sepenuhnya aman.
+                                    Kami menggunakan langkah-langkah keamanan teknis dan administratif yang sesuai untuk
+                                    melindungi data pribadi dari akses tidak sah, pengungkapan, atau kerusakan.
+                                    Namun, perlu diketahui bahwa tidak ada metode transmisi data melalui internet
+                                    atau penyimpanan elektronik yang 100% aman.
+                                </p>
+                                <p class="text-muted">
+                                    Oleh karena itu, Anda juga disarankan untuk menjaga kerahasiaan akun dan kata sandi
+                                    Anda sendiri.
                                 </p>
                             </div>
 
@@ -56,22 +70,27 @@
                                     Ketiga</h5>
                                 <p class="text-muted">
                                     MARIMOI tidak akan menjual atau menyewakan data pribadi Anda kepada pihak ketiga.
-                                    Informasi hanya dibagikan jika diwajibkan oleh hukum atau untuk melindungi kepentingan
-                                    hukum MARIMOI.
+                                    Informasi hanya akan dibagikan apabila:
                                 </p>
+                                <ul class="text-muted">
+                                    <li>Diperlukan oleh ketentuan hukum dan peraturan perundang-undangan</li>
+                                    <li>Diperlukan untuk melindungi keamanan, hak, atau properti MARIMOI</li>
+                                    <li>Dengan persetujuan tertulis dari Anda</li>
+                                </ul>
                             </div>
 
                             <div class="mb-4">
                                 <h5 class="fw-bold" style="color: var(--primary-color);">5. Perubahan Kebijakan Privasi</h5>
                                 <p class="text-muted">
-                                    Kebijakan ini dapat diperbarui dari waktu ke waktu. Perubahan akan diumumkan di halaman
-                                    ini
-                                    dengan tanggal pembaruan terbaru.
+                                    Kebijakan ini dapat diperbarui dari waktu ke waktu untuk mencerminkan perubahan
+                                    layanan atau peraturan yang berlaku. Perubahan akan diumumkan di halaman ini
+                                    dengan tanggal pembaruan terbaru. Kami mendorong pengguna untuk memeriksa halaman
+                                    ini secara berkala.
                                 </p>
                             </div>
 
                             <div class="alert alert-info rounded-3 mt-5">
-                                Dengan menggunakan situs ini, Anda menyatakan telah membaca dan memahami
+                                Dengan menggunakan situs ini, Anda menyatakan telah membaca, memahami, dan menyetujui
                                 Kebijakan Privasi MARIMOI.
                             </div>
                         </div>
