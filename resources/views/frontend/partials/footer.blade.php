@@ -83,12 +83,23 @@
         </div>
 
         <hr class="my-4" style="border-color: #374151" />
-
         <div class="row align-items-center">
             <div class="col-md-6">
                 <p class="mb-0">
-                    &copy; 2025 MARIMOI - Bappeda Provinsi Maluku Utara.
+                    &copy; {{ date('Y') }}
+                    MARIMOI - Bappeda Provinsi Maluku Utara.
                     All rights reserved.
+                </p>
+                <p class="mb-0 mt-1 d-flex align-items-center">
+                    <span class="me-1" style="font-size: 0.7rem;">Developed by</span>
+                    <span style="font-size: 0.7rem;">
+                        <a href="https://heartware-digital.my.id/" target="_blank" rel="noopener noreferrer"
+                            class="text-decoration-none d-inline-flex align-items-center">
+                            Heartware Digital
+                            <img src="{{ asset('frontend/img/logo_heartware_putih.png') }}" alt="Heartware Digital Logo"
+                                class="ms-1" style="height: 15px; width: auto;">
+                        </a>
+                    </span>
                 </p>
             </div>
             <div class="col-md-6 text-md-end">
