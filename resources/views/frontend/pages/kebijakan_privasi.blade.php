@@ -80,23 +80,7 @@
             </div>
         </div>
     </section>
-    <!-- Floating Actions -->
-    <div class="floating-actions">
-        <div class="fab-menu" id="fabMenu">
-            <div class="fab-item" onclick="reportIssue()" title="Laporkan Masalah">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="fab-item" onclick="submitAspiration()" title="Kirim Aspirasi">
-                <i class="fas fa-paper-plane"></i>
-            </div>
-            <div class="fab-item" onclick="viewHelp()" title="Bantuan">
-                <i class="fas fa-question-circle"></i>
-            </div>
-        </div>
-        <button class="fab-main" onclick="toggleFabMenu()">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
+
     <!-- Footer -->
     @include('frontend.partials.footer')
 @endsection

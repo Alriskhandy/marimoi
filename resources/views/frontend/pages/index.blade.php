@@ -397,21 +397,6 @@
         </div>
     </section>
 
-    <!-- Floating Actions -->
-    <div class="floating-actions">
-        <div class="fab-menu" id="fabMenu">
-            <div class="fab-item" onclick="halamanAspirasi()" title="Kirim Aspirasi">
-                <i class="fas fa-paper-plane"></i>
-            </div>
-            <div class="fab-item" onclick="halamanFAQ()" title="Bantuan">
-                <i class="fas fa-question-circle"></i>
-            </div>
-        </div>
-        <button class="fab-main" onclick="toggleFabMenu()">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
-
     <!-- Footer -->
     @include('frontend.partials.footer')
 @endsection
