@@ -161,7 +161,7 @@
                                     </div>
 
 
-                                    <div class="mb-3 pt-3">
+                                    <div class="mb-3 pt-4">
                                         <div class="row g-3">
                                             <div class="col-lg-8 col-md-7 my-auto">
                                                 <label for="laporan_gambar" class="form-label">Lampiran Gambar

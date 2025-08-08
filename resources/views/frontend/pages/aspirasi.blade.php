@@ -264,6 +264,8 @@
 
             // Event listener for get location button
             getLocationBtn.addEventListener('click', function() {
+                // Show immediate feedback
+                showAlert('info', 'Loading...');
                 getCurrentLocation();
             });
 
@@ -380,22 +382,100 @@
 
             // Fungsi tampil alert
             function showAlert(type, message) {
+                // Remove existing alerts first
+                const existingAlerts = document.querySelectorAll('.map-alert-overlay');
+                existingAlerts.forEach(alert => alert.remove());
+                
                 const alertContainer = document.createElement('div');
-                alertContainer.className = `alert alert-${type === 'success' ? 'success' : 'danger'} mt-3`;
-                alertContainer.textContent = message;
-                alertContainer.style.position = 'fixed';
-                alertContainer.style.top = '20px';
-                alertContainer.style.right = '20px';
-                alertContainer.style.zIndex = '9999';
-                alertContainer.style.maxWidth = '400px';
-                alertContainer.style.wordWrap = 'break-word';
+                alertContainer.className = 'map-alert-overlay';
+                
+                // Create overlay background for loading
+                if (type === 'info') {
+                    alertContainer.style.position = 'absolute';
+                    alertContainer.style.top = '0';
+                    alertContainer.style.left = '0';
+                    alertContainer.style.width = '100%';
+                    alertContainer.style.height = '100%';
+                    alertContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                    alertContainer.style.display = 'flex';
+                    alertContainer.style.alignItems = 'center';
+                    alertContainer.style.justifyContent = 'center';
+                    alertContainer.style.zIndex = '9999';
+                    
+                    // Create content container
+                    const contentContainer = document.createElement('div');
+                    contentContainer.style.display = 'flex';
+                    contentContainer.style.alignItems = 'center';
+                    contentContainer.style.gap = '10px';
+                    contentContainer.style.color = 'white';
+                    contentContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
+                    contentContainer.style.fontWeight = 'bold';
+                    
+                    // Create spinner
+                    const spinner = document.createElement('div');
+                    spinner.style.width = '24px';
+                    spinner.style.height = '24px';
+                    spinner.style.border = '3px solid rgba(255, 255, 255, 0.3)';
+                    spinner.style.borderTop = '3px solid white';
+                    spinner.style.borderRadius = '50%';
+                    spinner.style.animation = 'spin 1s linear infinite';
+                    
+                    // Add CSS for spinner animation if not exists
+                    if (!document.getElementById('spinner-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'spinner-style';
+                        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}';
+                        document.head.appendChild(style);
+                    }
+                    
+                    // Create text element
+                    const textElement = document.createElement('span');
+                    textElement.textContent = 'Loading...';
+                    
+                    contentContainer.appendChild(spinner);
+                    contentContainer.appendChild(textElement);
+                    alertContainer.appendChild(contentContainer);
+                } else {
+                    // For error messages, show simple centered text without background
+                    alertContainer.style.position = 'absolute';
+                    alertContainer.style.top = '50%';
+                    alertContainer.style.left = '50%';
+                    alertContainer.style.transform = 'translate(-50%, -50%)';
+                    alertContainer.style.zIndex = '9999';
+                    alertContainer.style.color = 'white';
+                    alertContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
+                    alertContainer.style.fontWeight = 'bold';
+                    alertContainer.style.textAlign = 'center';
+                    alertContainer.style.padding = '15px';
+                    alertContainer.style.backgroundColor = 'transparent';
+                    alertContainer.style.maxWidth = '80%';
+                    alertContainer.style.wordWrap = 'break-word';
+                    alertContainer.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+                    
+                    // Simplified error message
+                    if (type === 'error') {
+                        alertContainer.textContent = 'Gagal';
+                    } else {
+                        alertContainer.textContent = message;
+                    }
+                }
 
-                document.body.appendChild(alertContainer);
+                // Append to map container
+                const mapElement = document.getElementById('map');
+                if (mapElement) {
+                    mapElement.appendChild(alertContainer);
+                } else {
+                    // Fallback to body if map container not found
+                    document.body.appendChild(alertContainer);
+                }
 
-                // Auto hide after 5 seconds
+                // Auto hide after appropriate time
+                const hideTime = type === 'info' ? 10000 : 3000; // Loading stays longer
                 setTimeout(() => {
-                    alertContainer.remove();
-                }, 5000);
+                    if (alertContainer.parentNode) {
+                        alertContainer.remove();
+                    }
+                }, hideTime);
             }
 
             // Function to initialize the map
@@ -421,42 +501,68 @@
             }
 
             // Function to set marker on map
+            // setMarker: pastikan hanya 1 marker
             function setMarker(latlng) {
-                // If marker already exists, remove it
-                if (marker) {
-                    map.removeLayer(marker);
+                if (!window.currentLocationMarker) {
+                    window.currentLocationMarker = L.marker(latlng).addTo(map);
+                } else {
+                    window.currentLocationMarker.setLatLng(latlng);
                 }
-
-                // Create new marker
-                marker = L.marker(latlng).addTo(map);
-
-                // Set coordinates in hidden input fields
-                document.getElementById('latitude').value = latlng.lat;
-                document.getElementById('longitude').value = latlng.lng;
-
-                // Show success message
-                console.log('Koordinat dipilih: ' + latlng.lat + ', ' + latlng.lng);
             }
 
-            // Function to get current location
             function getCurrentLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function(position) {
+                if (!navigator.geolocation) {
+                    showAlert('error', 'Geolocation tidak didukung oleh browser ini.');
+                    return;
+                }
+
+                // Optimized options for faster response
+                const options = {
+                    enableHighAccuracy: false, // Faster response, slightly less accurate
+                    timeout: 5000, // Reduced timeout for faster failure
+                    maximumAge: 30000 // Accept cached position up to 30 seconds old
+                };
+
+                // Show progress indicator
+                showAlert('info', 'Loading...');
+
+                // Single attempt with faster timeout
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy;
+
+                        // Simple validation
+                        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                            showAlert('error', 'Lokasi tidak valid.');
+                            return;
+                        }
+
+                        // Show success with accuracy info
+                        if (accuracy && accuracy > 100) {
+                            showAlert('warning',
+                                `Akurasi ~${Math.round(accuracy)} m. Pastikan GPS aktif.`
+                            );
+                        } else {
+                            showAlert('success', 'Lokasi berhasil ditemukan.');
+                        }
+
+                        // Set marker and update map
                         const latlng = L.latLng(lat, lng);
-
-                        // Set marker
                         setMarker(latlng);
-
-                        // Center map on current location
                         map.setView(latlng, 15);
-                    }, function(error) {
-                        showAlert('error', 'Gagal mendapatkan lokasi: ' + error.message);
-                    });
-                } else {
-                    showAlert('error', 'Geolocation tidak didukung oleh browser ini.');
-                }
+
+                        // Update form fields
+                        document.getElementById('latitude').value = lat;
+                        document.getElementById('longitude').value = lng;
+                    },
+                    function(error) {
+                        console.error('Geolocation error:', error);
+                        showAlert('error', 'Gagal');
+                    },
+                    options
+                );
             }
         });
     </script>
