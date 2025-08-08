@@ -381,7 +381,7 @@ class FrontendController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'alamat' => 'required|string|max:255',
-            'jenis_aspirasi' => 'required|in:usulan,saran',
+            'jenis_aspirasi' => 'required|in:usulan,kritik & saran',
             'judul_aspirasi' => 'required|string|max:255',
             'isi_aspirasi' => 'required|string',
             'h-captcha-response' => ['required', new ValidHCaptcha()],

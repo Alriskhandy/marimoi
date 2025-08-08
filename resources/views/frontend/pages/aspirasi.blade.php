@@ -1,7 +1,7 @@
 @extends('frontend.layouts.app', ['title' => 'Usulan Aspirasi'])
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('frontend/css/detail.css') }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/aspirasi.css') }}">
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -23,35 +23,106 @@
                 <div class="col-lg-4 col-md-12">
                     <div class="feedback-info-card h-100 p-4">
                         <h3 class="section-title mb-4">Petunjuk Pengisian</h3>
-                        <div class="content">
-                            <ul class="list-unstyled mb-3">
-                                <li class="text-justify mb-2">Formulir ini digunakan untuk menyampaikan saran,
-                                    pengaduan,
-                                    apresiasi, atau pertanyaan terkait proyek.</li>
-                                <hr>
-                                <li><strong>Langkah-langkah pengisian:</strong>
-                                    <ol class="mb-0">
-                                        <li>Isi nama lengkap.</li>
-                                        <li>Masukkan email aktif.</li>
-                                        <li>Isi nomor WhatsApp.</li>
-                                        <li>Pilih jenis tanggapan.</li>
-                                        <li>Tuliskan tanggapan secara jelas.</li>
-                                        <li>Unggah gambar (wajib untuk pengaduan).</li>
-                                    </ol>
-                                </li>
-                                <hr>
-                                <li class="mt-3"><strong>Catatan:</strong>
-                                    <ul class="mb-0">
-                                        <li>Gambar penting untuk memperjelas pengaduan.</li>
-                                        <li>Email aktif dibutuhkan untuk tindak lanjut.</li>
-                                        <li>Masukan Anda akan diproses dan ditindaklanjuti.</li>
-                                        <li>Notifikasi akan dikirim lewat email atau WhatsApp.</li>
-                                    </ul>
-                                </li>
-                                <li class="mt-3"><strong>Privasi:</strong><br>
-                                    Data Anda aman dan hanya digunakan untuk penanganan masukan.
-                                </li>
-                            </ul>
+                        <p class="text-justify mb-3">Formulir ini digunakan untuk menyampaikan usulan pembangunan atau kritik & saran terkait layanan sistem.</p>
+                        
+                        <div class="accordion instruction-accordion" id="instructionAccordion">
+                            <!-- Jenis Aspirasi -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                        <i class="bi bi-info-circle me-2"></i> Jenis Aspirasi
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#instructionAccordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2">Ada 2 jenis aspirasi yang dapat disampaikan:</p>
+                                        <ul class="mb-0">
+                                            <li><strong>Usulan Pembangunan</strong> - Untuk mengusulkan proyek pembangunan baru dengan lokasi spesifik</li>
+                                            <li><strong>Kritik & Saran</strong> - Untuk memberikan masukan umum tanpa perlu menentukan lokasi</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Langkah Pengisian -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                        <i class="bi bi-list-ol me-2"></i> Langkah Pengisian
+                                    </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#instructionAccordion">
+                                    <div class="accordion-body">
+                                        <ol class="mb-0">
+                                            <li>Isi data diri Anda (nama, alamat, email, dan nomor WhatsApp)</li>
+                                            <li>Pilih jenis aspirasi (Usulan atau Kritik & Saran)</li>
+                                            <li>Untuk Usulan: pilih kategori dan tentukan lokasi pada peta</li>
+                                            <li>Isi judul dan pesan aspirasi secara jelas</li>
+                                            <li>Lampirkan file pendukung jika diperlukan</li>
+                                            <li>Centang persetujuan dan selesaikan captcha</li>
+                                            <li>Klik tombol "Kirim Aspirasi"</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Lokasi Usulan -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                        <i class="bi bi-geo-alt me-2"></i> Lokasi Usulan
+                                    </button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#instructionAccordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2">Untuk jenis aspirasi "Usulan Pembangunan", Anda perlu menentukan lokasi:</p>
+                                        <ul class="mb-0">
+                                            <li>Klik tombol "Gunakan Lokasi Saat Ini" untuk menggunakan lokasi Anda sekarang</li>
+                                            <li>Atau klik langsung pada peta untuk memilih lokasi yang diinginkan</li>
+                                            <li>Lokasi yang dipilih akan ditandai dengan pin pada peta</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Lampiran -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingFour">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                        <i class="bi bi-paperclip me-2"></i> Lampiran
+                                    </button>
+                                </h2>
+                                <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#instructionAccordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2">Anda dapat melampirkan file pendukung:</p>
+                                        <ul class="mb-0">
+                                            <li>Format yang didukung: gambar (JPG, PNG, GIF), PDF, DWG, DXF</li>
+                                            <li>Ukuran maksimal file: 5MB</li>
+                                            <li>Lampiran dapat berupa foto lokasi, sketsa, atau dokumen pendukung lainnya</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Privasi -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingFive">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                        <i class="bi bi-shield-lock me-2"></i> Privasi Data
+                                    </button>
+                                </h2>
+                                <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#instructionAccordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-0">Data yang Anda berikan akan digunakan untuk:</p>
+                                        <ul class="mb-0">
+                                            <li>Memproses aspirasi yang Anda sampaikan</li>
+                                            <li>Menghubungi Anda terkait tindak lanjut aspirasi</li>
+                                            <li>Data Anda tidak akan dibagikan kepada pihak ketiga tanpa persetujuan</li>
+                                            <li>Aspirasi yang disampaikan akan ditinjau oleh tim terkait</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -113,7 +184,7 @@
                                             <select name="jenis_aspirasi" id="jenis_aspirasi" class="form-select" required>
                                                 <option value="" disabled selected>-- Pilih Jenis Aspirasi --</option>
                                                 <option value="usulan">Usulan Pembangunan</option>
-                                                <option value="saran">Kritik & Saran</option>
+                                                <option value="kritik & saran">Kritik & Saran</option>
                                             </select>
                                         </div>
                                     </div>
@@ -164,8 +235,7 @@
                                                 <i class="bi bi-geo-alt"></i> Gunakan Lokasi Saat Ini
                                             </button>
                                         </div>
-                                        <div id="map"
-                                            style="height: 300px; border: 1px solid #ddd; border-radius: 5px;"></div>
+                                        <div id="map"></div>
                                         <div class="form-text">Klik pada peta untuk memilih lokasi atau gunakan tombol
                                             lokasi saat ini</div>
                                         <!-- Hidden input fields for coordinates -->
@@ -426,45 +496,7 @@
                     });
             }
 
-            // Add CSS for alert animations if not exists
-            if (!document.getElementById('alert-animations')) {
-                const style = document.createElement('style');
-                style.id = 'alert-animations';
-                style.textContent = `
-                    .alert-container {
-                        opacity: 0;
-                        visibility: hidden;
-                        transform: translateY(-20px);
-                        transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
-                    }
-                    .alert-container.show {
-                        opacity: 1;
-                        visibility: visible;
-                        transform: translateY(0);
-                    }
-                    .alert {
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                        border-radius: 8px;
-                        margin-bottom: 0;
-                    }
-                    .alert-success {
-                        animation: pulse 1.5s ease;
-                    }
-                    @keyframes pulse {
-                        0% { transform: scale(0.95); }
-                        50% { transform: scale(1.02); }
-                        100% { transform: scale(1); }
-                    }
-                    .map-alert-overlay {
-                        opacity: 0;
-                        transition: opacity 0.3s ease;
-                    }
-                    .map-alert-overlay.show {
-                        opacity: 1;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
+            // CSS moved to aspirasi.css
 
             // Fungsi tampil alert
             function showAlert(type, message) {
@@ -514,14 +546,7 @@
                     spinner.style.borderRadius = '50%';
                     spinner.style.animation = 'spin 1s linear infinite';
 
-                    // Add CSS for spinner animation if not exists
-                    if (!document.getElementById('spinner-style')) {
-                        const style = document.createElement('style');
-                        style.id = 'spinner-style';
-                        style.textContent =
-                            '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}';
-                        document.head.appendChild(style);
-                    }
+                    // Spinner animation styles moved to aspirasi.css
 
                     // Create text element
                     const textElement = document.createElement('span');
