@@ -93,7 +93,8 @@
                 <p class="mb-0 mt-1 d-flex align-items-center">
                     <span class="me-1" style="font-size: 0.7rem;">Developed by</span>
                     <span style="font-size: 0.7rem;">
-                        <a href="https://heartware-digital.my.id/" target="_blank" rel="noopener noreferrer"
+                        <a href="https://www.instagram.com/heartware_digital?igsh=MWdoM3A1a3p1bXFkMg%3D%3D&utm_source=qr"
+                            target="_blank" rel="noopener noreferrer"
                             class="text-decoration-none d-inline-flex align-items-center">
                             Heartware Digital
                             <img src="{{ asset('frontend/img/logo_heartware_putih.png') }}" alt="Heartware Digital Logo"
