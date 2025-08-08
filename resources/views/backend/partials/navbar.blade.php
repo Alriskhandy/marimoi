@@ -26,10 +26,26 @@
             <li class="nav-item nav-profile dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
                     data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="nav-profile-img">
-                        <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile" />
-                        <span class="availability-status online"></span>
-                    </div>
+                    @php
+                        $user = auth()->user();
+                        $slug = $user->role->slug;
+                    @endphp
+                    @if (auth()->check() && $user->role)
+
+                        @if ($slug === 'admin-opd' && $user->opd && $user->opd->logo)
+                            <div class="nav-profile-img">
+                                <img src="{{ asset('storage/' . $user->opd->logo) }}"
+                                    alt="Logo {{ $user->opd->singkatan }}" class="rounded logo-img"
+                                    style="width: 40px; height: 40px; object-fit: contain; ">
+                                <span class="availability-status online"></span>
+                            </div>
+                        @else
+                            <div class="nav-profile-img">
+                                <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile" />
+                                <span class="availability-status online"></span>
+                            </div>
+                        @endif
+                    @endif
                     <div class="nav-profile-text">
                         <p class="mb-1 text-black">{{ Auth::user()->name }}</p>
                     </div>
