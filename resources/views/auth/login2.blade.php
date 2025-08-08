@@ -72,58 +72,58 @@
         .login-container {
             position: relative;
             z-index: 2;
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
-            margin: 20px;
+            margin: 15px;
         }
 
         .login-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 16px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .login-logo {
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .login-logo img {
-            height: 80px;
-            margin-bottom: 10px;
+            height: 60px;
+            margin-bottom: 5px;
         }
 
         .login-title {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .login-title h2 {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--heading-color);
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
         .login-title p {
             color: var(--default-color);
-            font-size: 16px;
+            font-size: 14px;
             opacity: 0.8;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 18px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
             color: var(--heading-color);
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .input-group {
@@ -132,10 +132,10 @@
 
         .input-group .form-control {
             width: 100%;
-            padding: 15px 20px 15px 50px;
+            padding: 12px 16px 12px 45px;
             border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 15px;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.9);
         }
@@ -153,13 +153,13 @@
             top: 50%;
             transform: translateY(-50%);
             color: var(--accent-color);
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .form-check {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .form-check-input {
@@ -185,12 +185,12 @@
 
         .login-btn {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             background: var(--gradient-purple);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -205,31 +205,64 @@
 
         .login-footer {
             text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
+            margin-top: 20px;
+            padding-top: 15px;
             border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         .login-footer p {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--default-color);
             opacity: 0.7;
+            margin-bottom: 5px;
         }
 
         .form-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
 
         @media (max-width: 576px) {
             .login-card {
-                padding: 30px 20px;
+                padding: 20px 15px;
             }
 
             .login-title h2 {
-                font-size: 24px;
+                font-size: 22px;
+            }
+            
+            .login-logo img {
+                height: 50px;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .input-group .form-control {
+                padding: 10px 15px 10px 40px;
+                font-size: 14px;
+            }
+            
+            .input-group .input-icon {
+                font-size: 15px;
+            }
+            
+            .login-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (min-width: 992px) {
+            .login-container {
+                max-width: 380px;
+            }
+            
+            .login-card {
+                padding: 25px;
             }
         }
     </style>
@@ -276,11 +309,10 @@
                             Ingat Saya
                         </label>
                     </div>
-                    <a href="#" class="forgot-password">Lupa Password?</a>
                 </div>
 
-                <div class="form-row">
-                    <div class="h-captcha mx-auto" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}">
+                <div class="form-row justify-content-center">
+                    <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}">
                     </div>
                 </div>
                 @error('h-captcha-response')
@@ -295,8 +327,8 @@
             </form>
 
             <div class="login-footer">
-                <p class="mb-0">@2025 Bappeda Provinsi Maluku Utara</p>
-                <p>Sistem Informasi MARIMOI</p>
+                <p class="mb-1">@2025 Bappeda Provinsi Maluku Utara</p>
+                <p class="mb-0">Sistem Informasi MARIMOI</p>
             </div>
         </div>
     </div>

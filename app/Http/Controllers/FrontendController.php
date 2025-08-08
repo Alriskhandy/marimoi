@@ -250,6 +250,8 @@ class FrontendController extends Controller
             ->where('uuid', $uuid)
             ->firstOrFail();
 
+        $project->increment('views');
+        
         $project->geojson = json_decode($project->geojson);
 
         $projectType = $this->getProjectTypeFromRequest($request);
