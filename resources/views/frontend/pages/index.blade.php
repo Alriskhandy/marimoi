@@ -24,7 +24,7 @@
                     <p>
                         Pemetaan proyek strategis daerah.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/proyek-strategis-daerah" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -37,7 +37,7 @@
                     <p>
                         Pemetaan proyek nasional di Maluku Utara.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/proyek-strategis-nasional" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -50,7 +50,7 @@
                     <p>
                         Program prioritas jangka menengah daerah.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/prioritas-daerah" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -63,7 +63,7 @@
                     <p>
                         Pemetaan usulan pembangunan hasil Musrenbang.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/usulan-musrenbang" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -76,7 +76,7 @@
                     <p>
                         Pemetaan usulan pembangunan pokok pikiran DPRD.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/pokir-dprd" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -89,7 +89,7 @@
                     <p>
                         Formulir Saran, Kritik, dan Aspirasi Pembangunan.
                     </p>
-                    <a href="#" class="feature-link">
+                    <a href="/aspirasi-masyarakat" class="feature-link">
                         Lihat Detail <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -400,13 +400,10 @@
     <!-- Floating Actions -->
     <div class="floating-actions">
         <div class="fab-menu" id="fabMenu">
-            <div class="fab-item" onclick="reportIssue()" title="Laporkan Masalah">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="fab-item" onclick="submitAspiration()" title="Kirim Aspirasi">
+            <div class="fab-item" onclick="halamanAspirasi()" title="Kirim Aspirasi">
                 <i class="fas fa-paper-plane"></i>
             </div>
-            <div class="fab-item" onclick="viewHelp()" title="Bantuan">
+            <div class="fab-item" onclick="halamanFAQ()" title="Bantuan">
                 <i class="fas fa-question-circle"></i>
             </div>
         </div>
@@ -418,7 +415,3 @@
     <!-- Footer -->
     @include('frontend.partials.footer')
 @endsection
-
-@push('scripts')
-    <script></script>
-@endpush

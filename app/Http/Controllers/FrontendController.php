@@ -22,20 +22,20 @@ class FrontendController extends Controller
         // Ambil 6 data PSD secara random
         $psd = DataSpatial::where('data_type', 'proyek_strategis')
         ->where('sub_type', 'psd')
-        ->inRandomOrder()->limit(6)->get();
+        ->orderBy('views', 'desc')->limit(6)->get();
         
         // Ambil 6 data PSN secara random
         $psn = DataSpatial::where('data_type', 'proyek_strategis')
         ->where('sub_type', 'psn')
-        ->inRandomOrder()->limit(6)->get();
+        ->orderBy('views', 'desc')->limit(6)->get();
         
         // Ambil 6 data Pokir secara random
         $pokir = DataSpatial::where('data_type', 'pokir_dprd')
-        ->inRandomOrder()->limit(6)->get();
+        ->orderBy('views', 'desc')->limit(6)->get();
         
         // Ambil 6 data Musrenbang secara random
         $musrenbang = DataSpatial::where('data_type', 'musrenbang')
-            ->inRandomOrder()->limit(6)->get();
+        ->orderBy('views', 'desc')->limit(6)->get();
 
         // Menggabungkan semuanya dengan concat
         $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
@@ -63,13 +63,11 @@ class FrontendController extends Controller
         ));
     }
 
-
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::all();
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
-    
     
     // TAMPILAN PETA //
     public function psd()
@@ -251,7 +249,7 @@ class FrontendController extends Controller
             ->firstOrFail();
 
         $project->increment('views');
-        
+
         $project->geojson = json_decode($project->geojson);
 
         $projectType = $this->getProjectTypeFromRequest($request);
