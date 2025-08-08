@@ -28,9 +28,14 @@ Route::get('/faq', function(){
     return view('frontend.pages.faq');
 })->name('faq');
 
-Route::get('/faq', function(){
-    return view('frontend.pages.aspirasi');
-})->name('faq');
+Route::get('/syarat-ketentuan', function(){
+    return view('frontend.pages.syarat_ketentuan');
+})->name('syarat_ketentuan');
+
+
+Route::get('/kebijakan-privasi', function(){
+    return view('frontend.pages.kebijakan_privasi');
+})->name('kebijakan_privasi');
 
 // FEEDBACK //
 Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');

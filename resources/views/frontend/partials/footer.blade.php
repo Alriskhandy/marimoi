@@ -77,8 +77,8 @@
                 </p>
             </div>
             <div class="col-md-6 text-md-end">
-                <a href="#" class="me-3">Kebijakan Privasi</a>
-                <a href="#">Syarat & Ketentuan</a>
+                <a href="{{ route('kebijakan_privasi') }}" class="me-3">Kebijakan Privasi</a>
+                <a href="{{ route('syarat_ketentuan') }}">Syarat & Ketentuan</a>
             </div>
         </div>
     </div>
