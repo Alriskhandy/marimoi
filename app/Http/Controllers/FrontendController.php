@@ -231,7 +231,6 @@ class FrontendController extends Controller
         ]);
     }
 
-
     public function getCategoryTypeByDataType($dataType, $subType)
     {
         return match ($dataType) {
@@ -242,7 +241,6 @@ class FrontendController extends Controller
             default => 'tematik',
         };
     }
-
 
     // DETAIL LOKASI //
     public function detailPeta(Request $request, $uuid)
@@ -257,7 +255,6 @@ class FrontendController extends Controller
 
         return view('frontend.pages.detail', compact('project', 'projectType'));
     }
-
 
    /**
      * Store feedback for specific project type
@@ -370,6 +367,133 @@ class FrontendController extends Controller
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menyimpan data'
             ], 500);
+        }
+    }
+
+    public function aspirasiStore(Request $request){
+        // Log the request data for debugging
+        Log::info('Aspirasi form submission', $request->all());
+
+        // Rules untuk validasi inputan user
+        $rules = [
+            'nama_pengirim' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'alamat' => 'required|string|max:255',
+            'jenis_aspirasi' => 'required|in:usulan,saran',
+            'judul_aspirasi' => 'required|string|max:255',
+            'isi_aspirasi' => 'required|string',
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
+        ];
+
+        // Cek Jenis Aspirasi, jika usulan maka wajib ada kategori dan koordinat
+        if ($request->jenis_aspirasi === 'usulan') {
+            $rules['kategori_aspirasi_id'] = 'required|exists:kategori_aspirasi,id';
+            $rules['latitude'] = 'required|numeric';
+            $rules['longitude'] = 'required|numeric';
+        }
+
+        // Lampiran tidak wajib, tapi jika ada harus berupa gambar
+        $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
+
+        $messages = [
+            'nama_pengirim.required' => 'Nama lengkap wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'phone.required' => 'Nomor WhatsApp wajib diisi',
+            'alamat.required' => 'Alamat wajib diisi',
+            'jenis_aspirasi.required' => 'Jenis aspirasi wajib dipilih',
+            'jenis_aspirasi.in' => 'Jenis aspirasi tidak valid',
+            'judul_aspirasi.required' => 'Judul aspirasi wajib diisi',
+            'isi_aspirasi.required' => 'Isi aspirasi wajib diisi',
+            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih',
+            'kategori_aspirasi_id.exists' => 'Kategori usulan tidak valid',
+            'latitude.required' => 'Koordinat latitude wajib diisi',
+            'longitude.required' => 'Koordinat longitude wajib diisi',
+            'latitude.numeric' => 'Koordinat latitude harus berupa angka',
+            'longitude.numeric' => 'Koordinat longitude harus berupa angka',
+            'lampiran.file' => 'Lampiran harus berupa file',
+            'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, gif, pdf, dwg, atau dxf',
+            'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Data dari request user
+            $data = $request->only([
+                'nama_pengirim',
+                'email',
+                'phone',
+                'alamat',
+                'jenis_aspirasi',
+                'judul_aspirasi',
+                'isi_aspirasi',
+                'latitude',
+                'longitude'
+            ]);
+
+            // Tambahkan kategori jika jenis aspirasi adalah usulan
+            if ($request->jenis_aspirasi === 'usulan') {
+                $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
+            }
+
+            // Tambahkan data status = pending (default);
+            $data['status'] = 'pending';
+
+            // Handle Jika ada lampiran yang diupload
+            if ($request->hasFile('lampiran')) {
+                $lampiranName = $this->handleLampiranUpload($request->file('lampiran'));
+                if ($lampiranName) {
+                    $data['lampiran'] = $lampiranName;
+                }
+            }
+
+            $aspirasi = \App\Models\Aspirasi::create($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Aspirasi berhasil dikirim.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error storing aspirasi: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan data.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle lampiran upload
+     */
+    private function handleLampiranUpload($file)
+    {
+        try {
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
+            // Ensure directory exists
+            $uploadPath = storage_path('app/public/aspirasi_lampiran');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
+            $file->storeAs('public/aspirasi_lampiran', $fileName);
+            return $fileName;
+            
+        } catch (\Exception $e) {
+            Log::error('Error uploading lampiran: ' . $e->getMessage());
+            return null;
         }
     }
     /**
