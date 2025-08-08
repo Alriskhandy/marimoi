@@ -126,11 +126,10 @@
                                     </li>
                                     <li><a class="dropdown-item filter-item" href="#" data-filter="usulan">Usulan</a>
                                     </li>
+
                                     <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="keluhan">Keluhan</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="kritik">Kritik</a>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="saran">Saran</a>
+                                            data-filter="kritik & saran">kritik &
+                                            Saran</a>
                                     </li>
                                 </ul>
                             </div>
@@ -281,8 +280,7 @@
                                                 $jenisBadge = match ($jenis) {
                                                     'usulan' => 'primary',
                                                     'keluhan' => 'danger',
-                                                    'kritik' => 'warning',
-                                                    'saran' => 'info',
+                                                    'kritik & saran' => 'info',
                                                     default => 'secondary',
                                                 };
                                             @endphp
@@ -629,9 +627,7 @@
             function getJenisClass(jenis) {
                 const jenisClasses = {
                     'usulan': 'primary',
-                    'keluhan': 'danger',
-                    'kritik': 'warning',
-                    'saran': 'info'
+                    'kritik & saran': 'info',
                 };
                 return jenisClasses[jenis] || 'secondary';
             }
