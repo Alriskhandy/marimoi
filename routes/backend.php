@@ -245,6 +245,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         // Admin Response
         Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
         Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
+         // Route untuk update OPD feedback
+        Route::put('/feedback/{feedback}/update-opd', [ProjectFeedbackController::class, 'updateOpd'])->name('update-opd');
     });
 
     /*

@@ -45,6 +45,10 @@ class ProjectFeedback extends Model
     {
         return $this->belongsTo(DataSpatial::class, 'data_spatial_id');
     }
+    public function opd()
+    {
+        return $this->belongsTo(Opd::class, 'opd_id');
+    }
 
     /**
      * Scope untuk filter berdasarkan status

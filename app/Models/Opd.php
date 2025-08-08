@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use SebastianBergmann\CodeCoverage\Report\Xml\Project;
 
 class Opd extends Model
 {
@@ -197,7 +198,10 @@ class Opd extends Model
             'tanpa_kontak' => self::whereNull('email')->whereNull('telepon')->count(),
         ];
     }
-
+ public function projectFeedback()
+    {
+        return $this->belongsTo(ProjectFeedback::class, 'opd_id');
+    }
     /**
      * Method untuk format telepon
      */
@@ -244,4 +248,5 @@ class Opd extends Model
             'Diubah Pada' => $this->updated_at->format('d/m/Y H:i'),
         ];
     }
+
 }

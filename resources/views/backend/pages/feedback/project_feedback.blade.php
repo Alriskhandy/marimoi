@@ -146,10 +146,6 @@
                                             data-filter="pertanyaan">Pertanyaan</a></li>
                                 </ul>
                             </div>
-                            {{-- <button type="button" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}"
-                                data-bs-toggle="modal" data-bs-target="#addModal">
-                                <i class="mdi mdi-plus"></i> <span class="d-none d-sm-inline">Tambah Feedback</span>
-                            </button> --}}
                             <button type="button" class="btn btn-warning w-100" id="resetFilter">
                                 <i class="mdi mdi-refresh"></i> Reset Filter
                             </button>
@@ -182,15 +178,15 @@
                     <!-- Alert Container -->
                     <div id="alertContainer"></div>
 
-                    <!-- Responsive Table -->
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="feedbackTable">
+                    <!-- Ganti bagian table-responsive dengan ini -->
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table class="table table-hover" id="feedbackTable" style="min-width: 1000px;">
                             <thead>
                                 <tr>
                                     <th class="text-center">No</th>
                                     <th>Nama Pemberi</th>
                                     <th class="d-none d-md-table-cell">Proyek Terkait</th>
-                                    {{-- <th class="d-none d-lg-table-cell">Tanggapan</th> --}}
+                                    <th class="d-none d-lg-table-cell">OPD Yang Bertanggung Jawab</th>
                                     <th class="text-center">Jenis</th>
                                     <th class="text-center">Status</th>
                                     <th class="d-none d-md-table-cell text-center">Tanggal</th>
@@ -202,6 +198,7 @@
                                     <tr data-id="{{ $feedback->id }}" data-status="{{ $feedback->status }}"
                                         data-jenis="{{ $feedback->jenis_tanggapan }}"
                                         data-kabupaten="{{ $feedback->kabupaten_kota }}"
+                                        data-opd="{{ $feedback->opd_id }}"
                                         data-search="{{ strtolower($feedback->nama_pemberi_aspirasi . ' ' . $feedback->nama_proyek . ' ' . $feedback->tanggapan) }}">
                                         <td class="text-center">{{ $feedbacks->firstItem() + $index }}</td>
                                         <td>
@@ -212,11 +209,16 @@
                                                     <small class="text-muted text-truncate"
                                                         style="max-width: 150px;">{{ $feedback->email }}</small>
                                                 @endif
-                                                <!-- Mobile view: Show project and tanggapan on small screens -->
+                                                <!-- Mobile view: Show project, OPD and tanggapan on small screens -->
                                                 <div class="d-md-none mt-1">
                                                     <small class="text-muted">
                                                         <strong>Proyek:</strong>
                                                         {{ Str::limit($feedback->nama_proyek, 30) }}
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <strong>OPD:</strong>
+                                                        {{ $feedback->opd ? Str::limit($feedback->opd->name, 25) : 'Belum dipilih' }}
                                                     </small>
                                                     <br>
                                                     <small class="text-muted">
@@ -230,27 +232,61 @@
                                             <div class="d-flex flex-column">
                                                 <strong class="text-truncate"
                                                     style="max-width: 200px;">{{ $feedback->nama_proyek }}</strong>
-                                                {{-- @if ($feedback->dataSpatial)
-                                                    <small class="text-muted">
-                                                        <span class="badge badge-outline-{{ $projectTypeInfo['color'] }}">
-                                                            {{ ucwords(str_replace('_', ' ', $feedback->dataSpatial->data_type ?? '')) }}
-                                                        </span>
-                                                    </small>
-                                                    @if ($feedback->dataSpatial->uuid)
-                                                        <small class="text-muted">
-                                                            <i
-                                                                class="mdi mdi-identifier me-1"></i>{{ Str::limit($feedback->dataSpatial->uuid, 8) }}...
-                                                        </small>
-                                                    @endif
-                                                @endif --}}
                                             </div>
                                         </td>
-                                        {{-- <td class="d-none d-lg-table-cell">
-                                            <div class="text-truncate" style="max-width: 250px;"
-                                                title="{{ $feedback->tanggapan }}">
-                                                {{ Str::limit($feedback->tanggapan, 100) }}
+                                        <td class="d-none d-lg-table-cell">
+                                            <div class="d-flex align-items-center">
+                                                @if ($feedback->opd)
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex align-items-center">
+                                                            @if ($feedback->opd->logo)
+                                                                <img src="{{ asset('storage/opd-logos/' . $feedback->opd->logo) }}"
+                                                                    alt="Logo {{ $feedback->opd->singkatan }}"
+                                                                    class="rounded me-2"
+                                                                    style="width: 24px; height: 24px; object-fit: cover;">
+                                                            @endif
+                                                            <div>
+                                                                <strong class="text-truncate d-block"
+                                                                    style="max-width: 150px;">
+                                                                    {{ $feedback->opd->name }}
+                                                                </strong>
+                                                                @if ($feedback->opd->singkatan)
+                                                                    <small class="text-muted">
+                                                                        <i
+                                                                            class="mdi mdi-tag-outline me-1"></i>{{ $feedback->opd->singkatan }}
+                                                                    </small>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @if (in_array($userRole, ['super-admin', 'admin-bappeda']))
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
+                                                            data-id="{{ $feedback->id }}"
+                                                            data-current-opd="{{ $feedback->opd_id }}" title="Ubah OPD">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </button>
+                                                    @endif
+                                                @else
+                                                    <div class="flex-grow-1">
+                                                        <select class="form-select form-select-sm opd-select"
+                                                            data-feedback-id="{{ $feedback->id }}"
+                                                            onchange="updateOpdFeedback({{ $feedback->id }}, this.value)">
+                                                            <option value="">Pilih OPD Yang Bertanggung Jawab
+                                                            </option>
+                                                            @foreach ($opd as $opdItem)
+                                                                <option value="{{ $opdItem->id }}">
+                                                                    {{ $opdItem->name }}
+                                                                    @if ($opdItem->singkatan)
+                                                                        ({{ $opdItem->singkatan }})
+                                                                    @endif
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                @endif
                                             </div>
-                                        </td> --}}
+                                        </td>
                                         <td class="text-center">
                                             @php
                                                 $jenis = strtolower($feedback->jenis_tanggapan);
@@ -339,6 +375,27 @@
                             </table>
                         </div>
 
+                        <!-- Tambahkan CSS minimal ini saja -->
+                        <style>
+                            /* Horizontal scroll untuk tabel */
+                            .table-responsive {
+                                -webkit-overflow-scrolling: touch;
+                                /* Smooth scrolling di mobile */
+                            }
+
+                            /* Pastikan tabel memiliki lebar minimum untuk memaksa scroll */
+                            #feedbackTable {
+                                white-space: nowrap;
+                                /* Mencegah text wrapping yang berlebihan */
+                            }
+
+                            #feedbackTable th,
+                            #feedbackTable td {
+                                white-space: normal;
+                                /* Reset untuk konten sel */
+                            }
+                        </style>
+
                         <!-- Pagination -->
                         @if ($feedbacks->hasPages())
                             <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
@@ -358,6 +415,41 @@
             </div>
         </div>
 
+        <!-- Modal untuk mengubah OPD -->
+        <div class="modal fade" id="changeOpdModal" tabindex="-1" aria-labelledby="changeOpdModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="changeOpdModalLabel">Ubah OPD Yang Bertanggung Jawab</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="changeOpdForm">
+                            <div class="mb-3">
+                                <label for="opdSelect" class="form-label">Pilih OPD Yang Bertanggung Jawab:</label>
+                                <select class="form-select" id="opdSelect" name="opd_id" required>
+                                    <option value="">Pilih OPD Yang Bertanggung Jawab</option>
+                                    @foreach ($opd as $opdItem)
+                                        <option value="{{ $opdItem->id }}">
+                                            {{ $opdItem->name }}
+                                            @if ($opdItem->singkatan)
+                                                ({{ $opdItem->singkatan }})
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <input type="hidden" id="feedbackId" name="feedback_id">
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" onclick="saveOpdChange()">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Add Modal -->
         <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -1338,7 +1430,277 @@
                 };
             });
         </script>
+        <script>
+            // Function untuk update OPD langsung dari dropdown - TANPA RELOAD
+            function updateOpdFeedback(feedbackId, opdId) {
+                if (!opdId) return;
 
+                // Show loading state
+                const select = document.querySelector(`select[data-feedback-id="${feedbackId}"]`);
+                const originalHtml = select.parentElement.innerHTML;
+                select.parentElement.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+
+                // AJAX call untuk update OPD menggunakan named route
+                fetch(`{{ route('project-feedbacks.update-opd', ':id') }}`.replace(':id', feedbackId), {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            opd_id: opdId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update tampilan TANPA reload halaman
+                            updateOpdDisplay(feedbackId, data.data.opd);
+
+                            // Show success message tanpa reload
+                            showSuccessToast('Diteruskan ke OPD: ' + data.data.opd.singkatan);
+                        } else {
+                            // Restore original content jika gagal
+                            select.parentElement.innerHTML = originalHtml;
+                            showErrorToast('Gagal mengupdate OPD: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        // Restore original content jika error
+                        select.parentElement.innerHTML = originalHtml;
+                        console.error('Error:', error);
+                        showErrorToast('Terjadi kesalahan saat mengupdate OPD');
+                    });
+            }
+
+            // Function untuk update tampilan OPD setelah berhasil
+            function updateOpdDisplay(feedbackId, opdData) {
+                const row = document.querySelector(`tr[data-id="${feedbackId}"]`);
+                if (!row) return;
+
+                const opdCell = row.querySelector('td.d-none.d-lg-table-cell');
+
+                // Update desktop view
+                if (opdCell) {
+                    const logoHtml = opdData.logo ?
+                        `<img src="{{ asset('storage/opd-logos/') }}/${opdData.logo}" 
+                 alt="Logo ${opdData.singkatan}" 
+                 class="rounded me-2" 
+                 style="width: 24px; height: 24px; object-fit: cover;">` : '';
+
+                    const singkatanHtml = opdData.singkatan ?
+                        `<small class="text-muted">
+                <i class="mdi mdi-tag-outline me-1"></i>${opdData.singkatan}
+            </small>` : '';
+
+                    opdCell.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center">
+                        ${logoHtml}
+                        <div>
+                            <strong class="text-truncate d-block" style="max-width: 150px;">
+                                ${opdData.name}
+                            </strong>
+                            ${singkatanHtml}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
+                        data-id="${feedbackId}" 
+                        data-current-opd="${opdData.id}" 
+                        title="Ubah OPD">
+                    <i class="mdi mdi-pencil"></i>
+                </button>
+            </div>
+        `;
+                }
+
+                // Update mobile view
+                const mobileOpdElement = row.querySelector('.d-md-none .text-muted:has(strong)');
+                if (mobileOpdElement) {
+                    const opdText = opdData.name.length > 25 ? opdData.name.substring(0, 25) + '...' : opdData.name;
+                    // Cari dan update hanya bagian OPD
+                    const opdLines = mobileOpdElement.querySelectorAll('br');
+                    if (opdLines.length >= 1) {
+                        // Update text setelah <br> kedua (bagian OPD)
+                        const textNodes = mobileOpdElement.childNodes;
+                        for (let i = 0; i < textNodes.length; i++) {
+                            if (textNodes[i].nodeType === 3 && textNodes[i].textContent.includes('OPD:')) {
+                                textNodes[i].textContent = `OPD: ${opdText}`;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Reattach event listener untuk tombol change OPD yang baru
+                attachChangeOpdListeners();
+            }
+
+            // Function untuk save perubahan OPD dari modal - TANPA RELOAD
+            function saveOpdChange() {
+                const feedbackId = document.getElementById('feedbackId').value;
+                const opdId = document.getElementById('opdSelect').value;
+
+                if (!opdId) {
+                    showErrorToast('Silakan Pilih OPD Yang Bertanggung Jawab terlebih dahulu');
+                    return;
+                }
+
+                // Show loading state on button
+                const saveBtn = document.querySelector('#changeOpdModal .btn-primary');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> Menyimpan...';
+                saveBtn.disabled = true;
+
+                // AJAX call untuk update OPD menggunakan named route
+                fetch(`{{ route('project-feedbacks.update-opd', ':id') }}`.replace(':id', feedbackId), {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            opd_id: opdId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Close modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('changeOpdModal'));
+                            modal.hide();
+
+                            // Update tampilan TANPA reload
+                            updateOpdDisplay(feedbackId, data.data.opd);
+
+                            // Show success message
+                            showSuccessToast('Diteruskan ke OPD: ' + data.data.opd.singkatan);
+                        } else {
+                            showErrorToast('Gagal mengupdate OPD: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showErrorToast('Terjadi kesalahan saat mengupdate OPD');
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                    });
+            }
+
+            // Function untuk attach event listeners pada tombol change OPD
+            function attachChangeOpdListeners() {
+                document.querySelectorAll('.btn-change-opd').forEach(button => {
+                    // Remove existing listeners to prevent duplicates
+                    button.removeEventListener('click', handleChangeOpdClick);
+                    // Add new listener
+                    button.addEventListener('click', handleChangeOpdClick);
+                });
+            }
+
+            // Handler untuk click tombol change OPD
+            function handleChangeOpdClick(event) {
+                const feedbackId = this.getAttribute('data-id');
+                const currentOpdId = this.getAttribute('data-current-opd');
+
+                document.getElementById('feedbackId').value = feedbackId;
+                document.getElementById('opdSelect').value = currentOpdId;
+
+                const modal = new bootstrap.Modal(document.getElementById('changeOpdModal'));
+                modal.show();
+            }
+
+            // Toast notification functions
+            function showSuccessToast(message) {
+                // Menggunakan SweetAlert Toast untuk notifikasi yang lebih baik
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+
+                Toast.fire({
+                    icon: 'success',
+                    title: message
+                });
+            }
+
+            function showErrorToast(message) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+
+                Toast.fire({
+                    icon: 'error',
+                    title: message
+                });
+            }
+
+            // Initialize event listeners when document is ready
+            document.addEventListener('DOMContentLoaded', function() {
+                // Attach initial listeners
+                attachChangeOpdListeners();
+
+                // Handle modal reset
+                const changeOpdModal = document.getElementById('changeOpdModal');
+                if (changeOpdModal) {
+                    changeOpdModal.addEventListener('hidden.bs.modal', function() {
+                        document.getElementById('changeOpdForm').reset();
+                    });
+                }
+            });
+
+            // Alternative menggunakan sistem alert yang sudah ada jika tidak menggunakan SweetAlert
+            function showAlert(message, type = 'success') {
+                const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' : 'alert-danger');
+                const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+                const alertContainer = document.getElementById('alertContainer');
+                if (alertContainer) {
+                    alertContainer.innerHTML = alertHtml;
+
+                    setTimeout(function() {
+                        const alert = alertContainer.querySelector('.alert');
+                        if (alert) {
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        }
+                    }, 5000);
+                }
+            }
+
+            // Fallback functions jika tidak menggunakan SweetAlert
+            function showSuccessToastFallback(message) {
+                showAlert(message, 'success');
+            }
+
+            function showErrorToastFallback(message) {
+                showAlert(message, 'error');
+            }
+        </script>
         <style>
             .input-group .form-control,
             .input-group .form-select {
