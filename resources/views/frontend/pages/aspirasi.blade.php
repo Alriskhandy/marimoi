@@ -264,6 +264,8 @@
 
             // Event listener for get location button
             getLocationBtn.addEventListener('click', function() {
+                // Show immediate feedback
+                showAlert('info', 'Mendapatkan lokasi... Silakan tunggu.');
                 getCurrentLocation();
             });
 
@@ -381,7 +383,24 @@
             // Fungsi tampil alert
             function showAlert(type, message) {
                 const alertContainer = document.createElement('div');
-                alertContainer.className = `alert alert-${type === 'success' ? 'success' : 'danger'} mt-3`;
+                let alertClass = 'alert-danger'; // default
+                
+                switch(type) {
+                    case 'success':
+                        alertClass = 'alert-success';
+                        break;
+                    case 'warning':
+                        alertClass = 'alert-warning';
+                        break;
+                    case 'info':
+                        alertClass = 'alert-info';
+                        break;
+                    case 'error':
+                    default:
+                        alertClass = 'alert-danger';
+                }
+                
+                alertContainer.className = `alert ${alertClass} mt-3`;
                 alertContainer.textContent = message;
                 alertContainer.style.position = 'fixed';
                 alertContainer.style.top = '20px';
@@ -421,42 +440,85 @@
             }
 
             // Function to set marker on map
+            // setMarker: pastikan hanya 1 marker
             function setMarker(latlng) {
-                // If marker already exists, remove it
-                if (marker) {
-                    map.removeLayer(marker);
+                if (!window.currentLocationMarker) {
+                    window.currentLocationMarker = L.marker(latlng).addTo(map);
+                } else {
+                    window.currentLocationMarker.setLatLng(latlng);
                 }
-
-                // Create new marker
-                marker = L.marker(latlng).addTo(map);
-
-                // Set coordinates in hidden input fields
-                document.getElementById('latitude').value = latlng.lat;
-                document.getElementById('longitude').value = latlng.lng;
-
-                // Show success message
-                console.log('Koordinat dipilih: ' + latlng.lat + ', ' + latlng.lng);
             }
 
-            // Function to get current location
             function getCurrentLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function(position) {
+                if (!navigator.geolocation) {
+                    showAlert('error', 'Geolocation tidak didukung oleh browser ini.');
+                    return;
+                }
+
+                // Optimized options for faster response
+                const options = {
+                    enableHighAccuracy: false, // Faster response, slightly less accurate
+                    timeout: 5000, // Reduced timeout for faster failure
+                    maximumAge: 30000 // Accept cached position up to 30 seconds old
+                };
+
+                // Show progress indicator
+                showAlert('info', 'Mendapatkan lokasi... Silakan tunggu.');
+
+                // Single attempt with faster timeout
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy;
+
+                        // Simple validation
+                        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                            showAlert('error', 'Lokasi tidak valid. Coba ulangi di area terbuka.');
+                            return;
+                        }
+
+                        // Show success with accuracy info
+                        if (accuracy && accuracy > 100) {
+                            showAlert('warning',
+                                `Lokasi ditemukan dengan akurasi ~${Math.round(accuracy)} m. Untuk hasil lebih baik, pastikan GPS aktif.`
+                            );
+                        } else {
+                            showAlert('success', 'Lokasi berhasil ditemukan.');
+                        }
+
+                        // Set marker and update map
                         const latlng = L.latLng(lat, lng);
-
-                        // Set marker
                         setMarker(latlng);
-
-                        // Center map on current location
                         map.setView(latlng, 15);
-                    }, function(error) {
-                        showAlert('error', 'Gagal mendapatkan lokasi: ' + error.message);
-                    });
-                } else {
-                    showAlert('error', 'Geolocation tidak didukung oleh browser ini.');
-                }
+
+                        // Update form fields
+                        document.getElementById('latitude').value = lat;
+                        document.getElementById('longitude').value = lng;
+                    },
+                    function(error) {
+                        console.error('Geolocation error:', error);
+                        let errorMessage = 'Gagal mendapatkan lokasi. ';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Izin lokasi ditolak. Silakan aktifkan izin lokasi di pengaturan browser.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Informasi lokasi tidak tersedia. Pastikan GPS aktif.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Waktu permintaan lokasi habis. Coba lagi.';
+                                break;
+                            default:
+                                errorMessage += 'Terjadi kesalahan tidak dikenal.';
+                                break;
+                        }
+                        
+                        showAlert('error', errorMessage);
+                    },
+                    options
+                );
             }
         });
     </script>
