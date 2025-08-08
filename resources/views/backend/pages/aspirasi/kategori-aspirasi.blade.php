@@ -186,13 +186,14 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-show"
+                                            <div class="d-flex justify-content-center" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-info btn-show me-1"
                                                     data-id="{{ $kategori->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 @if ($kategori->id != 1)
-                                                    <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-success btn-edit me-1"
                                                         data-id="{{ $kategori->id }}"
                                                         data-opd-id="{{ $kategori->opd_id }}"
                                                         data-nama="{{ $kategori->nama_kategori }}"
