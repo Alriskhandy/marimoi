@@ -37,7 +37,7 @@ class KategoriAspirasiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'opd_id' => 'nullable|exists:opd,id',
+            'opd_id' => 'required|exists:opd,id',
             'nama_kategori' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
         ], [
