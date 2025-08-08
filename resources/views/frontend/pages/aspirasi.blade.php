@@ -265,7 +265,7 @@
             // Event listener for get location button
             getLocationBtn.addEventListener('click', function() {
                 // Show immediate feedback
-                showAlert('info', 'Mendapatkan lokasi... Silakan tunggu.');
+                showAlert('info', 'Loading...');
                 getCurrentLocation();
             });
 
@@ -382,42 +382,45 @@
 
             // Fungsi tampil alert
             function showAlert(type, message) {
+                // Remove existing alerts first
+                const existingAlerts = document.querySelectorAll('.map-alert-overlay');
+                existingAlerts.forEach(alert => alert.remove());
+                
                 const alertContainer = document.createElement('div');
-                let alertClass = 'alert-danger'; // default
+                alertContainer.className = 'map-alert-overlay';
                 
-                switch(type) {
-                    case 'success':
-                        alertClass = 'alert-success';
-                        break;
-                    case 'warning':
-                        alertClass = 'alert-warning';
-                        break;
-                    case 'info':
-                        alertClass = 'alert-info';
-                        break;
-                    case 'error':
-                    default:
-                        alertClass = 'alert-danger';
-                }
-                
-                // Create container for alert content
-                const alertContent = document.createElement('div');
-                alertContent.style.display = 'flex';
-                alertContent.style.alignItems = 'center';
-                alertContent.style.gap = '10px';
-                
-                // Create spinner element for loading alerts
+                // Create overlay background for loading
                 if (type === 'info') {
+                    alertContainer.style.position = 'absolute';
+                    alertContainer.style.top = '0';
+                    alertContainer.style.left = '0';
+                    alertContainer.style.width = '100%';
+                    alertContainer.style.height = '100%';
+                    alertContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                    alertContainer.style.display = 'flex';
+                    alertContainer.style.alignItems = 'center';
+                    alertContainer.style.justifyContent = 'center';
+                    alertContainer.style.zIndex = '9999';
+                    
+                    // Create content container
+                    const contentContainer = document.createElement('div');
+                    contentContainer.style.display = 'flex';
+                    contentContainer.style.alignItems = 'center';
+                    contentContainer.style.gap = '10px';
+                    contentContainer.style.color = 'white';
+                    contentContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
+                    contentContainer.style.fontWeight = 'bold';
+                    
+                    // Create spinner
                     const spinner = document.createElement('div');
-                    spinner.style.width = '20px';
-                    spinner.style.height = '20px';
-                    spinner.style.border = '2px solid #ffffff';
-                    spinner.style.borderTop = '2px solid transparent';
+                    spinner.style.width = '24px';
+                    spinner.style.height = '24px';
+                    spinner.style.border = '3px solid rgba(255, 255, 255, 0.3)';
+                    spinner.style.borderTop = '3px solid white';
                     spinner.style.borderRadius = '50%';
                     spinner.style.animation = 'spin 1s linear infinite';
-                    spinner.style.flexShrink = '0';
                     
-                    // Add CSS for spinner animation
+                    // Add CSS for spinner animation if not exists
                     if (!document.getElementById('spinner-style')) {
                         const style = document.createElement('style');
                         style.id = 'spinner-style';
@@ -425,34 +428,39 @@
                         document.head.appendChild(style);
                     }
                     
-                    alertContent.appendChild(spinner);
+                    // Create text element
+                    const textElement = document.createElement('span');
+                    textElement.textContent = 'Loading...';
+                    
+                    contentContainer.appendChild(spinner);
+                    contentContainer.appendChild(textElement);
+                    alertContainer.appendChild(contentContainer);
+                } else {
+                    // For error messages, show simple centered text without background
+                    alertContainer.style.position = 'absolute';
+                    alertContainer.style.top = '50%';
+                    alertContainer.style.left = '50%';
+                    alertContainer.style.transform = 'translate(-50%, -50%)';
+                    alertContainer.style.zIndex = '9999';
+                    alertContainer.style.color = 'white';
+                    alertContainer.style.fontSize = window.innerWidth <= 768 ? '14px' : '16px';
+                    alertContainer.style.fontWeight = 'bold';
+                    alertContainer.style.textAlign = 'center';
+                    alertContainer.style.padding = '15px';
+                    alertContainer.style.backgroundColor = 'transparent';
+                    alertContainer.style.maxWidth = '80%';
+                    alertContainer.style.wordWrap = 'break-word';
+                    alertContainer.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+                    
+                    // Simplified error message
+                    if (type === 'error') {
+                        alertContainer.textContent = 'Gagal';
+                    } else {
+                        alertContainer.textContent = message;
+                    }
                 }
-                
-                // Create text element
-                const textElement = document.createElement('span');
-                textElement.textContent = message;
-                textElement.style.color = 'white';
-                alertContent.appendChild(textElement);
-                
-                // Apply alert styles
-                alertContainer.style.position = 'absolute';
-                alertContainer.style.top = '50%';
-                alertContainer.style.left = '50%';
-                alertContainer.style.transform = 'translate(-50%, -50%)';
-                alertContainer.style.zIndex = '9999';
-                alertContainer.style.maxWidth = '80%';
-                alertContainer.style.wordWrap = 'break-word';
-                alertContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                alertContainer.style.backgroundColor = 'transparent';
-                alertContainer.style.border = 'none';
-                alertContainer.style.color = 'white';
-                alertContainer.style.padding = '15px';
-                alertContainer.style.borderRadius = '5px';
-                
-                // Add content to alert
-                alertContainer.appendChild(alertContent);
 
-                // Append to map container instead of body
+                // Append to map container
                 const mapElement = document.getElementById('map');
                 if (mapElement) {
                     mapElement.appendChild(alertContainer);
@@ -461,10 +469,13 @@
                     document.body.appendChild(alertContainer);
                 }
 
-                // Auto hide after 5 seconds
+                // Auto hide after appropriate time
+                const hideTime = type === 'info' ? 10000 : 3000; // Loading stays longer
                 setTimeout(() => {
-                    alertContainer.remove();
-                }, 5000);
+                    if (alertContainer.parentNode) {
+                        alertContainer.remove();
+                    }
+                }, hideTime);
             }
 
             // Function to initialize the map
@@ -513,7 +524,7 @@
                 };
 
                 // Show progress indicator
-                showAlert('info', 'Mendapatkan lokasi... Silakan tunggu.');
+                showAlert('info', 'Loading...');
 
                 // Single attempt with faster timeout
                 navigator.geolocation.getCurrentPosition(
@@ -524,14 +535,14 @@
 
                         // Simple validation
                         if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                            showAlert('error', 'Lokasi tidak valid. Coba ulangi di area terbuka.');
+                            showAlert('error', 'Lokasi tidak valid.');
                             return;
                         }
 
                         // Show success with accuracy info
                         if (accuracy && accuracy > 100) {
                             showAlert('warning',
-                                `Lokasi ditemukan dengan akurasi ~${Math.round(accuracy)} m. Untuk hasil lebih baik, pastikan GPS aktif.`
+                                `Akurasi ~${Math.round(accuracy)} m. Pastikan GPS aktif.`
                             );
                         } else {
                             showAlert('success', 'Lokasi berhasil ditemukan.');
@@ -548,24 +559,7 @@
                     },
                     function(error) {
                         console.error('Geolocation error:', error);
-                        let errorMessage = 'Gagal mendapatkan lokasi. ';
-                        
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage += 'Izin lokasi ditolak. Silakan aktifkan izin lokasi di pengaturan browser.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage += 'Informasi lokasi tidak tersedia. Pastikan GPS aktif.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage += 'Waktu permintaan lokasi habis. Coba lagi.';
-                                break;
-                            default:
-                                errorMessage += 'Terjadi kesalahan tidak dikenal.';
-                                break;
-                        }
-                        
-                        showAlert('error', errorMessage);
+                        showAlert('error', 'Gagal');
                     },
                     options
                 );
