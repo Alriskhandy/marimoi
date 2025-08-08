@@ -1,5 +1,9 @@
 @extends('frontend.layouts.app')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('frontend/css/index-mobile.css') }}">
+@endpush
+
 @section('main')
     <!-- Hero Section -->
     @include('frontend.partials.hero')
