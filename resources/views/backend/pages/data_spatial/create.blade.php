@@ -763,11 +763,11 @@
                                     </h6>
                                     <div id="coordinate-inputs">
                                         <div class="coord-input-row">
-                                            <div class="coord-field">
+                                            {{-- <div class="coord-field">
                                                 <label class="form-label">Nama Lokasi</label>
                                                 <input type="text" class="form-control coord-name"
                                                     name="coordinates[0][name]" placeholder="Nama lokasi (opsional)">
-                                            </div>
+                                            </div> --}}
                                             <div class="coord-field">
                                                 <label class="form-label">Latitude <span
                                                         class="text-danger">*</span></label>

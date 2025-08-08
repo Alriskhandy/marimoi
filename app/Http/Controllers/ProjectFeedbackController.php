@@ -4,23 +4,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Opd;
 use App\Models\ProjectFeedback;
 use App\Models\DataSpatial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class ProjectFeedbackController extends Controller
 {
+    
     public function index(Request $request)
 {
-    // dd($request->all());
+    // Get user dan role
+    $user = Auth::user();
+    $userRole = $user->role->slug ?? null;
+    // Get all OPD for dropdown - filter berdasarkan role
+    if (in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        // Super Admin dan Admin Bappeda bisa lihat semua OPD
+        $opd = Opd::select('id', 'name', 'singkatan', 'logo')
+                  ->orderBy('name', 'asc')
+                  ->get();
+    } else {
+        // Role lain hanya bisa lihat OPD mereka sendiri
+        $opd = Opd::select('id', 'name', 'singkatan', 'logo')
+                  ->where('id', $user->opd_id)
+                  ->orderBy('name', 'asc')
+                  ->get();
+    }
+
     $type = $request->get('type');
     $subType = $request->get('sub_type');
 
     // Validasi type yang diizinkan
-    $allowedTypes = [ 'pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
+    $allowedTypes = ['pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
     
     // Jika type tidak ada atau tidak valid, redirect back dengan error
     if (!$type || !in_array($type, $allowedTypes)) {
@@ -35,58 +56,74 @@ class ProjectFeedbackController extends Controller
         }
     }
 
-    // // Build query based on type and sub_type
-    // $query = ProjectFeedback::with('dataSpatial');
+    // Build query based on type and sub_type
+    $query = ProjectFeedback::with(['dataSpatial', 'opd:id,name,singkatan,logo']);
 
-    // // Filter berdasarkan type yang sudah divalidasi
-    // $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
-    //     if ($type === 'proyek_strategis') {
-    //         // Untuk proyek strategis, filter berdasarkan data_type dan sub_type
-    //         $q->where('data_type', 'proyek_strategis');
-    //         if ($subType === 'psn') {
-    //             $q->where('sub_type', 'psn');
-    //         } elseif ($subType === 'psd') {
-    //             $q->where('sub_type', 'psd');
-    //         }
-    //         // Jika tidak ada sub_type, tampilkan semua proyek strategis
-    //     } else {
-    //         // Untuk type lainnya, gunakan data_type
-    //         $q->where('data_type', $type);
-    //     }
-    // });
-     // Build query based on type and sub_type
-$query = ProjectFeedback::with('dataSpatial');
-
-// Filter berdasarkan type yang sudah divalidasi
-$query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
-    if ($type === 'proyek_strategis') {
-        $q->where('data_type', 'proyek_strategis');
-        if ($subType === 'psn') {
-            $q->where('sub_type', 'psn');
-        } elseif ($subType === 'psd') {
-            $q->where('sub_type', 'psd');
+    // Filter berdasarkan type yang sudah divalidasi
+    $query->whereHas('dataSpatial', function ($q) use ($type, $subType, $user, $userRole) {
+        if ($type === 'proyek_strategis') {
+            $q->where('data_type', 'proyek_strategis');
+            if ($subType === 'psn') {
+                $q->where('sub_type', 'psn');
+            } elseif ($subType === 'psd') {
+                $q->where('sub_type', 'psd');
+            }
+        } else {
+            $q->where('data_type', $type);
         }
-    } else {
-        $q->where('data_type', $type);
+
+        // ✅ Filter berdasarkan role pengguna untuk dataSpatial
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan user_id di dataSpatial
+            $q->where('user_id', $user->id);
+        }
+    });
+
+    // ✅ Filter berdasarkan opd_id untuk ProjectFeedback
+    if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan opd_id
+        $query->where('opd_id', $user->opd_id);
     }
 
-    // ✅ Tambahkan filter user_id jika Admin OPD
-    if (Auth::user()?->role?->slug === 'admin-opd') {
-        $q->where('user_id', Auth::user()->id);
+    // Filter tambahan berdasarkan request parameters
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
     }
-});
+
+    if ($request->filled('jenis')) {
+        $query->where('jenis_tanggapan', $request->jenis);
+    }
+
+    if ($request->filled('opd_id') && in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        // Filter OPD hanya untuk Super Admin dan Admin Bappeda
+        $query->where('opd_id', $request->opd_id);
+    }
+
+    if ($request->filled('search')) {
+        $searchTerm = $request->search;
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('nama_pemberi_aspirasi', 'like', "%{$searchTerm}%")
+              ->orWhere('email', 'like', "%{$searchTerm}%")
+              ->orWhere('nama_proyek', 'like', "%{$searchTerm}%")
+              ->orWhere('tanggapan', 'like', "%{$searchTerm}%");
+        });
+    }
+
+    if ($request->filled('kabupaten_kota')) {
+        $query->where('kabupaten_kota', $request->kabupaten_kota);
+    }
 
     $feedbacks = $query->orderBy('created_at', 'desc')->paginate(10);
 
-    // Get statistics untuk type yang dipilih
-    $stats = $this->getFilteredStatistics($type, $subType);
+    // Get statistics untuk type yang dipilih dengan filter role
+    $stats = $this->getFilteredStatistics($type, $subType, $user, $userRole);
     $kabupaten_list = $this->getKabupatenList();
 
     // Get project type info
     $projectTypeInfo = $this->getProjectTypeInfo($type, $subType);
 
-    // Get available projects untuk dropdown di form
-    $availableProjects = $this->getAvailableProjects($type, $subType);
+    // Get available projects untuk dropdown di form dengan filter role
+    $availableProjects = $this->getAvailableProjects($type, $subType, $user, $userRole);
 
     return view('backend.pages.feedback.project_feedback', compact(
         'feedbacks',
@@ -95,9 +132,72 @@ $query->whereHas('dataSpatial', function ($q) use ($type, $subType) {
         'projectTypeInfo',
         'type',
         'subType',
-        'availableProjects'
+        'opd',
+        'availableProjects',
+        'userRole' // Kirim userRole ke view untuk conditional rendering
     ));
 }
+
+/**
+ * Update OPD terkait untuk feedback tertentu
+ */
+public function updateOpd(Request $request, ProjectFeedback $feedback)
+{
+    if(Auth::user()->role->slug !== 'super-admin') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized'
+        ], 403);
+    }
+    try {
+        // Validasi input
+        $validated = $request->validate([
+            'opd_id' => 'required|exists:opd,id'
+        ]);
+
+        // Update feedback dengan OPD baru
+        $feedback->update([
+            'opd_id' => $validated['opd_id'],
+            'updated_at' => now()
+        ]);
+
+        // Load relasi OPD untuk response
+        $feedback->load('opd:id,name,singkatan,logo');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OPD berhasil diperbarui',
+            'data' => [
+                'feedback_id' => $feedback->id,
+                'opd' => [
+                    'id' => $feedback->opd->id,
+                    'name' => $feedback->opd->name,
+                    'singkatan' => $feedback->opd->singkatan,
+                    'logo' => $feedback->opd->logo
+                ]
+            ]
+        ]);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data tidak valid',
+            'errors' => $e->validator->errors()
+        ], 422);
+
+    } catch (\Exception $e) {
+        Log::error('Error updating OPD for feedback: ' . $e->getMessage(), [
+            'feedback_id' => $feedback->id,
+            'opd_id' => $request->opd_id
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan saat memperbarui OPD. Silakan coba lagi.'
+        ], 500);
+    }
+}
+
 
 /**
  * Get project type information based on type and sub_type
