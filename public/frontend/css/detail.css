@@ -12,6 +12,14 @@
     background: #f8fafc;
 }
 
+.usulan-section {
+    min-height: auto;
+    margin-top: 76px;
+    padding-top: 0;
+    padding-bottom: 2rem;
+    background: #f8fafc;
+}
+
 .detail-card {
     background: #f8f7fb;
     border-radius: 16px;
@@ -140,6 +148,11 @@
         margin-right: 0;
     }
     
+    .usulan-section .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
     .feedback-card {
         border-right: none !important;
         border-bottom: 2px solid #e2e8f0;
@@ -160,6 +173,28 @@
         margin-top: 70px;
     }
     
+    .usulan-section {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
+    .usulan-section .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .usulan-section .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .usulan-section .col-lg-7,
+    .usulan-section .col-lg-5 {
+        padding-left: 0;
+        padding-right: 0;
+        margin-bottom: 1.5rem;
+    }
+
     .feedback-section {
         padding-top: 2rem;
         padding-bottom: 2rem;
@@ -218,7 +253,6 @@
     .form-control {
         font-size: 1rem;
         padding: 0.75rem;
-        margin-bottom: 1rem;
         border: 2px solid #e5e7eb;
         border-radius: 8px;
     }
@@ -386,6 +420,28 @@
         padding-top: 1rem;
     }
     
+    .usulan-section {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .usulan-section .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .usulan-section .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .usulan-section .col-lg-7,
+    .usulan-section .col-lg-5 {
+        padding-left: 0;
+        padding-right: 0;
+        margin-bottom: 1.25rem;
+    }
+
     .feedback-section {
         padding-top: 1.5rem;
         padding-bottom: 1.5rem;
