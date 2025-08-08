@@ -153,8 +153,8 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="opdTable">
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table class="table table-hover" id="opdTable" style="min-width: 800px;">
                             <thead>
                                 <tr>
                                     <th class="text-dark text-center d-none d-md-table-cell" style="width: 50px;">No</th>
@@ -189,7 +189,7 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td>
+                                        <td style="white-space: nowrap;">
                                             <div class="d-flex flex-column">
                                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                                     <span class="d-none d-md-inline text-muted small">{{ $opd->name }}
@@ -216,7 +216,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="d-none d-lg-table-cell">
+                                        <td class="d-none d-lg-table-cell" style="white-space: nowrap;">
                                             <div class="d-flex flex-column">
                                                 @if ($opd->telepon)
                                                     <small><i class="mdi mdi-phone me-1"></i>{{ $opd->telepon }}</small>
@@ -229,7 +229,7 @@
                                                 @endif
                                             </div>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center" style="white-space: nowrap;">
                                             <div class="btn-group-vertical d-md-none" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-info btn-show mb-1"
                                                     data-id="{{ $opd->id }}" title="Lihat Detail">
@@ -254,12 +254,13 @@
                                                 </div>
                                             </div>
 
-                                            <div class="btn-group d-none d-md-flex" role="group">
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-show"
+                                            <div class="d-none d-md-flex" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-info btn-show me-1"
                                                     data-id="{{ $opd->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-success btn-edit me-1"
                                                     data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
                                                     data-singkatan="{{ $opd->singkatan }}"
                                                     data-telepon="{{ $opd->telepon }}" data-email="{{ $opd->email }}"
