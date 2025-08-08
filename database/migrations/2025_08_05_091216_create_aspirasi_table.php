@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('phone', 20)->nullable();
             $table->text('alamat');
-            $table->enum('jenis_aspirasi', ['usulan', 'keluhan', 'kritik', 'saran'])->default('usulan');
+            $table->enum('jenis_aspirasi', ['usulan', 'kritik & saran'])->default('kritik & saran');
             $table->string('judul_aspirasi');
             $table->text('isi_aspirasi');
             $table->json('lampiran')->nullable();
