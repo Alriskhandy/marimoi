@@ -1,41 +1,5 @@
 @extends('backend.partials.main')
-@push('styles')
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/peta.css') }}">
-    <style>
-        .map-controls {
-            position: absolute;
-            top: 200px;
-            right: 20px;
-            /* pindah ke kanan */
-            left: auto;
-            /* pastikan tidak ada sisa left */
-            max-height: calc(100vh - 160px);
-            overflow-y: auto;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .map-controls {
-                right: 10px;
-                left: 10px;
-                top: auto;
-                bottom: 100px;
-                flex-direction: column;
-                max-height: 40vh;
-            }
-        }
-    </style>
-@endpush
 @section('main')
     <div class="page-header">
         <h3 class="page-title">

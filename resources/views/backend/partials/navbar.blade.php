@@ -35,7 +35,8 @@
                     </div>
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="profileDropdown">
-                    <li><a class="dropdown-item" href="#"><i class="mdi mdi-cached me-2 text-success"></i>
+                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
+                                class="mdi mdi-cached me-2 text-success"></i>
                             Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
