@@ -95,8 +95,11 @@ class KategoriAspirasiController extends Controller
      */
     public function update(Request $request, KategoriAspirasi $kategoriAspirasi)
     {
+        if($kategoriAspirasi->id == 1){
+            return redirect()->back()->with('error', 'Kategori aspirasi tidak dapat diubah.');
+        }
         $validated = $request->validate([
-            'opd_id' => 'nullable|exists:opd,id',
+            'opd_id' => 'required|exists:opd,id',
             'nama_kategori' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
         ], [
@@ -124,6 +127,9 @@ class KategoriAspirasiController extends Controller
      */
    public function destroy($id)
 {
+    if($id == 1){
+            return redirect()->back()->with('error', 'Kategori aspirasi tidak dapat diubah.');
+        }
     $kategori = KategoriAspirasi::find($id);
 
     if (!$kategori) {

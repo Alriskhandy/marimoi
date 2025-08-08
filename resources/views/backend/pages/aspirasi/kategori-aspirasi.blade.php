@@ -191,20 +191,25 @@
                                                     data-id="{{ $kategori->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-success btn-edit"
-                                                    data-id="{{ $kategori->id }}" data-opd-id="{{ $kategori->opd_id }}"
-                                                    data-nama="{{ $kategori->nama_kategori }}"
-                                                    data-kode="{{ $kategori->kode_kategori }}"
-                                                    data-icon="{{ $kategori->icon }}"
-                                                    data-deskripsi="{{ $kategori->deskripsi }}" data-bs-toggle="modal"
-                                                    data-bs-target="#editModal" title="Edit">
-                                                    <i class="mdi mdi-pencil"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                                                    data-id="{{ $kategori->id }}"
-                                                    onclick="deleteKategori({{ $kategori->id }})" title="Hapus">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
+                                                @if ($kategori->id != 1)
+                                                    <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                        data-id="{{ $kategori->id }}"
+                                                        data-opd-id="{{ $kategori->opd_id }}"
+                                                        data-nama="{{ $kategori->nama_kategori }}"
+                                                        data-kode="{{ $kategori->kode_kategori }}"
+                                                        data-icon="{{ $kategori->icon }}"
+                                                        data-deskripsi="{{ $kategori->deskripsi }}"
+                                                        data-bs-toggle="modal" data-bs-target="#editModal"
+                                                        title="Edit">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </button>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-danger btn-delete"
+                                                        data-id="{{ $kategori->id }}"
+                                                        onclick="deleteKategori({{ $kategori->id }})" title="Hapus">
+                                                        <i class="mdi mdi-delete"></i>
+                                                    </button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>

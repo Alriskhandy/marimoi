@@ -20,6 +20,10 @@ class KategoriAspirasiSeeder extends Seeder
         $categories = [
             // DISKOMINFO
             [
+                'nama_kategori' => 'Kritik dan Saran',
+                'deskripsi' => 'Kritik dan saran terkait website marimoi',
+            ],
+            [
                 'opd_id' => $diskominfo->id,
                 'nama_kategori' => 'Website dan Aplikasi',
                 'deskripsi' => 'Masalah terkait website dan aplikasi pemerintah',
