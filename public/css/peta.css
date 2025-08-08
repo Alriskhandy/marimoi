@@ -48,13 +48,12 @@ body {
 
 /* Map Container */
 #map {
-    height: calc(100vh - 76px);
+    height: calc(100vh - 80px);
     width: 100%;
     position: relative;
     z-index: 1;
     overflow: hidden;
     transition: height 0.3s ease;
-    margin-top: -1px; /* Fix gap between navbar and map */
 }
 
 /* Ensure map container is responsive */
@@ -621,8 +620,7 @@ Map Tools .tools-grid {
 /* Responsive Design */
 @media (max-width: 992px) {
     #map {
-        height: calc(100vh - 70px);
-        margin-top: -1px; /* Maintain fix for gap */
+        height: calc(100vh - 76px);
     }
 
     .map-controls {
@@ -638,8 +636,8 @@ Map Tools .tools-grid {
 
 @media (max-width: 768px) {
     #map {
-        height: calc(100vh - 65px);
-        margin-top: -1px; /* Maintain fix for gap */
+        height: calc(100vh - 72px);
+        margin-top: -1px; /* Fix gap on mobile */
     }
 
     .map-controls {
@@ -683,8 +681,8 @@ Map Tools .tools-grid {
 
 @media (max-width: 576px) {
     #map {
-        height: calc(100vh - 60px);
-        margin-top: -1px; /* Maintain fix for gap */
+        height: calc(100vh - 68px);
+        margin-top: -1px; /* Fix gap on mobile */
     }
 
     .navbar-brand {
@@ -721,8 +719,8 @@ Map Tools .tools-grid {
 /* Extra small devices */
 @media (max-width: 480px) {
     #map {
-        height: calc(100vh - 55px);
-        margin-top: -1px; /* Maintain fix for gap */
+        height: calc(100vh - 64px);
+        margin-top: -1px; /* Fix gap on mobile */
     }
 
     .map-controls {
@@ -752,8 +750,7 @@ Map Tools .tools-grid {
 /* Handle orientation changes */
 @media (orientation: landscape) and (max-height: 500px) {
     #map {
-        height: calc(100vh - 50px);
-        margin-top: -1px; /* Maintain fix for gap */
+        height: calc(100vh - 60px);
     }
 
     .map-controls {
@@ -839,20 +836,19 @@ Map Tools .tools-grid {
 @supports (-webkit-touch-callout: none) {
     #map {
         height: -webkit-fill-available;
-        margin-top: -1px; /* Fix gap between navbar and map */
     }
-
+    
     @media (max-width: 768px) {
         #map {
-            height: calc(-webkit-fill-available - 65px);
-            margin-top: -1px; /* Maintain fix for gap */
+            height: calc(-webkit-fill-available - 72px);
+            margin-top: -1px; /* Fix gap on iOS mobile */
         }
     }
-
+    
     @media (max-width: 576px) {
         #map {
-            height: calc(-webkit-fill-available - 60px);
-            margin-top: -1px; /* Maintain fix for gap */
+            height: calc(-webkit-fill-available - 68px);
+            margin-top: -1px; /* Fix gap on iOS mobile */
         }
     }
 }
