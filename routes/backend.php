@@ -36,6 +36,18 @@ use Illuminate\Support\Facades\Route;
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+// Dashboard API routes untuk AJAX calls
+Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
+    Route::get('/years', [DashboardController::class, 'getAvailableYears'])->name('years');
+    Route::get('/categories', [DashboardController::class, 'getCategories'])->name('categories');
+    Route::get('/statistics', [DashboardController::class, 'getStatistics'])->name('statistics');
+    Route::get('/top-categories', [DashboardController::class, 'getTopCategories'])->name('top-categories');
+    Route::get('/response-time', [DashboardController::class, 'getResponseTimeAnalytics'])->name('response-time');
+    Route::get('/stats', [DashboardController::class, 'getDashboardStats'])->name('stats');
+});
+
+// Statistics page route
+Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics');
 
 /*
 |--------------------------------------------------------------------------

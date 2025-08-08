@@ -53,6 +53,10 @@ protected $table = 'aspirasi';
     {
         return $this->belongsTo(KategoriAspirasi::class);
     }
+    public function kategori()
+    {
+        return $this->belongsTo(KategoriAspirasi::class);
+    }
 
     public function admin()
     {
