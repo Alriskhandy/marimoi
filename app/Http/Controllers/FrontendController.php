@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Aspirasi;
 use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\Dokumen;
@@ -391,10 +392,10 @@ class FrontendController extends Controller
             $rules['kategori_aspirasi_id'] = 'required|exists:kategori_aspirasi,id';
             $rules['latitude'] = 'required|numeric';
             $rules['longitude'] = 'required|numeric';
-        }
+        } 
 
-        // Lampiran tidak wajib, tapi jika ada harus berupa gambar
-        $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
+        // Lampiran tidak wajib, tapi jika ada harus berupa file
+        $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,dwg,dxf|max:5120';
 
         $messages = [
             'nama_pengirim.required' => 'Nama lengkap wajib diisi',
@@ -437,14 +438,16 @@ class FrontendController extends Controller
                 'alamat',
                 'jenis_aspirasi',
                 'judul_aspirasi',
-                'isi_aspirasi',
-                'latitude',
-                'longitude'
+                'isi_aspirasi'
             ]);
 
-            // Tambahkan kategori jika jenis aspirasi adalah usulan
+            // Tambahkan kategori dan koordinat jika jenis aspirasi adalah usulan
             if ($request->jenis_aspirasi === 'usulan') {
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
+                $data['latitude'] = $request->latitude;
+                $data['longitude'] = $request->longitude;
+            } else {
+                $data['kategori_aspirasi_id'] = 1;
             }
 
             // Tambahkan data status = pending (default);
@@ -454,11 +457,13 @@ class FrontendController extends Controller
             if ($request->hasFile('lampiran')) {
                 $lampiranName = $this->handleLampiranUpload($request->file('lampiran'));
                 if ($lampiranName) {
-                    $data['lampiran'] = $lampiranName;
+                    $data['lampiran'] = [$lampiranName]; // Store as array since model expects array
                 }
             }
 
-            $aspirasi = \App\Models\Aspirasi::create($data);
+            Log::info('Data Akhir sebelum di create', $data);
+
+            Aspirasi::create($data);
 
             return response()->json([
                 'status' => 'success',

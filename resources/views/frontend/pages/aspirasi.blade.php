@@ -59,7 +59,7 @@
                     <div class="feedback-card h-100 p-4">
                         <h3 class="section-title mb-4">Formulir Usulan Aspirasi</h3>
                         <div class="card-body">
-                            <form action="{{ route('aspirasi.store') }}" method="post" enctype="multipart/form-data"
+                            <form action="/aspirasi-masyarakat" method="post" enctype="multipart/form-data"
                                 id="formUsulan">
                                 @csrf
                                 <div class="row gy-4">
@@ -124,7 +124,7 @@
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="bi bi-tag"></i></span>
                                             <select name="kategori_aspirasi_id" id="kategori_aspirasi_id"
-                                                class="form-select" required>
+                                                class="form-select">
                                                 <option value="" disabled selected>-- Pilih Kategori Usulan --
                                                 </option>
                                                 @foreach ($aspirasi as $item)
@@ -247,11 +247,15 @@
             // Event listener for jenis aspirasi selection
             jenisAspirasiSelect.addEventListener('change', function() {
                 const selectedValue = this.value;
+                const kategoriSelect = document.getElementById('kategori_aspirasi_id');
 
                 if (selectedValue === 'usulan') {
                     // Show kategori usulan and map container
                     kategoriUsulanContainer.style.display = 'block';
                     mapContainer.style.display = 'block';
+                    
+                    // Make kategori required
+                    kategoriSelect.setAttribute('required', 'required');
 
                     // Initialize map if not already initialized
                     initMap();
@@ -259,6 +263,10 @@
                     // Hide kategori usulan and map container
                     kategoriUsulanContainer.style.display = 'none';
                     mapContainer.style.display = 'none';
+                    
+                    // Remove required attribute and reset value
+                    kategoriSelect.removeAttribute('required');
+                    kategoriSelect.value = '';
                 }
             });
 
@@ -273,14 +281,27 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
 
+                // Check if form is valid first
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return false;
+                }
+
                 // Validate form before submission
                 const jenisAspirasi = jenisAspirasiSelect.value;
                 const latitude = document.getElementById('latitude').value;
                 const longitude = document.getElementById('longitude').value;
+                const kategoriAspirasi = document.getElementById('kategori_aspirasi_id').value;
 
-                if (jenisAspirasi === 'usulan' && (!latitude || !longitude)) {
-                    showAlert('error', 'Silakan pilih lokasi pada peta untuk usulan pembangunan.');
-                    return false;
+                if (jenisAspirasi === 'usulan') {
+                    if (!kategoriAspirasi) {
+                        showAlert('error', 'Pilih kategori usulan terlebih dahulu.');
+                        return false;
+                    }
+                    if (!latitude || !longitude) {
+                        showAlert('error', 'Pilih lokasi pada peta terlebih dahulu.');
+                        return false;
+                    }
                 }
 
                 // Get user's current location for non-usulan types
@@ -299,6 +320,10 @@
                                 console.error('Error getting location:', error);
                                 // Submit form without coordinates if location is not available
                                 submitForm();
+                            },
+                            {
+                                timeout: 5000,
+                                maximumAge: 60000
                             }
                         );
                     } else {
@@ -320,10 +345,15 @@
                 const formData = new FormData(form);
 
                 // Ensure hCaptcha response is included in form data
-                // Use hCaptcha API to get the response value
-                const hcaptchaResponse = hcaptcha.getResponse();
-                if (hcaptchaResponse) {
-                    formData.set('h-captcha-response', hcaptchaResponse);
+                try {
+                    if (typeof hcaptcha !== 'undefined') {
+                        const hcaptchaResponse = hcaptcha.getResponse();
+                        if (hcaptchaResponse) {
+                            formData.set('h-captcha-response', hcaptchaResponse);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('hCaptcha not available:', error);
                 }
 
                 fetch(form.action, {
@@ -333,7 +363,9 @@
                             'X-Requested-With': 'XMLHttpRequest',
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.status === 'success') {
                             showAlert('success', data.message);
@@ -351,27 +383,35 @@
                             document.getElementById('latitude').value = '';
                             document.getElementById('longitude').value = '';
                             // Reset hCaptcha
-                            if (typeof hcaptcha !== 'undefined') {
-                                hcaptcha.reset();
+                            try {
+                                if (typeof hcaptcha !== 'undefined') {
+                                    hcaptcha.reset();
+                                }
+                            } catch (error) {
+                                console.warn('Error resetting hCaptcha:', error);
                             }
                         } else {
                             if (data.errors) {
                                 if (data.errors['h-captcha-response']) {
                                     showAlert('error', data.errors['h-captcha-response'][0]);
                                     // Reset hCaptcha on error
-                                    if (typeof hcaptcha !== 'undefined') {
-                                        hcaptcha.reset();
+                                    try {
+                                        if (typeof hcaptcha !== 'undefined') {
+                                            hcaptcha.reset();
+                                        }
+                                    } catch (error) {
+                                        console.warn('Error resetting hCaptcha:', error);
                                     }
                                 } else {
-                                    showAlert('error', data.message);
+                                    showAlert('error', data.message || 'Terjadi kesalahan validasi');
                                 }
                             } else {
-                                showAlert('error', data.message);
+                                showAlert('error', data.message || 'Terjadi kesalahan');
                             }
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        console.error('Fetch error:', error);
                         showAlert('error', 'Terjadi kesalahan saat mengirim data.');
                     })
                     .finally(() => {
@@ -508,6 +548,10 @@
                 } else {
                     window.currentLocationMarker.setLatLng(latlng);
                 }
+                
+                // Update hidden form fields with coordinates
+                document.getElementById('latitude').value = latlng.lat;
+                document.getElementById('longitude').value = latlng.lng;
             }
 
             function getCurrentLocation() {

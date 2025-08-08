@@ -27,7 +27,7 @@ Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])
 Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
 
 // USULAN ASPIRASI MASYARAKAT //
-Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi.store');
+Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi-masyarakat.store');
 
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
