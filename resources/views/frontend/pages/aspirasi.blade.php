@@ -400,16 +400,66 @@
                         alertClass = 'alert-danger';
                 }
                 
-                alertContainer.className = `alert ${alertClass} mt-3`;
-                alertContainer.textContent = message;
-                alertContainer.style.position = 'fixed';
-                alertContainer.style.top = '20px';
-                alertContainer.style.right = '20px';
+                // Create container for alert content
+                const alertContent = document.createElement('div');
+                alertContent.style.display = 'flex';
+                alertContent.style.alignItems = 'center';
+                alertContent.style.gap = '10px';
+                
+                // Create spinner element for loading alerts
+                if (type === 'info') {
+                    const spinner = document.createElement('div');
+                    spinner.style.width = '20px';
+                    spinner.style.height = '20px';
+                    spinner.style.border = '2px solid #ffffff';
+                    spinner.style.borderTop = '2px solid transparent';
+                    spinner.style.borderRadius = '50%';
+                    spinner.style.animation = 'spin 1s linear infinite';
+                    spinner.style.flexShrink = '0';
+                    
+                    // Add CSS for spinner animation
+                    if (!document.getElementById('spinner-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'spinner-style';
+                        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}';
+                        document.head.appendChild(style);
+                    }
+                    
+                    alertContent.appendChild(spinner);
+                }
+                
+                // Create text element
+                const textElement = document.createElement('span');
+                textElement.textContent = message;
+                textElement.style.color = 'white';
+                alertContent.appendChild(textElement);
+                
+                // Apply alert styles
+                alertContainer.style.position = 'absolute';
+                alertContainer.style.top = '50%';
+                alertContainer.style.left = '50%';
+                alertContainer.style.transform = 'translate(-50%, -50%)';
                 alertContainer.style.zIndex = '9999';
-                alertContainer.style.maxWidth = '400px';
+                alertContainer.style.maxWidth = '80%';
                 alertContainer.style.wordWrap = 'break-word';
+                alertContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                alertContainer.style.backgroundColor = 'transparent';
+                alertContainer.style.border = 'none';
+                alertContainer.style.color = 'white';
+                alertContainer.style.padding = '15px';
+                alertContainer.style.borderRadius = '5px';
+                
+                // Add content to alert
+                alertContainer.appendChild(alertContent);
 
-                document.body.appendChild(alertContainer);
+                // Append to map container instead of body
+                const mapElement = document.getElementById('map');
+                if (mapElement) {
+                    mapElement.appendChild(alertContainer);
+                } else {
+                    // Fallback to body if map container not found
+                    document.body.appendChild(alertContainer);
+                }
 
                 // Auto hide after 5 seconds
                 setTimeout(() => {
