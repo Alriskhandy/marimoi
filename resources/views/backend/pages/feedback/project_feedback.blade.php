@@ -683,7 +683,7 @@
                                                     </h6>
                                                     <div class="row">
                                                         <div class="col-md-6">
-                                                            <strong>UUID Proyek:</strong>
+                                                            <strong>Kode Proyek:</strong>
                                                             <p id="show_project_uuid" class="text-muted font-monospace"></p>
                                                         </div>
                                                         <div class="col-md-6">

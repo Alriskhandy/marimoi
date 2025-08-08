@@ -145,6 +145,7 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
+                                        <th>KODE</th>
                                         <th>Kategori</th>
                                         <th>Nama/Deskripsi</th>
                                         @php
@@ -162,6 +163,7 @@
                                     @forelse($data as $item)
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $item->uuid }}</td>
                                             <td>
                                                 <label class="badge badge-gradient-info">
                                                     {{ $item->kategori->nama ?? 'Tidak ada kategori' }}
