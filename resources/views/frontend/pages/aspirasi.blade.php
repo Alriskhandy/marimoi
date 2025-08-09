@@ -520,7 +520,7 @@
                     mapAlertContainer.style.display = 'flex';
                     mapAlertContainer.style.alignItems = 'center';
                     mapAlertContainer.style.justifyContent = 'center';
-                    mapAlertContainer.style.zIndex = '9999';
+                    mapAlertContainer.style.zIndex = '99'; // Set below navbar z-index (997)
 
                     // Create content container with spinner
                     const contentContainer = document.createElement('div');
@@ -577,7 +577,7 @@
                                 mapAlertContainer.remove();
                             }
                         }, 300);
-                    }, 10000); // Loading stays longer
+                    }, 1000); // Loading stays longer
                 } else {
                     // For success and error messages, use the standard alert container
                     alertMessage.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
@@ -609,7 +609,7 @@
                 const defaultCenter = [0.735485, 128.028201];
 
                 // Create map
-                map = L.map('map').setView(defaultCenter, 7);
+                map = L.map('map').setView(defaultCenter, 8);
 
                 // Add tile layer (Google Hybrid)
                 L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
