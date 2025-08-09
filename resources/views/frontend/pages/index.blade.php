@@ -242,19 +242,19 @@
 
             <div class="stats-container animate-on-scroll">
                 <div class="stats-grid">
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPsd }}">0</span>
                         <div class="stat-label">Proyek Strategis Daerah</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPsn }}">0</span>
                         <div class="stat-label">Proyek Strategis Nasional</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalMusrenbang }}">0</span>
                         <div class="stat-label">Usulan Musrenbang</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPokir }}">0</span>
                         <div class="stat-label">Pokir DPRD</div>
                     </div>

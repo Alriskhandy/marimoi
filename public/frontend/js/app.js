@@ -29,7 +29,12 @@ window.addEventListener("scroll", animateOnScroll);
 window.addEventListener("load", animateOnScroll);
 
 // Animate counter numbers
+let animationHasRun = false;
+
 function animateStatNumbers() {
+    // Only run the animation once
+    if (animationHasRun) return;
+    
     const counters = document.querySelectorAll(".stat-number");
     counters.forEach((counter) => {
         const target = parseInt(counter.getAttribute("data-target"));
@@ -48,6 +53,9 @@ function animateStatNumbers() {
             }
         }, 30);
     });
+    
+    // Mark that animation has run
+    animationHasRun = true;
 }
 
 // Auto-animate counters when stats section is visible
