@@ -286,7 +286,7 @@
                         <button class="status-btn" onclick="filterProjects(event, 'psn')">
                             Strategis Nasional
                         </button>
-                        <button class="status-btn" onclick="filterProjects(event, 'musrenbang')">
+                        <button class="status-btn" onclick="filterProjects(event, 'usulan_musrenbang')">
                             Usulan Musrenbang
                         </button>
                         <button class="status-btn" onclick="filterProjects(event, 'pokir_dprd')">

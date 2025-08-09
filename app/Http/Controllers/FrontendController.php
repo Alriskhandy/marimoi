@@ -34,7 +34,7 @@ class FrontendController extends Controller
         ->orderBy('views', 'desc')->limit(6)->get();
         
         // Ambil 6 data Musrenbang secara random
-        $musrenbang = DataSpatial::where('data_type', 'musrenbang')
+        $musrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')
         ->orderBy('views', 'desc')->limit(6)->get();
 
         // Menggabungkan semuanya dengan concat
