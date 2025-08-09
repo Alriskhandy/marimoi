@@ -1300,13 +1300,6 @@ body {
     .web-link span {
         font-size: 0.8rem;
     }
-
-    .footer .container{
-        margin-left: 20px;
-        margin-right: 20px;
-        padding-left: 15px;
-        padding-right: 15px;
-    }
 }
 
 @media (max-width: 576px) {
@@ -1331,13 +1324,6 @@ body {
 
     .navbar-brand img {
         width: 32px;
-    }
-
-    .footer .container{
-        margin-left: 20px;
-        margin-right: 20px;
-        padding-left: 15px;
-        padding-right: 15px;
     }
 }
 
@@ -1377,12 +1363,5 @@ body {
 
     .navbar-brand img {
         width: 30px;
-    }
-
-    .footer .container{
-        margin-left: 25px;
-        margin-right: 25px;
-        padding-left: 20px;
-        padding-right: 20px;
     }
 }
