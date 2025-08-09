@@ -257,6 +257,21 @@ class FrontendController extends Controller
         return view('frontend.pages.detail', compact('project', 'projectType'));
     }
 
+    public function detailPetaTematik(Request $request, $uuid)
+    {
+        $project = DataSpatial::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        $project->increment('views');
+
+        $project->geojson = json_decode($project->geojson);
+
+        $projectType = $this->getProjectTypeFromRequest($request);
+
+        return view('frontend.pages.detailTematik', compact('project', 'projectType'));
+    }
+
    /**
      * Store feedback for specific project type
      */

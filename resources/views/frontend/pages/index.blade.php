@@ -242,19 +242,19 @@
 
             <div class="stats-container animate-on-scroll">
                 <div class="stats-grid">
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPsd }}">0</span>
                         <div class="stat-label">Proyek Strategis Daerah</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPsn }}">0</span>
                         <div class="stat-label">Proyek Strategis Nasional</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalMusrenbang }}">0</span>
                         <div class="stat-label">Usulan Musrenbang</div>
                     </div>
-                    <div class="stat-item" onclick="animateStatNumbers()">
+                    <div class="stat-item">
                         <span class="stat-number" data-target="{{ $totalPokir }}">0</span>
                         <div class="stat-label">Pokir DPRD</div>
                     </div>
@@ -351,8 +351,8 @@
                             Platform ini mempercepat perencanaan, mendorong partisipasi publik, dan meningkatkan
                             akuntabilitas, menjadi bagian dari transformasi digital berbasis data dan kebutuhan lokal.
                         </p>
-                        <div class="row mt-4">
-                            <div class="col-6">
+                        <div class="row my-4">
+                            <div class="col-md-6">
                                 <div class="d-flex align-items-center mb-3">
                                     <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
                                     <span>Integrasi data spasial & sektoral</span>
@@ -366,7 +366,7 @@
                                     <span>Kelola usulan Pokir & Musrenbang</span>
                                 </div>
                             </div>
-                            <div class="col-6">
+                            <div class="col-md-6">
                                 <div class="d-flex align-items-center mb-3">
                                     <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
                                     <span>Prioritas pembangunan 2025–2029</span>
