@@ -232,6 +232,12 @@
         padding-left: 8px;
         padding-right: 8px;
     }
+    
+    /* Add padding to footer */
+    footer .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
 
     /* Reduce card padding */
     .feedback-card,
@@ -296,6 +302,12 @@
     .container {
         padding-left: 6px;
         padding-right: 6px;
+    }
+    
+    /* Add more padding to footer for smaller screens */
+    footer .container {
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     /* Further reduce card padding */
