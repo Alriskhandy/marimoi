@@ -232,12 +232,6 @@
         padding-left: 8px;
         padding-right: 8px;
     }
-    
-    /* Add padding to footer */
-    footer .container {
-        padding-left: 15px;
-        padding-right: 15px;
-    }
 
     /* Reduce card padding */
     .feedback-card,
@@ -304,12 +298,6 @@
         padding-right: 6px;
     }
     
-    /* Add more padding to footer for smaller screens */
-    footer .container {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
     /* Further reduce card padding */
     .feedback-card,
     .feedback-info-card {
@@ -384,13 +372,5 @@
 
     .form-check-label {
         font-size: 0.85rem;
-    }
-}
-
-
-@media (max-width: 400px) {
-    footer .container {
-        padding-left: 20px;
-        padding-right: 20px;
     }
 }
