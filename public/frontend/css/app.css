@@ -1302,8 +1302,10 @@ body {
     }
 
     .footer .container{
-        margin-left: 10px;
-        margin-right: 10px;
+        margin-left: 20px;
+        margin-right: 20px;
+        padding-left: 15px;
+        padding-right: 15px;
     }
 }
 
@@ -1332,8 +1334,10 @@ body {
     }
 
     .footer .container{
-        margin-left: 10px;
-        margin-right: 10px;
+        margin-left: 20px;
+        margin-right: 20px;
+        padding-left: 15px;
+        padding-right: 15px;
     }
 }
 
@@ -1376,7 +1380,9 @@ body {
     }
 
     .footer .container{
-        margin-left: 15px;
-        margin-right: 15px;
+        margin-left: 25px;
+        margin-right: 25px;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 }
