@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TanggapanMail;
 use App\Models\Opd;
 use App\Models\ProjectFeedback;
 use App\Models\DataSpatial;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ProjectFeedbackController extends Controller
@@ -20,6 +22,7 @@ class ProjectFeedbackController extends Controller
     
     public function index(Request $request)
 {
+    
     // Get user dan role
     $user = Auth::user();
     $userRole = $user->role->slug ?? null;
@@ -499,6 +502,30 @@ private function getAvailableProjects($type, $subType = null)
                 'responded_at' => now()
             ]);
 
+             // === Kirim Email ke User berdasarkan status ===
+        if (!empty($feedback->email)) {
+            $userData = [
+                'nama'      => $feedback->nama_pemberi_aspirasi,
+                'email'     => $feedback->email,
+                'tanggapan' => $feedback->tanggapan,
+                'tanggal'   => now()->format('d-m-Y H:i'),
+                'respon_admin' => $request->response_admin,
+            ];
+
+            $type = null;
+            switch ($request->status) {
+                case 'ditindaklanjuti':
+                    $type = 'diproses'; // sedang diproses
+                    break;
+                case 'selesai':
+                    $type = 'selesai'; // sudah selesai
+                    break;
+            }
+
+            if ($type) {
+                Mail::to($feedback->email)->queue(new TanggapanMail($userData, $type));
+            }
+        }
             return response()->json([
                 'status' => 'success',
                 'message' => 'Response berhasil dikirim',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
 use App\Models\User;
@@ -9,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -168,6 +170,36 @@ class AspirasiController extends Controller
 
         $validated['tanggal_respon'] = now();
         $validated['admin_id'] = Auth::id();
+
+           // Data untuk user
+        $userData = [
+            'nama'      => $aspirasi->nama_pengirim,
+            'email'     => $aspirasi->email,
+            'tanggapan' => $aspirasi->isiaspirasi,
+            'tanggal'   => now()->format('d-m-Y H:i'),
+        ];
+
+       
+
+        // Tentukan tipe email berdasarkan status
+        $emailType = null;
+        
+        switch ($validated['status']) {
+            case 'diproses':
+                $emailType = 'diproses';
+                break;
+            case 'selesai':
+                $emailType = 'selesai';
+                break;
+            case 'ditolak':
+                $emailType = 'ditolak';
+                break;
+        }
+
+        // Kirim email jika ada alamat email pengguna & tipe email ditentukan
+        if (!empty($aspirasi->email) && $emailType) {
+            Mail::to($aspirasi->email)->queue(new TanggapanMail($userData, $emailType));
+        }
 
         $aspirasi->update($validated);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\Category;
 use App\Models\DataSpatial;
@@ -13,6 +14,7 @@ use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class FrontendController extends Controller
@@ -280,7 +282,7 @@ class FrontendController extends Controller
         // dd($request->all());
         
         // Log the request data for debugging
-        Log::info('Feedback form submission', $request->all());
+        // Log::info('Feedback form submission', $request->all());
 
         // Rules untuk validasi inputan user
         $rules = [
@@ -372,6 +374,37 @@ class FrontendController extends Controller
 
             ProjectFeedback::create($data);
 
+           // Data untuk user
+        $userData = [
+            'nama'      => $request->nama_pemberi_aspirasi,
+            'email'     => $request->email,
+            'tanggapan' => $request->tanggapan,
+            'tanggal'   => now()->format('d-m-Y H:i'),
+        ];
+
+        // Data untuk admin
+        $adminData = [
+            'nama'      =>  $user->name,
+            'email'     =>  $user->email,
+            'tanggapan' => $request->tanggapan,
+            'tanggal'   => now()->format('d-m-Y H:i'),
+            'nama_proyek' => $request->nama_proyek,
+            'kabupaten_kota' => $request->kabupaten_kota,
+            'kecamatan'     => $request->kecamatan,
+            'jenis_tanggapan' => $request->jenis_tanggapan,
+        ];
+
+         // Kirim email penerimaan ke pengguna jika ada email
+        if ($request->filled('email')) {
+            Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
+        }
+
+        // Kirim notifikasi ke admin (gunakan email admin dari user/project terkait)
+        $adminEmail = $user->email ?? config('mail.from.address');
+        Mail::to($adminEmail)->queue(new TanggapanMail($adminData, 'admin'));
+
+        // php artisan queue:work --tries=3
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tanggapan berhasil ditambahkan',
@@ -381,14 +414,14 @@ class FrontendController extends Controller
             // \Log::error('Error storing scoped feedback: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat menyimpan data'
+                'message' => $e->getMessage()
             ], 500);
         }
     }
 
     public function aspirasiStore(Request $request){
         // Log the request data for debugging
-        Log::info('Aspirasi form submission', $request->all());
+        // Log::info('Aspirasi form submission', $request->all());
 
         // Rules untuk validasi inputan user
         $rules = [
@@ -456,6 +489,7 @@ class FrontendController extends Controller
                 'isi_aspirasi'
             ]);
 
+            
             // Tambahkan kategori dan koordinat jika jenis aspirasi adalah usulan
             if ($request->jenis_aspirasi === 'usulan') {
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
@@ -476,7 +510,7 @@ class FrontendController extends Controller
                 }
             }
 
-            Log::info('Data Akhir sebelum di create', $data);
+            // Log::info('Data Akhir sebelum di create', $data);
 
             Aspirasi::create($data);
 
