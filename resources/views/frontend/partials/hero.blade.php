@@ -9,7 +9,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="hero-content animate-on-scroll text-center">
+                <div class="hero-content text-center">
                     <h1 class="hero-title">
                         <span class="highlight">SISTEM INFORMASI</span><br />
                         MANAJEMEN AKSELERASI INFRASTRUKTUR UNTUK MONITORING

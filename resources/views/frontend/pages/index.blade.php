@@ -225,6 +225,10 @@
                         <img src="{{ asset('frontend/img/logo-bps.webp') }}" alt="BPS Maluku Utara" class="logo">
                         <span>BADAN PUSAT STATISTIK</span>
                     </a>
+                    <a href="https://bappenas.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-bappenas.png') }}" alt="BAPPENAS" class="logo">
+                        <span>BAPPENAS</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -286,7 +290,7 @@
                         <button class="status-btn" onclick="filterProjects(event, 'psn')">
                             Strategis Nasional
                         </button>
-                        <button class="status-btn" onclick="filterProjects(event, 'musrenbang')">
+                        <button class="status-btn" onclick="filterProjects(event, 'usulan_musrenbang')">
                             Usulan Musrenbang
                         </button>
                         <button class="status-btn" onclick="filterProjects(event, 'pokir_dprd')">

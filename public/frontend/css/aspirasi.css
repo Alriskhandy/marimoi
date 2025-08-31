@@ -92,7 +92,7 @@
 }
 
 .alert {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     margin-bottom: 0;
     padding: 12px 15px;
@@ -103,9 +103,15 @@
 }
 
 @keyframes pulse {
-    0% { transform: scale(0.95); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0.95);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .map-alert-overlay {
@@ -119,15 +125,20 @@
 
 /* Spinner animation */
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Map Styles */
 #map {
-    height: 300px; 
-    border: 1px solid #ddd; 
+    height: 300px;
+    border: 1px solid #ddd;
     border-radius: 5px;
+    z-index: 99;
 }
 
 /* Form Styles */
@@ -206,61 +217,61 @@
     .alert-container {
         padding: 0 5px;
     }
-    
+
     .alert {
         padding: 8px 10px;
         font-size: 14px;
     }
-    
+
     .bi {
         font-size: 14px;
     }
-    
+
     /* Reduce container padding */
     .container {
         padding-left: 8px;
         padding-right: 8px;
     }
-    
+
     /* Reduce card padding */
-    .feedback-card, 
+    .feedback-card,
     .feedback-info-card {
         padding: 12px !important;
     }
-    
+
     /* Reduce form elements spacing */
     .card-body {
         padding: 8px 4px;
     }
-    
+
     .input-group {
         margin-bottom: 5px;
     }
-    
+
     /* Adjust row spacing */
     .row.gy-4 {
         --bs-gutter-y: 0.75rem;
         --bs-gutter-x: 0.5rem;
     }
-    
+
     .usulan-section {
         margin-top: 70px;
         padding-top: 1rem;
         padding-bottom: 1.5rem;
     }
-    
+
     .section-title {
         font-size: 1.4rem;
         margin-bottom: 1.25rem;
     }
-    
+
     .form-label {
         font-size: 0.95rem;
         margin-bottom: 0.5rem;
     }
-    
-    .form-control, 
-    .form-select, 
+
+    .form-control,
+    .form-select,
     .input-group-text {
         padding: 0.5rem 0.75rem;
         font-size: 0.95rem;
@@ -271,16 +282,16 @@
     .alert-container {
         padding: 0 2px;
     }
-    
+
     .alert {
         padding: 6px 8px;
         font-size: 13px;
     }
-    
+
     .bi {
         font-size: 13px;
     }
-    
+
     /* Further reduce container padding */
     .container {
         padding-left: 6px;
@@ -288,75 +299,77 @@
     }
     
     /* Further reduce card padding */
-    .feedback-card, 
+    .feedback-card,
     .feedback-info-card {
         padding: 8px !important;
     }
-    
+
     /* Reduce form elements spacing */
     .card-body {
         padding: 4px 2px;
     }
-    
+
     /* Adjust form controls */
     .form-label {
         margin-bottom: 0.25rem;
         font-size: 0.9rem;
     }
-    
-    .form-control, 
-    .form-select, 
+
+    .form-control,
+    .form-select,
     .input-group-text {
         padding: 0.25rem 0.5rem;
         font-size: 0.9rem;
     }
-    
+
     /* Reduce spacing between elements */
     .mb-3 {
         margin-bottom: 0.5rem !important;
     }
-    
+
     .mb-4 {
         margin-bottom: 0.75rem !important;
     }
-    
+
     /* Adjust row spacing */
     .row.gy-4 {
         --bs-gutter-y: 0.5rem;
         --bs-gutter-x: 0.25rem;
     }
-    
+
     /* Adjust column padding */
-    .col-md-6, .col-lg-4, .col-md-12 {
+    .col-md-6,
+    .col-lg-4,
+    .col-md-12 {
         padding-left: 0.25rem;
         padding-right: 0.25rem;
     }
-    
+
     /* Make buttons more compact */
     .btn {
         padding: 0.5rem 0.75rem;
     }
-    
+
     /* Adjust input groups */
     .input-group > .input-group-text {
         padding: 0.25rem 0.5rem;
     }
-    
+
     /* Make text smaller */
     .form-text {
         font-size: 0.8rem;
         margin-top: 0.25rem;
     }
-    
+
     /* Adjust form check */
     .form-check {
         padding-left: 1.5rem;
     }
-    
+
     .form-check-input {
         margin-left: -1.5rem;
     }
-    
+
     .form-check-label {
         font-size: 0.85rem;
     }
