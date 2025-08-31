@@ -115,31 +115,34 @@
                                                     name="nama_pemberi_aspirasi" required placeholder="Contoh: Ahmad Salam">
                                             </div>
                                         </div>
-    
+
                                         <div class="col-md-6 mt-2">
-                                            <label for="email" class="form-label">Email Aktif</label>
+                                            <label for="email" class="form-label">Email Aktif <span
+                                                    class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                                                 <input type="email" class="form-control" id="email" name="email"
-                                                    placeholder="Contoh: ahmad.salam@email.com">
+                                                    placeholder="Contoh: ahmad.salam@email.com" required>
                                             </div>
                                         </div>
-    
+
                                         <div class="col-md-6 mt-2">
-                                            <label for="phone" class="form-label">No. WhatsApp</label>
+                                            <label for="phone" class="form-label">No. WhatsApp <span
+                                                    class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text"><i class="bi bi-whatsapp"></i></span>
                                                 <input type="text" class="form-control" id="phone" name="phone"
-                                                    placeholder="Contoh: 081234567890">
+                                                    placeholder="Contoh: 081234567890" required>
                                             </div>
                                         </div>
-    
+
                                         <div class="col-md-6 mt-2">
                                             <label for="jenis_tanggapan" class="form-label">Jenis Tanggapan <span
                                                     class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                                                <select class="form-select" id="jenis_tanggapan" name="jenis_tanggapan" required>
+                                                <select class="form-select" id="jenis_tanggapan" name="jenis_tanggapan"
+                                                    required>
                                                     <option value="">-- Pilih Jenis --</option>
                                                     <option value="saran" selected>Saran</option>
                                                     <option value="keluhan">Pengaduan</option>
@@ -214,7 +217,8 @@
                                         <!-- Tombol -->
                                         <div class="col-12 col-md-6 my-auto">
                                             <button type="submit" class="btn btn-primary w-100" id="submitBtn">
-                                                <i class="bi bi-send me-2"></i><span id="submitText">Kirim Tanggapan</span>
+                                                <i class="bi bi-send me-2"></i><span id="submitText">Kirim
+                                                    Tanggapan</span>
                                             </button>
                                         </div>
                                     </div>
@@ -236,7 +240,7 @@
                                     <li class="text-justify mb-2">Formulir ini digunakan untuk menyampaikan saran,
                                         pengaduan,
                                         apresiasi, atau pertanyaan terkait proyek.</li>
-                                        <hr>
+                                    <hr>
                                     <li><strong>Langkah-langkah pengisian:</strong>
                                         <ol class="mb-0">
                                             <li>Isi nama lengkap.</li>
