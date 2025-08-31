@@ -12,44 +12,44 @@
    Misalnya:
 
    ```bash
-   sudo nano /etc/supervisor/conf.d/laravel-worker.conf
+   sudo nano /etc/supervisor/conf.d/marimoi-worker.conf
    ```
 
    Isinya:
 
    ```
-   [program:laravel-worker]
+   [program:marimoi-worker]
    process_name=%(program_name)s_%(process_num)02d
-   command=php /var/www/html/artisan queue:work --tries=3 --sleep=3 --timeout=90
+   command=php /var/www/marimoi/artisan queue:work --tries=3 --sleep=3 --timeout=90
    autostart=true
    autorestart=true
    user=www-data
    numprocs=1
    redirect_stderr=true
-   stdout_logfile=/var/www/html/storage/logs/worker.log
+   stdout_logfile=/var/www/marimoi/storage/logs/worker.log
    stopwaitsecs=3600
    ```
 
-   ⚠️ Ganti `/var/www/html` sesuai path project Laravel Anda.
+   ⚠️ Ganti `/var/www/marimoi` sesuai path project Laravel Anda.
 
 3. **Reload Supervisor & Jalankan**
 
    ```bash
    sudo supervisorctl reread
    sudo supervisorctl update
-   sudo supervisorctl start laravel-worker:*
+   sudo supervisorctl start marimoi-worker:*
    ```
 
 4. **Cek Status**
 
    ```bash
-   sudo supervisorctl status laravel-worker:*
+   sudo supervisorctl status marimoi-worker:*
    ```
 
 5. **Cek Log Queue Worker**
 
    ```bash
-   tail -f /var/www/html/storage/logs/worker.log
+   tail -f /var/www/marimoi/storage/logs/worker.log
    ```
 
 ---

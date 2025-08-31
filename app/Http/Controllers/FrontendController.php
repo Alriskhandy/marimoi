@@ -288,8 +288,8 @@ class FrontendController extends Controller
         $rules = [
             'data_spatial_id' => 'required',
             'nama_pemberi_aspirasi' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
             'nama_proyek' => 'required|string|max:255',
             'kabupaten_kota' => 'required|string|max:255',
             'kecamatan' => 'nullable|string|max:255',
