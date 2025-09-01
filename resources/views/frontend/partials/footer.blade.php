@@ -110,3 +110,5 @@
         </div>
     </div>
 </footer>
+<!-- Visitor Tracking Script -->
+<script src="{{ asset('js/tracking.js') }}"></script>

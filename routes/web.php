@@ -3,6 +3,7 @@
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LokasiController;
+use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
@@ -46,6 +47,8 @@ Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore']
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
+
+Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';

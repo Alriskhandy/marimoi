@@ -16,6 +16,7 @@
         </nav>
     </div>
 
+    <!-- Main Stats Row -->
     <div class="row">
         <div class="col-md-4 stretch-card grid-margin">
             <div class="card bg-gradient-primary card-img-holder text-white">
@@ -63,6 +64,41 @@
         </div>
     </div>
 
+    <!-- Visitor Statistics Row (Only for non admin-opd) -->
+    @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+        <div class="row">
+            <div class="col-md-6 stretch-card grid-margin">
+                <div class="card bg-gradient-warning card-img-holder text-white">
+                    <div class="card-body">
+                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                            alt="circle-image" />
+                        <h4 class="font-weight-normal mb-3">
+                            Total Pengunjung
+                            <i class="mdi mdi-account-multiple mdi-24px float-end"></i>
+                        </h4>
+                        <h2 class="mb-5">{{ $totalVisitors ?? '0' }}</h2>
+                        <h6 class="card-text">Jumlah seluruh pengunjung website</h6>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 stretch-card grid-margin">
+                <div class="card bg-gradient-dark card-img-holder text-white">
+                    <div class="card-body">
+                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                            alt="circle-image" />
+                        <h4 class="font-weight-normal mb-3">
+                            Pengunjung Hari Ini
+                            <i class="mdi mdi-calendar-today mdi-24px float-end"></i>
+                        </h4>
+                        <h2 class="mb-5" id="todayVisitors">{{ $todayVisitors ?? '0' }}</h2>
+                        <h6 class="card-text">Pengunjung yang mengakses hari ini</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Statistics Cards -->
     <div class="row">
         <div class="col-xl-6 col-sm-6 grid-margin stretch-card">
@@ -104,8 +140,6 @@
                 </div>
             </div>
         </div>
-
-
     </div>
 
     <!-- Charts Section -->
@@ -132,6 +166,33 @@
             </div>
         </div>
     </div>
+
+    <!-- Visitor Chart Section (Only for non admin-opd) -->
+    @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+        <div class="row">
+            <div class="col-md-12 grid-margin stretch-card">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="card-title">Trend Pengunjung Bulanan</h4>
+                            <div>
+                                <select class="form-select form-select-sm" id="visitorYearFilter">
+                                    @foreach ($availableYears ?? [date('Y')] as $year)
+                                        <option value="{{ $year }}" {{ $year == date('Y') ? 'selected' : '' }}>
+                                            {{ $year }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="visitorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Recent Aspirasi Table -->
     <div class="row">
@@ -163,7 +224,6 @@
                                             </span>
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($aspirasi->created_at)->format('d/m/Y') }}</td>
-
                                     </tr>
                                 @empty
                                     <tr>
@@ -182,7 +242,7 @@
 @section('scripts')
     <script>
         // Chart initialization
-        let monthlyChart, categoryChart;
+        let monthlyChart, visitorChart;
         let chartInitialized = false;
 
         $(document).ready(function() {
@@ -198,6 +258,18 @@
                     loadDashboardData();
                 }
             });
+
+            // Visitor year filter change
+            $('#visitorYearFilter').on('change', function() {
+                if (chartInitialized) {
+                    loadVisitorData();
+                }
+            });
+
+            // Load today's visitor count if not admin-opd
+            @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+                loadTodayVisitors();
+            @endif
         });
 
         function initializeCharts() {
@@ -206,11 +278,11 @@
                 if (monthlyChart) {
                     monthlyChart.destroy();
                 }
-                if (categoryChart) {
-                    categoryChart.destroy();
+                if (visitorChart) {
+                    visitorChart.destroy();
                 }
 
-                // Monthly Chart
+                // Monthly Aspirasi Chart
                 const monthlyCtx = document.getElementById('monthlyChart');
                 if (monthlyCtx) {
                     monthlyChart = new Chart(monthlyCtx.getContext('2d'), {
@@ -289,85 +361,86 @@
                     });
                 }
 
-                // Category Chart
-                const categoryCtx = document.getElementById('categoryChart');
-                if (categoryCtx) {
-                    const categoryLabels = @json($categoryData['labels'] ?? []);
-                    const categoryValues = @json($categoryData['values'] ?? []);
-
-                    categoryChart = new Chart(categoryCtx.getContext('2d'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: categoryLabels,
-                            datasets: [{
-                                data: categoryValues,
-                                backgroundColor: [
-                                    '#6f42c1', '#28a745', '#17a2b8',
-                                    '#ffc107', '#dc3545', '#fd7e14',
-                                    '#6c757d', '#e83e8c'
+                // Visitor Chart (only for non admin-opd)
+                @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+                    const visitorCtx = document.getElementById('visitorChart');
+                    if (visitorCtx) {
+                        visitorChart = new Chart(visitorCtx.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt',
+                                    'Nov', 'Des'
                                 ],
-                                borderWidth: 2,
-                                borderColor: '#ffffff',
-                                hoverBorderWidth: 3,
-                                hoverOffset: 5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: true,
-                                    position: 'bottom',
-                                    labels: {
-                                        usePointStyle: true,
-                                        padding: 15,
-                                        generateLabels: function(chart) {
-                                            const data = chart.data;
-                                            if (data.labels.length && data.datasets.length) {
-                                                return data.labels.map((label, i) => {
-                                                    const dataset = data.datasets[0];
-                                                    const value = dataset.data[i];
-                                                    const total = dataset.data.reduce((a, b) => a + b,
-                                                        0);
-                                                    const percentage = total > 0 ? ((value / total) *
-                                                        100).toFixed(1) : 0;
-
-                                                    return {
-                                                        text: `${label} (${percentage}%)`,
-                                                        fillStyle: dataset.backgroundColor[i],
-                                                        strokeStyle: dataset.backgroundColor[i],
-                                                        lineWidth: 0,
-                                                        pointStyle: 'circle',
-                                                        hidden: false,
-                                                        index: i
-                                                    };
-                                                });
-                                            }
-                                            return [];
+                                datasets: [{
+                                    label: 'Total Pengunjung',
+                                    data: @json($visitorData['total'] ?? array_fill(0, 12, 0)),
+                                    borderColor: '#ffc107',
+                                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#ffc107',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 5
+                                }, {
+                                    label: 'Pengunjung Unik',
+                                    data: @json($visitorData['unique'] ?? array_fill(0, 12, 0)),
+                                    borderColor: '#17a2b8',
+                                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#17a2b8',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 5
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {
+                                    intersect: false,
+                                    mode: 'index'
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'top',
+                                        labels: {
+                                            usePointStyle: true,
+                                            padding: 20
                                         }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                        titleColor: '#ffffff',
+                                        bodyColor: '#ffffff',
+                                        borderColor: '#ffc107',
+                                        borderWidth: 1
                                     }
                                 },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                    titleColor: '#ffffff',
-                                    bodyColor: '#ffffff',
-                                    borderColor: '#6f42c1',
-                                    borderWidth: 1,
-                                    callbacks: {
-                                        label: function(context) {
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = total > 0 ? ((context.parsed / total) * 100)
-                                                .toFixed(1) : 0;
-                                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.1)'
+                                        },
+                                        ticks: {
+                                            stepSize: 1
+                                        }
+                                    },
+                                    x: {
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.1)'
                                         }
                                     }
                                 }
-                            },
-                            cutout: '60%'
-                        }
-                    });
-                }
+                            }
+                        });
+                    }
+                @endif
 
                 console.log('Charts initialized successfully');
 
@@ -386,59 +459,73 @@
                     year: year
                 },
                 beforeSend: function() {
-                    // Show loading indicator
                     $('.chart-container').addClass('loading');
-                    $('.chart-container-small').addClass('loading');
                 },
                 success: function(response) {
-                    if (response.success) {
-                        updateCharts(response);
-                    } else {
-                        console.error('API returned error:', response.message);
+                    if (response.success && monthlyChart) {
+                        monthlyChart.data.datasets[0].data = response.monthly.total || Array(12).fill(0);
+                        monthlyChart.data.datasets[1].data = response.monthly.selesai || Array(12).fill(0);
+                        monthlyChart.update('none');
                     }
                 },
                 error: function(xhr) {
                     console.error('Failed to load dashboard data:', xhr);
                 },
                 complete: function() {
-                    // Hide loading indicator
                     $('.chart-container').removeClass('loading');
-                    $('.chart-container-small').removeClass('loading');
                 }
             });
         }
 
-        function updateCharts(data) {
-            try {
-                // Update monthly chart
-                if (monthlyChart && data.monthly) {
-                    monthlyChart.data.datasets[0].data = data.monthly.total || Array(12).fill(0);
-                    monthlyChart.data.datasets[1].data = data.monthly.selesai || Array(12).fill(0);
-                    monthlyChart.update('none'); // Update without animation to prevent loop
-                }
+        @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+            function loadVisitorData() {
+                const year = $('#visitorYearFilter').val() || {{ date('Y') }};
 
-                // Update category chart
-                if (categoryChart && data.categories) {
-                    categoryChart.data.labels = data.categories.labels || [];
-                    categoryChart.data.datasets[0].data = data.categories.values || [];
-                    categoryChart.update('none'); // Update without animation to prevent loop
-                }
-
-                console.log('Charts updated successfully');
-
-            } catch (error) {
-                console.error('Error updating charts:', error);
+                $.ajax({
+                    url: '{{ route('dashboard.visitor.statistics') }}',
+                    method: 'GET',
+                    data: {
+                        year: year
+                    },
+                    success: function(response) {
+                        if (response.success && visitorChart) {
+                            visitorChart.data.datasets[0].data = response.monthly.total || Array(12).fill(0);
+                            visitorChart.data.datasets[1].data = response.monthly.unique || Array(12).fill(0);
+                            visitorChart.update('none');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Failed to load visitor data:', xhr);
+                    }
+                });
             }
-        }
+
+            function loadTodayVisitors() {
+                $.ajax({
+                    url: '{{ route('dashboard.visitor.statistics') }}',
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success && response.stats) {
+                            $('#todayVisitors').text(response.stats.today || '0');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Failed to load today visitors:', xhr);
+                    }
+                });
+            }
+        @endif
 
         // Handle window resize
         $(window).on('resize', function() {
             if (monthlyChart) {
                 monthlyChart.resize();
             }
-            if (categoryChart) {
-                categoryChart.resize();
-            }
+            @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
+                if (visitorChart) {
+                    visitorChart.resize();
+                }
+            @endif
         });
     </script>
 
@@ -473,7 +560,7 @@
 
         /* Prevent chart canvas from growing indefinitely */
         #monthlyChart,
-        #categoryChart {
+        #visitorChart {
             max-height: 100% !important;
             max-width: 100% !important;
         }

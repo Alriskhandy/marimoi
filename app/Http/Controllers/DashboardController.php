@@ -6,33 +6,19 @@ use App\Models\DataSpatial;
 use App\Models\Opd;
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
+use App\Models\Visitor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
-    /**
-     * Check if current user is admin OPD
-     */
-    private function isAdminOpd()
+   
+
+   private function isAdminOpd()
     {
         return Auth::user()->role->slug === 'admin-opd';
     }
-
-    /**
-     * Apply OPD filter to aspirasi query based on opd_id match between user and category
-     */
-    private function applyOpdFilter($query)
-    {
-        if ($this->isAdminOpd()) {
-            $userOpdId = Auth::user()->opd_id;
-            return $query->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
-                        ->where('kategori_aspirasi.opd_id', $userOpdId);
-        }
-        return $query;
-    }
-
     /**
      * Apply OPD filter to raw DB query
      */
@@ -46,16 +32,18 @@ class DashboardController extends Controller
         return $query;
     }
 
+    // ... existing methods remain the same ...
+
     /**
      * Display the main dashboard
      */
     public function index()
     {
         if ($this->isAdminOpd()) {
-            $userOpdId = Auth::user()->id; // ambil user_id login sekarang
+            $userOpdId = Auth::user()->id;
             $totalLokasi = DataSpatial::where('user_id', $userOpdId)->count();
         } else {
-            $totalLokasi = DataSpatial::count(); // misal untuk role lain bebas semua data
+            $totalLokasi = DataSpatial::count();
         }
 
         $totalOpd = Opd::count();
@@ -94,6 +82,29 @@ class DashboardController extends Controller
                 ->get();
         }
 
+        // Get visitor data - HANYA untuk non admin-opd
+        $visitorData = [];
+        $totalVisitors = 0;
+        $todayVisitors = 0;
+        $availableYears = [];
+        
+        if (!$this->isAdminOpd()) {
+            $totalVisitors = Visitor::count();
+            $todayVisitors = Visitor::whereDate('created_at', today())->count();
+            $visitorData = $this->getMonthlyVisitorData($currentYear);
+            
+            // Get available years for visitor data - FIXED FOR POSTGRESQL
+            $availableYears = Visitor::selectRaw('EXTRACT(YEAR FROM created_at) as year')
+                ->distinct()
+                ->orderBy('year', 'desc')
+                ->pluck('year')
+                ->toArray();
+            
+            if (empty($availableYears)) {
+                $availableYears = [$currentYear];
+            }
+        }
+
         return view('dashboard', compact(
             'totalLokasi',
             'totalOpd',
@@ -102,17 +113,197 @@ class DashboardController extends Controller
             'totalSelesaiAspirasi',
             'monthlyAspirasi',
             'categoryData',
-            'recentAspirasi'
+            'recentAspirasi',
+            'totalVisitors',
+            'todayVisitors',
+            'visitorData',
+            'availableYears'
         ));
     }
 
     /**
-     * Get available years from aspirasi data
+     * Get monthly visitor data for chart - FIXED FOR POSTGRESQL
+     */
+    private function getMonthlyVisitorData($year)
+    {
+        $monthlyData = [];
+        
+        for ($month = 1; $month <= 12; $month++) {
+            $total = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month])
+                ->count();
+                
+            $unique = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month])
+                ->distinct('ip')
+                ->count();
+
+            $monthlyData['total'][] = $total;
+            $monthlyData['unique'][] = $unique;
+        }
+
+        return $monthlyData;
+    }
+
+    /**
+     * Get visitor statistics by year and month filter - FIXED FOR POSTGRESQL
+     */
+    public function getVisitorStatistics(Request $request)
+    {
+        // Cek jika user adalah admin-opd, tolak akses
+        if ($this->isAdminOpd()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied for admin OPD'
+            ], 403);
+        }
+
+        $year = $request->get('year', date('Y'));
+        $month = $request->get('month');
+
+        try {
+            $query = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year]);
+            
+            if ($month && $month !== 'all') {
+                $query->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month]);
+            }
+
+            // Basic statistics
+            $stats = [
+                'total' => $query->count(),
+                'unique' => $query->distinct('ip')->count(),
+                'with_location' => $query->whereNotNull('latitude')->count(),
+                'today' => Visitor::whereDate('created_at', today())->count()
+            ];
+
+            // Monthly breakdown
+            $monthly = $this->getMonthlyVisitorData($year);
+
+            // Daily breakdown for selected month (if month is specified)
+            $daily = [];
+            if ($month && $month !== 'all') {
+                $daily = $this->getDailyVisitorData($year, $month);
+            }
+
+            // Top countries
+            $countries = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->when($month && $month !== 'all', function($q) use ($month) {
+                    return $q->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month]);
+                })
+                ->whereNotNull('country')
+                ->where('country', '!=', 'Local')
+                ->select('country', DB::raw('count(*) as total'))
+                ->groupBy('country')
+                ->orderBy('total', 'desc')
+                ->limit(10)
+                ->get();
+
+            // Top pages
+            $pages = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->when($month && $month !== 'all', function($q) use ($month) {
+                    return $q->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month]);
+                })
+                ->select('page_visited', DB::raw('count(*) as total'))
+                ->groupBy('page_visited')
+                ->orderBy('total', 'desc')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats,
+                'monthly' => $monthly,
+                'daily' => $daily,
+                'countries' => $countries,
+                'pages' => $pages
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading visitor statistics: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get daily visitor data for specific month - FIXED FOR POSTGRESQL
+     */
+    private function getDailyVisitorData($year, $month)
+    {
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $dailyData = ['total' => [], 'unique' => []];
+        
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $total = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month])
+                ->whereRaw('EXTRACT(DAY FROM created_at) = ?', [$day])
+                ->count();
+                
+            $unique = Visitor::whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month])
+                ->whereRaw('EXTRACT(DAY FROM created_at) = ?', [$day])
+                ->distinct('ip')
+                ->count();
+
+            $dailyData['total'][] = $total;
+            $dailyData['unique'][] = $unique;
+        }
+
+        return $dailyData;
+    }
+
+    /**
+     * Get visitor map data - FIXED FOR POSTGRESQL
+     */
+    public function getVisitorMapData(Request $request)
+    {
+        // Cek jika user adalah admin-opd, tolak akses
+        if ($this->isAdminOpd()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied for admin OPD'
+            ], 403);
+        }
+
+        $year = $request->get('year', date('Y'));
+        $month = $request->get('month');
+
+        $query = Visitor::select('latitude', 'longitude', 'city', 'country', 'created_at', 'page_visited')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereRaw('EXTRACT(YEAR FROM created_at) = ?', [$year]);
+
+        if ($month && $month !== 'all') {
+            $query->whereRaw('EXTRACT(MONTH FROM created_at) = ?', [$month]);
+        }
+
+        $visitors = $query->latest()
+            ->limit(500)
+            ->get()
+            ->map(function ($visitor) {
+                return [
+                    'lat' => (float) $visitor->latitude,
+                    'lng' => (float) $visitor->longitude,
+                    'city' => $visitor->city,
+                    'country' => $visitor->country,
+                    'page' => $visitor->page_visited,
+                    'date' => $visitor->created_at->format('d/m/Y H:i')
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $visitors
+        ]);
+    }
+    /**
+     * Get available years from aspirasi data - FIXED FOR POSTGRESQL
      */
     public function getAvailableYears()
     {
         $query = DB::table('aspirasi')
-            ->selectRaw('YEAR(aspirasi.created_at) as year')
+            ->selectRaw('EXTRACT(YEAR FROM aspirasi.created_at) as year')
             ->distinct()
             ->orderBy('year', 'desc');
 
@@ -151,7 +342,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get comprehensive statistics for dashboard
+     * Get comprehensive statistics for dashboard - FIXED FOR POSTGRESQL
      */
     public function getStatistics(Request $request)
     {
@@ -161,7 +352,7 @@ class DashboardController extends Controller
         try {
             // Build base query with OPD filter
             $baseQuery = DB::table('aspirasi')
-                ->whereYear('aspirasi.created_at', $year);
+                ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year]);
 
             // Apply OPD filter
             $baseQuery = $this->applyOpdFilterToRawQuery($baseQuery);
@@ -218,7 +409,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get basic statistics with month-over-month comparison
+     * Get basic statistics with month-over-month comparison - FIXED FOR POSTGRESQL
      */
     private function getBasicStats($baseQuery, $year, $categoryId)
     {
@@ -236,8 +427,8 @@ class DashboardController extends Controller
         
         if ($year == $currentYear && $currentMonth > 1) {
             $prevMonthQuery = DB::table('aspirasi')
-                ->whereYear('aspirasi.created_at', $year)
-                ->whereMonth('aspirasi.created_at', $currentMonth - 1);
+                ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$currentMonth - 1]);
 
             // Apply OPD filter to previous month query
             $prevMonthQuery = $this->applyOpdFilterToRawQuery($prevMonthQuery);
@@ -267,7 +458,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get monthly data for trend chart
+     * Get monthly data for trend chart - FIXED FOR POSTGRESQL
      */
     private function getMonthlyData($baseQuery)
     {
@@ -275,11 +466,11 @@ class DashboardController extends Controller
         
         for ($month = 1; $month <= 12; $month++) {
             $total = (clone $baseQuery)
-                ->whereMonth('aspirasi.created_at', $month)
+                ->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$month])
                 ->count();
                 
             $selesai = (clone $baseQuery)
-                ->whereMonth('aspirasi.created_at', $month)
+                ->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$month])
                 ->where('aspirasi.status', 'selesai')
                 ->count();
 
@@ -291,7 +482,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get monthly aspirasi data for dashboard main page
+     * Get monthly aspirasi data for dashboard main page - FIXED FOR POSTGRESQL
      */
     private function getMonthlyAspirasiData($year)
     {
@@ -299,8 +490,8 @@ class DashboardController extends Controller
         
         for ($month = 1; $month <= 12; $month++) {
             $query = DB::table('aspirasi')
-                ->whereYear('aspirasi.created_at', $year)
-                ->whereMonth('aspirasi.created_at', $month);
+                ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year])
+                ->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$month]);
 
             // Apply OPD filter
             $query = $this->applyOpdFilterToRawQuery($query);
@@ -316,14 +507,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get category distribution for doughnut chart
+     * Get category distribution for doughnut chart - FIXED FOR POSTGRESQL
      */
     private function getCategoryDistribution($year, $categoryId = null)
     {
         $query = DB::table('aspirasi')
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
             ->select('kategori_aspirasi.nama_kategori as nama_kategori', DB::raw('COUNT(*) as total'))
-            ->whereYear('aspirasi.created_at', $year)
+            ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year])
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc');
 
@@ -346,7 +537,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get category distribution for main dashboard
+     * Get category distribution for main dashboard - FIXED FOR POSTGRESQL
      */
     private function getCategoryDistributionForDashboard()
     {
@@ -355,7 +546,7 @@ class DashboardController extends Controller
         $query = DB::table('aspirasi')
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
             ->select('kategori_aspirasi.nama_kategori as nama_kategori', DB::raw('COUNT(*) as total'))
-            ->whereYear('aspirasi.created_at', $currentYear)
+            ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$currentYear])
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc')
             ->limit(6);
@@ -375,7 +566,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get status distribution by category
+     * Get status distribution by category - FIXED FOR POSTGRESQL
      */
     private function getStatusByCategory($year, $categoryId = null)
     {
@@ -383,11 +574,11 @@ class DashboardController extends Controller
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
             ->select(
                 'kategori_aspirasi.nama_kategori as category',
-                DB::raw('SUM(CASE WHEN aspirasi.status = "pending" THEN 1 ELSE 0 END) as pending'),
-                DB::raw('SUM(CASE WHEN aspirasi.status IN ("diproses", "ditindaklanjuti") THEN 1 ELSE 0 END) as diproses'),
-                DB::raw('SUM(CASE WHEN aspirasi.status = "selesai" THEN 1 ELSE 0 END) as selesai')
+                DB::raw('SUM(CASE WHEN aspirasi.status = \'pending\' THEN 1 ELSE 0 END) as pending'),
+                DB::raw('SUM(CASE WHEN aspirasi.status IN (\'diproses\', \'ditindaklanjuti\') THEN 1 ELSE 0 END) as diproses'),
+                DB::raw('SUM(CASE WHEN aspirasi.status = \'selesai\' THEN 1 ELSE 0 END) as selesai')
             )
-            ->whereYear('aspirasi.created_at', $year)
+            ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year])
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('kategori_aspirasi.nama_kategori');
 
@@ -431,7 +622,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get top performing categories
+     * Get top performing categories - FIXED FOR POSTGRESQL
      */
     public function getTopCategories(Request $request)
     {
@@ -443,10 +634,10 @@ class DashboardController extends Controller
             ->select(
                 'kategori_aspirasi.nama_kategori as nama_kategori',
                 DB::raw('COUNT(*) as total'),
-                DB::raw('SUM(CASE WHEN aspirasi.status = "selesai" THEN 1 ELSE 0 END) as selesai'),
-                DB::raw('ROUND((SUM(CASE WHEN aspirasi.status = "selesai" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as completion_rate')
+                DB::raw('SUM(CASE WHEN aspirasi.status = \'selesai\' THEN 1 ELSE 0 END) as selesai'),
+                DB::raw('ROUND((SUM(CASE WHEN aspirasi.status = \'selesai\' THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as completion_rate')
             )
-            ->whereYear('aspirasi.created_at', $year)
+            ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year])
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc')
             ->limit($limit);
@@ -466,7 +657,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get response time analytics
+     * Get response time analytics - FIXED FOR POSTGRESQL
      */
     public function getResponseTimeAnalytics(Request $request)
     {
@@ -474,13 +665,13 @@ class DashboardController extends Controller
 
         $query = DB::table('aspirasi')
             ->select(
-                DB::raw('AVG(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as avg_response_days'),
-                DB::raw('MIN(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as min_response_days'),
-                DB::raw('MAX(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as max_response_days'),
+                DB::raw('AVG(aspirasi.tanggal_respon::date - aspirasi.created_at::date) as avg_response_days'),
+                DB::raw('MIN(aspirasi.tanggal_respon::date - aspirasi.created_at::date) as min_response_days'),
+                DB::raw('MAX(aspirasi.tanggal_respon::date - aspirasi.created_at::date) as max_response_days'),
                 DB::raw('COUNT(CASE WHEN aspirasi.tanggal_respon IS NOT NULL THEN 1 END) as responded_count'),
                 DB::raw('COUNT(*) as total_count')
             )
-            ->whereYear('aspirasi.created_at', $year);
+            ->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$year]);
 
         // Apply OPD filter
         $query = $this->applyOpdFilterToRawQuery($query);
@@ -494,7 +685,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get dashboard statistics for widgets
+     * Get dashboard statistics for widgets - FIXED FOR POSTGRESQL
      */
     public function getDashboardStats()
     {
@@ -502,7 +693,7 @@ class DashboardController extends Controller
         $currentMonth = date('n');
         
         // Base query with OPD filter
-        $baseQuery = DB::table('aspirasi')->whereYear('aspirasi.created_at', $currentYear);
+        $baseQuery = DB::table('aspirasi')->whereRaw('EXTRACT(YEAR FROM aspirasi.created_at) = ?', [$currentYear]);
         $baseQuery = $this->applyOpdFilterToRawQuery($baseQuery);
         
         // Total counts
@@ -513,12 +704,12 @@ class DashboardController extends Controller
         $totalLokasi = DataSpatial::count();
         
         // This month vs last month
-        $thisMonthQuery = (clone $baseQuery)->whereMonth('aspirasi.created_at', $currentMonth);
+        $thisMonthQuery = (clone $baseQuery)->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$currentMonth]);
         $thisMonth = $thisMonthQuery->count();
                             
         $lastMonthQuery = (clone $baseQuery);
         $lastMonth = $currentMonth > 1 ? 
-            $lastMonthQuery->whereMonth('aspirasi.created_at', $currentMonth - 1)->count() : 0;
+            $lastMonthQuery->whereRaw('EXTRACT(MONTH FROM aspirasi.created_at) = ?', [$currentMonth - 1])->count() : 0;
         
         $monthlyChange = $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : 0;
         
@@ -550,9 +741,9 @@ class DashboardController extends Controller
     {
         $currentYear = date('Y');
         
-        // Get available years for filter with OPD restriction
+        // Get available years for filter with OPD restriction - FIXED FOR POSTGRESQL
         $availableYearsQuery = DB::table('aspirasi')
-            ->selectRaw('YEAR(aspirasi.created_at) as year')
+            ->selectRaw('EXTRACT(YEAR FROM aspirasi.created_at) as year')
             ->distinct()
             ->orderBy('year', 'desc');
 
