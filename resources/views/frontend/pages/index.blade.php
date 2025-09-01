@@ -305,51 +305,48 @@
                         @php
                             $status = $data->sub_type ?? $data->data_type;
                             $slug = $links[$status] ?? '#';
+
+                            $kegiatan = $data->dbf_attributes['KEGIATAN'] ?? ($data->dbf_attributes['NAMAOBJ'] ?? '-');
+
+                            $lokasi = $data->dbf_attributes['KABUPATEN'] ?? ($data->dbf_attributes['WADMPR'] ?? '-');
+
+                            $rfi = $data->dbf_attributes['RFI'] ?? '0%';
+                            $ran = $data->dbf_attributes['RAN'] ?? '0%';
                         @endphp
-                        <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
-                            <h4 class="project-title">
-                                @if ($data->dbf_attributes['KEGIATAN'])
-                                    {{ $data->dbf_attributes['KEGIATAN']}}
-                                @elseif ($data->dbf_attributes['NAMAOBJ'])
-                                    {{ $data->dbf_attributes['NAMAOBJ']}}
-                                @else
-                                    ""
-                                @endif</h4>
+
+                        <div class="project-card" data-status="{{ $status }}">
+                            <h4 class="project-title">{{ $kegiatan }}</h4>
+
                             <p class="project-location">
-                                <i class="fas fa-map-marker-alt me-1"></i>
-                                @if ($data->dbf_attributes['KABUPATEN'])
-                                    {{ $data->dbf_attributes['KABUPATEN']}}
-                                @elseif ($data->dbf_attributes['WADMPR'])
-                                    {{ $data->dbf_attributes['WADMPR']}}
-                                @else
-                                    ""
-                                @endif
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ $lokasi }}
                             </p>
 
                             <div class="progress-group">
                                 <div class="progress-header">
                                     <p class="progress-label">Realisasi Fisik</p>
-                                    <p class="progress-text">{{ $data->dbf_attributes['RFI'] ?? '0%' }}</p>
+                                    <p class="progress-text">{{ $rfi }}</p>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: {{ $data->dbf_attributes['RFI'] ?? '0%' }}">
-                                    </div>
+                                    <div class="progress-fill" style="width: {{ $rfi }}"></div>
                                 </div>
                             </div>
 
                             <div class="progress-group">
                                 <div class="progress-header">
                                     <p class="progress-label">Realisasi Anggaran</p>
-                                    <p class="progress-text">{{ $data->dbf_attributes['RAN'] ?? 0 }}</p>
+                                    <p class="progress-text">{{ $ran }}</p>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: {{ $data->dbf_attributes['RAN'] ?? '0%' }}">
-                                    </div>
+                                    <div class="progress-fill" style="width: {{ $ran }}"></div>
                                 </div>
                             </div>
-                            <a class="project-button" href="{{ url($slug . '/' . $data->uuid) }}">Lihat Detail</a>
+
+                            <a class="project-button" href="{{ url($slug . '/' . $data->uuid) }}">
+                                Lihat Detail
+                            </a>
                         </div>
                     @endforeach
+
 
                 </div>
             </div>
