@@ -162,7 +162,8 @@
                                                 {{ ucfirst($aspirasi->status) }}
                                             </span>
                                         </td>
-                                        <td>{{ $aspirasi->created_at->format('d/m/Y') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($aspirasi->created_at)->format('d/m/Y') }}</td>
+
                                     </tr>
                                 @empty
                                     <tr>

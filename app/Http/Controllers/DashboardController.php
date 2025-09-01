@@ -8,19 +8,65 @@ use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    /**
+     * Check if current user is admin OPD
+     */
+    private function isAdminOpd()
+    {
+        return Auth::user()->role->slug === 'admin-opd';
+    }
+
+    /**
+     * Apply OPD filter to aspirasi query based on opd_id match between user and category
+     */
+    private function applyOpdFilter($query)
+    {
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            return $query->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
+                        ->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
+        return $query;
+    }
+
+    /**
+     * Apply OPD filter to raw DB query
+     */
+    private function applyOpdFilterToRawQuery($query)
+    {
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            return $query->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
+                        ->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
+        return $query;
+    }
+
     /**
      * Display the main dashboard
      */
     public function index()
     {
-        $totalLokasi = DataSpatial::count();
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->id; // ambil user_id login sekarang
+            $totalLokasi = DataSpatial::where('user_id', $userOpdId)->count();
+        } else {
+            $totalLokasi = DataSpatial::count(); // misal untuk role lain bebas semua data
+        }
+
         $totalOpd = Opd::count();
-        $totalPendingAspirasi = Aspirasi::where('status', 'pending')->count();
-        $totalAspirasi = Aspirasi::count();
-        $totalSelesaiAspirasi = Aspirasi::where('status', 'selesai')->count();
+        
+        // Build base query for aspirasi with OPD filter
+        $aspirasiBaseQuery = DB::table('aspirasi');
+        $aspirasiBaseQuery = $this->applyOpdFilterToRawQuery($aspirasiBaseQuery);
+        
+        $totalPendingAspirasi = (clone $aspirasiBaseQuery)->where('aspirasi.status', 'pending')->count();
+        $totalAspirasi = (clone $aspirasiBaseQuery)->count();
+        $totalSelesaiAspirasi = (clone $aspirasiBaseQuery)->where('aspirasi.status', 'selesai')->count();
 
         // Get monthly data for current year
         $currentYear = date('Y');
@@ -29,11 +75,24 @@ class DashboardController extends Controller
         // Get category distribution
         $categoryData = $this->getCategoryDistributionForDashboard();
         
-        // Get recent aspirasi
-        $recentAspirasi = Aspirasi::with('kategori')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        // Get recent aspirasi with OPD filter
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $recentAspirasi = DB::table('aspirasi')
+                ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
+                ->where('kategori_aspirasi.opd_id', $userOpdId)
+                ->orderBy('aspirasi.created_at', 'desc')
+                ->limit(5)
+                ->select('aspirasi.*', 'kategori_aspirasi.nama_kategori')
+                ->get();
+        } else {
+            $recentAspirasi = DB::table('aspirasi')
+                ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
+                ->orderBy('aspirasi.created_at', 'desc')
+                ->limit(5)
+                ->select('aspirasi.*', 'kategori_aspirasi.nama_kategori')
+                ->get();
+        }
 
         return view('dashboard', compact(
             'totalLokasi',
@@ -52,12 +111,15 @@ class DashboardController extends Controller
      */
     public function getAvailableYears()
     {
-        $years = DB::table('aspirasi')
-            ->selectRaw('YEAR(created_at) as year')
+        $query = DB::table('aspirasi')
+            ->selectRaw('YEAR(aspirasi.created_at) as year')
             ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->toArray();
+            ->orderBy('year', 'desc');
+
+        // Apply OPD filter
+        $query = $this->applyOpdFilterToRawQuery($query);
+
+        $years = $query->pluck('year')->toArray();
 
         return response()->json([
             'success' => true,
@@ -66,14 +128,21 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get kategori aspirasi for dropdown
+     * Get kategori aspirasi for dropdown (filtered by OPD if admin OPD)
      */
     public function getCategories()
     {
-        $categories = DB::table('kategori_aspirasi')
-            ->select('id', 'nama')
-            ->orderBy('nama', 'asc')
-            ->get();
+        $query = DB::table('kategori_aspirasi')
+            ->select('id', 'nama_kategori as nama')
+            ->orderBy('nama_kategori', 'asc');
+
+        // Filter categories by OPD for admin OPD
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $query->where('opd_id', $userOpdId);
+        }
+
+        $categories = $query->get();
 
         return response()->json([
             'success' => true,
@@ -90,12 +159,30 @@ class DashboardController extends Controller
         $categoryId = $request->get('category');
 
         try {
-            // Build base query
+            // Build base query with OPD filter
             $baseQuery = DB::table('aspirasi')
-                ->whereYear('created_at', $year);
+                ->whereYear('aspirasi.created_at', $year);
+
+            // Apply OPD filter
+            $baseQuery = $this->applyOpdFilterToRawQuery($baseQuery);
 
             if ($categoryId) {
-                $baseQuery->where('kategori_aspirasi_id', $categoryId);
+                // Ensure the category belongs to user's OPD if admin OPD
+                if ($this->isAdminOpd()) {
+                    $userOpdId = Auth::user()->opd_id;
+                    $categoryExists = DB::table('kategori_aspirasi')
+                        ->where('id', $categoryId)
+                        ->where('opd_id', $userOpdId)
+                        ->exists();
+                    
+                    if (!$categoryExists) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Category not accessible'
+                        ], 403);
+                    }
+                }
+                $baseQuery->where('aspirasi.kategori_aspirasi_id', $categoryId);
             }
 
             // Get basic statistics
@@ -140,26 +227,29 @@ class DashboardController extends Controller
 
         // Current period stats
         $total = (clone $baseQuery)->count();
-        $pending = (clone $baseQuery)->where('status', 'pending')->count();
-        $diproses = (clone $baseQuery)->whereIn('status', ['diproses', 'ditindaklanjuti'])->count();
-        $selesai = (clone $baseQuery)->where('status', 'selesai')->count();
+        $pending = (clone $baseQuery)->where('aspirasi.status', 'pending')->count();
+        $diproses = (clone $baseQuery)->whereIn('aspirasi.status', ['diproses', 'ditindaklanjuti'])->count();
+        $selesai = (clone $baseQuery)->where('aspirasi.status', 'selesai')->count();
 
         // Previous month comparison (if current year)
         $changes = ['totalChange' => 0, 'pendingChange' => 0, 'prosesChange' => 0, 'selesaiChange' => 0];
         
         if ($year == $currentYear && $currentMonth > 1) {
             $prevMonthQuery = DB::table('aspirasi')
-                ->whereYear('created_at', $year)
-                ->whereMonth('created_at', $currentMonth - 1);
+                ->whereYear('aspirasi.created_at', $year)
+                ->whereMonth('aspirasi.created_at', $currentMonth - 1);
+
+            // Apply OPD filter to previous month query
+            $prevMonthQuery = $this->applyOpdFilterToRawQuery($prevMonthQuery);
 
             if ($categoryId) {
-                $prevMonthQuery->where('kategori_aspirasi_id', $categoryId);
+                $prevMonthQuery->where('aspirasi.kategori_aspirasi_id', $categoryId);
             }
 
-            $prevTotal = $prevMonthQuery->count();
-            $prevPending = (clone $prevMonthQuery)->where('status', 'pending')->count();
-            $prevDiproses = (clone $prevMonthQuery)->whereIn('status', ['diproses', 'ditindaklanjuti'])->count();
-            $prevSelesai = (clone $prevMonthQuery)->where('status', 'selesai')->count();
+            $prevTotal = (clone $prevMonthQuery)->count();
+            $prevPending = (clone $prevMonthQuery)->where('aspirasi.status', 'pending')->count();
+            $prevDiproses = (clone $prevMonthQuery)->whereIn('aspirasi.status', ['diproses', 'ditindaklanjuti'])->count();
+            $prevSelesai = (clone $prevMonthQuery)->where('aspirasi.status', 'selesai')->count();
 
             // Calculate percentage changes
             $changes['totalChange'] = $prevTotal > 0 ? round((($total - $prevTotal) / $prevTotal) * 100, 1) : 0;
@@ -185,12 +275,12 @@ class DashboardController extends Controller
         
         for ($month = 1; $month <= 12; $month++) {
             $total = (clone $baseQuery)
-                ->whereMonth('created_at', $month)
+                ->whereMonth('aspirasi.created_at', $month)
                 ->count();
                 
             $selesai = (clone $baseQuery)
-                ->whereMonth('created_at', $month)
-                ->where('status', 'selesai')
+                ->whereMonth('aspirasi.created_at', $month)
+                ->where('aspirasi.status', 'selesai')
                 ->count();
 
             $monthlyData['total'][] = $total;
@@ -208,16 +298,15 @@ class DashboardController extends Controller
         $monthlyData = [];
         
         for ($month = 1; $month <= 12; $month++) {
-            $total = DB::table('aspirasi')
-                ->whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->count();
-                
-            $selesai = DB::table('aspirasi')
-                ->whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->where('status', 'selesai')
-                ->count();
+            $query = DB::table('aspirasi')
+                ->whereYear('aspirasi.created_at', $year)
+                ->whereMonth('aspirasi.created_at', $month);
+
+            // Apply OPD filter
+            $query = $this->applyOpdFilterToRawQuery($query);
+
+            $total = (clone $query)->count();
+            $selesai = (clone $query)->where('aspirasi.status', 'selesai')->count();
 
             $monthlyData['total'][] = $total;
             $monthlyData['selesai'][] = $selesai;
@@ -233,10 +322,16 @@ class DashboardController extends Controller
     {
         $query = DB::table('aspirasi')
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
-            ->select('kategori_aspirasi.nama_kategori', DB::raw('COUNT(*) as total'))
+            ->select('kategori_aspirasi.nama_kategori as nama_kategori', DB::raw('COUNT(*) as total'))
             ->whereYear('aspirasi.created_at', $year)
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc');
+
+        // Apply OPD filter
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $query->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
 
         if ($categoryId) {
             $query->where('aspirasi.kategori_aspirasi_id', $categoryId);
@@ -245,7 +340,7 @@ class DashboardController extends Controller
         $results = $query->get();
 
         return [
-            'labels' => $results->pluck('nama')->toArray(),
+            'labels' => $results->pluck('nama_kategori')->toArray(),
             'values' => $results->pluck('total')->toArray()
         ];
     }
@@ -257,17 +352,24 @@ class DashboardController extends Controller
     {
         $currentYear = date('Y');
         
-        $results = DB::table('aspirasi')
+        $query = DB::table('aspirasi')
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
-            ->select('kategori_aspirasi.nama_kategori', DB::raw('COUNT(*) as total'))
+            ->select('kategori_aspirasi.nama_kategori as nama_kategori', DB::raw('COUNT(*) as total'))
             ->whereYear('aspirasi.created_at', $currentYear)
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc')
-            ->limit(6) // Limit untuk dashboard utama
-            ->get();
+            ->limit(6);
+
+        // Apply OPD filter
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $query->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
+
+        $results = $query->get();
 
         return [
-            'labels' => $results->pluck('nama')->toArray(),
+            'labels' => $results->pluck('nama_kategori')->toArray(),
             'values' => $results->pluck('total')->toArray()
         ];
     }
@@ -289,6 +391,12 @@ class DashboardController extends Controller
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('kategori_aspirasi.nama_kategori');
 
+        // Apply OPD filter
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $query->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
+
         if ($categoryId) {
             $query->where('aspirasi.kategori_aspirasi_id', $categoryId);
         }
@@ -309,8 +417,8 @@ class DashboardController extends Controller
     private function getJenisDistribution($baseQuery)
     {
         $results = (clone $baseQuery)
-            ->select('jenis_aspirasi', DB::raw('COUNT(*) as total'))
-            ->groupBy('jenis_aspirasi')
+            ->select('aspirasi.jenis_aspirasi', DB::raw('COUNT(*) as total'))
+            ->groupBy('aspirasi.jenis_aspirasi')
             ->orderBy('total', 'desc')
             ->get();
 
@@ -330,19 +438,26 @@ class DashboardController extends Controller
         $year = $request->get('year', date('Y'));
         $limit = $request->get('limit', 5);
 
-        $topCategories = DB::table('aspirasi')
+        $query = DB::table('aspirasi')
             ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
             ->select(
-                'kategori_aspirasi.nama_kategori',
+                'kategori_aspirasi.nama_kategori as nama_kategori',
                 DB::raw('COUNT(*) as total'),
-                DB::raw('SUM(CASE WHEN status = "selesai" THEN 1 ELSE 0 END) as selesai'),
-                DB::raw('ROUND((SUM(CASE WHEN status = "selesai" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as completion_rate')
+                DB::raw('SUM(CASE WHEN aspirasi.status = "selesai" THEN 1 ELSE 0 END) as selesai'),
+                DB::raw('ROUND((SUM(CASE WHEN aspirasi.status = "selesai" THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) as completion_rate')
             )
             ->whereYear('aspirasi.created_at', $year)
             ->groupBy('kategori_aspirasi.id', 'kategori_aspirasi.nama_kategori')
             ->orderBy('total', 'desc')
-            ->limit($limit)
-            ->get();
+            ->limit($limit);
+
+        // Apply OPD filter
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $query->where('kategori_aspirasi.opd_id', $userOpdId);
+        }
+
+        $topCategories = $query->get();
 
         return response()->json([
             'success' => true,
@@ -357,16 +472,20 @@ class DashboardController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
-        $responseTime = DB::table('aspirasi')
+        $query = DB::table('aspirasi')
             ->select(
-                DB::raw('AVG(DATEDIFF(tanggal_respon, created_at)) as avg_response_days'),
-                DB::raw('MIN(DATEDIFF(tanggal_respon, created_at)) as min_response_days'),
-                DB::raw('MAX(DATEDIFF(tanggal_respon, created_at)) as max_response_days'),
-                DB::raw('COUNT(CASE WHEN tanggal_respon IS NOT NULL THEN 1 END) as responded_count'),
+                DB::raw('AVG(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as avg_response_days'),
+                DB::raw('MIN(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as min_response_days'),
+                DB::raw('MAX(DATEDIFF(aspirasi.tanggal_respon, aspirasi.created_at)) as max_response_days'),
+                DB::raw('COUNT(CASE WHEN aspirasi.tanggal_respon IS NOT NULL THEN 1 END) as responded_count'),
                 DB::raw('COUNT(*) as total_count')
             )
-            ->whereYear('created_at', $year)
-            ->first();
+            ->whereYear('aspirasi.created_at', $year);
+
+        // Apply OPD filter
+        $query = $this->applyOpdFilterToRawQuery($query);
+
+        $responseTime = $query->first();
 
         return response()->json([
             'success' => true,
@@ -382,29 +501,30 @@ class DashboardController extends Controller
         $currentYear = date('Y');
         $currentMonth = date('n');
         
+        // Base query with OPD filter
+        $baseQuery = DB::table('aspirasi')->whereYear('aspirasi.created_at', $currentYear);
+        $baseQuery = $this->applyOpdFilterToRawQuery($baseQuery);
+        
         // Total counts
-        $totalAspirasi = Aspirasi::whereYear('created_at', $currentYear)->count();
-        $totalPending = Aspirasi::where('status', 'pending')->whereYear('created_at', $currentYear)->count();
-        $totalSelesai = Aspirasi::where('status', 'selesai')->whereYear('created_at', $currentYear)->count();
+        $totalAspirasi = (clone $baseQuery)->count();
+        $totalPending = (clone $baseQuery)->where('aspirasi.status', 'pending')->count();
+        $totalSelesai = (clone $baseQuery)->where('aspirasi.status', 'selesai')->count();
         $totalOpd = Opd::count();
         $totalLokasi = DataSpatial::count();
         
         // This month vs last month
-        $thisMonth = Aspirasi::whereYear('created_at', $currentYear)
-                            ->whereMonth('created_at', $currentMonth)
-                            ->count();
+        $thisMonthQuery = (clone $baseQuery)->whereMonth('aspirasi.created_at', $currentMonth);
+        $thisMonth = $thisMonthQuery->count();
                             
+        $lastMonthQuery = (clone $baseQuery);
         $lastMonth = $currentMonth > 1 ? 
-            Aspirasi::whereYear('created_at', $currentYear)
-                   ->whereMonth('created_at', $currentMonth - 1)
-                   ->count() : 0;
+            $lastMonthQuery->whereMonth('aspirasi.created_at', $currentMonth - 1)->count() : 0;
         
         $monthlyChange = $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : 0;
         
         // Response rate
-        $totalWithResponse = Aspirasi::whereNotNull('tanggal_respon')
-                                   ->whereYear('created_at', $currentYear)
-                                   ->count();
+        $totalWithResponseQuery = clone $baseQuery;
+        $totalWithResponse = $totalWithResponseQuery->whereNotNull('aspirasi.tanggal_respon')->count();
         $responseRate = $totalAspirasi > 0 ? round(($totalWithResponse / $totalAspirasi) * 100, 1) : 0;
 
         return response()->json([
@@ -430,18 +550,26 @@ class DashboardController extends Controller
     {
         $currentYear = date('Y');
         
-        // Get available years for filter
-        $availableYears = DB::table('aspirasi')
-            ->selectRaw('YEAR(created_at) as year')
+        // Get available years for filter with OPD restriction
+        $availableYearsQuery = DB::table('aspirasi')
+            ->selectRaw('YEAR(aspirasi.created_at) as year')
             ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
+            ->orderBy('year', 'desc');
 
-        // Get categories for filter
-        $categories = DB::table('kategori_aspirasi')
-            ->select('id', 'nama')
-            ->orderBy('nama')
-            ->get();
+        $availableYearsQuery = $this->applyOpdFilterToRawQuery($availableYearsQuery);
+        $availableYears = $availableYearsQuery->pluck('year');
+
+        // Get categories for filter (filtered by OPD if admin OPD)
+        $categoriesQuery = DB::table('kategori_aspirasi')
+            ->select('id', 'nama_kategori as nama')
+            ->orderBy('nama_kategori');
+
+        if ($this->isAdminOpd()) {
+            $userOpdId = Auth::user()->opd_id;
+            $categoriesQuery->where('opd_id', $userOpdId);
+        }
+
+        $categories = $categoriesQuery->get();
 
         return view('backend.pages.aspirasi.statistics', compact('currentYear', 'availableYears', 'categories'));
     }
