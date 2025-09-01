@@ -65,8 +65,7 @@ public function index(Request $request)
     // Search functionality
     if ($search) {
         $query->where(function ($q) use ($search) {
-            $q->where('title', 'ILIKE', "%{$search}%")
-              ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
+            $q->orWhere('deskripsi', 'ILIKE', "%{$search}%")
               ->orWhere('uuid', 'ILIKE', "%{$search}%")
               ->orWhereHas('kategori', function ($categoryQuery) use ($search) {
                   $categoryQuery->where('nama', 'ILIKE', "%{$search}%");
