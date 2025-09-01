@@ -21,8 +21,6 @@
             </nav>
         </div>
 
-
-
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="mdi mdi-alert-circle me-2"></i>
@@ -124,23 +122,68 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
-                            <div class="d-flex justify-content-between mb-3">
-                                <div>
-                                    <label for="rowsPerPageSelect" class="me-2">Tampilkan</label>
-                                    <select id="rowsPerPageSelect" class="form-select d-inline-block w-auto"
-                                        style="background-image: none;">
-                                        <option value="10" selected>10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                    </select>
-                                    <span class="ms-2">data per halaman</span>
-                                </div>
-                                <div>
-                                    <input type="text" id="searchInput" class="form-control" placeholder="Cari data...">
-                                </div>
-                            </div>
+                        <!-- Search and Filter Controls -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <form method="GET" id="filterForm" class="d-flex align-items-center">
+                                    <!-- Preserve existing parameters -->
+                                    @if (request('type'))
+                                        <input type="hidden" name="type" value="{{ request('type') }}">
+                                    @endif
+                                    @if (request('sub_type'))
+                                        <input type="hidden" name="sub_type" value="{{ request('sub_type') }}">
+                                    @endif
+                                    @if (request('year'))
+                                        <input type="hidden" name="year" value="{{ request('year') }}">
+                                    @endif
 
+                                    <label for="perPage" class="me-2">Tampilkan</label>
+                                    <select name="per_page" id="perPage" class="form-select d-inline-block w-auto me-2"
+                                        onchange="this.form.submit()">
+                                        <option value="10" {{ request('per_page', 20) == 10 ? 'selected' : '' }}>10
+                                        </option>
+                                        <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20
+                                        </option>
+                                        <option value="50" {{ request('per_page', 20) == 50 ? 'selected' : '' }}>50
+                                        </option>
+                                        <option value="100" {{ request('per_page', 20) == 100 ? 'selected' : '' }}>100
+                                        </option>
+                                    </select>
+                                    <span>data per halaman</span>
+                                </form>
+                            </div>
+                            <div class="col-md-6">
+                                <form method="GET" class="d-flex">
+                                    <!-- Preserve existing parameters -->
+                                    @if (request('type'))
+                                        <input type="hidden" name="type" value="{{ request('type') }}">
+                                    @endif
+                                    @if (request('sub_type'))
+                                        <input type="hidden" name="sub_type" value="{{ request('sub_type') }}">
+                                    @endif
+                                    @if (request('year'))
+                                        <input type="hidden" name="year" value="{{ request('year') }}">
+                                    @endif
+                                    @if (request('per_page'))
+                                        <input type="hidden" name="per_page" value="{{ request('per_page') }}">
+                                    @endif
+
+                                    <input type="text" name="search" class="form-control" placeholder="Cari data..."
+                                        value="{{ request('search') }}" id="searchInput">
+                                    <button type="submit" class="btn btn-outline-primary ms-2">
+                                        <i class="mdi mdi-magnify"></i>
+                                    </button>
+                                    @if (request('search'))
+                                        <a href="{{ request()->url() }}{{ request()->except('search') ? '?' . http_build_query(request()->except('search')) : '' }}"
+                                            class="btn btn-outline-secondary ms-1" title="Clear search">
+                                            <i class="mdi mdi-close"></i>
+                                        </a>
+                                    @endif
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
                             <table id="dataSpasialTable" class="table table-striped" style="width:100%">
                                 <thead>
                                     <tr>
@@ -154,15 +197,14 @@
                                         @if ($hasTahun)
                                             <th>Tahun</th>
                                         @endif
-
                                         <th>Tanggal</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($data as $item)
+                                    @forelse($data as $index => $item)
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $data->firstItem() + $index }}</td>
                                             <td>{{ $item->uuid }}</td>
                                             <td>
                                                 <label class="badge badge-gradient-info">
@@ -197,9 +239,9 @@
                                                     @endif
                                                 </div>
                                             </td>
-                                            @if ($item->tahun)
+                                            @if ($hasTahun)
                                                 <td class="text-center">
-                                                    {{ $item->tahun }}
+                                                    {{ $item->tahun ?? '-' }}
                                                 </td>
                                             @endif
                                             <td class="text-center">
@@ -218,7 +260,8 @@
                                                     </button>
 
                                                     <form action="{{ route('data-spatial.destroy', $item->uuid) }}"
-                                                        method="POST" style="display:inline-block;" data-confirm="delete">
+                                                        method="POST" style="display:inline-block;"
+                                                        data-confirm="delete">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button class="btn btn-sm btn-outline-danger" title="Hapus">
@@ -227,23 +270,42 @@
                                                     </form>
                                                 </div>
                                             </td>
-
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center py-4">
-                                                <i class="mdi mdi-database-remove mdi-48px text-muted"></i>
-                                                <br>
-                                                <h5 class="text-muted mt-2">Belum ada data spasial</h5>
-                                                <p class="text-muted">Klik tombol "Input GIS" untuk menambah data baru</p>
+                                            <td colspan="{{ $hasTahun ? '7' : '6' }}" class="text-center py-4">
+                                                @if (request('search'))
+                                                    <i class="mdi mdi-magnify mdi-48px text-muted"></i>
+                                                    <br>
+                                                    <h5 class="text-muted mt-2">Tidak ada data yang sesuai dengan pencarian
+                                                        "{{ request('search') }}"</h5>
+                                                    <p class="text-muted">Coba gunakan kata kunci yang berbeda atau hapus
+                                                        filter pencarian</p>
+                                                @else
+                                                    <i class="mdi mdi-database-remove mdi-48px text-muted"></i>
+                                                    <br>
+                                                    <h5 class="text-muted mt-2">Belum ada data spasial</h5>
+                                                    <p class="text-muted">Klik tombol "{{ $label }}" untuk menambah
+                                                        data baru</p>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                             </table>
-                            <nav>
-                                <ul class="pagination justify-content-center" id="pagination"></ul>
-                            </nav>
+
+                            <!-- Laravel Pagination -->
+                            @if ($data->hasPages())
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted">
+                                        Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari
+                                        {{ $data->total() }} data
+                                    </div>
+                                    <div>
+                                        {{ $data->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -251,12 +313,14 @@
         </div>
     </div>
 
+    <!-- Detail Modal -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
             <div class="modal-content shadow-sm border-0 rounded-3">
                 <div class="modal-header bg-primary text-white rounded-top-3 py-2">
-                    <h6 class="modal-title fw-semibold" id="detailModalLabel"><i class="fa fa-map-marker"
-                            style="margin-right: 6px;"></i>Detail Data Spasial</h6>
+                    <h6 class="modal-title fw-semibold" id="detailModalLabel">
+                        <i class="fa fa-map-marker" style="margin-right: 6px;"></i>Detail Data Spasial
+                    </h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
@@ -277,133 +341,6 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const tableBody = document.querySelector("#dataSpasialTable tbody");
-            const pagination = document.getElementById("pagination");
-            const searchInput = document.getElementById("searchInput");
-            const rowsPerPageSelect = document.getElementById("rowsPerPageSelect");
-
-            let currentPage = 1;
-            let rowsPerPage = parseInt(rowsPerPageSelect.value);
-
-            const originalRows = Array.from(tableBody.querySelectorAll("tr"));
-
-            function updateTable() {
-                const search = searchInput.value.toLowerCase();
-                rowsPerPage = parseInt(rowsPerPageSelect.value);
-
-                const filteredRows = originalRows.filter(row => {
-                    // Skip empty state row
-                    if (row.cells.length === 1 && row.cells[0].colSpan > 1) {
-                        return false;
-                    }
-                    return row.innerText.toLowerCase().includes(search);
-                });
-
-                const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-                currentPage = Math.min(currentPage, totalPages) || 1;
-
-                const start = (currentPage - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
-
-                // Clear table body
-                tableBody.innerHTML = "";
-
-                if (filteredRows.length === 0) {
-                    // Show no results message
-                    const noResultsRow = document.createElement('tr');
-                    noResultsRow.innerHTML = `
-                        <td colspan="6" class="text-center py-4">
-                            <i class="mdi mdi-magnify mdi-48px text-muted"></i>
-                            <br>
-                            <h5 class="text-muted mt-2">Tidak ada data yang sesuai</h5>
-                            <p class="text-muted">Coba gunakan kata kunci pencarian yang berbeda</p>
-                        </td>
-                    `;
-                    tableBody.appendChild(noResultsRow);
-                } else {
-                    // Show filtered results
-                    filteredRows.slice(start, end).forEach((row, index) => {
-                        const newRow = row.cloneNode(true);
-                        // Update row number
-                        newRow.cells[0].textContent = start + index + 1;
-                        tableBody.appendChild(newRow);
-                    });
-                }
-
-                renderPagination(totalPages, filteredRows.length);
-            }
-
-            function renderPagination(totalPages, totalFiltered) {
-                pagination.innerHTML = "";
-
-                if (totalFiltered <= rowsPerPage) {
-                    pagination.style.display = "none";
-                    return;
-                }
-
-                pagination.style.display = "flex";
-
-                // Previous button
-                if (currentPage > 1) {
-                    const prevLi = document.createElement("li");
-                    prevLi.classList.add("page-item");
-                    prevLi.innerHTML =
-                        `<a class="page-link" href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>`;
-                    prevLi.addEventListener("click", function(e) {
-                        e.preventDefault();
-                        currentPage--;
-                        updateTable();
-                    });
-                    pagination.appendChild(prevLi);
-                }
-
-                // Page numbers
-                const startPage = Math.max(1, currentPage - 2);
-                const endPage = Math.min(totalPages, currentPage + 2);
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const li = document.createElement("li");
-                    li.classList.add("page-item");
-                    if (i === currentPage) li.classList.add("active");
-                    li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-                    li.addEventListener("click", function(e) {
-                        e.preventDefault();
-                        currentPage = i;
-                        updateTable();
-                    });
-                    pagination.appendChild(li);
-                }
-
-                // Next button
-                if (currentPage < totalPages) {
-                    const nextLi = document.createElement("li");
-                    nextLi.classList.add("page-item");
-                    nextLi.innerHTML =
-                        `<a class="page-link" href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>`;
-                    nextLi.addEventListener("click", function(e) {
-                        e.preventDefault();
-                        currentPage++;
-                        updateTable();
-                    });
-                    pagination.appendChild(nextLi);
-                }
-            }
-
-            // Event listeners
-            searchInput.addEventListener("input", () => {
-                currentPage = 1;
-                updateTable();
-            });
-
-            rowsPerPageSelect.addEventListener("change", () => {
-                currentPage = 1;
-                updateTable();
-            });
-
-            updateTable(); // Initial load
-        });
-
         // Show details function
         function showDetails(id) {
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
@@ -421,15 +358,37 @@
 
             modal.show();
 
-            // Fetch data details (you can implement this endpoint in your controller)
+            // Fetch data details
             fetch(`/dashboard/data-spatial/${id}/details`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         modalBody.innerHTML = `
-                <div class="row justify-content-center small"><div class="card border-0 shadow-sm rounded-4 p-3 bg-light" style="max-width: 500px;"><h6 class="fw-semibold text-primary mb-3 border-bottom pb-1" style="font-size: 0.95rem;"><i class="fa fa-info-circle" style="margin-right: 6px;"></i>Informasi Dasar</h6><table class="table table-sm table-borderless mb-3"><tr><td class="fw-semibold text-muted">Data Type:</td><td>${data.data.data_type}</td></tr><tr><td class="fw-semibold text-muted">Sub Type:</td><td>${data.data.sub_type || '-'}</td></tr><tr><td class="fw-semibold text-muted">Tahun:</td><td>${data.data.tahun || '-'}</td></tr><tr><td class="fw-semibold text-muted">Kategori:</td><td>${data.data.kategori?.nama || '-'}</td></tr><tr><td class="fw-semibold text-muted">Deskripsi:</td><td>${data.data.deskripsi || '-'}</td></tr></table><h6 class="fw-semibold text-primary mb-2 border-bottom pb-1" style="font-size: 0.95rem;"><i class="fa fa-database" style="margin-right: 6px;"></i>Atribut DBF</h6><div style="max-height: 200px; overflow-y: auto;" class="border rounded-3 bg-white p-2">${data.data.dbf_attributes ? '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>Atribut</th><th>Nilai</th></tr></thead><tbody>'+Object.entries(data.data.dbf_attributes).map(([key,value])=>`<tr><td class="fw-semibold">${key}</td><td>${value}</td></tr>`).join('')+'</tbody></table>' : '<p class="text-muted mb-0">Tidak ada atribut DBF</p>'}</div></div></div>
-
-
+                            <div class="row justify-content-center small">
+                                <div class="card border-0 shadow-sm rounded-4 p-3 bg-light" style="max-width: 500px;">
+                                    <h6 class="fw-semibold text-primary mb-3 border-bottom pb-1" style="font-size: 0.95rem;">
+                                        <i class="fa fa-info-circle" style="margin-right: 6px;"></i>Informasi Dasar
+                                    </h6>
+                                    <table class="table table-sm table-borderless mb-3">
+                                        <tr><td class="fw-semibold text-muted">Data Type:</td><td>${data.data.data_type}</td></tr>
+                                        <tr><td class="fw-semibold text-muted">Sub Type:</td><td>${data.data.sub_type || '-'}</td></tr>
+                                        <tr><td class="fw-semibold text-muted">Tahun:</td><td>${data.data.tahun || '-'}</td></tr>
+                                        <tr><td class="fw-semibold text-muted">Kategori:</td><td>${data.data.kategori?.nama || '-'}</td></tr>
+                                        <tr><td class="fw-semibold text-muted">Deskripsi:</td><td>${data.data.deskripsi || '-'}</td></tr>
+                                    </table>
+                                    <h6 class="fw-semibold text-primary mb-2 border-bottom pb-1" style="font-size: 0.95rem;">
+                                        <i class="fa fa-database" style="margin-right: 6px;"></i>Atribut DBF
+                                    </h6>
+                                    <div style="max-height: 200px; overflow-y: auto;" class="border rounded-3 bg-white p-2">
+                                        ${data.data.dbf_attributes ? 
+                                            '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>Atribut</th><th>Nilai</th></tr></thead><tbody>'+
+                                            Object.entries(data.data.dbf_attributes).map(([key,value])=>`<tr><td class="fw-semibold">${key}</td><td>${value}</td></tr>`).join('')+
+                                            '</tbody></table>' : 
+                                            '<p class="text-muted mb-0">Tidak ada atribut DBF</p>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
                         `;
                     } else {
                         modalBody.innerHTML = `
@@ -450,55 +409,20 @@
                     `;
                 });
         }
+
+        // Auto-submit search form with delay
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
     </script>
 @endsection
 
 @push('styles')
     <style>
-        #rowsPerPageSelect:focus {
-            box-shadow: none;
-            border-color: #764ba2;
-        }
-
-        #pagination {
-            margin-top: 20px;
-        }
-
-        #pagination .page-item {
-            margin: 0 2px;
-        }
-
-        #pagination .page-link {
-            border: 1px solid #dee2e6;
-            color: #4b4b4b;
-            padding: 6px 12px;
-            border-radius: 4px;
-            background-color: #fff;
-            transition: all 0.3s ease;
-        }
-
-        #pagination .page-link:hover {
-            background-color: #667eea;
-            color: #fff;
-            border-color: #667eea;
-        }
-
-        #pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            border-color: transparent;
-            font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-group .btn {
-            margin-right: 2px;
-        }
-
-        .btn-group .btn:last-child {
-            margin-right: 0;
-        }
-
         .table td {
             vertical-align: middle;
         }
@@ -518,6 +442,51 @@
 
         .modal-body table tr:first-child td {
             border-top: none;
+        }
+
+        .pagination {
+            margin: 0;
+        }
+
+        .pagination .page-link {
+            border: 1px solid #dee2e6;
+            color: #4b4b4b;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+            margin: 0 2px;
+        }
+
+        .pagination .page-link:hover {
+            background-color: #667eea;
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: transparent;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        /* Search input styling */
+        #searchInput:focus {
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
+        }
+
+        /* Per page select styling */
+        #perPage:focus {
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
         }
     </style>
 @endpush

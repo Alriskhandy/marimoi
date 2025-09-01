@@ -25,11 +25,19 @@ class DataSpatialController extends Controller
     return Auth::user()?->role?->slug === 'admin-opd';
 }
 
-    
+
 public function index(Request $request) 
 {
     $type = $request->get('type');
     $subType = $request->get('sub_type');
+    $year = $request->get('year');
+    $search = $request->get('search');
+    $perPage = $request->get('per_page', 20); // Default 20 items per page
+
+    // Validate pagination limit
+    if (!in_array($perPage, [10, 20, 50, 100])) {
+        $perPage = 20;
+    }
 
     if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
         return redirect()->back();
@@ -39,20 +47,36 @@ public function index(Request $request)
         return redirect()->back(); 
     }
 
-    $year = $request->get('year');
     $query = DataSpatial::with(['kategori', 'kategori.parent']);
 
+    // Filter by data type
     $query->where('data_type', $type);
 
+    // Filter by sub type for proyek strategis
     if ($subType && $type === 'proyek_strategis') {
         $query->where('sub_type', $subType);
     }
 
+    // Filter by year if provided
     if ($year) {
         $query->where('tahun', $year);
     }
 
-    // ✅ Filter berdasarkan role pengguna
+    // Search functionality
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'ILIKE', "%{$search}%")
+              ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
+              ->orWhere('uuid', 'ILIKE', "%{$search}%")
+              ->orWhereHas('kategori', function ($categoryQuery) use ($search) {
+                  $categoryQuery->where('nama', 'ILIKE', "%{$search}%");
+              })
+              // Search in DBF attributes (JSON search for PostgreSQL)
+              ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+        });
+    }
+
+    // Filter berdasarkan role pengguna
     $user = Auth::user();
     $userRole = $user->role->slug ?? null;
 
@@ -61,7 +85,11 @@ public function index(Request $request)
         $query->where('user_id', $user->id);
     }
 
-    $data = $query->orderBy('created_at', 'desc')->paginate(20);
+    // Get paginated results
+    $data = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+    // Append query parameters to pagination links
+    $data->appends($request->query());
 
     // Ambil kategori
     $categoriesQuery = Category::with('children')->roots();
@@ -78,10 +106,11 @@ public function index(Request $request)
         'categories',
         'type',
         'subType',
-        'year'
+        'year',
+        'search',
+        'perPage'
     ));
 }
-
 
 
     public function create(Request $request)
