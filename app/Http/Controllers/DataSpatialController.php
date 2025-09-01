@@ -419,7 +419,7 @@ public function indexProyekStrategisDaerah($year = null)
         $query->where('user_id', Auth::user()->id);
     }
 
-    $data = $query->get();
+    $data = $query->paginate(100);
 
     $categories = Category::psd()->with('children')->roots()->get();
 
@@ -447,7 +447,7 @@ public function indexProyekStrategisNasional($year = null)
         $query->where('user_id', Auth::user()->id);
     }
 
-    $data = $query->get();
+   $data = $query->paginate(100);
 
     $categories = Category::psn()->with('children')->roots()->get();
 
