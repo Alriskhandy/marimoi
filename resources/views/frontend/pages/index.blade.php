@@ -307,15 +307,29 @@
                             $slug = $links[$status] ?? '#';
                         @endphp
                         <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
-                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] ?? $data->dbf_attributes['NAMAOBJ'] }}</h4>
+                            <h4 class="project-title">
+                                @if ($data->dbf_attributes['KEGIATAN'])
+                                    {{ $data->dbf_attributes['KEGIATAN']}}
+                                @elseif ($data->dbf_attributes['NAMAOBJ'])
+                                    {{ $data->dbf_attributes['NAMAOBJ']}}
+                                @else
+                                    ""
+                                @endif</h4>
                             <p class="project-location">
-                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] ?? $data->dbf_attributes['WADMPR'] }}
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                @if ($data->dbf_attributes['KABUPATEN'])
+                                    {{ $data->dbf_attributes['KABUPATEN']}}
+                                @elseif ($data->dbf_attributes['WADMPR'])
+                                    {{ $data->dbf_attributes['WADMPR']}}
+                                @else
+                                    ""
+                                @endif
                             </p>
 
                             <div class="progress-group">
                                 <div class="progress-header">
                                     <p class="progress-label">Realisasi Fisik</p>
-                                    <p class="progress-text">{{ $data->dbf_attributes['RFI'] ?? 0 }}</p>
+                                    <p class="progress-text">{{ $data->dbf_attributes['RFI'] ?? '0%' }}</p>
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: {{ $data->dbf_attributes['RFI'] ?? '0%' }}">
