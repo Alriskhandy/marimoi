@@ -218,7 +218,8 @@
                         <span>BAPPEDA MALUT</span>
                     </a>
                     <a href="https://opendata.malutprov.go.id/" class="web-link" target="_blank" rel="noopener">
-                        <img src="{{ asset('frontend/img/logo-opendata-malut.png') }}" alt="Opendata Maluku Utara" class="logo">
+                        <img src="{{ asset('frontend/img/logo-opendata-malut.png') }}" alt="Opendata Maluku Utara"
+                            class="logo">
                         <span>OPENDATA MALUT</span>
                     </a>
                     <a href="https://malut.bps.go.id/id" class="web-link" target="_blank" rel="noopener">
@@ -306,28 +307,30 @@
                             $slug = $links[$status] ?? '#';
                         @endphp
                         <div class="project-card" data-status="{{ $data->sub_type ?? $data->data_type }}">
-                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] ?? '' }}</h4>
+                            <h4 class="project-title">{{ $data->dbf_attributes['KEGIATAN'] ?? $data->dbf_attributes['NAMAOBJ'] }}</h4>
                             <p class="project-location">
-                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] ?? '' }}
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ $data->dbf_attributes['KABUPATEN'] ?? $data->dbf_attributes['WADMPR'] }}
                             </p>
 
                             <div class="progress-group">
                                 <div class="progress-header">
                                     <p class="progress-label">Realisasi Fisik</p>
-                                    <p class="progress-text">75%</p>
+                                    <p class="progress-text">{{ $data->dbf_attributes['RFI'] ?? 0 }}</p>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 75%"></div>
+                                    <div class="progress-fill" style="width: {{ $data->dbf_attributes['RFI'] ?? '0%' }}">
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="progress-group">
                                 <div class="progress-header">
                                     <p class="progress-label">Realisasi Anggaran</p>
-                                    <p class="progress-text">75%</p>
+                                    <p class="progress-text">{{ $data->dbf_attributes['RAN'] ?? 0 }}</p>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 75%"></div>
+                                    <div class="progress-fill" style="width: {{ $data->dbf_attributes['RAN'] ?? '0%' }}">
+                                    </div>
                                 </div>
                             </div>
                             <a class="project-button" href="{{ url($slug . '/' . $data->uuid) }}">Lihat Detail</a>
