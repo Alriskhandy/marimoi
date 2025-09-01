@@ -1598,10 +1598,11 @@
             return allowedTypes.includes(fileExtension);
         }
 
-        function validateFileSize(file, maxSizeMB = 50) {
+        function validateFileSize(file, maxSizeMB = 300) {
             const maxSizeBytes = maxSizeMB * 1024 * 1024;
             return file.size <= maxSizeBytes;
         }
+
 
         // Enhanced file select with validation
         function handleFileSelect(input, type) {
@@ -1633,7 +1634,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'File Terlalu Besar',
-                    text: 'Ukuran file maksimal 50MB',
+                    text: 'Ukuran file maksimal 300MB',
                     confirmButtonColor: '#667eea'
                 });
                 input.value = '';
