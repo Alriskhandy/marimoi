@@ -85,7 +85,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
-        
+    
          
         // Debug routes for file uploads
         Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');

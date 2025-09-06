@@ -24,6 +24,7 @@
 
     <!-- Layout styles -->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.js') }}">
     <!-- End layout styles -->
 
     <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
@@ -115,6 +116,7 @@
     <script src="{{ asset('backend/assets/js/settings.js') }}"></script>
     <script src="{{ asset('backend/assets/js/todolist.js') }}"></script>
     <script src="{{ asset('backend/assets/js/jquery.cookie.js') }}"></script>
+    <script src="{{ asset('DataTables/datatables.js') }}"></script>
     <!-- endinject -->
 
     <script src="{{ asset('backend/assets/vendors/sweetalert/sweetalert2.all.min.js') }}"></script>

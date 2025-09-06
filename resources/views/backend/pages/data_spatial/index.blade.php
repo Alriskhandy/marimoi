@@ -21,6 +21,14 @@
             </nav>
         </div>
 
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="mdi mdi-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="mdi mdi-alert-circle me-2"></i>
@@ -122,6 +130,27 @@
                             </div>
                         </div>
 
+                        <!-- Bulk Actions Bar -->
+                        <div id="bulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="mdi mdi-checkbox-multiple-marked me-2"></i>
+                                    <span id="selectedCount">0</span> item dipilih
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                        <i class="mdi mdi-trash-can-outline me-1"></i>
+                                        Hapus Terpilih
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="clearSelection()">
+                                        <i class="mdi mdi-close me-1"></i>
+                                        Batal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Search and Filter Controls -->
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -183,10 +212,18 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
+                        <div class="table-responsive ps-3">
                             <table id="dataSpasialTable" class="table table-striped" style="width:100%">
                                 <thead>
                                     <tr>
+                                        <th style="width: 40px;">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                                <label class="form-check-label" for="selectAll">
+                                                    <span class="visually-hidden">Select All</span>
+                                                </label>
+                                            </div>
+                                        </th>
                                         <th>No</th>
                                         <th>KODE</th>
                                         <th>Kategori</th>
@@ -204,6 +241,15 @@
                                 <tbody>
                                     @forelse($data as $index => $item)
                                         <tr>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input class="form-check-input row-checkbox" type="checkbox"
+                                                        value="{{ $item->id }}" id="check-{{ $item->id }}">
+                                                    <label class="form-check-label" for="check-{{ $item->id }}">
+                                                        <span class="visually-hidden">Select row</span>
+                                                    </label>
+                                                </div>
+                                            </td>
                                             <td>{{ $data->firstItem() + $index }}</td>
                                             <td>{{ $item->uuid }}</td>
                                             <td>
@@ -273,7 +319,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="{{ $hasTahun ? '7' : '6' }}" class="text-center py-4">
+                                            <td colspan="{{ $hasTahun ? '8' : '7' }}" class="text-center py-4">
                                                 @if (request('search'))
                                                     <i class="mdi mdi-magnify mdi-48px text-muted"></i>
                                                     <br>
@@ -340,7 +386,176 @@
         </div>
     </div>
 
+    <!-- Bulk Delete Confirmation Modal -->
+    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="bulkDeleteModalLabel">
+                        <i class="mdi mdi-alert-circle me-2"></i>Konfirmasi Hapus
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="mdi mdi-trash-can-outline text-danger" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3">Apakah Anda yakin?</h5>
+                        <p class="text-muted">
+                            Anda akan menghapus <strong id="deleteCount">0</strong> data spasial yang dipilih.
+                            <br>Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmBulkDelete">
+                        <i class="mdi mdi-trash-can-outline me-1"></i>Hapus Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Delete Form (Hidden) -->
+    <form id="bulkDeleteForm" method="POST" action="{{ route('data-spatial.destroy', 'bulk-destroy') }}"
+        style="display: none;">
+        @csrf
+        @method('DELETE')
+        <div id="bulkDeleteIds"></div>
+        <!-- Debug input -->
+        <input type="hidden" name="debug_source" value="bulk_delete_form">
+        <input type="hidden" name="current_url" value="{{ request()->fullUrl() }}">
+    </form>
+
     <script>
+        // Bulk actions functionality
+        let selectedItems = [];
+
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            const isChecked = this.checked;
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                if (isChecked && !selectedItems.includes(checkbox.value)) {
+                    selectedItems.push(checkbox.value);
+                } else if (!isChecked) {
+                    selectedItems = selectedItems.filter(id => id !== checkbox.value);
+                }
+            });
+
+            updateBulkActionsBar();
+        });
+
+        // Individual checkbox functionality
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-checkbox')) {
+                const value = e.target.value;
+
+                if (e.target.checked) {
+                    if (!selectedItems.includes(value)) {
+                        selectedItems.push(value);
+                    }
+                } else {
+                    selectedItems = selectedItems.filter(id => id !== value);
+                    document.getElementById('selectAll').checked = false;
+                }
+
+                updateBulkActionsBar();
+                updateSelectAllState();
+            }
+        });
+
+        // Update bulk actions bar visibility and count
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+
+            if (selectedItems.length > 0) {
+                bulkActionsBar.classList.remove('d-none');
+                selectedCount.textContent = selectedItems.length;
+            } else {
+                bulkActionsBar.classList.add('d-none');
+            }
+        }
+
+        // Update select all checkbox state
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        // Clear selection
+        function clearSelection() {
+            selectedItems = [];
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            document.getElementById('selectAll').indeterminate = false;
+            updateBulkActionsBar();
+        }
+
+        // Bulk delete functionality
+        function bulkDelete() {
+            if (selectedItems.length === 0) {
+                alert('Silakan pilih data yang akan dihapus');
+                return;
+            }
+
+            document.getElementById('deleteCount').textContent = selectedItems.length;
+            const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+            modal.show();
+        }
+
+        // Confirm bulk delete
+        document.getElementById('confirmBulkDelete').addEventListener('click', function() {
+            // Debug log
+            console.log('Selected items for deletion:', selectedItems);
+
+            if (selectedItems.length === 0) {
+                alert('Tidak ada data yang dipilih untuk dihapus');
+                return;
+            }
+
+            // Create hidden inputs for selected IDs
+            const bulkDeleteIds = document.getElementById('bulkDeleteIds');
+            bulkDeleteIds.innerHTML = '';
+
+            selectedItems.forEach((id, index) => {
+                console.log(`Adding ID ${index + 1}:`, id);
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                bulkDeleteIds.appendChild(input);
+            });
+
+            // Debug: Show form data before submit
+            const formData = new FormData(document.getElementById('bulkDeleteForm'));
+            console.log('Form data being submitted:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+
+            // Submit the form
+            document.getElementById('bulkDeleteForm').submit();
+        });
+
         // Show details function
         function showDetails(id) {
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
@@ -487,6 +702,37 @@
         #perPage:focus {
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
             border-color: #667eea;
+        }
+
+        /* Checkbox styling */
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .form-check-input:focus {
+            border-color: #667eea;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Bulk actions bar */
+        #bulkActionsBar {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+            color: #1976d2;
+        }
+
+        /* Table row hover effect */
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Custom checkbox indeterminate state */
+        .form-check-input:indeterminate {
+            background-color: #667eea;
+            border-color: #667eea;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
         }
     </style>
 @endpush

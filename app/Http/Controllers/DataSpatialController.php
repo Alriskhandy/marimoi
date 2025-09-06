@@ -16,6 +16,7 @@ use ZipArchive;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class DataSpatialController extends Controller
 {
@@ -334,15 +335,7 @@ public function edit($uuid)
     }
 }
 
-    public function destroy($uuid)
-{
-    $data = DataSpatial::where('uuid', $uuid)->firstOrFail();
-    $redirectRoute = $this->getRedirectAfterDestroy($data);
-    $data->delete();
 
-    return redirect()->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
-        ->with('success', 'Data berhasil dihapus.');
-}
 
     // === METHODS KHUSUS BERDASARKAN DATA TYPE ===
     
@@ -903,28 +896,6 @@ private function getRedirectAfterUpdate(DataSpatial $data)
     ]));
 }
 
-    private function getRedirectAfterDestroy(DataSpatial $data)
-{
-    $baseRoute = 'data-spatial.index';
-
-    $params = ['type' => $data->data_type];
-
-    if ($data->data_type === 'proyek_strategis') {
-        $params['sub_type'] = $data->sub_type;
-
-        if ($data->tahun) {
-            // Redirect ke route tahun proyek strategis
-            $route = $data->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-            return ['route' => $route, 'params' => ['year' => $data->tahun]];
-        } else {
-            // Redirect ke route index proyek strategis
-            $route = $data->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-            return ['route' => $route];
-        }
-    }
-
-    return ['route' => $baseRoute, 'params' => $params];
-}
 
 
     private function parseKmlGeometry($xpath, $placemark)
@@ -1554,5 +1525,343 @@ private function getRedirectAfterUpdate(DataSpatial $data)
                 'category_type' => $categoryType
             ]
         ]);
+    }
+
+    /**
+     * Enhanced destroy method with bulk delete capability
+     */
+    public function destroy($uuid)
+    {
+        try {
+            Log::info('Destroy method called', [
+                'uuid' => $uuid,
+                'user_id' => auth()->id(),
+                'request_method' => request()->method(),
+                'all_request_data' => request()->all()
+            ]);
+
+            // Check if this is a bulk delete request
+            if ($uuid === 'bulk-destroy') {
+                return $this->handleBulkDestroy(request());
+            }
+
+            // Regular single delete
+            $data = DataSpatial::where('uuid', $uuid)->first();
+            
+            if (!$data) {
+                Log::warning('Data not found for deletion', [
+                    'uuid' => $uuid,
+                    'user_id' => auth()->id()
+                ]);
+                
+                return redirect()
+                    ->back()
+                    ->with('error', 'Data tidak ditemukan atau sudah terhapus.');
+            }
+
+            // Filter berdasarkan role pengguna (keamanan)
+            $user = auth()->user();
+            $userRole = $user->role->slug ?? null;
+            
+            if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $data->user_id !== $user->id) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'Anda tidak memiliki izin untuk menghapus data ini.');
+            }
+
+            $redirectRoute = $this->getRedirectAfterDestroy($data);
+            $data->delete();
+
+            Log::info('Single delete completed', [
+                'uuid' => $uuid,
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()
+                ->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
+                ->with('success', 'Data berhasil dihapus.');
+                
+        } catch (\Exception $e) {
+            Log::error('Delete error: ' . $e->getMessage(), [
+                'uuid' => $uuid,
+                'user_id' => auth()->id(),
+                'error' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus data.');
+        }
+    }
+
+    /**
+     * Handle bulk delete requests
+     */
+    private function handleBulkDestroy(Request $request)
+    {
+        try {
+            Log::info('=== BULK DELETE HANDLER START ===', [
+                'all_request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'has_ids' => $request->has('ids'),
+                'ids_value' => $request->input('ids'),
+                'request_method' => $request->method()
+            ]);
+
+            // Validasi input yang lebih fleksibel
+            if (!$request->has('ids') || empty($request->ids)) {
+                Log::error('No IDs provided in bulk delete', [
+                    'request_all' => $request->all(),
+                    'has_ids' => $request->has('ids'),
+                    'ids_empty' => empty($request->ids)
+                ]);
+                return redirect()
+                    ->back()
+                    ->with('error', 'Tidak ada data yang dipilih untuk dihapus.');
+            }
+
+            // Validasi tanpa exists rule dulu untuk debugging
+            $validatedData = $request->validate([
+                'ids' => 'required|array|min:1',
+                'ids.*' => 'required' // Hapus |integer|exists dulu
+            ]);
+
+            Log::info('Validation passed', ['validated_data' => $validatedData]);
+
+            // Convert to integers dan filter yang valid
+            $ids = array_filter(array_map('intval', $request->ids));
+            
+            if (empty($ids)) {
+                Log::error('No valid IDs after conversion', [
+                    'original_ids' => $request->ids,
+                    'converted_ids' => $ids
+                ]);
+                return redirect()
+                    ->back()
+                    ->with('error', 'ID yang dipilih tidak valid.');
+            }
+
+            Log::info('Processing bulk delete for IDs', [
+                'original_ids' => $request->ids,
+                'converted_ids' => $ids,
+                'ids_count' => count($ids)
+            ]);
+
+            // Cek apakah tabel data_spatials ada dan memiliki data
+            $totalRecords = DataSpatial::count();
+            Log::info('Database check', [
+                'total_records_in_table' => $totalRecords,
+                'table_exists' => \Schema::hasTable('data_spatials')
+            ]);
+
+            // Get data to delete dengan debugging
+            $dataToDelete = DataSpatial::whereIn('id', $ids)->get();
+            
+            Log::info('Database query result', [
+                'requested_ids' => $ids,
+                'found_count' => $dataToDelete->count(),
+                'found_ids' => $dataToDelete->pluck('id')->toArray(),
+                'sample_all_ids' => DataSpatial::pluck('id')->take(10)->toArray()
+            ]);
+            
+            if ($dataToDelete->isEmpty()) {
+                Log::warning('No data found for bulk delete', [
+                    'ids' => $ids,
+                    'total_in_db' => $totalRecords,
+                    'sample_records' => DataSpatial::select('id', 'uuid', 'deskripsi')->take(5)->get()->toArray()
+                ]);
+                
+                return redirect()
+                    ->back()
+                    ->with('error', 'Data yang dipilih tidak ditemukan dalam database. IDs: ' . implode(', ', $ids));
+            }
+
+            // Security check
+            $user = auth()->user();
+            $userRole = $user->role->slug ?? null;
+            
+            Log::info('Security check', [
+                'user_id' => $user->id,
+                'user_role' => $userRole,
+                'is_admin' => in_array($userRole, ['super-admin', 'admin-bappeda'])
+            ]);
+            
+            if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+                $originalCount = $dataToDelete->count();
+                $dataToDelete = $dataToDelete->where('user_id', $user->id);
+                
+                Log::info('User permission filter applied', [
+                    'original_count' => $originalCount,
+                    'after_filter_count' => $dataToDelete->count(),
+                    'user_owned_ids' => $dataToDelete->pluck('id')->toArray()
+                ]);
+                
+                if ($dataToDelete->isEmpty()) {
+                    return redirect()
+                        ->back()
+                        ->with('error', 'Anda tidak memiliki izin untuk menghapus data yang dipilih.');
+                }
+            }
+
+            // Get redirect route
+            $firstItem = $dataToDelete->first();
+            $redirectRoute = $this->getRedirectAfterDestroy($firstItem);
+            
+            Log::info('Redirect route determined', $redirectRoute);
+
+            // Perform deletion
+            $idsToDelete = $dataToDelete->pluck('id')->toArray();
+            
+            Log::info('About to delete', [
+                'ids_to_delete' => $idsToDelete,
+                'count' => count($idsToDelete)
+            ]);
+            
+            $deletedCount = DataSpatial::whereIn('id', $idsToDelete)->delete();
+
+            Log::info('Bulk delete completed', [
+                'deleted_count' => $deletedCount,
+                'deleted_ids' => $idsToDelete
+            ]);
+
+            $message = $deletedCount === 1 
+                ? "Berhasil menghapus {$deletedCount} data spasial."
+                : "Berhasil menghapus {$deletedCount} data spasial.";
+
+            Log::info('=== BULK DELETE HANDLER SUCCESS ===');
+
+            return redirect()
+                ->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
+                ->with('success', $message);
+
+        } catch (ValidationException $e) {
+            Log::error('Bulk delete validation error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            return redirect()
+                ->back()
+                ->with('error', 'Data yang dipilih tidak valid: ' . implode(', ', array_flatten($e->errors())));
+                
+        } catch (\Exception $e) {
+            Log::error('Bulk delete error: ' . $e->getMessage(), [
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage());
+        }
+    }
+    /**
+     * Determine the appropriate redirect route after deletion
+     * 
+     * @param DataSpatial $data
+     * @return array
+     */
+    private function getRedirectAfterDestroy(DataSpatial $data)
+    {
+        // Dapatkan parameter dari request saat ini
+        $currentType = request()->get('type');
+        $currentSubType = request()->get('sub_type');
+        
+        // Prioritaskan parameter dari request, baru dari data
+        $dataType = $currentType ?? $data->data_type ?? 'tematik';
+        $subType = $currentSubType ?? $data->sub_type;
+
+        Log::info('Determining redirect route', [
+            'current_type' => $currentType,
+            'current_sub_type' => $currentSubType,
+            'data_type' => $data->data_type,
+            'data_sub_type' => $data->sub_type,
+            'final_type' => $dataType,
+            'final_sub_type' => $subType
+        ]);
+
+        // Route mapping sesuai dengan controller yang ada
+        $routeMap = [
+            'proyek_strategis' => [
+                'psn' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psn']],
+                'psd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psd']],
+            ],
+            'pokir_dprd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'pokir_dprd']],
+            'usulan_musrenbang' => ['route' => 'data-spatial.index', 'params' => ['type' => 'usulan_musrenbang']],
+            'tematik' => ['route' => 'data-spatial.index', 'params' => ['type' => 'tematik']],
+        ];
+
+        // Cek apakah ada route khusus
+        if (isset($routeMap[$dataType])) {
+            if (is_array($routeMap[$dataType]) && $subType && isset($routeMap[$dataType][$subType])) {
+                return $routeMap[$dataType][$subType];
+            } elseif (isset($routeMap[$dataType]['route'])) {
+                return $routeMap[$dataType];
+            }
+        }
+
+        // Default ke data-spatial.index dengan parameter
+        $params = array_filter([
+            'type' => $dataType,
+            'sub_type' => $subType
+        ]);
+
+        return [
+            'route' => 'data-spatial.index',
+            'params' => $params
+        ];
+    }
+
+    /**
+     * Show details for a specific data spatial item (for AJAX)
+     * 
+     * @param string $uuid
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function details($uuid)
+    {
+        try {
+            $data = DataSpatial::with('kategori')
+                ->where('uuid', $uuid)
+                ->first();
+
+            if (!$data) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan.'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'uuid' => $data->uuid,
+                    'data_type' => $data->data_type,
+                    'sub_type' => $data->sub_type,
+                    'tahun' => $data->tahun,
+                    'deskripsi' => $data->deskripsi,
+                    'title' => $data->title ?? $data->deskripsi,
+                    'dbf_attributes' => $data->dbf_attributes,
+                    'kategori' => $data->kategori ? [
+                        'nama' => $data->kategori->nama
+                    ] : null,
+                    'created_at' => $data->created_at?->format('d M Y H:i'),
+                    'updated_at' => $data->updated_at?->format('d M Y H:i')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Details fetch error: ' . $e->getMessage(), [
+                'uuid' => $uuid,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil detail data.'
+            ], 500);
+        }
     }
 }
