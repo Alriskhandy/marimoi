@@ -7,7 +7,7 @@
  *   https://datatables.net/download/#dt/jq-3.7.0/dt-2.3.3/kt-2.12.1
  *
  * Included libraries:
- *   jQuery 3.7.0, DataTables 2.3.3, KeyTable 2.12.1
+ *   jQuery 3.7.1, DataTables 2.3.3, KeyTable 2.12.1
  */
 
 /*!
@@ -17257,7 +17257,7 @@ return jQuery;
 			}
 	
 			if ( type == 'alert' ) {
-				alert( msg );
+				console.warn( msg );
 			}
 			else if ( type == 'throw' ) {
 				throw new Error(msg);
@@ -20541,7 +20541,7 @@ return jQuery;
 	 *  @dtopt API-Static
 	 *
 	 *  @example
-	 *    alert( $.fn.dataTable.versionCheck( '1.9.0' ) );
+	 *   
 	 */
 	DataTable.versionCheck = function( version, version2 )
 	{
@@ -23257,11 +23257,8 @@ return jQuery;
 			dt = new Date(d);
 		}
 		else {
-			if (! __mlWarning) {
-				alert('DataTables warning: Formatted date without Moment.js or Luxon - https://datatables.net/tn/17');
-			}
-	
-			__mlWarning = true;
+			
+			console.warn( 'DataTables warning: Please include Moment.js or Luxon for date rendering and sorting' );
 		}
 	
 		return dt;

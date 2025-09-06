@@ -26,24 +26,18 @@ class DataSpatialController extends Controller
     return Auth::user()?->role?->slug === 'admin-opd';
 }
 
-
 public function index(Request $request) 
 {
     $type = $request->get('type');
     $subType = $request->get('sub_type');
     $year = $request->get('year');
-    $search = $request->get('search');
-    $perPage = $request->get('per_page', 20); // Default 20 items per page
 
-    // Validate pagination limit
-    if (!in_array($perPage, [10, 20, 50, 100])) {
-        $perPage = 20;
-    }
-
+    // Validasi type
     if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
         return redirect()->back();
     }
 
+    // Validasi sub_type untuk proyek strategis
     if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
         return redirect()->back(); 
     }
@@ -63,19 +57,6 @@ public function index(Request $request)
         $query->where('tahun', $year);
     }
 
-    // Search functionality
-    if ($search) {
-        $query->where(function ($q) use ($search) {
-            $q->orWhere('deskripsi', 'ILIKE', "%{$search}%")
-              ->orWhere('uuid', 'ILIKE', "%{$search}%")
-              ->orWhereHas('kategori', function ($categoryQuery) use ($search) {
-                  $categoryQuery->where('nama', 'ILIKE', "%{$search}%");
-              })
-              // Search in DBF attributes (JSON search for PostgreSQL)
-              ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
-        });
-    }
-
     // Filter berdasarkan role pengguna
     $user = Auth::user();
     $userRole = $user->role->slug ?? null;
@@ -85,11 +66,9 @@ public function index(Request $request)
         $query->where('user_id', $user->id);
     }
 
-    // Get paginated results
-    $data = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
-    // Append query parameters to pagination links
-    $data->appends($request->query());
+    // Get all results (tidak menggunakan paginate)
+    // DataTables akan handle pagination di frontend
+    $data = $query->orderBy('created_at', 'desc')->get();
 
     // Ambil kategori
     $categoriesQuery = Category::with('children')->roots();
@@ -106,9 +85,7 @@ public function index(Request $request)
         'categories',
         'type',
         'subType',
-        'year',
-        'search',
-        'perPage'
+        'year'
     ));
 }
 
