@@ -257,34 +257,13 @@
                                                     {{ $item->kategori->nama ?? 'Tidak ada kategori' }}
                                                 </label>
                                             </td>
-                                            <td>
+                                            <td style="word-wrap: break-word; white-space: normal; max-width: 300px;">
                                                 <div>
                                                     <strong>{{ $item->title ?? ($item->deskripsi ?? 'Tanpa Nama') }}</strong>
-                                                    @if ($item->deskripsi && $item->title !== $item->deskripsi)
-                                                        <br><small
-                                                            class="text-muted">{{ Str::limit($item->deskripsi, 50) }}</small>
-                                                    @endif
-                                                    @if ($item->dbf_attributes && is_array($item->dbf_attributes))
-                                                        @php
-                                                            $nameFields = ['NAMA', 'NAME', 'NAMA_OBJEK', 'NAMOBJ'];
-                                                            $displayName = null;
-                                                            foreach ($nameFields as $field) {
-                                                                if (
-                                                                    isset($item->dbf_attributes[$field]) &&
-                                                                    !empty($item->dbf_attributes[$field])
-                                                                ) {
-                                                                    $displayName = $item->dbf_attributes[$field];
-                                                                    break;
-                                                                }
-                                                            }
-                                                        @endphp
-                                                        @if ($displayName && $displayName !== ($item->title ?? $item->deskripsi))
-                                                            <br><small class="text-info"><i class="mdi mdi-database"></i>
-                                                                {{ $displayName }}</small>
-                                                        @endif
-                                                    @endif
+
                                                 </div>
                                             </td>
+
                                             @if ($hasTahun)
                                                 <td class="text-center">
                                                     {{ $item->tahun ?? '-' }}
@@ -429,7 +408,8 @@
         <input type="hidden" name="debug_source" value="bulk_delete_form">
         <input type="hidden" name="current_url" value="{{ request()->fullUrl() }}">
     </form>
-
+@endsection
+@push('scripts')
     <script>
         // Bulk actions functionality
         let selectedItems = [];
@@ -634,10 +614,52 @@
             }, 500);
         });
     </script>
-@endsection
-
+@endpush
 @push('styles')
     <style>
+        .form-check-input {
+            appearance: none;
+            /* hilangkan style bawaan browser */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+
+            width: 18px;
+            height: 18px;
+            border: 2px solid #44444469;
+            /* garis tegas */
+            border-radius: 4px;
+            /* kotak agak rounded */
+            background-color: #fff;
+            /* latar tetap putih */
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0);
+            /* shadow halus */
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* efek hover sebelum dicentang */
+        .form-check-input:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+        }
+
+        /* saat dicentang */
+        .form-check-input:checked {
+            background-color: #007bff;
+            border-color: #007bff;
+            box-shadow: 0 0 6px rgba(0, 123, 255, 0.6);
+        }
+
+        /* bikin tanda centang custom */
+        .form-check-input:checked::after {
+            content: "✔";
+            color: #fff;
+            font-size: 14px;
+            position: absolute;
+            top: 0;
+            left: 3px;
+        }
+
         .table td {
             vertical-align: middle;
         }
