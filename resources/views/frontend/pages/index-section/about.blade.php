@@ -28,7 +28,7 @@
             <!-- Right Side: Person's Photo -->
             <div class="about-right-section">
                 <div class="person-photo">
-                    <img src="{{ asset('frontend/img/2x3.png') }}" alt="Foto Dr. Muhammad Sarmin S. Adam, S.STP, M.Si"
+                    <img src="{{ asset('frontend/img/foto-2x3.png') }}" alt="Foto Dr. Muhammad Sarmin S. Adam, S.STP, M.Si"
                         loading="lazy">
                 </div>
             </div>
