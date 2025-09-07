@@ -1,0 +1,1098 @@
+/* ==========================================================================
+   6. INDIKATOR PEMBANGUNAN SECTION
+   ========================================================================== */
+
+/* Indikator Pembangunan Strategis Section */
+.indikator-pembangunan {
+    background: #000;
+    color: #fff;
+    width: 100vw;
+    max-width: none;
+    position: relative;
+    padding: 0;
+    margin: 0;
+    margin-left: calc(-50vw + 50%);
+    overflow: hidden;
+    perspective: 300px;
+    min-height: 75vh;
+    display: flex;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Full Section Parallax Background */
+.indikator-pembangunan .parallax-bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: auto; /* Optimized for 4 slides - 3x height for better coverage */
+    aspect-ratio: 16/9;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    z-index: 1;
+    opacity: 0.8;
+    transform-origin: center top;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+}
+
+/* Touch interaction improvements for mobile/tablet */
+@media (max-width: 1024px) {
+    .indikator-pembangunan {
+        touch-action: pan-y; /* Allow vertical scrolling but enable custom horizontal handling */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .indikator-pembangunan .parallax-bg {
+        transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            opacity 0.2s ease;
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-pembangunan {
+        touch-action: manipulation; /* Optimize touch interactions */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+}
+
+.indikator-pembangunan .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+/* Content Layout: 5:7 ratio for Left:Right */
+.indikator-content-layout {
+    display: grid;
+    grid-template-columns: 5fr 7fr auto;
+    gap: 60px;
+    align-items: center;
+    min-height: 400px;
+    position: relative;
+}
+
+/* Mobile layout adjustments for navigation ordering */
+@media (max-width: 1024px) {
+    .indikator-content-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        min-height: auto;
+        padding: 40px 0;
+    }
+
+    .indikator-left-section {
+        order: 1;
+        text-align: center;
+    }
+
+    .indikator-description-section {
+        order: 2;
+        text-align: center;
+    }
+
+    /* Navigation buttons come between description and nav dots */
+    .indikator-nav-buttons {
+        order: 3;
+    }
+
+    .indikator-navigation {
+        order: 4; /* Nav dots come after nav buttons */
+    }
+}
+
+/* Left Side - Title Only Section */
+.indikator-left-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.section-title-left {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    line-height: 1.2;
+    text-align: left;
+}
+
+/* Dynamic Subtitle - Covering Right Section */
+.dynamic-subtitle {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 20px 0;
+    font-family: "Poppins", sans-serif;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    letter-spacing: -0.5px;
+    width: 100%;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.subtitle-icon {
+    font-size: 1.8rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.subtitle-text {
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+/* Right Side - Subtitle + Dynamic Description */
+.indikator-description-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.dynamic-description {
+    font-size: 1.2rem;
+    line-height: 1.7;
+    color: #f0f0f0;
+    margin: 0;
+    text-align: justify;
+    font-family: "Inter", sans-serif;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Desktop: Vertical slide animation classes */
+@media (min-width: 1025px) {
+    .dynamic-subtitle.slide-in {
+        animation: slideInVertical 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .dynamic-description.slide-in {
+        animation: slideInVertical 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            0.1s both;
+    }
+
+    @keyframes slideInVertical {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* Mobile/Tablet: Horizontal slide animation classes */
+@media (max-width: 1024px) {
+    .dynamic-subtitle.slide-in {
+        animation: slideInHorizontal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .dynamic-description.slide-in {
+        animation: slideInHorizontal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            0.1s both;
+    }
+
+    @keyframes slideInHorizontal {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+}
+
+.dynamic-description ul {
+    margin: 15px 0 0 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.dynamic-description li {
+    margin-bottom: 12px;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.6;
+}
+
+.dynamic-description li:before {
+    content: "•";
+    color: var(--primary);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    font-size: 1.4rem;
+}
+
+.dynamic-description li:last-child {
+    margin-bottom: 0;
+}
+
+/* Navigation Dots */
+.indikator-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* Desktop: Move navigation dots to the right side between buttons */
+@media (min-width: 1025px) {
+    .indikator-navigation {
+        position: absolute;
+        right: 52px; /* Align with navigation buttons */
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        gap: 8px; /* Smaller gap for better vertical alignment */
+    }
+}
+
+/* Show swipe hint only on touch devices */
+@media (max-width: 1024px) and (pointer: coarse) {
+    .indikator-navigation::after {
+        display: block;
+    }
+
+    /* Change navigation layout to horizontal for mobile/tablet */
+    .indikator-navigation {
+        flex-direction: row;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-navigation {
+        gap: 15px;
+        margin-top: 25px;
+    }
+}
+
+.nav-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    position: relative;
+}
+
+/* Desktop: Remove right positioning and center the dots */
+@media (min-width: 1025px) {
+    .nav-dot {
+        right: auto; /* Remove right positioning */
+    }
+}
+
+.nav-dot.active {
+    background: #fff;
+    transform: scale(1.3);
+}
+
+.nav-dot:hover {
+    background: rgba(255, 255, 255, 0.7);
+    transform: scale(1.2);
+}
+
+.indikator-pembangunan .nav-dot.active {
+    background: rgba(0, 127, 255, 0.9);
+    transform: scale(1.4);
+    box-shadow: 0 0 8px rgba(0, 127, 255, 0.5);
+}
+
+.indikator-pembangunan .nav-dot:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.7);
+    transform: scale(1.2);
+}
+
+/* Enhanced touch targets for mobile/tablet */
+@media (max-width: 1024px) {
+    .nav-dot {
+        width: 14px;
+        height: 14px;
+        margin: 0 5px;
+    }
+
+    /* Indikator Section - Mobile Nav Dots */
+    .indikator-pembangunan .nav-dot {
+        width: 8px;
+        height: 8px;
+        margin: 0 4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-dot {
+        /* Slightly larger for touch */
+        width: 16px;
+        height: 16px;
+    }
+
+    .nav-dot::before {
+        content: "";
+        position: absolute;
+        top: -12px;
+        left: -12px;
+        right: -12px;
+        bottom: -12px;
+        background: transparent;
+        border-radius: 50%;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-dot {
+        width: 16px;
+        height: 16px;
+    }
+
+    .nav-dot::before {
+        top: -15px;
+        left: -15px;
+        right: -15px;
+        bottom: -15px;
+    }
+}
+
+/* Navigation Buttons - Desktop and Mobile Styling */
+.indikator-nav-buttons {
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 120px; /* Large gap to accommodate nav dots in between */
+    z-index: 10;
+    align-items: center;
+}
+
+/* Desktop: Ensure proper positioning */
+@media (min-width: 1025px) {
+    .indikator-nav-buttons {
+        right: 35px;
+        gap: 120px; /* Space for nav dots to fit between buttons */
+    }
+}
+
+.indikator-nav-buttons .nav-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    font-size: 18px;
+}
+
+.indikator-nav-buttons .nav-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.indikator-nav-buttons .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.indikator-nav-buttons .nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.indikator-nav-buttons .nav-btn:disabled:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Navigation buttons positioning for mobile */
+@media (max-width: 1024px) {
+    .indikator-nav-buttons {
+        position: static !important;
+        transform: none !important;
+        right: auto !important;
+        top: auto !important;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 20px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 20px 0 !important;
+        order: 3 !important; /* Position between description and nav dots */
+    }
+
+    .indikator-nav-buttons .nav-btn {
+        width: 40px !important;
+        height: 40px !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        font-size: 16px !important;
+    }
+
+    .indikator-nav-buttons .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: var(--primary) !important;
+        color: var(--primary) !important;
+        transform: scale(1.05) !important;
+    }
+
+    /* Change icon direction for mobile horizontal layout */
+    .indikator-nav-buttons .nav-btn-prev i {
+        transform: rotate(-90deg); /* Change up arrow to left arrow */
+    }
+
+    .indikator-nav-buttons .nav-btn-next i {
+        transform: rotate(90deg); /* Change down arrow to right arrow */
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-nav-buttons {
+        gap: 15px !important;
+        margin: 15px 0 !important;
+    }
+
+    .indikator-nav-buttons .nav-btn {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 14px !important;
+    }
+}
+
+/* Responsive Design for Indikator Section */
+@media (max-width: 1024px) {
+    .indikator-pembangunan {
+        min-height: 60vh;
+        padding: 60px 0;
+    }
+
+    .indikator-pembangunan .container {
+        padding: 0 15px;
+    }
+
+    .indikator-content-layout {
+        gap: 25px;
+        padding: 30px 0;
+    }
+
+    .section-title-left {
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 0;
+    }
+
+    .dynamic-subtitle {
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .dynamic-description {
+        font-size: 1rem;
+        text-align: center;
+        line-height: 1.6;
+    }
+
+    .dynamic-description li {
+        text-align: left;
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-pembangunan {
+        padding: 40px 0;
+        min-height: 70vh;
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+    }
+
+    .indikator-left-section {
+        text-align: center;
+    }
+
+    .section-title-left {
+        font-size: 2rem;
+    }
+
+    .indikator-description-section {
+        gap: 20px;
+    }
+
+    .dynamic-subtitle {
+        font-size: 1.1rem;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .subtitle-icon {
+        font-size: 1.6rem;
+    }
+
+    .dynamic-description {
+        font-size: 1rem;
+        line-height: 1.6;
+        text-align: center;
+    }
+
+    .dynamic-description ul {
+        text-align: left;
+        max-width: 100%;
+        margin: 10px auto 0;
+    }
+
+    .dynamic-description li {
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        padding-left: 15px;
+    }
+
+    .dynamic-description li:before {
+        font-size: 1.2rem;
+    }
+
+    .indikator-content-layout {
+        gap: 30px;
+    }
+}
+
+/* ==========================================================================
+   INDIKATOR PEMBANGUNAN - ENHANCED RESPONSIVE
+   ========================================================================== */
+
+/* Small Tablet */
+@media (max-width: 900px) {
+    .indikator-pembangunan {
+        min-height: 65vh;
+    }
+
+    .indikator-pembangunan .container {
+        padding: 0 15px;
+    }
+
+    .indikator-content-layout {
+        gap: 35px;
+        min-height: 350px;
+    }
+
+    .section-title-left {
+        font-size: 2.2rem;
+    }
+
+    .dynamic-subtitle {
+        font-size: 1.15rem;
+        gap: 12px;
+    }
+
+    .subtitle-icon {
+        font-size: 1.7rem;
+    }
+
+    .dynamic-description {
+        font-size: 1.05rem;
+    }
+
+    .dynamic-description li {
+        font-size: 1rem;
+        padding-left: 18px;
+    }
+
+    .nav-dot {
+        width: 14px;
+        height: 14px;
+    }
+
+    .indikator-navigation {
+        gap: 12px;
+    }
+}
+
+/* Mobile Landscape */
+@media (max-width: 640px) {
+    .indikator-pembangunan {
+        min-height: 60vh;
+        padding: 30px 0;
+    }
+
+    .indikator-pembangunan .container {
+        padding: 0 12px;
+    }
+
+    .indikator-content-layout {
+        gap: 25px;
+        min-height: 300px;
+    }
+
+    .section-title-left {
+        font-size: 1.8rem;
+        line-height: 1.1;
+    }
+
+    .dynamic-subtitle {
+        font-size: 1rem;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .subtitle-icon {
+        font-size: 1.5rem;
+    }
+
+    .dynamic-description {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .dynamic-description ul {
+        margin: 8px auto 0;
+    }
+
+    .dynamic-description li {
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        padding-left: 15px;
+        line-height: 1.4;
+    }
+
+    .dynamic-description li:before {
+        font-size: 1.1rem;
+    }
+
+    .nav-dot {
+        width: 12px;
+        height: 12px;
+    }
+
+    .indikator-navigation {
+        gap: 10px;
+    }
+}
+
+/* Mobile Portrait */
+@media (max-width: 480px) {
+    .indikator-pembangunan {
+        min-height: 70vh;
+        padding: 25px 0;
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+    }
+
+    .indikator-pembangunan .container {
+        padding: 0 10px;
+    }
+
+    .indikator-content-layout {
+        gap: 20px;
+        min-height: 280px;
+    }
+
+    .section-title-left {
+        font-size: 1.6rem;
+        margin-bottom: 15px;
+    }
+
+    .dynamic-subtitle {
+        font-size: 0.95rem;
+        gap: 8px;
+        margin-bottom: 10px;
+        flex-direction: column;
+    }
+
+    .subtitle-icon {
+        font-size: 1.4rem;
+    }
+
+    .dynamic-description {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .dynamic-description ul {
+        margin: 6px auto 0;
+    }
+
+    .dynamic-description li {
+        margin-bottom: 5px;
+        font-size: 0.85rem;
+        padding-left: 12px;
+        line-height: 1.3;
+    }
+
+    .dynamic-description li:before {
+        font-size: 1rem;
+    }
+
+    .nav-dot {
+        width: 10px;
+        height: 10px;
+    }
+
+    .indikator-navigation {
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 360px) {
+    .indikator-pembangunan {
+        min-height: 50vh;
+        padding: 20px 0;
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+    }
+
+    .indikator-pembangunan .container {
+        padding: 0 8px;
+    }
+
+    .indikator-content-layout {
+        gap: 15px;
+        min-height: 250px;
+    }
+
+    .section-title-left {
+        font-size: 1.4rem;
+        line-height: 1.1;
+        margin-bottom: 12px;
+    }
+
+    .dynamic-subtitle {
+        font-size: 0.9rem;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .subtitle-icon {
+        font-size: 1.2rem;
+    }
+
+    .dynamic-description {
+        font-size: 0.85rem;
+        line-height: 1.3;
+    }
+
+    .dynamic-description ul {
+        margin: 5px auto 0;
+    }
+
+    .dynamic-description li {
+        margin-bottom: 4px;
+        font-size: 0.8rem;
+        padding-left: 10px;
+        line-height: 1.2;
+    }
+
+    .dynamic-description li:before {
+        font-size: 0.9rem;
+    }
+
+    .nav-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .indikator-navigation {
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+}
+
+/* Background Responsive Adjustments */
+@media (max-width: 1024px) {
+    .indikator-pembangunan .parallax-bg {
+        /* Tablet & Mobile: Optimize for horizontal parallax */
+        width: 400vw; /* Extend width for horizontal movement - 4 slides * 100vw */
+        height: 100%; /* Use full viewport height */
+        background-position: left center; /* Start from left for horizontal scroll */
+        background-size: cover;
+        opacity: 0.75;
+        transform-origin: left center; /* Change origin for horizontal transforms */
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-pembangunan .parallax-bg {
+        /* Mobile: Further optimization */
+        width: 400vw; /* Maintain 4x viewport width for 4 slides */
+        height: 100%;
+        opacity: 0.7;
+        background-position: left center;
+        background-size: cover;
+        transform-origin: left center;
+    }
+}
+
+@media (max-width: 480px) {
+    .indikator-pembangunan .parallax-bg {
+        /* Small Mobile: Further optimization */
+        width: 400vw; /* Maintain 4x viewport width for 4 slides */
+        height: 100%;
+        opacity: 0.6;
+        background-position: left center;
+        background-size: cover;
+        transform-origin: left center;
+    }
+}
+
+/* Swiper Navigation */
+.indikator-swiper .swiper-button-next,
+.indikator-swiper .swiper-button-prev {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.indikator-swiper .swiper-button-next:after,
+.indikator-swiper .swiper-button-prev:after {
+    font-size: 20px;
+}
+
+.indikator-swiper .swiper-button-next:hover,
+.indikator-swiper .swiper-button-prev:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Swiper Pagination */
+.indikator-swiper .swiper-pagination {
+    bottom: 20px;
+}
+
+.indikator-swiper .swiper-pagination-bullet {
+    background: rgba(255, 255, 255, 0.5);
+    width: 12px;
+    height: 12px;
+}
+
+.indikator-swiper .swiper-pagination-bullet-active {
+    background: white;
+}
+
+/* Responsive Design for Indikator Swiper */
+@media (max-width: 1024px) {
+    .indikator-vertical-swiper {
+        height: 450px;
+    }
+
+    .slide-content {
+        padding: 30px;
+    }
+
+    .slide-icon .icon-box {
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+    }
+
+    .slide-text h3 {
+        font-size: 1.6rem;
+    }
+
+    .slide-text p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .indikator-vertical-swiper {
+        height: 400px;
+    }
+
+    .slide-content {
+        padding: 20px;
+    }
+
+    .slide-icon {
+        margin-bottom: 20px;
+    }
+
+    .slide-icon .icon-box {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+
+    .slide-text h3 {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+
+    .slide-text p {
+        font-size: 0.9rem;
+        max-width: 300px;
+    }
+
+    .indikator-swiper .swiper-button-next,
+    .indikator-swiper .swiper-button-prev {
+        width: 40px;
+        height: 40px;
+    }
+
+    .indikator-swiper .swiper-button-next:after,
+    .indikator-swiper .swiper-button-prev:after {
+        font-size: 16px;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .fitur-header {
+        grid-template-columns: 1fr;
+        gap: 50px;
+        align-items: flex-start;
+        min-height: auto;
+    }
+
+    .fitur-content {
+        padding-left: 0;
+        text-align: center;
+        order: -1;
+    }
+
+    .section-title-right {
+        text-align: center;
+        font-size: 2.5rem;
+    }
+
+    .section-description {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .indikator-header {
+        grid-template-columns: 1fr;
+        gap: 50px;
+        align-items: flex-start;
+        min-height: auto;
+    }
+
+    .indikator-title-section {
+        text-align: center;
+    }
+
+    .indikator-grid {
+        display: flex;
+        justify-content: center;
+    }
+
+    .section-title-left {
+        font-size: 2.5rem;
+        text-align: center;
+    }
+
+    .section-subtitle-left {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .section-subtitle-center {
+        font-size: 1.1rem;
+        margin-bottom: 50px;
+    }
+}
+
+@media (max-width: 768px) {
+    .fitur-utama {
+        padding: 60px 0;
+    }
+
+    .indikator-pembangunan {
+        padding: 60px 0;
+    }
+
+    .fitur-header {
+        gap: 40px;
+    }
+
+    .fitur-content {
+        order: -1;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .section-title-right {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .section-description {
+        font-size: 1rem;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .vertical-menu-item {
+        padding: 18px 20px;
+        font-size: 1rem;
+    }
+
+    .vertical-menu-item:hover {
+        transform: translateX(5px);
+    }
+
+    .vertical-menu-item:active {
+        transform: translateX(2px) scale(0.98);
+    }
+
+    .section-title-left {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .section-subtitle-left {
+        font-size: 1rem;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .section-subtitle-center {
+        font-size: 1rem;
+        margin-bottom: 40px;
+    }
+}

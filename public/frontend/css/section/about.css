@@ -1,0 +1,396 @@
+/* ==========================================================================
+   7. ABOUT SECTION
+   ========================================================================== */
+
+.about-section {
+    color: #fff;
+    padding: 40px 0 0 0;
+    min-height: 70vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: none;
+    background-color: var(--bg-primary);
+    pointer-events: auto;
+}
+
+.about-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("../../img/about-bg2.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: var(--bg-opacity, 1);
+    transition: opacity 0.1s ease;
+    z-index: 1;
+    pointer-events: none;
+    mask-image: radial-gradient(
+        circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
+        black,
+        transparent
+    );
+    -webkit-mask-image: radial-gradient(
+        circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
+        black,
+        transparent
+    );
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+}
+
+.about-section .container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Content Layout Grid */
+.about-content-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 80px;
+    align-items: top;
+    margin-bottom: 0;
+}
+
+/* Left Side - Quotes */
+.about-left-section {
+    display: flex;
+    justify-content: flex-start;
+    align-items: top;
+    padding: 0 0 40px 0;
+    position: relative;
+    z-index: 3;
+}
+
+.quotes-container {
+    width: 100%;
+}
+
+.testimonial-quote {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.quote-text {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: #fff;
+    margin: 0 0 20px 0;
+    position: relative;
+    text-align: left;
+    font-family: "Inter", sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.quote-additional {
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.5;
+    color: #b7b7b7;
+    margin: 0;
+    font-weight: 600;
+    text-align: left;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Right Side - Person's Photo */
+.about-right-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    z-index: 3;
+}
+
+.person-photo {
+    width: 100%;
+    max-width: 350px;
+    aspect-ratio: 2/3;
+    position: relative;
+    overflow: hidden;
+}
+
+.person-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+}
+
+.person-photo:hover img {
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
+   ABOUT SECTION RESPONSIVE
+   ========================================================================== */
+
+/* Background & Spotlight Responsive */
+@media (max-width: 1200px) {
+    .about-section::before {
+        background-size: cover;
+        background-position: center;
+        mask-image: radial-gradient(
+            circle 280px at var(--mask-x, 70%) var(--mask-y, 50%),
+            black,
+            transparent
+        );
+        -webkit-mask-image: radial-gradient(
+            circle 280px at var(--mask-x, 70%) var(--mask-y, 50%),
+            black,
+            transparent
+        );
+    }
+}
+
+@media (max-width: 1024px) {
+    .about-section::before {
+        background-size: cover;
+        background-position: center;
+        mask-image: radial-gradient(
+            circle 250px at var(--mask-x, 65%) var(--mask-y, 45%),
+            black,
+            transparent
+        );
+        -webkit-mask-image: radial-gradient(
+            circle 250px at var(--mask-x, 65%) var(--mask-y, 45%),
+            black,
+            transparent
+        );
+    }
+}
+
+@media (max-width: 768px) {
+    .about-section::before {
+        background-size: cover;
+        background-position: center;
+        mask-image: radial-gradient(
+            circle 200px at var(--mask-x, 80%) var(--mask-y, 70%),
+            black,
+            transparent
+        );
+        -webkit-mask-image: radial-gradient(
+            circle 200px at var(--mask-x, 80%) var(--mask-y, 70%),
+            black,
+            transparent
+        );
+    }
+}
+
+@media (max-width: 480px) {
+    .about-section::before {
+        background-size: cover;
+        background-position: center;
+        mask-image: radial-gradient(
+            circle 150px at var(--mask-x, 85%) var(--mask-y, 75%),
+            black,
+            transparent
+        );
+        -webkit-mask-image: radial-gradient(
+            circle 150px at var(--mask-x, 85%) var(--mask-y, 75%),
+            black,
+            transparent
+        );
+    }
+}
+
+@media (max-width: 360px) {
+    .about-section::before {
+        background-size: cover;
+        background-position: center;
+        mask-image: radial-gradient(
+            circle 120px at var(--mask-x, 90%) var(--mask-y, 80%),
+            black,
+            transparent
+        );
+        -webkit-mask-image: radial-gradient(
+            circle 120px at var(--mask-x, 90%) var(--mask-y, 80%),
+            black,
+            transparent
+        );
+    }
+}
+
+/* Tablet Landscape */
+@media (max-width: 1024px) {
+    .about-section {
+        min-height: 60vh;
+        padding: 30px 0 0 0;
+    }
+
+    .about-content-layout {
+        gap: 60px;
+    }
+
+    .quote-text {
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+
+    .quote-additional {
+        font-size: 0.9rem;
+    }
+
+    .person-photo {
+        max-width: 300px;
+    }
+}
+
+/* Tablet Portrait */
+@media (max-width: 768px) {
+    .about-section {
+        min-height: auto;
+        padding: 20px 0 0 0;
+    }
+
+    .about-section .container {
+        padding: 0 1.5rem;
+    }
+
+    .about-content-layout {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .about-left-section {
+        padding: 0 0 20px 0;
+    }
+
+    .quote-text {
+        font-size: 1rem;
+        line-height: 1.5;
+        text-align: left;
+    }
+
+    .quote-additional {
+        font-size: 0.8rem;
+        text-align: left;
+    }
+
+    .about-right-section {
+        justify-content: center;
+        align-items: flex-end;
+        margin-left: auto;
+        width: fit-content;
+    }
+
+    .person-photo {
+        max-width: 250px;
+    }
+
+    .about-logos-section {
+        height: auto;
+        padding: 15px 0;
+    }
+
+    .logo-content {
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .logo-item img {
+        height: 30px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .about-section {
+        padding: 15px 0 0 0;
+    }
+
+    .about-section .container {
+        padding: 0 1rem;
+    }
+
+    .about-content-layout {
+        gap: 30px;
+    }
+
+    .quote-text {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin: 0 0 15px 0;
+        text-align: left;
+    }
+
+    .quote-additional {
+        font-size: 0.75rem;
+        line-height: 1.3;
+        text-align: left;
+    }
+
+    .about-right-section {
+        justify-content: center;
+        align-items: flex-end;
+        margin-left: auto;
+        width: fit-content;
+    }
+
+    .person-photo {
+        max-width: 220px;
+    }
+
+    .about-logos-section {
+        padding: 10px 0;
+    }
+
+    .logo-content {
+        gap: 25px;
+        padding: 0 1rem;
+    }
+
+    .logo-item img {
+        height: 25px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 360px) {
+    .about-section .container {
+        padding: 0 0.8rem;
+    }
+
+    .quote-text {
+        font-size: 0.85rem;
+        line-height: 1.3;
+        text-align: left;
+    }
+
+    .quote-additional {
+        font-size: 0.7rem;
+        text-align: left;
+    }
+
+    .about-right-section {
+        justify-content: center;
+        align-items: flex-end;
+        margin-left: auto;
+        width: fit-content;
+    }
+
+    .person-photo {
+        max-width: 200px;
+    }
+
+    .logo-content {
+        gap: 20px;
+    }
+
+    .logo-item img {
+        height: 20px;
+    }
+}
