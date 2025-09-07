@@ -91,63 +91,41 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title">
-                            <i class="mdi mdi-message-text"></i>
-                            Daftar Aspirasi
-                        </h4>
-                        <div class="d-flex gap-2">
-                            <!-- Filter Dropdown -->
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown"
-                                    data-bs-toggle="dropdown">
-                                    <i class="mdi mdi-filter"></i> Filter
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="all">Semua</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <h6 class="dropdown-header">Status</h6>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="pending">Pending</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="diproses">Diproses</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="selesai">Selesai</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="ditolak">Ditolak</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <h6 class="dropdown-header">Jenis Aspirasi</h6>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="usulan">Usulan</a>
-                                    </li>
+                        <div>
+                            <h4 class="card-title">
+                                <i class="mdi mdi-message-text"></i>
+                                Daftar Aspirasi
+                            </h4>
+                            <p class="card-description">
+                                Kelola dan pantau aspirasi masyarakat
+                            </p>
+                        </div>
+                    </div>
 
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="kritik & saran">kritik &
-                                            Saran</a>
-                                    </li>
-                                </ul>
+                    <!-- Bulk Actions Bar -->
+                    <div id="bulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="mdi mdi-checkbox-multiple-marked me-2"></i>
+                                <span id="selectedCount">0</span> aspirasi dipilih
                             </div>
-                            <button type="button" class="btn btn-warning" id="resetFilter">
-                                <i class="mdi mdi-refresh"></i> Reset Filter
-                            </button>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                    <i class="mdi mdi-trash-can-outline me-1"></i>
+                                    Hapus Terpilih
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                                    <i class="mdi mdi-close me-1"></i>
+                                    Batal
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Enhanced Search and Filter Box -->
                     <div class="row mb-3">
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
-                                <input type="text" class="form-control" id="searchInput"
-                                    placeholder="Cari nomor tiket, nama, email...">
-                            </div>
-                        </div>
+
+
                         @php
                             $user = auth()->user();
                             $role = $user->role->slug;
@@ -203,40 +181,44 @@
 
                         <div class="col-lg-3 col-md-6 mb-2">
                             <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-calendar"></i></span>
-                                <input type="date" class="form-control" id="tanggalFilter"
-                                    placeholder="Filter Tanggal">
+                                <span class="input-group-text"><i class="mdi mdi-filter"></i></span>
+                                <select class="form-control" id="statusFilter">
+                                    <option value="">Semua Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="diproses">Diproses</option>
+                                    <option value="selesai">Selesai</option>
+                                    <option value="ditolak">Ditolak</option>
+                                </select>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Search Results Info -->
-                    <div id="searchInfo" class="d-none mb-3">
-                        <div class="alert alert-info d-flex align-items-center">
-                            <i class="mdi mdi-information-outline me-2"></i>
-                            <span id="searchResultText"></span>
-                            <button type="button" class="btn btn-sm btn-outline-info ms-auto" id="clearAllFilters">
-                                Clear All
-                            </button>
                         </div>
                     </div>
 
                     <!-- Alert Container -->
                     <div id="alertContainer"></div>
 
-                    <!-- Responsive Table -->
-                    <div class="table-responsive" style="overflow-x: auto;">
-                        <table class="table table-hover table-striped" id="aspirasiTable" style="min-width: 1200px;">
-                            <thead class="table">
+                    <!-- DataTable -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="aspirasiTable" style="width:100%">
+                            <thead>
                                 <tr>
-                                    <th class="text-center" style="width: 50px; min-width: 50px;">No</th>
+                                    @if ($aspirasi->isNotEmpty())
+                                        <th style="width: 40px;">
+                                            <div class="checkbox-wrapper">
+                                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                                <label class="form-check-label" for="selectAll">
+                                                    <span class="visually-hidden">Select All</span>
+                                                </label>
+                                            </div>
+                                        </th>
+                                    @endif
+                                    <th class="text-center" style="width: 50px;">No</th>
                                     <th style="min-width: 150px;">Nomor Tiket</th>
                                     <th style="min-width: 200px;">Pengirim</th>
                                     <th style="min-width: 150px;">Tertuju</th>
-                                    <th class="text-center" style="width: 100px; min-width: 100px;">Jenis</th>
-                                    <th class="text-center" style="width: 100px; min-width: 100px;">Status</th>
-                                    <th class="text-center" style="width: 120px; min-width: 120px;">Tanggal</th>
-                                    <th class="text-center" style="width: 120px; min-width: 120px;">Aksi</th>
+                                    <th class="text-center" style="width: 100px;">Jenis</th>
+                                    <th class="text-center" style="width: 100px;">Status</th>
+                                    <th class="text-center" style="width: 120px;">Tanggal</th>
+                                    <th class="text-center" style="width: 120px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -244,10 +226,19 @@
                                     <tr data-id="{{ $item->id }}" data-status="{{ $item->status }}"
                                         data-jenis="{{ $item->jenis_aspirasi }}"
                                         data-kategori="{{ $item->kategori_aspirasi_id }}"
-                                        data-opd="{{ $item->kategoriAspirasi?->opd_id ?? '' }}"
-                                        data-search="{{ strtolower($item->nomor_tiket . ' ' . $item->nama_pengirim . ' ' . $item->email . ' ' . $item->judul_aspirasi . ' ' . ($item->kategoriAspirasi?->opd?->name ?? '') . ' ' . ($item->kategoriAspirasi?->opd?->singkatan ?? '')) }}"
-                                        data-date="{{ $item->created_at->format('Y-m-d') }}">
-                                        <td class="text-center">{{ $aspirasi->firstItem() + $index }}</td>
+                                        data-opd="{{ $item->kategoriAspirasi?->opd_id ?? '' }}">
+                                        @if ($aspirasi->isNotEmpty())
+                                            <td>
+                                                <div class="checkbox-wrapper">
+                                                    <input class="form-check-input row-checkbox" type="checkbox"
+                                                        value="{{ $item->id }}" id="check-{{ $item->id }}">
+                                                    <label class="form-check-label" for="check-{{ $item->id }}">
+                                                        <span class="visually-hidden">Select row</span>
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        @endif
+                                        <td class="text-center">{{ $loop->iteration }}</td>
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <strong class="text-primary">{{ $item->nomor_tiket }}</strong>
@@ -323,11 +314,10 @@
                                                 </button>
                                             </div>
                                         </td>
-
                                     </tr>
                                 @empty
                                     <tr id="no-data-row">
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="9" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Tidak ada data aspirasi</p>
@@ -337,30 +327,7 @@
                                 @endforelse
                             </tbody>
                         </table>
-
-                        <!-- Scroll indicator for mobile -->
-                        <div class="scroll-indicator d-md-none">
-                            <div class="d-flex justify-content-center align-items-center py-2">
-                                <i class="mdi mdi-gesture-swipe-horizontal text-muted me-2"></i>
-                                <small class="text-muted">Geser tabel ke kiri/kanan untuk melihat lebih banyak</small>
-                            </div>
-                        </div>
                     </div>
-
-                    <!-- Pagination -->
-                    @if ($aspirasi->hasPages())
-                        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-                            <div class="mb-2 mb-md-0">
-                                <span class="text-muted">
-                                    Menampilkan {{ $aspirasi->firstItem() ?? 0 }} - {{ $aspirasi->lastItem() ?? 0 }}
-                                    dari {{ $aspirasi->total() }} data
-                                </span>
-                            </div>
-                            <nav>
-                                {{ $aspirasi->appends(request()->query())->links('pagination::bootstrap-4', ['class' => 'pagination-sm']) }}
-                            </nav>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -578,26 +545,551 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Delete Confirmation Modal -->
+    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="bulkDeleteModalLabel">
+                        <i class="mdi mdi-alert-circle me-2"></i>Konfirmasi Hapus
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="mdi mdi-trash-can-outline text-danger" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3">Apakah Anda yakin?</h5>
+                        <p class="text-muted">
+                            Anda akan menghapus <strong id="deleteCount">0</strong> aspirasi yang dipilih.
+                            <br>Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmBulkDelete">
+                        <i class="mdi mdi-trash-can-outline me-1"></i>Hapus Aspirasi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Delete Form (Hidden) -->
+
+    <!-- Menjadi -->
+    <form id="bulkDeleteForm" method="POST" action="{{ route('aspirasi.bulk-destroy') }}" style="display: none;">
+        @csrf
+        @method('DELETE')
+        <div id="bulkDeleteIds"></div>
+    </form>
 @endsection
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('datatables/datatables.css') }}">
+    <style>
+        /* Checkbox styling yang sama dengan data spatial */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 8px;
+        }
+
+        .form-check-input {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #6c757d;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+            margin: 0 !important;
+            padding: 0 !important;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .form-check-input:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .form-check-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        .form-check-input:checked {
+            background-color: #007bff;
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
+        }
+
+        .form-check-input:checked::before {
+            content: "✓";
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .form-check-input:indeterminate {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .form-check-input:indeterminate::before {
+            content: "─";
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        /* Table styling */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            color: #495057;
+            padding: 12px 8px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 12px 8px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Bulk Actions Bar */
+        #bulkActionsBar {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            color: #1976d2;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* DataTable styling */
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 8px 12px !important;
+            margin: 0 2px !important;
+            border-radius: 6px !important;
+            border: 1px solid #dee2e6 !important;
+            background: #fff !important;
+            color: #495057 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e9ecef !important;
+            border-color: #adb5bd !important;
+            color: #495057 !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: linear-gradient(135deg, #007bff, #0056b3) !important;
+            border-color: #007bff !important;
+            color: white !important;
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
+        }
+
+        /* Badge styling */
+        .badge {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        /* Modal improvements */
+        .modal-content {
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Loading spinner */
+        .spinner-border {
+            animation: spinner-border .75s linear infinite;
+        }
+
+        @keyframes spinner-border {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .checkbox-wrapper {
+                padding: 4px;
+            }
+
+            .form-check-input {
+                width: 18px;
+                height: 18px;
+            }
+
+            .btn-sm {
+                padding: 4px 8px;
+                font-size: 0.8rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px 4px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Accessibility */
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+
+        .btn:focus,
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Statistics cards hover effect */
+        .card.card-img-holder:hover {
+            transform: translateY(-2px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img-absolute {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0.1;
+        }
+    </style>
+@endpush
+
 @section('scripts')
+    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables.js') }}"></script>
+
     <script>
         $(document).ready(function() {
+            // Initialize DataTable
+            const table = $('#aspirasiTable').DataTable({
+                "processing": true,
+                "pageLength": 10,
+                "lengthMenu": [
+                    [10, 25, 50, 100, -1],
+                    [10, 25, 50, 100, "Semua"]
+                ],
+                "order": [
+                    [1, 'desc']
+                ],
+                "columnDefs": [{
+                        "orderable": false,
+                        "targets": [0, -1] // Disable ordering on checkbox and action columns
+                    },
+                    {
+                        "searchable": false,
+                        "targets": [0, -1] // Disable search on checkbox and action columns
+                    },
+                    {
+                        "className": "text-center",
+                        "targets": [0, 1, 5, 6, 7, -1] // Center align specific columns
+                    }
+                ],
+                "language": {
+                    "processing": "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>",
+                    "lengthMenu": "Tampilkan _MENU_ aspirasi per halaman",
+                    "zeroRecords": "Aspirasi tidak ditemukan",
+                    "emptyTable": "Tidak ada aspirasi tersedia",
+                    "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ aspirasi",
+                    "infoEmpty": "Menampilkan 0 sampai 0 dari 0 aspirasi",
+                    "infoFiltered": "(difilter dari _MAX_ total aspirasi)",
+                    "search": "Cari:",
+                    "paginate": {
+                        "first": "Pertama",
+                        "last": "Terakhir",
+                        "next": "Selanjutnya",
+                        "previous": "Sebelumnya"
+                    }
+                },
+                "dom": '<"row mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                    '<"row"<"col-sm-12"tr>>' +
+                    '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                "drawCallback": function(settings) {
+                    initializeCheckboxEvents();
+                    $(this).find('tbody tr').css('opacity', '0').animate({
+                        'opacity': '1'
+                    }, 300);
+                },
+                "initComplete": function() {
+                    $('.dataTables_filter input').attr('placeholder', 'Ketik untuk mencari...');
+
+                    // Connect custom filters
+                    $('#globalSearch').on('keyup', function() {
+                        table.search(this.value).draw();
+                    });
+
+                    $('#kategoriFilter, #opdFilter, #statusFilter').on('change', function() {
+                        applyFilters();
+                    });
+                }
+            });
+
+            // Custom filtering function
+            function applyFilters() {
+                const kategoriFilter = $('#kategoriFilter').val();
+                const opdFilter = $('#opdFilter').val();
+                const statusFilter = $('#statusFilter').val();
+
+                // Clear previous search
+                $.fn.dataTable.ext.search.pop();
+
+                // Add custom filter
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    const row = table.row(dataIndex).node();
+                    const $row = $(row);
+
+                    // Kategori filter
+                    if (kategoriFilter && $row.data('kategori') != kategoriFilter) {
+                        return false;
+                    }
+
+                    // OPD filter
+                    if (opdFilter && $row.data('opd') != opdFilter) {
+                        return false;
+                    }
+
+                    // Status filter
+                    if (statusFilter && $row.data('status') != statusFilter) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                table.draw();
+            }
+
+            // Bulk actions functionality
+            let selectedItems = [];
+
+            function initializeCheckboxEvents() {
+                $('#selectAll').off('change');
+                $('.row-checkbox').off('change');
+
+                $('#selectAll').on('change', function() {
+                    const isChecked = this.checked;
+                    const visibleCheckboxes = table.$('.row-checkbox', {
+                        "page": "current"
+                    });
+
+                    visibleCheckboxes.each(function() {
+                        this.checked = isChecked;
+                        const value = this.value;
+
+                        if (isChecked && !selectedItems.includes(value)) {
+                            selectedItems.push(value);
+                        } else if (!isChecked) {
+                            selectedItems = selectedItems.filter(id => id !== value);
+                        }
+                    });
+
+                    updateBulkActionsBar();
+                    updateSelectAllState();
+                });
+
+                $('.row-checkbox').on('change', function() {
+                    const value = this.value;
+
+                    if (this.checked) {
+                        if (!selectedItems.includes(value)) {
+                            selectedItems.push(value);
+                        }
+                        $(this).closest('tr').addClass('table-active');
+                    } else {
+                        selectedItems = selectedItems.filter(id => id !== value);
+                        $(this).closest('tr').removeClass('table-active');
+                    }
+
+                    updateBulkActionsBar();
+                    updateSelectAllState();
+                });
+            }
+
+            function updateBulkActionsBar() {
+                const bulkActionsBar = document.getElementById('bulkActionsBar');
+                const selectedCount = document.getElementById('selectedCount');
+
+                if (selectedItems.length > 0) {
+                    bulkActionsBar.classList.remove('d-none');
+                    selectedCount.textContent = selectedItems.length;
+                } else {
+                    bulkActionsBar.classList.add('d-none');
+                }
+            }
+
+            function updateSelectAllState() {
+                const visibleCheckboxes = table.$('.row-checkbox', {
+                    "page": "current"
+                });
+                const selectAllCheckbox = document.getElementById('selectAll');
+                let checkedCount = 0;
+
+                visibleCheckboxes.each(function() {
+                    if (this.checked) checkedCount++;
+                });
+
+                if (checkedCount === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (checkedCount === visibleCheckboxes.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+
+            // Global functions
+            window.clearSelection = function() {
+                selectedItems = [];
+                document.querySelectorAll('.row-checkbox').forEach(cb => {
+                    cb.checked = false;
+                    $(cb).closest('tr').removeClass('table-active');
+                });
+                document.getElementById('selectAll').checked = false;
+                document.getElementById('selectAll').indeterminate = false;
+                updateBulkActionsBar();
+            };
+
+            window.bulkDelete = function() {
+                if (selectedItems.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tidak ada aspirasi terpilih',
+                        text: 'Silakan pilih aspirasi yang akan dihapus terlebih dahulu',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                document.getElementById('deleteCount').textContent = selectedItems.length;
+                const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+                modal.show();
+            };
+
+            // Confirm bulk delete
+            document.getElementById('confirmBulkDelete').addEventListener('click', function() {
+                if (selectedItems.length === 0) {
+                    alert('Tidak ada aspirasi yang dipilih untuk dihapus');
+                    return;
+                }
+
+                this.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Menghapus...';
+                this.disabled = true;
+
+                const bulkDeleteIds = document.getElementById('bulkDeleteIds');
+                bulkDeleteIds.innerHTML = '';
+
+                selectedItems.forEach((id) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    bulkDeleteIds.appendChild(input);
+                });
+
+                document.getElementById('bulkDeleteForm').submit();
+            });
+
+            // Initialize checkbox events
+            initializeCheckboxEvents();
+
             // Helper Functions
             function showAlert(message, type = 'success') {
-                const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' :
-                    'alert-danger');
-                const alertHtml = `
-                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                $('#alertContainer').html(alertHtml);
+                const icon = type === 'success' ? 'success' : 'error';
+                const title = type === 'success' ? 'Berhasil!' : 'Error!';
 
-                setTimeout(function() {
-                    $('#alertContainer .alert').alert('close');
-                }, 5000);
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: icon,
+                    timer: 4000,
+                    showConfirmButton: false,
+                    allowOutsideClick: true,
+                    allowEscapeKey: true
+                });
             }
 
             function clearFormErrors(form) {
@@ -671,164 +1163,15 @@
                 document.body.removeChild(textArea);
             }
 
-            // Enhanced filtering functionality
-            function filterTable() {
-                const searchTerm = $('#searchInput').val().toLowerCase();
-                const kategoriFilter = $('#kategoriFilter').val();
-                const opdFilter = $('#opdFilter').val();
-                const tanggalFilter = $('#tanggalFilter').val();
-                const activeFilter = $('.filter-item.active').data('filter') || 'all';
-
-                let visibleCount = 0;
-                const totalRows = $('#aspirasiTable tbody tr').not('#no-data-row').length;
-
-                $('#aspirasiTable tbody tr').each(function() {
-                    const $row = $(this);
-
-                    if ($row.attr('id') === 'no-data-row') {
-                        return;
-                    }
-
-                    let showRow = true;
-
-                    // Search filter
-                    if (searchTerm) {
-                        const searchData = $row.data('search') || '';
-                        if (!searchData.includes(searchTerm)) {
-                            showRow = false;
-                        }
-                    }
-
-                    // Kategori filter
-                    if (kategoriFilter) {
-                        const rowKategori = $row.data('kategori');
-                        if (rowKategori != kategoriFilter) {
-                            showRow = false;
-                        }
-                    }
-
-                    // OPD filter
-                    if (opdFilter) {
-                        const rowOpd = $row.data('opd');
-                        if (rowOpd != opdFilter) {
-                            showRow = false;
-                        }
-                    }
-
-                    // Tanggal filter
-                    if (tanggalFilter) {
-                        const rowDate = $row.data('date');
-                        if (rowDate !== tanggalFilter) {
-                            showRow = false;
-                        }
-                    }
-
-                    // Status/Jenis filter
-                    if (activeFilter !== 'all') {
-                        const rowStatus = $row.data('status');
-                        const rowJenis = $row.data('jenis');
-
-                        if (rowStatus !== activeFilter && rowJenis !== activeFilter) {
-                            showRow = false;
-                        }
-                    }
-
-                    if (showRow) {
-                        $row.show();
-                        visibleCount++;
-                        $row.find('td:first').text(visibleCount);
-                    } else {
-                        $row.hide();
-                    }
-                });
-
-                // Update search info
-                updateSearchInfo(searchTerm, kategoriFilter, opdFilter, tanggalFilter, activeFilter, visibleCount,
-                    totalRows);
-
-                // Show/hide no data message
-                const $noDataRow = $('#no-data-row');
-                if (visibleCount === 0 && $noDataRow.length === 0) {
-                    $('#aspirasiTable tbody').append(`
-                        <tr id="no-data-row">
-                            <td colspan="8" class="text-center">
-                                <div class="py-4">
-                                    <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
-                                    <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
-                } else if (visibleCount > 0) {
-                    $noDataRow.remove();
-                }
-            }
-
-            function updateSearchInfo(searchTerm, kategoriFilter, opdFilter, tanggalFilter, activeFilter,
-                visibleCount, totalRows) {
-                const hasActiveFilters = searchTerm || kategoriFilter || opdFilter || tanggalFilter || (
-                    activeFilter !== 'all');
-
-                if (hasActiveFilters) {
-                    let infoText = `Menampilkan ${visibleCount} dari ${totalRows} aspirasi`;
-
-                    const filters = [];
-                    if (searchTerm) filters.push(`pencarian: "${searchTerm}"`);
-                    if (kategoriFilter) {
-                        const kategoriText = $('#kategoriFilter option:selected').text();
-                        filters.push(`kategori: ${kategoriText}`);
-                    }
-                    if (opdFilter) {
-                        const opdText = $('#opdFilter option:selected').text();
-                        filters.push(`OPD: ${opdText}`);
-                    }
-                    if (tanggalFilter) filters.push(`tanggal: ${tanggalFilter}`);
-                    if (activeFilter !== 'all') filters.push(`filter: ${activeFilter}`);
-
-                    if (filters.length > 0) {
-                        infoText += ` (${filters.join(', ')})`;
-                    }
-
-                    $('#searchResultText').text(infoText);
-                    $('#searchInfo').removeClass('d-none');
-                } else {
-                    $('#searchInfo').addClass('d-none');
-                }
-            }
-
-            function clearAllFilters() {
-                $('.filter-item').removeClass('active');
-                $('.filter-item[data-filter="all"]').addClass('active');
-                $('#searchInput').val('');
-                $('#kategoriFilter').val('');
-                $('#opdFilter').val('');
-                $('#tanggalFilter').val('');
-                filterTable();
-            }
-
-            // Event Handlers
-            $('.filter-item').on('click', function(e) {
-                e.preventDefault();
-                $('.filter-item').removeClass('active');
-                $(this).addClass('active');
-                filterTable();
-            });
-
-            $('#searchInput, #kategoriFilter, #opdFilter, #tanggalFilter').on('input change', filterTable);
-
-            $('#resetFilter, #clearAllFilters').on('click', clearAllFilters);
-
             // Show Modal with Loading Effect
             $(document).on('click', '.btn-show', function() {
                 const id = $(this).data('id');
 
-                // Show modal with loading state
                 $('#modalLoadingState').show();
                 $('#modalContentState').hide();
                 $('#modalFooter').hide();
                 $('#showModal').modal('show');
 
-                // Add loading animation to button
                 const $btn = $(this);
                 const originalHtml = $btn.html();
                 $btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
@@ -841,12 +1184,10 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function(response) {
-                        // Simulate minimum loading time for better UX
                         setTimeout(() => {
-                            // Handle both direct data and wrapped response
                             const aspirasi = response.data || response;
 
-                            // Basic info
+                            // Populate modal with data
                             $('#show_opd').text(aspirasi.kategori_aspirasi?.opd?.name ||
                                 'Tidak ada OPD');
                             $('#show_nomor_tiket').text(aspirasi.nomor_tiket);
@@ -935,20 +1276,16 @@
                                 $('#show_response_container').hide();
                             }
 
-                            // Set status button data
                             $('#btnUpdateStatus').data('id', aspirasi.id);
 
-                            // Show content and hide loading
                             $('#modalLoadingState').hide();
                             $('#modalContentState').show();
                             $('#modalFooter').show();
 
-                        }, 800); // Minimum loading time for smooth UX
+                        }, 800);
                     },
                     error: function(xhr) {
                         console.error('Error loading aspirasi details:', xhr);
-
-                        // Show error in modal
                         $('#modalLoadingState').html(`
                             <div class="text-center py-5">
                                 <i class="mdi mdi-alert-circle-outline text-danger" style="font-size: 3rem;"></i>
@@ -961,12 +1298,10 @@
                                 </div>
                             </div>
                         `);
-
                         showAlert('Gagal memuat data detail: ' + (xhr.responseJSON?.message ||
                             'Unknown error'), 'error');
                     },
                     complete: function() {
-                        // Restore button state
                         $btn.prop('disabled', false).html(originalHtml);
                     }
                 });
@@ -1027,7 +1362,6 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             $('#statusModal').modal('hide');
-
                             Swal.fire({
                                 title: 'Berhasil!',
                                 text: response.message,
@@ -1097,10 +1431,9 @@
                                         showConfirmButton: false
                                     });
 
-                                    $(`tr[data-id="${id}"]`).fadeOut(function() {
-                                        $(this).remove();
-                                        filterTable();
-                                    });
+                                    // Remove row from DataTable
+                                    const row = table.row($(`tr[data-id="${id}"]`));
+                                    row.remove().draw();
                                 }
                             },
                             error: function(xhr) {
@@ -1119,315 +1452,29 @@
                 });
             };
 
-            // Enhanced scroll functionality for table
-            function initTableScroll() {
-                const $tableResponsive = $('.table-responsive');
-
-                if ($tableResponsive.length) {
-                    // Add scroll shadow effect
-                    $tableResponsive.on('scroll', function() {
-                        const scrollLeft = $(this).scrollLeft();
-
-                        // Add scrolled class when user scrolls
-                        if (scrollLeft > 0) {
-                            $(this).addClass('scrolled user-scrolled');
-                        } else {
-                            $(this).removeClass('scrolled');
-                        }
-
-                        // Hide scroll indicator after user interacts
-                        if (scrollLeft > 10) {
-                            $(this).addClass('user-scrolled');
-                        }
-                    });
-
-                    // Auto-hide scroll indicator after 3 seconds on mobile
-                    if (window.innerWidth < 768) {
-                        setTimeout(() => {
-                            $tableResponsive.addClass('user-scrolled');
-                        }, 3000);
+            // Add keyboard shortcuts
+            $(document).on('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                    e.preventDefault();
+                    const selectAllCheckbox = document.getElementById('selectAll');
+                    if (selectAllCheckbox && !selectAllCheckbox.checked) {
+                        selectAllCheckbox.click();
                     }
                 }
-            }
 
-            // Initialize table scroll functionality
-            initTableScroll();
+                if (e.key === 'Delete' && selectedItems.length > 0) {
+                    e.preventDefault();
+                    bulkDelete();
+                }
+
+                if (e.key === 'Escape' && selectedItems.length > 0) {
+                    e.preventDefault();
+                    clearSelection();
+                }
+            });
+
+            // Add tooltips to action buttons
+            $('[title]').tooltip();
         });
     </script>
-
-    <style>
-        /* Enhanced table responsive with horizontal scroll */
-        .table-responsive {
-            border-radius: 10px;
-            overflow-x: auto;
-            overflow-y: visible;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .table {
-            min-width: 1200px;
-            margin-bottom: 0;
-        }
-
-        .table th {
-            color: #000000 !important;
-            border: none;
-            font-weight: 600;
-            white-space: nowrap;
-            background-color: #f8f9fa;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .table td {
-            border-color: #e9ecef;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
-        /* Allow text wrapping for specific columns */
-        .table td:nth-child(3),
-        /* Pengirim */
-        .table td:nth-child(4) {
-            /* Tertuju */
-            white-space: normal;
-            word-wrap: break-word;
-        }
-
-        /* Custom scrollbar */
-        .table-responsive::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .table-responsive::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .table-responsive::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-            transition: background 0.3s ease;
-        }
-
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-
-        /* Scroll indicator */
-        .scroll-indicator {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-top: 1px solid #dee2e6;
-            border-radius: 0 0 10px 10px;
-            animation: fadeInUp 0.5s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 767px) {
-            .table-responsive {
-                border-radius: 8px;
-                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-            }
-
-            .table {
-                min-width: 1000px;
-                font-size: 0.875rem;
-            }
-
-            .table th,
-            .table td {
-                padding: 0.5rem 0.75rem;
-            }
-
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-            }
-
-            .scroll-indicator {
-                position: sticky;
-                bottom: 0;
-                background: rgba(248, 249, 250, 0.95);
-                backdrop-filter: blur(10px);
-                z-index: 5;
-                animation: pulse 2s infinite;
-            }
-        }
-
-        /* Hide scroll indicator after user interaction */
-        .table-responsive.user-scrolled .scroll-indicator {
-            display: none;
-        }
-
-        /* Loading spinner styles */
-        .spinner-border {
-            animation: spinner-border .75s linear infinite;
-        }
-
-        @keyframes spinner-border {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Modal loading state */
-        #modalLoadingState {
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Enhanced search info styling */
-        #searchInfo .alert {
-            border-left: 4px solid #17a2b8;
-            background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
-        }
-
-        /* Input group styling */
-        .input-group .form-control,
-        .input-group .form-select {
-            height: calc(1.5em + .75rem + 2px);
-        }
-
-        .input-group-text {
-            border: 1px solid #ced4da;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        /* Enhanced button styling */
-        .btn-gradient-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-        }
-
-        /* Enhanced card styling */
-        .card {
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border: none;
-        }
-
-        .card-img-holder {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card-img-absolute {
-            position: absolute;
-            top: 0;
-            right: 0;
-            opacity: 0.1;
-        }
-
-        /* Badge styling */
-        .badge {
-            font-size: 0.75em;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.375rem;
-        }
-
-        /* Enhanced modal styling */
-        .modal-content {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-xl {
-            max-width: 95%;
-        }
-
-        /* Form styling */
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-
-        /* Filter item styling */
-        .filter-item.active {
-            background-color: #667eea;
-            color: white;
-        }
-
-        /* Table hover effects */
-        .table tbody tr:hover {
-            background-color: rgba(0, 123, 255, 0.05);
-            transition: background-color 0.2s ease;
-        }
-
-        /* Button hover effects */
-        .btn-outline-info:hover,
-        .btn-outline-danger:hover {
-            transform: scale(1.05);
-            transition: transform 0.2s ease;
-        }
-
-        /* Pulse animation for scroll indicator */
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        /* Statistics cards hover effect */
-        .card.card-img-holder:hover {
-            transform: translateY(-2px);
-            transition: transform 0.3s ease;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Loading button state */
-        .btn-loading {
-            position: relative;
-            color: transparent !important;
-        }
-
-        .btn-loading::after {
-            content: "";
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-left: -8px;
-            margin-top: -8px;
-            border: 2px solid transparent;
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
 @endsection

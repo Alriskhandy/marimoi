@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
@@ -239,5 +240,107 @@ class AspirasiController extends Controller
 
         return response()->download($filePath, $file['original_name']);
     }
+/**
+ * Bulk delete aspirasi
+ *
+ * @param  \Illuminate\Http\Request  $request
+ * @return \Illuminate\Http\RedirectResponse
+ */
+public function bulkDestroy(Request $request): RedirectResponse
+{
+    // Validasi input
+    $request->validate([
+        'ids' => 'required|array|min:1',
+        'ids.*' => 'required|integer|exists:aspirasi,id'
+    ], [
+        'ids.required' => 'Tidak ada aspirasi yang dipilih untuk dihapus',
+        'ids.array' => 'Format data tidak valid',
+        'ids.min' => 'Pilih minimal 1 aspirasi untuk dihapus',
+        'ids.*.exists' => 'Salah satu aspirasi yang dipilih tidak ditemukan'
+    ]);
 
+    $ids = $request->ids;
+    $user = Auth::user();
+    
+    try {
+        // Cek authorization berdasarkan role
+        if (!in_array($user->role->slug, ['super-admin', 'admin-bappeda'])) {
+            // Admin OPD hanya bisa hapus aspirasi yang sesuai dengan OPD mereka
+            if ($user->role->slug === 'admin-opd') {
+                $validIds = Aspirasi::whereIn('id', $ids)
+                    ->whereHas('kategoriAspirasi', function($query) use ($user) {
+                        $query->where('opd_id', $user->opd_id);
+                    })
+                    ->pluck('id')
+                    ->toArray();
+                
+                if (count($validIds) !== count($ids)) {
+                    return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus beberapa aspirasi yang dipilih');
+                }
+                
+                $ids = $validIds;
+            } else {
+                return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus aspirasi');
+            }
+        }
+
+        // Ambil data aspirasi yang akan dihapus untuk logging dan hapus lampiran
+        $aspirasiToDelete = Aspirasi::whereIn('id', $ids)
+            ->select('id', 'nomor_tiket', 'nama_pengirim', 'judul_aspirasi', 'lampiran')
+            ->get();
+
+        // Hapus lampiran files jika ada
+        foreach ($aspirasiToDelete as $aspirasi) {
+            if ($aspirasi->lampiran) {
+                $lampiranData = json_decode($aspirasi->lampiran, true);
+                
+                if (is_array($lampiranData)) {
+                    foreach ($lampiranData as $file) {
+                        if (isset($file['path'])) {
+                            Storage::disk('public')->delete($file['path']);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hapus data dari database
+        $deletedCount = Aspirasi::whereIn('id', $ids)->delete();
+
+        // Log activity untuk audit trail
+        Log::info('Bulk delete aspirasi', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'deleted_count' => $deletedCount,
+            'deleted_aspirasi' => $aspirasiToDelete->pluck('nomor_tiket')->toArray(),
+            'timestamp' => now()
+        ]);
+
+        return redirect()->back()->with('success', "Berhasil menghapus {$deletedCount} aspirasi");
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return redirect()->back()
+            ->withErrors($e->errors())
+            ->with('error', 'Terjadi kesalahan validasi data');
+            
+    } catch (\Illuminate\Database\QueryException $e) {
+        Log::error('Database error during bulk delete aspirasi: ' . $e->getMessage(), [
+            'user_id' => $user->id,
+            'ids' => $ids,
+            'error' => $e->getMessage()
+        ]);
+        
+        return redirect()->back()->with('error', 'Terjadi kesalahan database. Silakan coba lagi.');
+        
+    } catch (\Exception $e) {
+        Log::error('Error during bulk delete aspirasi: ' . $e->getMessage(), [
+            'user_id' => $user->id,
+            'ids' => $ids,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+    }
+}
 }
