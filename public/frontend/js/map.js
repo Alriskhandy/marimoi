@@ -1,12 +1,11 @@
-// map-app.js - True On-Demand Loading
+// map.js - Fixed untuk working dengan controller yang sudah diperbaiki
 /**
- * map-app.js - HANYA ambil data yang benar-benar dicentang
- * Strategi: Load metadata kategori dulu, data spatial HANYA saat checkbox dicentang
+ * map.js - True on-demand loading dengan metadata first approach
  */
-console.log("map-app.js loaded - true on-demand loading");
+console.log("map.js loaded - fixed version for optimized controller");
 
 /**
- * Konfigurasi utama peta
+ * Map configuration
  */
 const mapConfig = {
     weight: 6,
@@ -56,25 +55,20 @@ const mapConfig = {
 };
 
 /**
- * Inisialisasi peta
+ * Initialize map
  */
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
 }).setView(mapConfig.center, mapConfig.zoom);
 
-// State management - MINIMAL
+// State management
 let layerGroups = {};
 let currentBaseMap = null;
-let kategoriWarnaMap = {};
-let iconMap = {};
-let categoryDataCounts = {};
-let availableCategories = [];
+let kategoriMetadata = {};
+let activeCategories = new Set();
+let loadingCategories = new Set();
 let isCategoriesLoaded = false;
-
-// HANYA untuk kategori yang sedang aktif
-let activeCategories = new Set(); // Kategori yang sedang dicentang
-let loadingCategories = new Set(); // Kategori yang sedang loading
 
 /**
  * Utility functions
@@ -98,24 +92,19 @@ function showAlert(message, type = "info") {
 }
 
 function getDataType(urlPath) {
-    switch (urlPath) {
-        case "/proyek-strategis-daerah":
-            return { type: "proyek_strategis", sub_type: "psd", year: null };
-        case "/proyek-strategis-nasional":
-            return { type: "proyek_strategis", sub_type: "psn", year: null };
-        case "/peta-tematik":
-            return { type: "tematik", sub_type: null, year: null };
-        case "/usulan-musrenbang":
-            return { type: "usulan_musrenbang", sub_type: null, year: null };
-        case "/pokir-dprd":
-            return { type: "pokir_dprd", sub_type: null, year: null };
-        default:
-            return { type: "tematik", sub_type: null, year: null };
-    }
+    const routes = {
+        "/proyek-strategis-daerah": { type: "proyek_strategis", sub_type: "psd", year: null },
+        "/proyek-strategis-nasional": { type: "proyek_strategis", sub_type: "psn", year: null },
+        "/peta-tematik": { type: "tematik", sub_type: null, year: null },
+        "/usulan-musrenbang": { type: "usulan_musrenbang", sub_type: null, year: null },
+        "/pokir-dprd": { type: "pokir_dprd", sub_type: null, year: null }
+    };
+    return routes[urlPath] || { type: "tematik", sub_type: null, year: null };
 }
 
 function getStyleForCategory(kategori) {
-    const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
+    const metadata = kategoriMetadata[kategori];
+    const warna = metadata?.warna || "#ECE6D6";
     return {
         color: warna,
         weight: 5,
@@ -142,51 +131,79 @@ function changeBaseMap(baseMapId) {
 }
 
 /**
- * STEP 1: Load HANYA metadata kategori (ZERO data spatial)
+ * STEP 1: Load metadata kategori saja (NO spatial data)
  */
-async function loadCategories() {
+async function loadCategoriesMetadata() {
     if (isCategoriesLoaded) return;
 
     try {
+        // Show loading di sidebar
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `
+                <div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>`;
+        }
+
         showAlert("Memuat daftar kategori...", "info");
 
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
 
-        // HANYA metadata - TIDAK ADA DATA SPATIAL SAMA SEKALI
+        // Request HANYA metadata
         let queryString = "?metadata_only=true";
         if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
         if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
         if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
 
+        console.log('Requesting metadata:', `/geojson${queryString}`);
+
         const response = await fetch(`/geojson${queryString}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const metadata = await response.json();
+        console.log('Metadata response:', metadata);
+
+        if (metadata.type === 'error') {
+            throw new Error(metadata.message || 'Server error');
+        }
 
         if (!metadata?.all_categories?.length) {
             showAlert("Tidak ada kategori tersedia", "warning");
+            // Show empty state
+            if (layerListContainer) {
+                layerListContainer.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                        <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                        <span class="mt-2 text-muted">Tidak ada kategori tersedia.</span>
+                    </div>`;
+            }
             return;
         }
 
-        availableCategories = metadata.all_categories;
-        
-        // Build HANYA mapping, BUKAN data
-        kategoriWarnaMap = {};
-        iconMap = {};
-        categoryDataCounts = {};
-        
+        // Build metadata map
+        kategoriMetadata = {};
         metadata.all_categories.forEach((cat) => {
-            if (cat.nama && cat.warna) {
-                kategoriWarnaMap[cat.nama] = cat.warna;
-                if (cat.is_marker && cat.icon) {
-                    iconMap[cat.nama] = cat.icon;
-                }
-                if (cat.data_count !== undefined) {
-                    categoryDataCounts[cat.nama] = cat.data_count;
-                }
+            if (cat.nama) {
+                kategoriMetadata[cat.nama] = {
+                    id: cat.id,
+                    nama: cat.nama,
+                    warna: cat.warna || "#ECE6D6",
+                    icon: cat.icon,
+                    is_marker: cat.is_marker,
+                    parent_id: cat.parent_id,
+                    data_count: cat.data_count || 0
+                };
             }
         });
 
-        // Build HANYA struktur layer KOSONG
+        // Build empty layer structure berdasarkan hierarchy
         layerGroups = {};
         const parents = metadata.all_categories.filter(cat => !cat.parent_id);
         const children = metadata.all_categories.filter(cat => cat.parent_id);
@@ -197,7 +214,6 @@ async function loadCategories() {
 
             if (anak.length > 0) {
                 anak.forEach((child) => {
-                    // Layer group KOSONG - TIDAK ADA DATA
                     layerGroups[parent.nama][child.nama] = L.layerGroup();
                 });
             } else {
@@ -205,34 +221,47 @@ async function loadCategories() {
             }
         });
 
+        // Hide loading
+        const loadingDiv = document.getElementById("layer-loading");
+        if (loadingDiv) loadingDiv.remove();
+
         updateLayerList();
         isCategoriesLoaded = true;
-        showAlert(`${metadata.all_categories.length} kategori tersedia`, "success");
+        showAlert(`${metadata.all_categories.length} kategori siap dimuat`, "success");
 
     } catch (error) {
-        console.error("Error loading categories:", error);
-        showAlert("Gagal memuat kategori", "danger");
+        console.error("Error loading categories metadata:", error);
+        
+        // Show error state
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                    <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-muted">Gagal memuat kategori.</span>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadCategoriesMetadata()">Coba Lagi</button>
+                </div>`;
+        }
+        
+        showAlert(`Gagal memuat kategori: ${error.message}`, "danger");
     }
 }
 
 /**
- * STEP 2: Load data HANYA untuk kategori yang dicentang
+ * STEP 2: Toggle category data on demand
  */
 async function toggleCategoryData(kategori, isChecked) {
     if (isChecked) {
-        // CENTANG: Load data untuk kategori ini
-        await loadSingleCategoryData(kategori);
+        await loadCategoryData(kategori);
     } else {
-        // UNCENTANG: Hapus data kategori ini
-        clearSingleCategoryData(kategori);
+        clearCategoryData(kategori);
     }
 }
 
 /**
- * Load data untuk SATU kategori saja
+ * Load data untuk kategori spesifik
  */
-async function loadSingleCategoryData(kategori) {
-    // Prevent double loading
+async function loadCategoryData(kategori) {
     if (activeCategories.has(kategori) || loadingCategories.has(kategori)) {
         return;
     }
@@ -245,14 +274,26 @@ async function loadSingleCategoryData(kategori) {
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
 
-        // Request data HANYA untuk kategori ini
+        // Request data untuk kategori spesifik
         let queryString = `?category=${encodeURIComponent(kategori)}`;
         if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
         if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
         if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
 
+        console.log('Requesting category data:', `/geojson${queryString}`);
+
         const response = await fetch(`/geojson${queryString}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const categoryData = await response.json();
+        console.log('Category data response:', categoryData);
+
+        if (categoryData.type === 'error') {
+            throw new Error(categoryData.message || 'Server error');
+        }
 
         if (!categoryData?.features?.length) {
             showAlert(`Tidak ada data untuk kategori ${kategori}`, "warning");
@@ -260,21 +301,19 @@ async function loadSingleCategoryData(kategori) {
             return;
         }
 
-        // Find target layer
-        let targetLayer = getTargetLayer(kategori);
+        // Get target layer
+        const targetLayer = getTargetLayer(kategori);
         if (!targetLayer) {
-            console.error(`Target layer tidak ditemukan untuk kategori: ${kategori}`);
-            loadingCategories.delete(kategori);
-            return;
+            throw new Error(`Target layer tidak ditemukan untuk kategori: ${kategori}`);
         }
 
-        // Clear existing data (jika ada)
+        // Clear existing data
         targetLayer.clearLayers();
 
         // Get marker options
         const markerOptions = getMarkerOptions(kategori);
 
-        // Add HANYA features untuk kategori ini
+        // Add features to layer
         let addedCount = 0;
         categoryData.features.forEach((feature) => {
             try {
@@ -290,7 +329,7 @@ async function loadSingleCategoryData(kategori) {
             }
         });
 
-        // Add ke peta
+        // Add to map
         if (!map.hasLayer(targetLayer)) {
             map.addLayer(targetLayer);
         }
@@ -298,34 +337,35 @@ async function loadSingleCategoryData(kategori) {
         activeCategories.add(kategori);
         loadingCategories.delete(kategori);
         
-        showAlert(`${addedCount} data ${kategori} dimuat`, "success");
-        updateLegend();
+        showAlert(`${addedCount} data ${kategori} berhasil dimuat`, "success");
+        generateLegend();
+
+        // Handle pagination if available
+        if (categoryData.pagination?.has_more) {
+            addLoadMoreButton(kategori, categoryData.pagination);
+        }
 
     } catch (error) {
-        console.error(`Error loading ${kategori}:`, error);
-        showAlert(`Gagal memuat data ${kategori}`, "danger");
+        console.error(`Error loading category ${kategori}:`, error);
+        showAlert(`Gagal memuat data ${kategori}: ${error.message}`, "danger");
         loadingCategories.delete(kategori);
     }
 }
 
 /**
- * Hapus data untuk SATU kategori saja
+ * Clear category data
  */
-function clearSingleCategoryData(kategori) {
+function clearCategoryData(kategori) {
     const targetLayer = getTargetLayer(kategori);
     if (targetLayer) {
-        // Remove dari peta
         if (map.hasLayer(targetLayer)) {
             map.removeLayer(targetLayer);
         }
-        
-        // Clear semua features
         targetLayer.clearLayers();
-        
         activeCategories.delete(kategori);
-        
         showAlert(`Data ${kategori} dihapus`, "info");
-        updateLegend();
+        generateLegend();
+        removeLoadMoreButton(kategori);
     }
 }
 
@@ -338,11 +378,9 @@ function getTargetLayer(kategori) {
             return children[kategori];
         }
     }
-
     if (layerGroups[kategori]?.[kategori]) {
         return layerGroups[kategori][kategori];
     }
-
     return null;
 }
 
@@ -350,46 +388,132 @@ function getTargetLayer(kategori) {
  * Get marker options for kategori
  */
 function getMarkerOptions(kategori) {
-    const catObj = availableCategories.find(c => c.nama === kategori);
-    if (catObj && catObj.is_marker && catObj.icon) {
-        const iconWarna = catObj.warna || "blue";
+    const metadata = kategoriMetadata[kategori];
+    if (metadata && metadata.is_marker && metadata.icon) {
         return L.ExtraMarkers.icon({
-            icon: catObj.icon,
+            icon: metadata.icon,
             prefix: "fa",
             svg: true,
-            markerColor: iconWarna,
+            markerColor: metadata.warna || "blue",
             iconColor: "white",
             shape: "circle",
-            html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
         });
     }
     return null;
 }
 
 /**
- * Update legend HANYA untuk kategori aktif
+ * Add load more button for paginated data
  */
-function updateLegend() {
+function addLoadMoreButton(kategori, pagination) {
+    const checkboxContainer = document.querySelector(`input[data-category="${kategori}"]`)?.closest('.px-4');
+    if (!checkboxContainer) return;
+
+    removeLoadMoreButton(kategori); // Remove existing button
+
+    const loadMoreBtn = document.createElement('button');
+    loadMoreBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+    loadMoreBtn.style.fontSize = '0.7rem';
+    loadMoreBtn.innerHTML = `<i class="bi bi-plus-circle me-1"></i>Load More (${pagination.page}/${Math.ceil(pagination.total / pagination.limit)})`;
+    loadMoreBtn.setAttribute('data-load-more', kategori);
+    
+    loadMoreBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await loadMoreCategoryData(kategori, pagination.next_page);
+    });
+
+    checkboxContainer.appendChild(loadMoreBtn);
+}
+
+/**
+ * Remove load more button
+ */
+function removeLoadMoreButton(kategori) {
+    const existingBtn = document.querySelector(`button[data-load-more="${kategori}"]`);
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+}
+
+/**
+ * Load more data for category (pagination)
+ */
+async function loadMoreCategoryData(kategori, page) {
+    if (loadingCategories.has(kategori)) return;
+
+    loadingCategories.add(kategori);
+
+    try {
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const tipeLayer = getDataType(urlPath);
+
+        let queryString = `?category=${encodeURIComponent(kategori)}&page=${page}`;
+        if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
+        if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
+        if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
+
+        const response = await fetch(`/geojson${queryString}`);
+        const categoryData = await response.json();
+
+        if (categoryData?.features?.length) {
+            const targetLayer = getTargetLayer(kategori);
+            const markerOptions = getMarkerOptions(kategori);
+
+            categoryData.features.forEach((feature) => {
+                try {
+                    L.geoJSON(feature, {
+                        pointToLayer: (feature, latlng) =>
+                            markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
+                        style: getStyleForCategory(kategori),
+                        onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
+                    }).addTo(targetLayer);
+                } catch (e) {
+                    console.warn(`Error adding feature:`, e);
+                }
+            });
+
+            showAlert(`${categoryData.features.length} data tambahan ${kategori} dimuat`, "success");
+
+            if (categoryData.pagination?.has_more) {
+                addLoadMoreButton(kategori, categoryData.pagination);
+            } else {
+                removeLoadMoreButton(kategori);
+            }
+        }
+
+        loadingCategories.delete(kategori);
+
+    } catch (error) {
+        console.error(`Error loading more data for ${kategori}:`, error);
+        showAlert(`Gagal memuat data tambahan ${kategori}`, "danger");
+        loadingCategories.delete(kategori);
+    }
+}
+
+/**
+ * Generate legend untuk kategori aktif
+ */
+function generateLegend() {
     const legendContainer = document.getElementById("legend-content");
     if (!legendContainer) return;
 
     legendContainer.innerHTML = "";
 
     activeCategories.forEach((kategori) => {
-        const icon = iconMap[kategori];
-        const color = kategoriWarnaMap[kategori] || "#ccc";
-        
+        const metadata = kategoriMetadata[kategori];
+        if (!metadata) return;
+
         const targetLayer = getTargetLayer(kategori);
         let featureCount = 0;
         if (targetLayer) {
             targetLayer.eachLayer(() => featureCount++);
         }
 
-        if (icon) {
+        if (metadata.icon) {
             legendContainer.innerHTML += `
                 <div class="d-flex align-items-center mb-2">
                     <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
-                        <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+                        <i class="${metadata.icon}" style="font-size: 12px; color: ${metadata.warna}; line-height: 1;"></i>
                     </div>
                     <span style="font-size: 0.85rem;">${kategori} (${featureCount})</span>
                 </div>
@@ -397,7 +521,7 @@ function updateLegend() {
         } else {
             legendContainer.innerHTML += `
                 <div class="d-flex align-items-center mb-2">
-                    <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                    <div style="width: 14px; height: 14px; background-color: ${metadata.warna}; border: 1px solid #333; margin-right: 8px;"></div>
                     <span style="font-size: 0.85rem;">${kategori} (${featureCount})</span>
                 </div>
             `;
@@ -406,7 +530,7 @@ function updateLegend() {
 }
 
 /**
- * Popup content
+ * Bind popup content
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
@@ -415,15 +539,16 @@ function bindPopupContent(feature, layer, urlPath) {
     }</h5>`;
 
     if (props.gambar) {
-        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
+        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN || ''}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
     }
     
     content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
         <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
     
-    Object.entries(props).forEach(([key, value]) => {
-        const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
-        if (allowedKeys.includes(key.toUpperCase()) && value) {
+    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN", "deskripsi"];
+    allowedKeys.forEach(key => {
+        const value = props[key] || props[key.toLowerCase()] || props[key.toUpperCase()];
+        if (value) {
             const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
             content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
@@ -471,7 +596,7 @@ function bindPopupContent(feature, layer, urlPath) {
 }
 
 /**
- * Update layer list dengan checkbox yang BENAR-BENAR on-demand
+ * Update layer list dengan true on-demand checkboxes
  */
 function updateLayerList() {
     const container = document.getElementById("layer-list");
@@ -518,7 +643,7 @@ function updateLayerList() {
         badge.className = "badge bg-light text-dark ms-2";
         badge.textContent = subCount;
 
-        // Parent checkbox - TOGGLE SEMUA CHILDREN
+        // Parent checkbox event
         checkboxRoot.addEventListener("change", async () => {
             const isChecked = checkboxRoot.checked;
             
@@ -559,8 +684,9 @@ function updateLayerList() {
             checkbox.type = "checkbox";
             checkbox.className = "form-check-input me-3";
             checkbox.id = subId;
+            checkbox.setAttribute('data-category', subname);
 
-            // INDIVIDUAL CHECKBOX - TOGGLE HANYA KATEGORI INI
+            // Individual checkbox event
             checkbox.addEventListener("change", async () => {
                 await toggleCategoryData(subname, checkbox.checked);
 
@@ -584,9 +710,10 @@ function updateLayerList() {
             label.className = "form-check-label";
             label.htmlFor = subId;
             
-            // Tampilkan jumlah data
-            const dataCount = categoryDataCounts[subname];
-            const labelText = dataCount ? `${subname} (${dataCount})` : subname;
+            // Show data count
+            const metadata = kategoriMetadata[subname];
+            const dataCount = metadata?.data_count || 0;
+            const labelText = dataCount > 0 ? `${subname} (${dataCount})` : subname;
             label.textContent = labelText;
 
             label.style.cssText = `
@@ -627,6 +754,7 @@ function updateLayerList() {
  * Setup UI controls
  */
 function setupUI() {
+    // Transparency slider
     const transparencySlider = document.getElementById("transparency");
     if (transparencySlider) {
         transparencySlider.addEventListener("input", (e) => {
@@ -647,6 +775,7 @@ function setupUI() {
         });
     }
 
+    // Basemap controls
     const basemapList = document.getElementById("basemap-list");
     if (basemapList) {
         mapConfig.baseMapsList.forEach((bm, i) => {
@@ -664,17 +793,17 @@ function setupUI() {
 }
 
 /**
- * Entry point - Load HANYA kategori, data on-demand
+ * Initialize application
  */
 document.addEventListener("DOMContentLoaded", async () => {
     // Setup basemap
     changeBaseMap("esri-world-imagery");
     setupUI();
     
-    // Load HANYA kategori metadata
-    await loadCategories();
+    // Load categories metadata only
+    await loadCategoriesMetadata();
 
-    // Setup sidebar controls
+    // Setup sidebar controls (existing code from original)
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
@@ -697,7 +826,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Sidebar toggles
+    // Sidebar toggles dan event handlers lainnya
     Object.entries(toggleButtons).forEach(([key, button]) => {
         if (button && sidebarElements[key]) {
             button.addEventListener("click", () => {
@@ -775,5 +904,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    console.log("Map app initialized - true on-demand loading");
+    console.log("Map application initialized with true on-demand loading");
 });
