@@ -10,6 +10,8 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\VisitorsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -71,7 +73,13 @@ Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisi
 */
 
 Route::prefix('dashboard')->middleware(['auth'])->group(function () {
+      // Visitor Analytics routes
+    Route::get('/visitors/export', [VisitorsController::class, 'export'])->name('visitors.export');
+    Route::post('/visitors/analytics', [VisitorsController::class, 'analytics'])->name('visitors.analytics');
+    Route::delete('/visitors/bulk-destroy', [VisitorsController::class, 'bulkDestroy'])->name('visitors.bulk-destroy');
     
+    // Resource routes for visitors
+    Route::resource('visitors', VisitorsController::class)->only(['index', 'show', 'destroy']);
     /*
     |--------------------------------------------------------------------------
     | Unified Data Spatial Management
@@ -278,6 +286,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
    Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
     Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
     Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
+
 
 // Bulk operations - also before resource routes
 Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
