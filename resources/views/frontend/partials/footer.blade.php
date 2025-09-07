@@ -17,10 +17,13 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-4 col-md-6 mb-4">
-                <h5>
-                    <img width="50" src="{{ asset('frontend/img/logo.webp') }}" alt="Logo MARIMOI" />
-                    MARIMOI
-                </h5>
+                <div class="d-flex align-items-center mb-3">
+
+                    <img width="40" src="{{ asset('frontend/img/logo/logo-white.png') }}" alt="Logo MARIMOI" />
+                    <h5 class="ms-3 mb-0 fs-2">
+                        MARIMOI
+                    </h5>
+                </div>
                 <p class="mb-4">
                     Sistem Informasi Manajemen Akselerasi Infrastruktur
                     untuk Monitoring dan Integrasi Wilayah Provinsi

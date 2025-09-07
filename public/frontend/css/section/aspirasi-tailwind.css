@@ -1,0 +1,130 @@
+/* ==========================================================================
+   ASPIRASI SECTION - TAILWIND SUPPORTING CSS
+   ========================================================================== */
+
+/* Counter Animation Support */
+.counter-number {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+
+/* Enhanced glassmorphism effect for counter section */
+.counter-section {
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.counter-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transition: left 0.8s ease;
+}
+
+.counter-section:hover::before {
+    left: 100%;
+}
+
+/* Button enhancement */
+.aspirasi-cta-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.aspirasi-cta-button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.5s ease;
+    z-index: 1;
+}
+
+.aspirasi-cta-button:hover::before {
+    left: 100%;
+}
+
+.aspirasi-cta-button span {
+    position: relative;
+    z-index: 2;
+}
+
+/* Responsive enhancements */
+@media (max-width: 480px) {
+    .counter-number {
+        font-size: 2rem !important;
+    }
+
+    .counter-label {
+        font-size: 0.9rem !important;
+        line-height: 1.2 !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .counter-number {
+        font-size: 1.75rem !important;
+    }
+
+    .counter-label {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Animation utilities */
+@keyframes countUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.counter-number.animate-count {
+    animation: countUp 0.8s ease-out;
+}
+
+/* Focus states for accessibility */
+.aspirasi-cta-button:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .counter-section {
+        background: #f3f4f6 !important;
+        color: #000 !important;
+    }
+
+    .counter-number,
+    .counter-label {
+        color: #000 !important;
+    }
+
+    .aspirasi-cta-button {
+        display: none;
+    }
+}

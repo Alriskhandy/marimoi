@@ -1,12 +1,14 @@
 <?php
 
-use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FrontendController;
-use App\Http\Controllers\LokasiController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
+Route::get('/test', function(){
+    return view('frontend.pages.index-dark');
+});
+
 Route::get('/', [FrontendController::class, 'index'])->name('beranda');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');

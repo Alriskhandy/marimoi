@@ -13,13 +13,13 @@
         content="Sistem Informasi, Akselerasi Infrastruktur, Manajemen Proyek, Monitoring Infrastruktur, Peta Proyek, Pemerintahan Digital, MARIMOI, Sistem Infrastruktur, Pembangunan Daerah, WebGIS">
 
     <!-- Favicons -->
-    <link href="{{ asset('frontend/favicon/favicon.ico') }}" rel="icon" type="image/webp">
-    <link href="{{ asset('frontend/favicon/apple-touch-icon.png') }}" rel="apple-touch-icon">
-    <link href="{{ asset('frontend/favicon/favicon-32x32.png') }}" rel="icon" sizes="32x32">
-    <link href="{{ asset('frontend/favicon/favicon-16x16.png') }}" rel="icon" sizes="16x16">
-    <link href="{{ asset('frontend/favicon/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
+    <link href="{{ asset('frontend/favicon_io/favicon.ico') }}" rel="icon" type="image/webp">
+    <link href="{{ asset('frontend/favicon_io/apple-touch-icon.png') }}" rel="apple-touch-icon">
+    <link href="{{ asset('frontend/favicon_io/favicon-32x32.png') }}" rel="icon" sizes="32x32">
+    <link href="{{ asset('frontend/favicon_io/favicon-16x16.png') }}" rel="icon" sizes="16x16">
+    <link href="{{ asset('frontend/favicon_io/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
     <!-- Android/Chrome -->
-    <link href="{{ asset('frontend/favicon/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
+    <link href="{{ asset('frontend/favicon_io/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
     <!-- Android/Chrome -->
 
     <!-- Vendor CSS Files -->
