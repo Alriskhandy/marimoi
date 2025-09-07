@@ -85,7 +85,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
-        
+    
          
         // Debug routes for file uploads
         Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
@@ -274,6 +274,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::resource('aspirasi', AspirasiController::class);
     Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
     Route::get('aspirasi/{aspirasi}/download/{index}', [AspirasiController::class, 'downloadLampiran'])->name('aspirasi.downloadLampiran');
+   
+    // Route dengan prefix yang jelas untuk menghindari konflik
+    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
     
 Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
 
