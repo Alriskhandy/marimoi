@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <img width="40" src="{{ asset('frontend/img/logo.webp') }}" alt="Logo Bappeda" />
+            <img width="40" src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="Logo Bappeda" />
             <span>MARIMOI</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
