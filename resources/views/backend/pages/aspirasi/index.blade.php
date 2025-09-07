@@ -590,7 +590,7 @@
 @endsection
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('datatables/datatables.css') }}">
+   
     <style>
         /* Checkbox styling yang sama dengan data spatial */
         .checkbox-wrapper {
@@ -837,8 +837,7 @@
 @endpush
 
 @section('scripts')
-    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
-    <script src="{{ asset('datatables/datatables.js') }}"></script>
+    
 
     <script>
         $(document).ready(function() {

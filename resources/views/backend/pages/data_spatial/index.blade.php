@@ -328,11 +328,10 @@
 @endsection
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('datatables/datatables.css') }}">
     <style>
         /* ===========================================
-                                               CHECKBOX STYLING - PERBAIKAN UTAMA
-                                            =========================================== */
+                                                       CHECKBOX STYLING - PERBAIKAN UTAMA
+                                                    =========================================== */
         .checkbox-wrapper {
             display: flex;
             align-items: center;
@@ -414,8 +413,8 @@
         }
 
         /* ===========================================
-                                               TABLE STYLING IMPROVEMENTS
-                                            =========================================== */
+                                                       TABLE STYLING IMPROVEMENTS
+                                                    =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -475,8 +474,8 @@
         }
 
         /* ===========================================
-                                               DATATABLE CUSTOM STYLING
-                                            =========================================== */
+                                                       DATATABLE CUSTOM STYLING
+                                                    =========================================== */
         .dataTables_wrapper {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -542,8 +541,8 @@
         }
 
         /* ===========================================
-                                               BULK ACTIONS BAR
-                                            =========================================== */
+                                                       BULK ACTIONS BAR
+                                                    =========================================== */
         #bulkActionsBar {
             background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
             border: 1px solid #2196f3;
@@ -565,8 +564,8 @@
         }
 
         /* ===========================================
-                                               MODAL IMPROVEMENTS
-                                            =========================================== */
+                                                       MODAL IMPROVEMENTS
+                                                    =========================================== */
         .modal-content {
             border: none;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -581,8 +580,8 @@
         }
 
         /* ===========================================
-                                               RESPONSIVE IMPROVEMENTS
-                                            =========================================== */
+                                                       RESPONSIVE IMPROVEMENTS
+                                                    =========================================== */
         @media (max-width: 768px) {
             .checkbox-wrapper {
                 padding: 4px;
@@ -606,8 +605,8 @@
         }
 
         /* ===========================================
-                                               LOADING STATES
-                                            =========================================== */
+                                                       LOADING STATES
+                                                    =========================================== */
         .table-loading {
             position: relative;
         }
@@ -624,8 +623,8 @@
         }
 
         /* ===========================================
-                                               ACCESSIBILITY IMPROVEMENTS
-                                            =========================================== */
+                                                       ACCESSIBILITY IMPROVEMENTS
+                                                    =========================================== */
         .visually-hidden {
             position: absolute !important;
             width: 1px !important;
@@ -648,12 +647,6 @@
 @endpush
 
 @push('scripts')
-    <!-- jQuery harus pertama -->
-    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
-
-    <!-- DataTables JS -->
-    <script src="{{ asset('datatables/datatables.js') }}"></script>
-
     <script>
         $(document).ready(function() {
             // Initialize DataTable with improved configuration

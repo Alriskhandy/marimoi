@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     {{-- <link rel="stylesheet" href="{{ asset('DataTables/datatables.js') }}"> --}}
     <!-- End layout styles -->
-
+    <link rel="stylesheet" href="{{ asset('datatables/datatables.css') }}">
     <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
     @stack('styles')
     <style>
@@ -165,7 +165,8 @@
         });
     </script>
 
-
+    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('datatables/datatables.js') }}"></script>
     <!-- Custom js for this page -->
     <script src="{{ asset('backend/assets/js/dashboard.js') }}"></script>
     <!-- End custom js for this page -->

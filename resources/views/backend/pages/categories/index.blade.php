@@ -609,11 +609,10 @@
 @endsection
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('datatables/datatables.min.css') }}">
     <style>
         /* ===========================================
-                                                                                                                               FORM STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       FORM STYLING
+                                                                                                                                    =========================================== */
         .form-control-color {
             max-width: 50px;
             height: 38px;
@@ -627,8 +626,8 @@
         }
 
         /* ===========================================
-                                                                                                                               TABLE STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       TABLE STYLING
+                                                                                                                                    =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -679,8 +678,8 @@
         }
 
         /* ===========================================
-                                                                                                                               BADGE STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       BADGE STYLING
+                                                                                                                                    =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -701,8 +700,8 @@
         }
 
         /* ===========================================
-                                                                                                                               COLOR PREVIEW STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       COLOR PREVIEW STYLING
+                                                                                                                                    =========================================== */
         .color-preview {
             display: flex;
             align-items: center;
@@ -715,8 +714,8 @@
         }
 
         /* ===========================================
-                                                                                                                               BUTTON GROUP STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       BUTTON GROUP STYLING
+                                                                                                                                    =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -728,8 +727,8 @@
         }
 
         /* ===========================================
-                                                                                                                               DATATABLE STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       DATATABLE STYLING
+                                                                                                                                    =========================================== */
         .dataTables_wrapper {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -795,8 +794,8 @@
         }
 
         /* ===========================================
-                                                                                                                               MODAL STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       MODAL STYLING
+                                                                                                                                    =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -815,8 +814,8 @@
         }
 
         /* ===========================================
-                                                                                                                               ICON PREVIEW STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       ICON PREVIEW STYLING
+                                                                                                                                    =========================================== */
         .icon-preview-container {
             min-height: 60px;
             display: flex;
@@ -869,8 +868,8 @@
         }
 
         /* ===========================================
-                                                                                                                               STATISTICS CARDS
-                                                                                                                            =========================================== */
+                                                                                                                                       STATISTICS CARDS
+                                                                                                                                    =========================================== */
         .card.bg-gradient-primary,
         .card.bg-gradient-success,
         .card.bg-gradient-warning {
@@ -887,8 +886,8 @@
         }
 
         /* ===========================================
-                                                                                                                               HIERARCHY CONTROLS STYLING
-                                                                                                                            =========================================== */
+                                                                                                                                       HIERARCHY CONTROLS STYLING
+                                                                                                                                    =========================================== */
         .hierarchy-controls {
             margin-bottom: 10px;
         }
@@ -926,8 +925,8 @@
         }
 
         /* ===========================================
-                                                                                                                               UTILITY CLASSES
-                                                                                                                            =========================================== */
+                                                                                                                                       UTILITY CLASSES
+                                                                                                                                    =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -937,8 +936,8 @@
         }
 
         /* ===========================================
-                                                                                                                               RESPONSIVE IMPROVEMENTS
-                                                                                                                            =========================================== */
+                                                                                                                                       RESPONSIVE IMPROVEMENTS
+                                                                                                                                    =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -968,8 +967,8 @@
         }
 
         /* ===========================================
-                                                                                                                               FOCUS AND ACCESSIBILITY
-                                                                                                                            =========================================== */
+                                                                                                                                       FOCUS AND ACCESSIBILITY
+                                                                                                                                    =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -991,12 +990,6 @@
 @endpush
 
 @push('scripts')
-    <!-- jQuery harus pertama -->
-    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
-
-    <!-- DataTables JS -->
-    <script src="{{ asset('datatables/datatables.min.js') }}"></script>
-
     <script>
         $(document).ready(function() {
             // Global state tracking - declare at the top
