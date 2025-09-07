@@ -110,138 +110,252 @@ class FrontendController extends Controller
 
     // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE //
     public function getGeojsonByDataType(Request $request)
-    {
-        $dataType = $request->get('type');
-        $subType = $request->get('sub_type');
-        $year = $request->get('year');
-        // dd($dataType, $subType, $year);
+{
+    $dataType = $request->get('type');
+    $subType = $request->get('sub_type');
+    $year = $request->get('year');
 
-        $query = DB::table('data_spatial')
-            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
-            ->select(
-                'data_spatial.id',
-                'data_spatial.uuid',
-                'data_spatial.data_type',
-                'data_spatial.sub_type',
-                'data_spatial.gambar',
-                'data_spatial.kategori_id',
-                'data_spatial.tahun',
-                'categories.nama as kategori',
-                'data_spatial.deskripsi',
-                'data_spatial.dbf_attributes',
-                'categories.icon',
-                'categories.warna',
-                'categories.is_marker',
-                DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson')
-            );
+    // PERBAIKAN UTAMA: Check apakah request metadata_only
+    if ($request->has('metadata_only') && $request->get('metadata_only') === 'true') {
+        return $this->getMetadataOnly($request, $dataType, $subType, $year);
+    }
 
-        if ($dataType) {
-            $query->where('data_spatial.data_type', $dataType);
+    // PERBAIKAN UTAMA: Check apakah request category specific
+    if ($request->has('category') && !empty($request->get('category'))) {
+        return $this->getCategorySpecificData($request, $dataType, $subType, $year);
+    }
+
+    // Fallback: Return empty features jika tidak ada parameter spesifik
+    $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+    
+    $allCategories = Category::where('type', $categoryType)
+        ->with('parent')
+        ->orderBy('nama')
+        ->get();
+
+    return response()->json([
+        'type' => 'FeatureCollection',
+        'features' => [], // KOSONG - tidak ada data spatial
+        'all_categories' => $allCategories,
+        'meta' => [
+            'data_type' => $dataType,
+            'sub_type' => $subType,
+            'year' => $year,
+            'total_features' => 0,
+            'total_categories' => $allCategories->count(),
+            'message' => 'Use metadata_only=true for categories or category=nama for specific data',
+            'generated_at' => now()->toISOString()
+        ]
+    ]);
+}
+
+/**
+ * Get HANYA metadata kategori (TANPA data spatial)
+ */
+private function getMetadataOnly(Request $request, $dataType, $subType, $year)
+{
+    $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+
+    // Query untuk mendapatkan kategori dengan data count
+    $categoriesWithCounts = DB::table('data_spatials')
+        ->join('categories', 'data_spatials.kategori_id', '=', 'categories.id')
+        ->select([
+            'categories.id',
+            'categories.nama',
+            'categories.warna',
+            'categories.icon',
+            'categories.is_marker',
+            'categories.parent_id',
+            DB::raw('COUNT(data_spatials.id) as data_count')
+        ])
+        ->where('categories.type', $categoryType)
+        ->when($dataType, fn($q) => $q->where('data_spatials.data_type', $dataType))
+        ->when($subType, fn($q) => $q->where('data_spatials.sub_type', $subType))
+        ->when($year, fn($q) => $q->where('data_spatials.tahun', $year))
+        ->groupBy([
+            'categories.id', 
+            'categories.nama', 
+            'categories.warna', 
+            'categories.icon', 
+            'categories.is_marker', 
+            'categories.parent_id'
+        ])
+        ->having('data_count', '>', 0)
+        ->orderBy('categories.nama')
+        ->get();
+
+    // Get parent categories tanpa join ke data_spatials
+    $rootCategories = Category::where('type', $categoryType)
+        ->whereNull('parent_id')
+        ->select(['id', 'nama', 'warna', 'icon', 'is_marker', 'parent_id'])
+        ->orderBy('nama')
+        ->get();
+
+    return response()->json([
+        'type' => 'metadata',
+        'all_categories' => $categoriesWithCounts,
+        'root_categories' => $rootCategories,
+        'meta' => [
+            'data_type' => $dataType,
+            'sub_type' => $subType,
+            'year' => $year,
+            'total_categories' => $categoriesWithCounts->count(),
+            'message' => 'Metadata only - no spatial data included',
+            'generated_at' => now()->toISOString()
+        ]
+    ]);
+}
+
+/**
+ * Get data spatial untuk kategori spesifik saja
+ */
+private function getCategorySpecificData(Request $request, $dataType, $subType, $year)
+{
+    $categoryName = $request->get('category');
+    $page = (int) $request->get('page', 1);
+    $limit = min((int) $request->get('limit', 500), 1000); // Max 1000 per request
+    $offset = ($page - 1) * $limit;
+
+    // Build query HANYA untuk kategori yang diminta
+    $query = DB::table('data_spatials')
+        ->join('categories', 'data_spatials.kategori_id', '=', 'categories.id')
+        ->select(
+            'data_spatials.id',
+            'data_spatials.uuid',
+            'data_spatials.data_type',
+            'data_spatials.sub_type',
+            'data_spatials.gambar',
+            'data_spatials.kategori_id',
+            'data_spatials.tahun',
+            'categories.nama as kategori',
+            'data_spatials.deskripsi',
+            'data_spatials.dbf_attributes',
+            'categories.icon',
+            'categories.warna',
+            'categories.is_marker',
+            DB::raw('ST_AsGeoJSON(data_spatials.geom) as geojson')
+        )
+        ->where('categories.nama', $categoryName);
+
+    // Apply filters
+    if ($dataType) {
+        $query->where('data_spatials.data_type', $dataType);
+    }
+
+    if ($subType) {
+        $query->where('data_spatials.sub_type', $subType);
+    }
+
+    if ($year) {
+        $query->where('data_spatials.tahun', $year);
+    }
+
+    // Apply additional filters
+    if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
+        foreach ($request->dbf_filter as $attribute => $value) {
+            $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
         }
+    }
 
-        if ($subType) {
-            $query->where('data_spatial.sub_type', $subType);
-        }
-
-        if ($year) {
-            $query->where('data_spatial.tahun', $year);
-        }
-
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn('categories.nama', $categories);
-        }
-
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
-            }
-        }
-
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('categories.nama', 'ILIKE', "%{$search}%")
-                ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
-                ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
-            });
-        }
-
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
-            }
-        }
-
-        $lokasis = $query->get(); // Langsung eksekusi tanpa cache
-        
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'uuid' => $lokasi->uuid,
-                    'data_type' => $lokasi->data_type,
-                    'sub_type' => $lokasi->sub_type,
-                    'gambar' => $lokasi->gambar ? asset('storage/' . $lokasi->gambar) : null,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'tahun' => $lokasi->tahun,
-                    'deskripsi' => $lokasi->deskripsi,
-                    'icon' => $lokasi->icon,
-                    'warna' => $lokasi->warna,
-                    'is_marker' => (bool) $lokasi->is_marker,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
+    if ($request->has('search') && !empty($request->search)) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('data_spatials.deskripsi', 'ILIKE', "%{$search}%")
+              ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
         });
+    }
 
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+    if ($request->has('bbox') && !empty($request->bbox)) {
+        $bbox = explode(',', $request->bbox);
+        if (count($bbox) === 4) {
+            $query->whereRaw("ST_Intersects(data_spatials.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+        }
+    }
 
-        // Kategori juga diambil tanpa cache
-        $rootCategories = Category::where('type', $categoryType)
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->roots()
-            ->orderBy('nama')
-            ->get();
+    // Get total count terlebih dahulu
+    $totalQuery = clone $query;
+    $total = $totalQuery->count();
 
-        $allCategories = Category::where('type', $categoryType)
-            ->with('parent')
-            ->orderBy('nama')
-            ->get();
-        // dd($allCategories, $rootCategories, $categoryType);
+    if ($total === 0) {
         return response()->json([
             'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
+            'features' => [],
+            'category' => $categoryName,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => 0,
+                'has_more' => false
+            ],
             'meta' => [
-                'data_type' => $dataType,
-                'sub_type' => $subType,
-                'year' => $year,
-                'total_features' => $features->count(),
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
+                'message' => "Tidak ada data untuk kategori {$categoryName}"
             ]
         ]);
     }
 
-    public function getCategoryTypeByDataType($dataType, $subType)
-    {
-        return match ($dataType) {
-            'tematik' => 'tematik',
-            'usulan_musrenbang' => 'usulan_musrenbang',
-            'pokir_dprd' => 'pokir_dprd',
-            'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
-            default => 'tematik',
-        };
-    }
+    // Get paginated data
+    $lokasis = $query
+        ->offset($offset)
+        ->limit($limit)
+        ->get();
+
+    // Convert to GeoJSON features
+    $features = $lokasis->map(function ($lokasi) {
+        $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+
+        return [
+            'type' => 'Feature',
+            'properties' => array_merge([
+                'id' => $lokasi->id,
+                'uuid' => $lokasi->uuid,
+                'data_type' => $lokasi->data_type,
+                'sub_type' => $lokasi->sub_type,
+                'gambar' => $lokasi->gambar ? asset('storage/' . $lokasi->gambar) : null,
+                'kategori_id' => $lokasi->kategori_id,
+                'kategori' => $lokasi->kategori,
+                'tahun' => $lokasi->tahun,
+                'deskripsi' => $lokasi->deskripsi,
+                'icon' => $lokasi->icon,
+                'warna' => $lokasi->warna,
+                'is_marker' => (bool) $lokasi->is_marker,
+            ], $dbfAttributes),
+            'geometry' => json_decode($lokasi->geojson),
+        ];
+    });
+
+    $hasMore = ($offset + $limit) < $total;
+
+    return response()->json([
+        'type' => 'FeatureCollection',
+        'features' => $features,
+        'category' => $categoryName,
+        'pagination' => [
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'has_more' => $hasMore,
+            'next_page' => $hasMore ? $page + 1 : null
+        ],
+        'meta' => [
+            'data_type' => $dataType,
+            'sub_type' => $subType,
+            'year' => $year,
+            'total_features' => $features->count(),
+            'generated_at' => now()->toISOString()
+        ]
+    ]);
+}
+
+public function getCategoryTypeByDataType($dataType, $subType)
+{
+    return match ($dataType) {
+        'tematik' => 'tematik',
+        'usulan_musrenbang' => 'usulan_musrenbang',
+        'pokir_dprd' => 'pokir_dprd',
+        'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
+        default => 'tematik',
+    };
+}
 
     // DETAIL LOKASI //
     public function detailPeta(Request $request, $uuid)
