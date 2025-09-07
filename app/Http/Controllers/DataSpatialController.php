@@ -28,6 +28,9 @@ class DataSpatialController extends Controller
 
 public function index(Request $request) 
 {
+    // Tingkatkan memory limit sementara
+    ini_set('memory_limit', '256M');
+    
     $type = $request->get('type');
     $subType = $request->get('sub_type');
     $year = $request->get('year');
@@ -42,10 +45,23 @@ public function index(Request $request)
         return redirect()->back(); 
     }
 
-    $query = DataSpatial::with(['kategori', 'kategori.parent']);
+    // PERBAIKAN UTAMA: Jangan load relasi dan kolom berat sekaligus
+    $query = DataSpatial::query()
+        ->select([
+            'id',
+            'uuid', 
+            'data_type',
+            'sub_type',
+            'tahun',
+            'deskripsi',
+            'kategori_id',
+            'user_id',
+            'created_at',
+            // TIDAK mengambil kolom 'geom' dan 'dbf_attributes' yang besar
+        ]);
 
     // Filter by data type
-    $query->where('data_type', $type)->paginate(100);
+    $query->where('data_type', $type);
 
     // Filter by sub type for proyek strategis
     if ($subType && $type === 'proyek_strategis') {
@@ -62,16 +78,18 @@ public function index(Request $request)
     $userRole = $user->role->slug ?? null;
 
     if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
-        // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan user_id
         $query->where('user_id', $user->id);
     }
 
-    // Get all results (tidak menggunakan paginate)
-    // DataTables akan handle pagination di frontend
-    $data = $query->orderBy('created_at', 'desc')->get();
+    // PERBAIKAN: Gunakan pagination untuk membatasi data yang dimuat
+    $data = $query->orderBy('created_at', 'desc')
+                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama']) // Load relasi dengan select terbatas
+                  ->paginate(50); // Batasi ke 50 records per halaman
 
-    // Ambil kategori
-    $categoriesQuery = Category::with('children')->roots();
+    // Ambil kategori dengan select terbatas
+    $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
+                              ->with(['children:id,nama,parent_id'])
+                              ->roots();
 
     if ($type === 'proyek_strategis') {
         $categories = $categoriesQuery->where('type', $subType)->get();
