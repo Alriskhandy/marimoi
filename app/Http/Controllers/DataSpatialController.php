@@ -45,7 +45,7 @@ public function index(Request $request)
     $query = DataSpatial::with(['kategori', 'kategori.parent']);
 
     // Filter by data type
-    $query->where('data_type', $type);
+    $query->where('data_type', $type)->paginate(100);
 
     // Filter by sub type for proyek strategis
     if ($subType && $type === 'proyek_strategis') {
