@@ -26,8 +26,7 @@
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
     {{-- <link rel="stylesheet" href="{{ asset('backend/DataTables/datatables.js') }}"> --}}
     <!-- End layout styles -->
-    <link rel="stylesheet" href="{{ asset('backend/datatables/datatables.min.css') }}"
-        onerror="this.href='https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css'">
+    <link rel="stylesheet" href="{{ asset('backend/datatables/datatables.min.css') }}">
     <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
     @stack('styles')
     <style>
@@ -167,21 +166,9 @@
     </script>
 
     <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
-    <script src="{{ asset('backend/datatables/datatables.min.js') }}" onerror="loadDataTablesFromCDN()"></script>
+    <script src="{{ asset('backend/datatables/datatables.min.js') }}"></script>
 
-    <script>
-        function loadDataTablesFromCDN() {
-            const script1 = document.createElement('script');
-            script1.src = 'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js';
-            document.head.appendChild(script1);
 
-            script1.onload = function() {
-                const script2 = document.createElement('script');
-                script2.src = 'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js';
-                document.head.appendChild(script2);
-            };
-        }
-    </script>
     <!-- Custom js for this page -->
     <script src="{{ asset('backend/assets/js/dashboard.js') }}"></script>
     <!-- End custom js for this page -->
