@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AspirasiExport;
 use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
@@ -9,12 +10,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AspirasiController extends Controller
 {
@@ -341,6 +344,117 @@ public function bulkDestroy(Request $request): RedirectResponse
         ]);
         
         return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+    }
+}
+
+public function export(Request $request) // No $id parameter
+{
+    try {
+        $filters = $request->only(['kategori', 'opd', 'status', 'jenis', 'start_date', 'end_date']);
+        
+        $fileName = 'aspirasi_masyarakat_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+        
+        return (new AspirasiExport($filters))->download($fileName);
+        
+    } catch (\Exception $e) {
+        return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+    }
+}
+
+    public function exportFiltered(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'kategori' => 'nullable|exists:kategori_aspirasi,id',
+                'opd' => 'nullable|exists:opd,id',
+                'status' => 'nullable|in:pending,diproses,selesai,ditolak',
+                'jenis' => 'nullable|in:usulan,kritik & saran',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date'
+            ]);
+
+            $fileName = 'aspirasi_filtered_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+            
+            return (new AspirasiExport($validated))->download($fileName);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    
+public function previewExport(Request $request)
+{
+    try {
+        $filters = $request->only(['kategori', 'opd', 'status', 'jenis', 'start_date', 'end_date']);
+        
+        $query = Aspirasi::with(['kategoriAspirasi.opd']);
+        
+        $appliedFilters = [];
+        
+        // Apply filters and track what's being filtered
+        if (!empty($filters['kategori'])) {
+            $query->where('kategori_aspirasi_id', $filters['kategori']);
+            $kategori = \App\Models\KategoriAspirasi::find($filters['kategori']);
+            $appliedFilters[] = 'Kategori: ' . ($kategori->nama_kategori ?? 'Unknown');
+        }
+        
+        if (!empty($filters['opd'])) {
+            $query->whereHas('kategoriAspirasi', function ($q) use ($filters) {
+                $q->where('opd_id', $filters['opd']);
+            });
+            $opd = \App\Models\Opd::find($filters['opd']);
+            $appliedFilters[] = 'OPD: ' . ($opd->name ?? 'Unknown');
+        }
+        
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+            $appliedFilters[] = 'Status: ' . ucfirst($filters['status']);
+        }
+        
+        if (!empty($filters['jenis'])) {
+            $query->where('jenis_aspirasi', $filters['jenis']);
+            $appliedFilters[] = 'Jenis: ' . ucfirst($filters['jenis']);
+        }
+        
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('created_at', '>=', $filters['start_date']);
+            $appliedFilters[] = 'Mulai: ' . Carbon::parse($filters['start_date'])->format('d/m/Y');
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('created_at', '<=', $filters['end_date']);
+            $appliedFilters[] = 'Sampai: ' . Carbon::parse($filters['end_date'])->format('d/m/Y');
+        }
+        
+        $count = $query->count();
+        
+        return response()->json([
+            'status' => 'success',
+            'count' => $count,
+            'applied_filters' => $appliedFilters,
+            'message' => $count > 0 ? "Ditemukan {$count} data aspirasi" : 'Tidak ada data yang sesuai filter'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal memuat preview: ' . $e->getMessage()
+        ], 500);
+    }
+}
+public function quickExport()
+{
+    try {
+        $fileName = 'aspirasi_masyarakat_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new AspirasiExport(), $fileName);
+        
+    } catch (\Exception $e) {
+        return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
     }
 }
 }

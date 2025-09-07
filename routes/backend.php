@@ -275,9 +275,16 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
     Route::get('aspirasi/{aspirasi}/download/{index}', [AspirasiController::class, 'downloadLampiran'])->name('aspirasi.downloadLampiran');
    
-    // Route dengan prefix yang jelas untuk menghindari konflik
-    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
+   Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
+    Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
+    Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
+
+// Bulk operations - also before resource routes
+Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
+
     
+    
+    // Kategori Aspirasi Management
 Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
 
     // Kategori Aspirasi Management

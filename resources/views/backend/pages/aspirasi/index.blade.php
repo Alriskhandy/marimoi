@@ -100,6 +100,21 @@
                                 Kelola dan pantau aspirasi masyarakat
                             </p>
                         </div>
+                        <div class="d-flex gap-2">
+                            {{-- Quick Export Button --}}
+                            <a href="{{ route('aspirasi.export') }}" class="btn btn-outline-success btn-sm"
+                                title="Export Semua Data">
+                                <i class="mdi mdi-file-excel"></i>
+                                <span class="d-none d-md-inline">Quick Export</span>
+                            </a>
+
+                            {{-- Advanced Export Button --}}
+                            <button type="button" class="btn btn-gradient-success btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#exportModal" title="Export dengan Filter">
+                                <i class="mdi mdi-file-excel"></i>
+                                <span class="d-none d-md-inline">Export Excel</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Bulk Actions Bar -->
@@ -332,7 +347,136 @@
             </div>
         </div>
     </div>
+    {{-- Add the Export Modal before the closing @endsection --}}
+    <!-- Export Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-success text-white">
+                    <h5 class="modal-title" id="exportModalLabel">
+                        <i class="mdi mdi-file-excel me-2"></i>
+                        Export Data Aspirasi ke Excel
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form id="exportForm">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="mdi mdi-information me-2"></i>
+                            <strong>Informasi:</strong> Pilih filter untuk mengekspor data sesuai kebutuhan, atau biarkan
+                            kosong untuk mengekspor semua data.
+                        </div>
 
+                        <div class="row">
+                            <!-- Kategori Filter -->
+                            <div class="col-md-6 mb-3">
+                                <label for="export_kategori" class="form-label">
+                                    <i class="mdi mdi-tag me-1"></i>Kategori
+                                </label>
+                                <select class="form-control" id="export_kategori" name="kategori">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach ($filteredKategori as $kategori)
+                                        <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- OPD Filter -->
+                            @if (in_array($roleSlug, ['super-admin', 'admin-bappeda']))
+                                <div class="col-md-6 mb-3">
+                                    <label for="export_opd" class="form-label">
+                                        <i class="mdi mdi-office-building me-1"></i>OPD
+                                    </label>
+                                    <select class="form-control" id="export_opd" name="opd">
+                                        <option value="">Semua OPD</option>
+                                        @php
+                                            $opdList = collect($kategoriAspirasi)
+                                                ->map(function ($kategori) {
+                                                    return $kategori->opd;
+                                                })
+                                                ->filter()
+                                                ->unique('id')
+                                                ->sortBy('name');
+                                        @endphp
+                                        @foreach ($opdList as $opd)
+                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }} -
+                                                {{ $opd->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="row">
+                            <!-- Status Filter -->
+                            <div class="col-md-6 mb-3">
+                                <label for="export_status" class="form-label">
+                                    <i class="mdi mdi-filter me-1"></i>Status
+                                </label>
+                                <select class="form-control" id="export_status" name="status">
+                                    <option value="">Semua Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="diproses">Diproses</option>
+                                    <option value="selesai">Selesai</option>
+                                    <option value="ditolak">Ditolak</option>
+                                </select>
+                            </div>
+
+                            <!-- Jenis Filter -->
+                            <div class="col-md-6 mb-3">
+                                <label for="export_jenis" class="form-label">
+                                    <i class="mdi mdi-format-list-bulleted me-1"></i>Jenis Aspirasi
+                                </label>
+                                <select class="form-control" id="export_jenis" name="jenis">
+                                    <option value="">Semua Jenis</option>
+                                    <option value="usulan">Usulan</option>
+                                    <option value="kritik & saran">Kritik & Saran</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Date Range -->
+                            <div class="col-md-6 mb-3">
+                                <label for="export_start_date" class="form-label">
+                                    <i class="mdi mdi-calendar-start me-1"></i>Tanggal Mulai
+                                </label>
+                                <input type="date" class="form-control" id="export_start_date" name="start_date">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="export_end_date" class="form-label">
+                                    <i class="mdi mdi-calendar-end me-1"></i>Tanggal Akhir
+                                </label>
+                                <input type="date" class="form-control" id="export_end_date" name="end_date">
+                            </div>
+                        </div>
+
+                        <!-- Preview Count -->
+                        <div class="alert alert-secondary" id="exportPreview" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="mdi mdi-file-document-outline me-2"></i>
+                                <span id="previewText">Memuat preview...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="mdi mdi-close me-1"></i>Batal
+                        </button>
+                        <button type="button" class="btn btn-outline-info me-2" id="previewExport">
+                            <i class="mdi mdi-eye me-1"></i>Preview Jumlah Data
+                        </button>
+                        <button type="submit" class="btn btn-gradient-success" id="confirmExport">
+                            <i class="mdi mdi-download me-1"></i>Download Excel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- Show Modal -->
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -590,7 +734,6 @@
 @endsection
 
 @push('styles')
-   
     <style>
         /* Checkbox styling yang sama dengan data spatial */
         .checkbox-wrapper {
@@ -837,10 +980,149 @@
 @endpush
 
 @section('scripts')
-    
-
     <script>
         $(document).ready(function() {
+            $('#previewExport').on('click', function() {
+                const btn = $(this);
+                const originalText = btn.html();
+
+                btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin me-1"></i>Memuat...');
+
+                const formData = {
+                    kategori: $('#export_kategori').val(),
+                    opd: $('#export_opd').val(),
+                    status: $('#export_status').val(),
+                    jenis: $('#export_jenis').val(),
+                    start_date: $('#export_start_date').val(),
+                    end_date: $('#export_end_date').val(),
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                };
+
+                $.ajax({
+                    url: '/dashboard/aspirasi/preview-export', // Updated URL
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        const count = response.count || 0;
+                        const filters = response.applied_filters || [];
+
+                        let previewText =
+                            `Akan mengekspor <strong>${count}</strong> data aspirasi`;
+
+                        if (filters.length > 0) {
+                            previewText += ` dengan filter: <em>${filters.join(', ')}</em>`;
+                        }
+
+                        $('#previewText').html(previewText);
+                        $('#exportPreview').show();
+
+                        if (count > 0) {
+                            $('#confirmExport').prop('disabled', false);
+                        } else {
+                            $('#confirmExport').prop('disabled', true);
+                            $('#previewText').html(
+                                '<span class="text-warning"><i class="mdi mdi-alert me-1"></i>Tidak ada data yang sesuai dengan filter yang dipilih</span>'
+                            );
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Preview error:', xhr);
+                        $('#previewText').html(
+                            '<span class="text-danger"><i class="mdi mdi-alert-circle me-1"></i>Gagal memuat preview data</span>'
+                        );
+                        $('#exportPreview').show();
+                        $('#confirmExport').prop('disabled', true);
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Export Form Submit
+            $('#exportForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const btn = $('#confirmExport');
+                const originalText = btn.html();
+
+                btn.prop('disabled', true).html(
+                    '<i class="mdi mdi-loading mdi-spin me-1"></i>Mengekspor...');
+
+                const formData = {
+                    kategori: $('#export_kategori').val(),
+                    opd: $('#export_opd').val(),
+                    status: $('#export_status').val(),
+                    jenis: $('#export_jenis').val(),
+                    start_date: $('#export_start_date').val(),
+                    end_date: $('#export_end_date').val()
+                };
+
+                // Create form for file download
+                const downloadForm = $('<form>', {
+                    method: 'POST',
+                    action: '/dashboard/aspirasi/export-filtered' // Updated URL
+                });
+
+                // Add CSRF token
+                downloadForm.append($('<input>', {
+                    type: 'hidden',
+                    name: '_token',
+                    value: $('meta[name="csrf-token"]').attr('content')
+                }));
+
+                // Add form data
+                $.each(formData, function(key, value) {
+                    if (value) {
+                        downloadForm.append($('<input>', {
+                            type: 'hidden',
+                            name: key,
+                            value: value
+                        }));
+                    }
+                });
+
+                // Append form to body and submit
+                $('body').append(downloadForm);
+
+                try {
+                    downloadForm.submit();
+
+                    setTimeout(function() {
+                        Swal.fire({
+                            title: 'Export Berhasil!',
+                            html: `
+                        <div class="text-center">
+                            <i class="mdi mdi-file-excel text-success" style="font-size: 3rem;"></i>
+                            <p class="mt-2">File Excel sedang diunduh...</p>
+                            <small class="text-muted">Periksa folder unduhan Anda</small>
+                        </div>
+                    `,
+                            icon: 'success',
+                            timer: 4000,
+                            showConfirmButton: false,
+                            allowOutsideClick: true
+                        });
+
+                        $('#exportModal').modal('hide');
+                    }, 1000);
+
+                } catch (error) {
+                    console.error('Export error:', error);
+                    Swal.fire({
+                        title: 'Export Gagal!',
+                        text: 'Terjadi kesalahan saat mengekspor data',
+                        icon: 'error'
+                    });
+                } finally {
+                    setTimeout(() => {
+                        downloadForm.remove();
+                        btn.prop('disabled', false).html(originalText);
+                    }, 2000);
+                }
+            });
+
+
             // Initialize DataTable
             const table = $('#aspirasiTable').DataTable({
                 "processing": true,
