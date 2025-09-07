@@ -83,8 +83,7 @@ public function index(Request $request)
 
     // PERBAIKAN: Gunakan pagination untuk membatasi data yang dimuat
     $data = $query->orderBy('created_at', 'desc')
-                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama']) // Load relasi dengan select terbatas
-                  ->paginate(50); // Batasi ke 50 records per halaman
+                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama'])->get(); // Batasi ke 50 records per halaman
 
     // Ambil kategori dengan select terbatas
     $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
