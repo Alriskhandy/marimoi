@@ -1,9 +1,9 @@
-// map-app.js - Category First, Data on Demand
+// map-app.js - Memory Optimized with Chunked Loading
 /**
- * map-app.js - Load kategori dulu, data spatial hanya saat dicentang
- * Strategi: Tampilkan semua kategori di awal, data baru dimuat saat checkbox dicentang
+ * map-app.js - Load kategori dulu, data spatial dengan memory management
+ * Strategi: Tampilkan kategori di awal, data dimuat per chunk untuk menghindari memory issues
  */
-console.log("map-app.js loaded - category first, data on demand");
+console.log("map-app.js loaded - memory optimized version");
 
 /**
  * Konfigurasi utama peta
@@ -56,6 +56,16 @@ const mapConfig = {
 };
 
 /**
+ * Memory management constants
+ */
+const MEMORY_CONFIG = {
+    MAX_FEATURES_PER_CATEGORY: 1000,  // Batas maksimal fitur per kategori
+    CHUNK_SIZE: 100,                  // Ukuran chunk per request
+    MAX_TOTAL_FEATURES: 5000,         // Batas total fitur di peta
+    CLEANUP_THRESHOLD: 4000           // Threshold untuk cleanup otomatis
+};
+
+/**
  * Inisialisasi peta
  */
 const map = L.map("map", {
@@ -70,9 +80,62 @@ let kategoriWarnaMap = {};
 let iconMap = {};
 let categoryDataCounts = {};
 let loadedCategories = new Set();
+let categoryLoadingStates = new Map(); // Track loading state per category
 let availableCategories = [];
-let loadingQueue = new Set(); // Prevent double loading
+let loadingQueue = new Set();
 let isCategoriesLoaded = false;
+let totalFeaturesLoaded = 0; // Track total features untuk memory management
+
+/**
+ * Memory monitoring utilities
+ */
+function getMemoryInfo() {
+    if (performance.memory) {
+        return {
+            used: Math.round(performance.memory.usedJSHeapSize / 1048576), // MB
+            total: Math.round(performance.memory.totalJSHeapSize / 1048576), // MB
+            limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576) // MB
+        };
+    }
+    return null;
+}
+
+function updateMemoryDisplay() {
+    const memInfo = getMemoryInfo();
+    if (memInfo) {
+        console.log(`Memory: ${memInfo.used}MB / ${memInfo.limit}MB`);
+        
+        // Update UI jika ada element untuk menampilkan memory
+        const memoryElement = document.getElementById('memory-usage');
+        if (memoryElement) {
+            memoryElement.textContent = `${memInfo.used}MB`;
+        }
+        
+        // Warning jika memory usage tinggi
+        if (memInfo.used > memInfo.limit * 0.8) {
+            showAlert("Memory usage tinggi, pertimbangkan untuk uncheck beberapa layer", "warning");
+        }
+    }
+}
+
+function cleanupUnusedData() {
+    // Cleanup layer yang tidak tercentang
+    Object.values(layerGroups).forEach(group => {
+        Object.entries(group).forEach(([name, layer]) => {
+            if (!loadedCategories.has(name) && layer.getLayers().length > 0) {
+                layer.clearLayers();
+                console.log(`Cleaned up unused layer: ${name}`);
+            }
+        });
+    });
+    
+    // Force garbage collection hint
+    if (window.gc) {
+        window.gc();
+    }
+    
+    updateMemoryDisplay();
+}
 
 /**
  * Utility functions
@@ -178,7 +241,6 @@ async function loadCategories() {
                 if (cat.is_marker && cat.icon) {
                     iconMap[cat.nama] = cat.icon;
                 }
-                // Simpan jumlah data (jika tersedia dari metadata)
                 if (cat.data_count !== undefined) {
                     categoryDataCounts[cat.nama] = cat.data_count;
                 }
@@ -196,7 +258,6 @@ async function loadCategories() {
 
             if (anak.length > 0) {
                 anak.forEach((child) => {
-                    // Buat layer group kosong
                     layerGroups[parent.nama][child.nama] = L.layerGroup();
                 });
             } else {
@@ -204,7 +265,6 @@ async function loadCategories() {
             }
         });
 
-        // Update UI dengan kategori
         updateLayerList();
         isCategoriesLoaded = true;
         showAlert(`${metadata.all_categories.length} kategori berhasil dimuat`, "success");
@@ -216,12 +276,24 @@ async function loadCategories() {
 }
 
 /**
- * STEP 2: Load spatial data for specific category (saat checkbox dicentang)
+ * STEP 2: Load spatial data dengan memory management dan chunking
  */
 async function loadCategoryData(kategori) {
     // Prevent double loading
     if (loadedCategories.has(kategori) || loadingQueue.has(kategori)) {
         return;
+    }
+
+    // Check memory limits
+    if (totalFeaturesLoaded >= MEMORY_CONFIG.MAX_TOTAL_FEATURES) {
+        showAlert(`Mencapai batas maksimal ${MEMORY_CONFIG.MAX_TOTAL_FEATURES} fitur. Uncheck beberapa layer untuk memuat lebih banyak.`, "warning");
+        return;
+    }
+
+    const dataCount = categoryDataCounts[kategori] || 0;
+    if (dataCount > MEMORY_CONFIG.MAX_FEATURES_PER_CATEGORY) {
+        const confirmed = confirm(`Kategori ${kategori} memiliki ${dataCount} data. Ini mungkin mempengaruhi performa. Lanjutkan?`);
+        if (!confirmed) return;
     }
 
     loadingQueue.add(kategori);
@@ -231,21 +303,6 @@ async function loadCategoryData(kategori) {
 
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
-
-        // Request data spatial untuk kategori spesifik
-        let queryString = `?category=${encodeURIComponent(kategori)}`;
-        if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
-        if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
-        if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
-
-        const response = await fetch(`/geojson${queryString}`);
-        const categoryData = await response.json();
-
-        if (!categoryData?.features?.length) {
-            showAlert(`Tidak ada data untuk kategori ${kategori}`, "warning");
-            loadingQueue.delete(kategori);
-            return;
-        }
 
         // Find target layer
         let targetLayer = null;
@@ -266,46 +323,165 @@ async function loadCategoryData(kategori) {
             return;
         }
 
-        // Determine marker options
-        let markerOptions = null;
-        const catObj = availableCategories.find(c => c.nama === kategori);
-        if (catObj && catObj.is_marker && catObj.icon) {
-            const iconWarna = catObj.warna || "blue";
-            markerOptions = L.ExtraMarkers.icon({
-                icon: catObj.icon,
-                prefix: "fa",
-                svg: true,
-                markerColor: iconWarna,
-                iconColor: "white",
-                shape: "circle",
-                html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
-            });
+        // Load data in chunks
+        let page = 1;
+        let totalLoaded = 0;
+        let hasMore = true;
+
+        while (hasMore && totalLoaded < MEMORY_CONFIG.MAX_FEATURES_PER_CATEGORY) {
+            const chunkData = await loadCategoryChunk(kategori, page, MEMORY_CONFIG.CHUNK_SIZE, tipeLayer, urlPath);
+            
+            if (!chunkData || !chunkData.features || chunkData.features.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            // Add features to layer
+            const addedCount = await addFeaturesToLayer(chunkData.features, targetLayer, kategori, urlPath);
+            totalLoaded += addedCount;
+            totalFeaturesLoaded += addedCount;
+
+            // Update progress
+            showAlert(`Memuat ${kategori}: ${totalLoaded} dari ${dataCount || totalLoaded} data`, "info");
+
+            // Check if we have more data
+            hasMore = chunkData.pagination && chunkData.pagination.has_more;
+            page++;
+
+            // Memory check
+            if (totalFeaturesLoaded >= MEMORY_CONFIG.MAX_TOTAL_FEATURES) {
+                showAlert("Mencapai batas memory, menghentikan loading", "warning");
+                hasMore = false;
+            }
+
+            // Cleanup check
+            if (totalFeaturesLoaded > MEMORY_CONFIG.CLEANUP_THRESHOLD) {
+                cleanupUnusedData();
+            }
+
+            // Small delay to prevent browser freeze
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
 
-        // Add features to layer
-        categoryData.features.forEach((feature) => {
+        loadedCategories.add(kategori);
+        loadingQueue.delete(kategori);
+        
+        showAlert(`${totalLoaded} data ${kategori} berhasil dimuat`, "success");
+        generateLegend();
+        updateMemoryDisplay();
+
+    } catch (error) {
+        console.error(`Error loading data for category ${kategori}:`, error);
+        showAlert(`Gagal memuat data ${kategori}: ${error.message}`, "danger");
+        loadingQueue.delete(kategori);
+    }
+}
+
+/**
+ * Load single chunk of category data
+ */
+async function loadCategoryChunk(kategori, page, limit, tipeLayer, urlPath) {
+    let queryString = `?category=${encodeURIComponent(kategori)}&page=${page}&limit=${limit}`;
+    if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
+    if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
+    if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
+
+    const response = await fetch(`/geojson${queryString}`);
+    const data = await response.json();
+
+    if (data.error) {
+        throw new Error(data.error);
+    }
+
+    return data;
+}
+
+/**
+ * Add features to layer with error handling
+ */
+async function addFeaturesToLayer(features, targetLayer, kategori, urlPath) {
+    let addedCount = 0;
+
+    // Determine marker options
+    let markerOptions = null;
+    const catObj = availableCategories.find(c => c.nama === kategori);
+    if (catObj && catObj.is_marker && catObj.icon) {
+        const iconWarna = catObj.warna || "blue";
+        markerOptions = L.ExtraMarkers.icon({
+            icon: catObj.icon,
+            prefix: "fa",
+            svg: true,
+            markerColor: iconWarna,
+            iconColor: "white",
+            shape: "circle",
+            html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
+        });
+    }
+
+    for (const feature of features) {
+        try {
             L.geoJSON(feature, {
                 pointToLayer: (feature, latlng) =>
                     markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
                 style: getStyleForCategory(kategori),
                 onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
             }).addTo(targetLayer);
-        });
-
-        loadedCategories.add(kategori);
-        loadingQueue.delete(kategori);
-        showAlert(`${categoryData.features.length} data ${kategori} berhasil dimuat`, "success");
-        generateLegend();
-
-    } catch (error) {
-        console.error(`Error loading data for category ${kategori}:`, error);
-        showAlert(`Gagal memuat data ${kategori}`, "danger");
-        loadingQueue.delete(kategori);
+            addedCount++;
+        } catch (e) {
+            console.warn(`Error adding feature to layer:`, e);
+        }
     }
+
+    return addedCount;
 }
 
 /**
- * Popup content untuk setiap fitur
+ * Clear category data untuk free memory
+ */
+function clearCategoryData(kategori) {
+    // Find and clear target layer
+    for (const [parentName, children] of Object.entries(layerGroups)) {
+        if (children[kategori]) {
+            children[kategori].clearLayers();
+            break;
+        }
+    }
+
+    if (layerGroups[kategori]?.[kategori]) {
+        layerGroups[kategori][kategori].clearLayers();
+    }
+
+    loadedCategories.delete(kategori);
+    
+    // Update total count
+    const layerCount = getCurrentLayerFeatureCount(kategori);
+    totalFeaturesLoaded = Math.max(0, totalFeaturesLoaded - layerCount);
+    
+    updateMemoryDisplay();
+}
+
+/**
+ * Get current feature count in a category layer
+ */
+function getCurrentLayerFeatureCount(kategori) {
+    let count = 0;
+    
+    for (const [parentName, children] of Object.entries(layerGroups)) {
+        if (children[kategori]) {
+            children[kategori].eachLayer(() => count++);
+            break;
+        }
+    }
+
+    if (layerGroups[kategori]?.[kategori]) {
+        layerGroups[kategori][kategori].eachLayer(() => count++);
+    }
+
+    return count;
+}
+
+/**
+ * Popup content untuk setiap fitur - optimized
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
@@ -381,11 +557,12 @@ function generateLegend() {
 
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
-            // Hanya tampilkan di legend jika sudah diload
             if (!loadedCategories.has(sub) || added.has(sub)) return;
 
             let icon = iconMap[sub] || null;
             let color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+            
+            const featureCount = getCurrentLayerFeatureCount(sub);
 
             if (icon) {
                 legendContainer.innerHTML += `
@@ -393,14 +570,14 @@ function generateLegend() {
                         <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
                             <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
                         </div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                        <span style="font-size: 0.85rem;">${sub} (${featureCount})</span>
                     </div>
                 `;
             } else {
                 legendContainer.innerHTML += `
                     <div class="d-flex align-items-center mb-2">
                         <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                        <span style="font-size: 0.85rem;">${sub} (${featureCount})</span>
                     </div>
                 `;
             }
@@ -410,7 +587,7 @@ function generateLegend() {
 }
 
 /**
- * Update layer list dengan checkbox controls
+ * Update layer list dengan checkbox controls dan memory info
  */
 function updateLayerList() {
     const container = document.getElementById("layer-list");
@@ -459,7 +636,7 @@ function updateLayerList() {
         badge.className = "badge bg-light text-dark ms-2";
         badge.textContent = subCount;
 
-        // Parent checkbox controls all children
+        // Parent checkbox controls all children dengan memory check
         checkboxRoot.addEventListener("change", async () => {
             const isChecked = checkboxRoot.checked;
             
@@ -471,11 +648,11 @@ function updateLayerList() {
                     checkbox.checked = isChecked;
                     
                     if (isChecked) {
-                        // Load data saat dicentang
                         await loadCategoryData(subname);
                         map.addLayer(layer);
                     } else {
                         map.removeLayer(layer);
+                        clearCategoryData(subname);
                     }
                 }
             }
@@ -509,15 +686,14 @@ function updateLayerList() {
             checkbox.id = subId;
             checkbox.style.border = "2px solid #999";
 
-            // Event handler untuk checkbox individual
+            // Event handler untuk checkbox individual dengan memory management
             checkbox.addEventListener("change", async () => {
                 if (checkbox.checked) {
-                    // Load data spatial saat checkbox dicentang
                     await loadCategoryData(subname);
                     map.addLayer(layer);
                 } else {
-                    // Remove layer saat uncheck
                     map.removeLayer(layer);
+                    clearCategoryData(subname);
                 }
 
                 // Update parent checkbox state
@@ -540,9 +716,15 @@ function updateLayerList() {
             label.className = "form-check-label";
             label.htmlFor = subId;
             
-            // Tampilkan jumlah data jika tersedia
+            // Tampilkan jumlah data dengan warning jika terlalu besar
             const dataCount = categoryDataCounts[subname];
-            const labelText = dataCount ? `${subname} (${dataCount})` : subname;
+            let labelText = subname;
+            if (dataCount) {
+                labelText = `${subname} (${dataCount})`;
+                if (dataCount > MEMORY_CONFIG.MAX_FEATURES_PER_CATEGORY) {
+                    labelText += " ⚠️";
+                }
+            }
             label.textContent = labelText;
 
             row.style.cssText = `
@@ -629,7 +811,7 @@ function setupUI() {
 }
 
 /**
- * Entry point - Load categories immediately, data on demand
+ * Entry point - Load categories immediately, data on demand dengan memory management
  */
 document.addEventListener("DOMContentLoaded", async () => {
     // Setup basemap
@@ -638,6 +820,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Load categories immediately (tanpa data spatial)
     await loadCategories();
+
+    // Setup memory monitoring
+    setInterval(updateMemoryDisplay, 30000); // Update every 30 seconds
+    
+    // Auto cleanup when memory usage is high
+    setInterval(() => {
+        if (totalFeaturesLoaded > MEMORY_CONFIG.CLEANUP_THRESHOLD) {
+            cleanupUnusedData();
+        }
+    }, 60000); // Check every minute
 
     // Setup sidebar controls dan event handlers
     const sidebarElements = {
@@ -739,4 +931,39 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
     });
+
+    // Memory management controls
+    const clearAllBtn = document.getElementById("clear-all-layers");
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener("click", () => {
+            if (confirm("Hapus semua layer untuk mengosongkan memory?")) {
+                // Uncheck all checkboxes
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    if (cb.checked) {
+                        cb.click(); // This will trigger the cleanup
+                    }
+                });
+                showAlert("Semua layer telah dihapus", "success");
+            }
+        });
+    }
+
+    // Add keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+        // Ctrl+Shift+C: Clear all layers
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            document.getElementById("clear-all-layers")?.click();
+        }
+        
+        // Ctrl+Shift+M: Show memory info
+        if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+            const memInfo = getMemoryInfo();
+            if (memInfo) {
+                alert(`Memory Usage: ${memInfo.used}MB / ${memInfo.limit}MB\nTotal Features: ${totalFeaturesLoaded}`);
+            }
+        }
+    });
+
+    console.log("Map app initialized with memory management");
+    updateMemoryDisplay();
 });
