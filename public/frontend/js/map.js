@@ -458,10 +458,35 @@ async function loadCategoryData(categoryName) {
             queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
             queryString += `&limit=500&offset=${offset}`; // Load 500 records at a time
 
+            console.log(`Loading chunk: ${queryString}`);
+
             const response = await fetch(`/geojson${queryString}`);
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                // Try to get error details from response
+                let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        errorDetails += ` - ${errorData.message}`;
+                    }
+                    if (errorData.details) {
+                        errorDetails += ` - Details: ${errorData.details}`;
+                    }
+                    console.error('Server error response:', errorData);
+                } catch (e) {
+                    // If response is not JSON, try to get text
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            errorDetails += ` - ${errorText.substring(0, 200)}...`;
+                        }
+                        console.error('Server error text:', errorText);
+                    } catch (e2) {
+                        console.error('Could not parse error response');
+                    }
+                }
+                throw new Error(errorDetails);
             }
             
             const geoJsonData = await response.json();
@@ -489,14 +514,18 @@ async function loadCategoryData(categoryName) {
 
             // Add features to layer
             geoJsonData.features.forEach((feature) => {
-                L.geoJSON(feature, {
-                    pointToLayer: (feature, latlng) =>
-                        markerOptions
-                            ? L.marker(latlng, { icon: markerOptions })
-                            : L.marker(latlng),
-                    style: getStyleForCategory(categoryName),
-                    onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
-                }).addTo(targetLayer);
+                try {
+                    L.geoJSON(feature, {
+                        pointToLayer: (feature, latlng) =>
+                            markerOptions
+                                ? L.marker(latlng, { icon: markerOptions })
+                                : L.marker(latlng),
+                        style: getStyleForCategory(categoryName),
+                        onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
+                    }).addTo(targetLayer);
+                } catch (featureError) {
+                    console.error(`Error adding feature to map:`, featureError, feature);
+                }
             });
 
             totalLoaded += geoJsonData.features.length;
@@ -520,7 +549,19 @@ async function loadCategoryData(categoryName) {
 
     } catch (error) {
         console.error(`Error loading data for category ${categoryName}:`, error);
-        showAlert(`Gagal memuat data ${categoryName}: ${error.message}`, "danger");
+        
+        // Show detailed error in alert
+        let errorMessage = `Gagal memuat data ${categoryName}: ${error.message}`;
+        
+        // Log full error stack for debugging
+        console.error('Full error stack:', error.stack);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        showAlert(errorMessage, "danger");
     } finally {
         isLoadingData = false;
     }
