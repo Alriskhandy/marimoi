@@ -291,14 +291,107 @@ const CounterModule = {
 };
 
 // Swiper Module
+// const SwiperModule = {
+//     init: function () {
+//         const swipers = [];
+
+//         // Peta Tematik Swiper
+//         if (document.querySelector(".peta-tematik .swiper")) {
+//             const petaTematikSwiper = new Swiper(".peta-tematik .swiper", {
+//                 effect: "slide", // Changed from coverflow to slide
+//                 grabCursor: true,
+//                 centeredSlides: true,
+//                 slidesPerView: "auto",
+//                 loop: true,
+//                 spaceBetween: 30,
+//                 autoplay: {
+//                     delay: 4000,
+//                     disableOnInteraction: false,
+//                 },
+//                 pagination: {
+//                     el: ".peta-tematik .swiper-pagination",
+//                     clickable: true,
+//                     dynamicBullets: true,
+//                 },
+//                 breakpoints: {
+//                     640: {
+//                         slidesPerView: 1,
+//                         spaceBetween: 20,
+//                         centeredSlides: true,
+//                     },
+//                     768: {
+//                         slidesPerView: 2,
+//                         spaceBetween: 25,
+//                         centeredSlides: true,
+//                     },
+//                     1024: {
+//                         slidesPerView: 3,
+//                         spaceBetween: 30,
+//                         centeredSlides: true,
+//                     },
+//                 },
+//             });
+//             swipers.push(petaTematikSwiper);
+//             console.log("✓ Peta Tematik Swiper initialized");
+//         }
+
+//         // Main Swiper (for other sections)
+//         if (document.querySelector(".main-swiper")) {
+//             const mainSwiper = new Swiper(".main-swiper", {
+//                 effect: "coverflow",
+//                 grabCursor: true,
+//                 centeredSlides: true,
+//                 slidesPerView: "auto",
+//                 loop: true,
+//                 spaceBetween: 30,
+//                 autoplay: {
+//                     delay: 3000,
+//                     disableOnInteraction: false,
+//                 },
+//                 coverflowEffect: {
+//                     rotate: 50,
+//                     stretch: 0,
+//                     depth: 100,
+//                     modifier: 1,
+//                     slideShadows: true,
+//                 },
+//                 pagination: {
+//                     el: ".swiper-pagination",
+//                     clickable: true,
+//                 },
+//                 navigation: {
+//                     nextEl: ".swiper-button-next",
+//                     prevEl: ".swiper-button-prev",
+//                 },
+//                 breakpoints: {
+//                     640: {
+//                         slidesPerView: 1,
+//                         spaceBetween: 20,
+//                     },
+//                     768: {
+//                         slidesPerView: 2,
+//                         spaceBetween: 30,
+//                     },
+//                     1024: {
+//                         slidesPerView: 3,
+//                         spaceBetween: 40,
+//                     },
+//                 },
+//             });
+//             swipers.push(mainSwiper);
+//         }
+
+//         return swipers;
+//     },
+// };
 const SwiperModule = {
     init: function () {
         const swipers = [];
 
-        // Peta Tematik Swiper
-        if (document.querySelector(".peta-tematik .swiper")) {
-            const petaTematikSwiper = new Swiper(".peta-tematik .swiper", {
-                effect: "slide", // Changed from coverflow to slide
+        // Peta Tematik Swiper - Sesuaikan dengan ID Tailwind
+        if (document.querySelector("#peta-tematik .swiper")) {
+            const petaTematikSwiper = new Swiper("#peta-tematik .swiper", {
+                effect: "coverflow", // Kembali ke coverflow sesuai original
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: "auto",
@@ -308,34 +401,56 @@ const SwiperModule = {
                     delay: 4000,
                     disableOnInteraction: false,
                 },
+                coverflowEffect: {
+                    rotate: 0,
+                    stretch: 0,
+                    depth: 100,
+                    modifier: 2.5,
+                },
                 pagination: {
-                    el: ".peta-tematik .swiper-pagination",
+                    el: "#peta-tematik .swiper-pagination",
                     clickable: true,
                     dynamicBullets: true,
                 },
                 breakpoints: {
-                    640: {
-                        slidesPerView: 1,
+                    480: {
+                        slidesPerView: 'auto',
                         spaceBetween: 20,
                         centeredSlides: true,
+                        coverflowEffect: {
+                            modifier: 2,
+                            depth: 80,
+                        }
                     },
                     768: {
-                        slidesPerView: 2,
+                        slidesPerView: 'auto',
                         spaceBetween: 25,
                         centeredSlides: true,
+                        coverflowEffect: {
+                            modifier: 2.2,
+                            depth: 90,
+                        }
                     },
                     1024: {
-                        slidesPerView: 3,
+                        slidesPerView: 'auto',
                         spaceBetween: 30,
                         centeredSlides: true,
+                        coverflowEffect: {
+                            modifier: 2.5,
+                            depth: 100,
+                        }
                     },
                 },
+                on: {
+                    init: function() {
+                        console.log("✓ Peta Tematik Swiper initialized with Tailwind");
+                    }
+                }
             });
             swipers.push(petaTematikSwiper);
-            console.log("✓ Peta Tematik Swiper initialized");
         }
 
-        // Main Swiper (for other sections)
+        // Main Swiper (for other sections) - tetap sama
         if (document.querySelector(".main-swiper")) {
             const mainSwiper = new Swiper(".main-swiper", {
                 effect: "coverflow",
@@ -385,11 +500,104 @@ const SwiperModule = {
     },
 };
 
+
+// Spotlight Effect Module
+// const SpotlightEffect = {
+//     init: function () {
+//         try {
+//             const aboutSection = document.getElementById("about-section");
+//             if (!aboutSection) {
+//                 console.log(
+//                     "⚠ Spotlight: About section not found, skipping initialization"
+//                 );
+//                 return;
+//             }
+
+//             let targetX = 75; // Default position (foto)
+//             let targetY = 50;
+//             let currentX = 75;
+//             let currentY = 50;
+//             let animationId = null;
+
+//             const lerp = (start, end, factor) => {
+//                 return start + (end - start) * factor;
+//             };
+
+//             const updateSpotlight = () => {
+//                 const speed = 0.05; // Kecepatan animasi
+
+//                 currentX = lerp(currentX, targetX, speed);
+//                 currentY = lerp(currentY, targetY, speed);
+
+//                 aboutSection.style.setProperty("--mask-x", `${currentX}%`);
+//                 aboutSection.style.setProperty("--mask-y", `${currentY}%`);
+
+//                 const distance = Math.sqrt(
+//                     Math.pow(targetX - currentX, 2) +
+//                         Math.pow(targetY - currentY, 2)
+//                 );
+
+//                 if (distance > 0.1) {
+//                     animationId = requestAnimationFrame(updateSpotlight);
+//                 } else {
+//                     animationId = null;
+//                 }
+//             };
+
+//             const handleMouseMove = (e) => {
+//                 const rect = aboutSection.getBoundingClientRect();
+//                 targetX = ((e.clientX - rect.left) / rect.width) * 100;
+//                 targetY = ((e.clientY - rect.top) / rect.height) * 100;
+
+//                 // Clamp values to prevent going outside bounds
+//                 targetX = Math.max(0, Math.min(100, targetX));
+//                 targetY = Math.max(0, Math.min(100, targetY));
+
+//                 // Ubah opacity background saat mouse move
+//                 aboutSection.style.setProperty("--bg-opacity", "1");
+
+//                 if (!animationId) {
+//                     animationId = requestAnimationFrame(updateSpotlight);
+//                 }
+//             };
+
+//             const handleMouseLeave = () => {
+//                 // Kembali ke posisi foto saat mouse leave
+//                 targetX = 75; // Kembali ke posisi foto
+//                 targetY = 50;
+
+//                 // Kembali ke opacity default
+//                 aboutSection.style.setProperty("--bg-opacity", "1");
+
+//                 if (!animationId) {
+//                     animationId = requestAnimationFrame(updateSpotlight);
+//                 }
+//             };
+
+//             // Add event listeners
+//             aboutSection.addEventListener("mousemove", handleMouseMove);
+//             aboutSection.addEventListener("mouseleave", handleMouseLeave);
+
+//             // Initialize CSS custom properties
+//             aboutSection.style.setProperty("--mask-x", "75%"); // Posisi foto
+//             aboutSection.style.setProperty("--mask-y", "50%");
+//             aboutSection.style.setProperty("--bg-opacity", "1"); // Default tampil dengan opacity 0.7
+
+//             // Initialize spotlight at center
+//             updateSpotlight();
+
+//             console.log("✓ Spotlight effect initialized");
+//         } catch (error) {
+//             console.error("⚠ Spotlight effect initialization failed:", error);
+//         }
+//     },
+// };
 // Spotlight Effect Module
 const SpotlightEffect = {
     init: function () {
         try {
-            const aboutSection = document.querySelector(".about-section");
+            // Update ID sesuai dengan section about yang baru
+            const aboutSection = document.getElementById("about-section");
             if (!aboutSection) {
                 console.log(
                     "⚠ Spotlight: About section not found, skipping initialization"
@@ -397,10 +605,19 @@ const SpotlightEffect = {
                 return;
             }
 
-            let targetX = 75; // Default position (foto)
-            let targetY = 50;
-            let currentX = 75;
-            let currentY = 50;
+            // Variabel untuk responsive positioning
+            let isDesktop = window.innerWidth > 1024;
+            let isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+            let isMobile = window.innerWidth <= 768;
+
+            // Default position berdasarkan device
+            let defaultX = isDesktop ? 80 : isMobile ? 50 : 75; // Responsive default position
+            let defaultY = isDesktop ? 50 : isMobile ? 70 : 50;
+
+            let targetX = defaultX;
+            let targetY = defaultY;
+            let currentX = defaultX;
+            let currentY = defaultY;
             let animationId = null;
 
             const lerp = (start, end, factor) => {
@@ -408,7 +625,7 @@ const SpotlightEffect = {
             };
 
             const updateSpotlight = () => {
-                const speed = 0.05; // Kecepatan animasi
+                const speed = isMobile ? 0.08 : 0.05; // Faster animation on mobile
 
                 currentX = lerp(currentX, targetX, speed);
                 currentY = lerp(currentY, targetY, speed);
@@ -429,6 +646,9 @@ const SpotlightEffect = {
             };
 
             const handleMouseMove = (e) => {
+                // Skip mouse events on mobile untuk better performance
+                if (isMobile) return;
+
                 const rect = aboutSection.getBoundingClientRect();
                 targetX = ((e.clientX - rect.left) / rect.width) * 100;
                 targetY = ((e.clientY - rect.top) / rect.height) * 100;
@@ -446,9 +666,12 @@ const SpotlightEffect = {
             };
 
             const handleMouseLeave = () => {
-                // Kembali ke posisi foto saat mouse leave
-                targetX = 75; // Kembali ke posisi foto
-                targetY = 50;
+                // Skip pada mobile
+                if (isMobile) return;
+
+                // Kembali ke posisi default berdasarkan device
+                targetX = defaultX;
+                targetY = defaultY;
 
                 // Kembali ke opacity default
                 aboutSection.style.setProperty("--bg-opacity", "1");
@@ -458,24 +681,87 @@ const SpotlightEffect = {
                 }
             };
 
-            // Add event listeners
-            aboutSection.addEventListener("mousemove", handleMouseMove);
-            aboutSection.addEventListener("mouseleave", handleMouseLeave);
+            // Touch interaction untuk mobile
+            const handleTouchMove = (e) => {
+                if (!isMobile) return;
 
-            // Initialize CSS custom properties
-            aboutSection.style.setProperty("--mask-x", "75%"); // Posisi foto
-            aboutSection.style.setProperty("--mask-y", "50%");
-            aboutSection.style.setProperty("--bg-opacity", "1"); // Default tampil dengan opacity 0.7
+                const rect = aboutSection.getBoundingClientRect();
+                const touch = e.touches[0];
+                targetX = ((touch.clientX - rect.left) / rect.width) * 100;
+                targetY = ((touch.clientY - rect.top) / rect.height) * 100;
 
-            // Initialize spotlight at center
+                // Clamp values
+                targetX = Math.max(0, Math.min(100, targetX));
+                targetY = Math.max(0, Math.min(100, targetY));
+
+                aboutSection.style.setProperty("--bg-opacity", "1");
+
+                if (!animationId) {
+                    animationId = requestAnimationFrame(updateSpotlight);
+                }
+            };
+
+            const handleTouchEnd = () => {
+                if (!isMobile) return;
+
+                // Kembali ke posisi default setelah touch selesai
+                setTimeout(() => {
+                    targetX = defaultX;
+                    targetY = defaultY;
+
+                    if (!animationId) {
+                        animationId = requestAnimationFrame(updateSpotlight);
+                    }
+                }, 1000); // Delay 1 detik sebelum kembali ke posisi default
+            };
+
+            // Handle resize untuk update responsive values
+            const handleResize = () => {
+                isDesktop = window.innerWidth > 1024;
+                isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+                isMobile = window.innerWidth <= 768;
+
+                // Update default positions
+                defaultX = isDesktop ? 75 : isMobile ? 85 : 80;
+                defaultY = isDesktop ? 50 : isMobile ? 75 : 60;
+
+                // Reset to new default position
+                targetX = defaultX;
+                targetY = defaultY;
+
+                if (!animationId) {
+                    animationId = requestAnimationFrame(updateSpotlight);
+                }
+            };
+
+            // Add event listeners berdasarkan device
+            if (!isMobile) {
+                aboutSection.addEventListener("mousemove", handleMouseMove);
+                aboutSection.addEventListener("mouseleave", handleMouseLeave);
+            } else {
+                // Touch events untuk mobile
+                aboutSection.addEventListener("touchmove", handleTouchMove, { passive: true });
+                aboutSection.addEventListener("touchend", handleTouchEnd, { passive: true });
+            }
+
+            // Resize listener
+            window.addEventListener("resize", handleResize);
+
+            // Initialize CSS custom properties dengan nilai responsive
+            aboutSection.style.setProperty("--mask-x", `${defaultX}%`);
+            aboutSection.style.setProperty("--mask-y", `${defaultY}%`);
+            aboutSection.style.setProperty("--bg-opacity", "1");
+
+            // Initialize spotlight
             updateSpotlight();
 
-            console.log("✓ Spotlight effect initialized");
+            console.log(`✓ Spotlight effect initialized (${isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop'} mode)`);
         } catch (error) {
             console.error("⚠ Spotlight effect initialization failed:", error);
         }
     },
 };
+
 
 // Indikator Module (Updated for Tailwind HTML with Mobile + Desktop Navigation)
 const IndikatorModule = {
@@ -909,18 +1195,6 @@ window.viewMap = (mapId) => {
     alert(`Fitur Peta ${mapId} akan segera tersedia!`);
 };
 
-// Initialize view map buttons
-// const initViewMapButtons = () => {
-//     const viewMapButtons = document.querySelectorAll(".view-map-btn");
-//     viewMapButtons.forEach((button, index) => {
-//         button.addEventListener("click", () => {
-//             window.viewMap(index + 1);
-//         });
-//     });
-//     if (viewMapButtons.length > 0) {
-//         console.log(`✓ ${viewMapButtons.length} view map buttons initialized`);
-//     }
-// };
 
 // Application Initialization
 document.addEventListener("DOMContentLoaded", function () {
@@ -945,9 +1219,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (swipers && swipers.length > 0) {
             console.log(`✓ ${swipers.length} Swiper(s) initialized`);
         }
-
-        // Initialize view map buttons
-        initViewMapButtons();
 
         console.log("✓ MARIMOI Application ready");
     }, MARIMOI_APP_CONFIG.ANIMATION_DELAY);
