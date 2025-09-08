@@ -407,7 +407,7 @@ async function loadCategoriesMetadata() {
 }
 
 /**
- * Load spatial data for specific category on-demand
+ * Load spatial data for specific category on-demand with pagination
  */
 async function loadCategoryData(categoryName) {
     if (isLoadingData || loadedCategories.has(categoryName)) {
@@ -423,25 +423,6 @@ async function loadCategoryData(categoryName) {
         const dataType = tipeLayer.type;
         const subType = tipeLayer.sub_type || null;
         const year = tipeLayer.year || null;
-
-        let queryString = "?";
-        if (dataType) queryString += `type=${dataType}`;
-        if (subType) queryString += `&sub_type=${subType}`;
-        if (year) queryString += `&year=${year}`;
-        queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
-
-        const response = await fetch(`/geojson${queryString}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const geoJsonData = await response.json();
-
-        if (!geoJsonData?.features?.length) {
-            showAlert(`Tidak ada data untuk kategori ${categoryName}`, "warning");
-            return;
-        }
 
         // Find target layer for this category
         let targetLayer = null;
@@ -464,35 +445,78 @@ async function loadCategoryData(categoryName) {
         // Clear existing data in layer
         targetLayer.clearLayers();
 
-        // Determine marker options
-        let markerOptions = null;
-        const catObj = geoJsonData.all_categories?.find(c => c.nama === categoryName);
-        if (catObj?.is_marker && catObj.icon) {
-            markerOptions = L.ExtraMarkers.icon({
-                icon: catObj.icon,
-                prefix: "fa",
-                svg: true,
-                markerColor: catObj.warna || "blue",
-                iconColor: "white",
-                shape: "circle",
-                html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
+        let offset = 0;
+        let totalLoaded = 0;
+        let hasMore = true;
+
+        // Load data in chunks with pagination
+        while (hasMore) {
+            let queryString = "?";
+            if (dataType) queryString += `type=${dataType}`;
+            if (subType) queryString += `&sub_type=${subType}`;
+            if (year) queryString += `&year=${year}`;
+            queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
+            queryString += `&limit=500&offset=${offset}`; // Load 500 records at a time
+
+            const response = await fetch(`/geojson${queryString}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const geoJsonData = await response.json();
+
+            if (!geoJsonData?.features?.length) {
+                break;
+            }
+
+            // Determine marker options (only need to do this once)
+            let markerOptions = null;
+            if (offset === 0) {
+                const catObj = geoJsonData.all_categories?.find(c => c.nama === categoryName);
+                if (catObj?.is_marker && catObj.icon) {
+                    markerOptions = L.ExtraMarkers.icon({
+                        icon: catObj.icon,
+                        prefix: "fa",
+                        svg: true,
+                        markerColor: catObj.warna || "blue",
+                        iconColor: "white",
+                        shape: "circle",
+                        html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
+                    });
+                }
+            }
+
+            // Add features to layer
+            geoJsonData.features.forEach((feature) => {
+                L.geoJSON(feature, {
+                    pointToLayer: (feature, latlng) =>
+                        markerOptions
+                            ? L.marker(latlng, { icon: markerOptions })
+                            : L.marker(latlng),
+                    style: getStyleForCategory(categoryName),
+                    onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
+                }).addTo(targetLayer);
             });
+
+            totalLoaded += geoJsonData.features.length;
+            
+            // Update progress
+            showAlert(`Memuat data ${categoryName}: ${totalLoaded} fitur dimuat...`, "info");
+
+            // Check if we have more data
+            hasMore = geoJsonData.meta?.has_more === true;
+            offset += 500;
+
+            // Safety break to prevent infinite loops
+            if (offset > 10000) { // Max 20 requests (10,000 records)
+                showAlert(`Memuat data ${categoryName} dihentikan pada ${totalLoaded} fitur (batas maksimum tercapai)`, "warning");
+                break;
+            }
         }
 
-        // Add features to layer
-        geoJsonData.features.forEach((feature) => {
-            L.geoJSON(feature, {
-                pointToLayer: (feature, latlng) =>
-                    markerOptions
-                        ? L.marker(latlng, { icon: markerOptions })
-                        : L.marker(latlng),
-                style: getStyleForCategory(categoryName),
-                onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
-            }).addTo(targetLayer);
-        });
-
         loadedCategories.add(categoryName);
-        showAlert(`Data ${categoryName} berhasil dimuat (${geoJsonData.features.length} fitur)`, "success");
+        showAlert(`Data ${categoryName} berhasil dimuat (${totalLoaded} fitur)`, "success");
 
     } catch (error) {
         console.error(`Error loading data for category ${categoryName}:`, error);

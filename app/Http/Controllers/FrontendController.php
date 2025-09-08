@@ -201,7 +201,14 @@ class FrontendController extends Controller
             $lokasis = $query->get();
             
             $features = $lokasis->map(function ($lokasi) {
-                $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+                // Safely decode DBF attributes
+                $dbfAttributes = [];
+                if (!empty($lokasi->dbf_attributes)) {
+                    $decoded = json_decode($lokasi->dbf_attributes, true);
+                    if (is_array($decoded)) {
+                        $dbfAttributes = $decoded;
+                    }
+                }
 
                 return [
                     'type' => 'Feature',
