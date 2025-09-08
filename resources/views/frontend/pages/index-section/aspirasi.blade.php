@@ -3,45 +3,6 @@
     <link rel="stylesheet" href="{{ asset('frontend/css/section/aspirasi-tailwind.css') }}">
 @endpush
 
-{{-- Legacy CSS Version - Commented Out
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('frontend/css/section/aspirasi.css') }}">
-@endpush
-
-<section class="aspirasi" id="aspirasi">
-    <div class="aspirasi-content">
-        <!-- Left Side: Counters + Button -->
-        <div class="aspirasi-left-section">
-            <!-- Counters -->
-            <div class="counter-section">
-                <div class="counter-item">
-                    <div class="counter-number" id="proposalCounter">18</div>
-                    <div class="counter-label">Usulan Pembangunan</div>
-                </div>
-                <div class="counter-item">
-                    <div class="counter-number" id="feedbackCounter">150</div>
-                    <div class="counter-label">Kritik & Saran</div>
-                </div>
-            </div>
-
-            <!-- Button -->
-            <button class="aspirasi-cta-button" onclick="openAspirationForm()">
-                Berikan Aspirasi Anda →
-            </button>
-        </div>
-
-        <!-- Right Side: Title + Description -->
-        <div class="aspirasi-right-section">
-            <h2 class="aspirasi-title">Aspirasi</h2>
-            <p class="aspirasi-description">
-                Platform terintegrasi untuk menampung aspirasi masyarakat terkait pembangunan infrastruktur.
-                Berikan masukan dan saran Anda untuk kemajuan daerah yang lebih baik.
-            </p>
-        </div>
-    </div>
-</section>
---}}
-
 <!-- Aspirasi Section - Tailwind Version -->
 <section class="relative w-full py-20 lg:py-24 bg-white" id="aspirasi">
     <div class="container max-w-7xl mx-auto px-6 lg:px-8">
