@@ -50,7 +50,7 @@ Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore']
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
 
-Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
+// Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';
