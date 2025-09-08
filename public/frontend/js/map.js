@@ -1,9 +1,9 @@
-// map-app.js - Optimized version with on-demand loading
+// map-app.js - Enhanced version with comprehensive loading effects
 /**
- * map-app.js - Optimized version with on-demand loading
- * Entry point utama aplikasi peta frontend dengan loading data yang efisien.
+ * map-app.js - Enhanced version with comprehensive loading effects
+ * Entry point utama aplikasi peta frontend dengan loading data yang efisien dan visual loading indicators.
  */
-console.log("map-app.js loaded - optimized version");
+console.log("map-app.js loaded - enhanced version with loading effects");
 
 /**
  * Konfigurasi utama peta, termasuk daftar basemap, center, zoom, dan style default.
@@ -69,6 +69,248 @@ let kategoriWarnaMap = {};
 let iconMap = {};
 let loadedCategories = new Set(); // Track loaded categories
 let isLoadingData = false; // Prevent concurrent loading
+let currentLoadingCategory = null; // Track current loading category
+let loadingProgressInterval = null; // For animated progress
+
+/**
+ * Create and manage loading overlay
+ */
+function createLoadingOverlay() {
+    if (document.getElementById('map-loading-overlay')) return;
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'map-loading-overlay';
+    overlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-family: Arial, sans-serif;
+    `;
+    
+    overlay.innerHTML = `
+        <div class="loading-spinner" style="
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        "></div>
+        <div id="loading-text" style="
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        ">Memuat data...</div>
+        <div id="loading-progress" style="
+            font-size: 14px;
+            opacity: 0.9;
+            text-align: center;
+        ">Mempersiapkan...</div>
+        <div id="loading-bar-container" style="
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        ">
+            <div id="loading-bar" style="
+                width: 0%;
+                height: 100%;
+                background: linear-gradient(90deg, #4CAF50, #81C784);
+                border-radius: 3px;
+                transition: width 0.3s ease;
+            "></div>
+        </div>
+    `;
+    
+    // Add CSS animation for spinner
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    const mapContainer = document.getElementById('map');
+    mapContainer.style.position = 'relative';
+    mapContainer.appendChild(overlay);
+}
+
+/**
+ * Show loading overlay with category name
+ */
+function showLoadingOverlay(categoryName) {
+    createLoadingOverlay();
+    const overlay = document.getElementById('map-loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    const loadingProgress = document.getElementById('loading-progress');
+    const loadingBar = document.getElementById('loading-bar');
+    
+    currentLoadingCategory = categoryName;
+    loadingText.textContent = `Memuat data ${categoryName}`;
+    loadingProgress.textContent = 'Mengirim permintaan ke server...';
+    loadingBar.style.width = '10%';
+    
+    overlay.style.display = 'flex';
+}
+
+/**
+ * Update loading progress
+ */
+function updateLoadingProgress(loaded, total, message = '') {
+    const loadingProgress = document.getElementById('loading-progress');
+    const loadingBar = document.getElementById('loading-bar');
+    
+    if (loadingProgress && loadingBar) {
+        const percentage = Math.min(Math.max((loaded / total) * 100, 10), 100);
+        loadingBar.style.width = `${percentage}%`;
+        
+        if (message) {
+            loadingProgress.textContent = message;
+        } else {
+            loadingProgress.textContent = `${loaded} dari ${total} fitur dimuat`;
+        }
+    }
+}
+
+/**
+ * Hide loading overlay
+ */
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('map-loading-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+    currentLoadingCategory = null;
+    
+    if (loadingProgressInterval) {
+        clearInterval(loadingProgressInterval);
+        loadingProgressInterval = null;
+    }
+}
+
+/**
+ * Update checkbox state with loading indicator
+ */
+function updateCheckboxLoadingState(categoryName, isLoading) {
+    // Find the checkbox for this category
+    const container = document.getElementById("layer-list");
+    if (!container) return;
+    
+    const labels = container.querySelectorAll('label');
+    labels.forEach(label => {
+        if (label.textContent.trim() === categoryName) {
+            const checkbox = document.getElementById(label.htmlFor);
+            if (checkbox) {
+                if (isLoading) {
+                    // Add loading state
+                    checkbox.disabled = true;
+                    label.classList.add('loading-pulse');
+                    
+                    // Add loading icon
+                    if (!label.querySelector('.loading-icon')) {
+                        const loadingIcon = document.createElement('span');
+                        loadingIcon.className = 'loading-icon ms-2';
+                        loadingIcon.innerHTML = '<i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i>';
+                        label.appendChild(loadingIcon);
+                    }
+                } else {
+                    // Remove loading state
+                    checkbox.disabled = false;
+                    label.classList.remove('loading-pulse');
+                    
+                    // Remove loading icon
+                    const loadingIcon = label.querySelector('.loading-icon');
+                    if (loadingIcon) {
+                        loadingIcon.remove();
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Enhanced toast notifications with loading state
+ */
+function showAlert(message, type = "info", persistent = false) {
+    console.log(`${type}: ${message}`);
+    const toastContainer = document.getElementById("toast-container");
+    if (!toastContainer) return;
+
+    // Remove previous loading toasts if new success/error message
+    if (type === 'success' || type === 'danger') {
+        const existingToasts = toastContainer.querySelectorAll('.toast');
+        existingToasts.forEach(toast => {
+            if (toast.textContent.includes('Memuat data') || toast.textContent.includes('Loading')) {
+                const toastInstance = bootstrap.Toast.getInstance(toast);
+                if (toastInstance) toastInstance.hide();
+            }
+        });
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-bg-${type} border-0 ${persistent ? 'toast-persistent' : ''}`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+    
+    // Different structure for loading vs regular toasts
+    const isLoading = type === 'info' && (message.includes('Memuat') || message.includes('Loading'));
+    
+    if (isLoading) {
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="toast-body flex-grow-1">${message}</div>
+            </div>`;
+    } else {
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>`;
+    }
+    
+    toastContainer.appendChild(toast);
+    
+    const toastInstance = new bootstrap.Toast(toast, {
+        autohide: !persistent && !isLoading,
+        delay: isLoading ? 0 : (type === 'success' ? 4000 : 6000)
+    });
+    
+    toastInstance.show();
+    
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    
+    return toast;
+}
 
 /**
  * Menghasilkan style untuk kategori tertentu.
@@ -247,29 +489,6 @@ function bindPopupContent(feature, layer, urlPath) {
 }
 
 /**
- * Menampilkan alert/toast pada UI dan log ke console.
- */
-function showAlert(message, type = "info") {
-    console.log(`${type}: ${message}`);
-    const toastContainer = document.getElementById("toast-container");
-    if (!toastContainer) return;
-
-    const toast = document.createElement("div");
-    toast.className = `toast align-items-center text-bg-${type} border-0`;
-    toast.setAttribute("role", "alert");
-    toast.setAttribute("aria-live", "assertive");
-    toast.setAttribute("aria-atomic", "true");
-    toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>`;
-    toastContainer.appendChild(toast);
-    new bootstrap.Toast(toast).show();
-    toast.addEventListener("hidden.bs.toast", () => toast.remove());
-}
-
-/**
  * Mengganti basemap yang aktif sesuai pilihan user.
  */
 function changeBaseMap(baseMapId) {
@@ -315,7 +534,7 @@ function getDataType(urlPath) {
  */
 async function loadCategoriesMetadata() {
     try {
-        showAlert("Memuat daftar kategori...", "info");
+        const loadingToast = showAlert("Memuat daftar kategori...", "info", true);
         
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
@@ -388,6 +607,11 @@ async function loadCategoriesMetadata() {
 
         updateLayerList();
         generateLegend();
+        
+        // Hide loading toast and show success
+        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
+        if (toastInstance) toastInstance.hide();
+        
         showAlert("Kategori berhasil dimuat. Pilih layer untuk memuat data.", "success");
         
     } catch (error) {
@@ -407,9 +631,6 @@ async function loadCategoriesMetadata() {
 }
 
 /**
- * Load spatial data for specific category on-demand with pagination
- */
-/**
  * Load spatial data for specific category on-demand with pagination (max 3000 records)
  */
 async function loadCategoryData(categoryName) {
@@ -419,7 +640,14 @@ async function loadCategoryData(categoryName) {
 
     try {
         isLoadingData = true;
-        showAlert(`Memuat data untuk ${categoryName}...`, "info");
+        
+        // Show loading overlay
+        showLoadingOverlay(categoryName);
+        
+        // Update checkbox to show loading state
+        updateCheckboxLoadingState(categoryName, true);
+        
+        const loadingToast = showAlert(`Memuat data untuk ${categoryName}...`, "info", true);
 
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
@@ -453,6 +681,7 @@ async function loadCategoryData(categoryName) {
         let hasMore = true;
         const maxRecords = 3000; // Maximum records to load
         const chunkSize = 500; // Records per request
+        let estimatedTotal = maxRecords; // Initial estimate
 
         // Load data in chunks with pagination
         while (hasMore && totalLoaded < maxRecords) {
@@ -470,6 +699,9 @@ async function loadCategoryData(categoryName) {
                 queryString += `&limit=${currentChunkSize}&offset=${offset}`;
 
                 console.log(`Loading chunk: ${queryString}`);
+                
+                // Update loading progress
+                updateLoadingProgress(totalLoaded, estimatedTotal, `Memuat chunk ${Math.floor(offset / chunkSize) + 1}...`);
 
                 const response = await fetch(`/geojson${queryString}`);
                 
@@ -507,6 +739,11 @@ async function loadCategoryData(categoryName) {
                     break;
                 }
 
+                // Update estimate if we have metadata
+                if (geoJsonData.meta?.total_features && offset === 0) {
+                    estimatedTotal = Math.min(geoJsonData.meta.total_features, maxRecords);
+                }
+
                 // Determine marker options (only need to do this once)
                 let markerOptions = null;
                 if (offset === 0) {
@@ -526,7 +763,7 @@ async function loadCategoryData(categoryName) {
 
                 // Add features to layer with error handling
                 let featuresAdded = 0;
-                geoJsonData.features.forEach((feature) => {
+                geoJsonData.features.forEach((feature, index) => {
                     try {
                         // Validate feature structure
                         if (!feature || !feature.geometry) {
@@ -550,6 +787,13 @@ async function loadCategoryData(categoryName) {
                         }).addTo(targetLayer);
                         
                         featuresAdded++;
+                        
+                        // Update progress periodically during feature loading
+                        if (index % 50 === 0) {
+                            updateLoadingProgress(totalLoaded + featuresAdded, estimatedTotal, 
+                                `Memproses fitur ${totalLoaded + featuresAdded}...`);
+                        }
+                        
                     } catch (featureError) {
                         console.error(`Error adding feature to map:`, featureError, feature);
                     }
@@ -557,19 +801,18 @@ async function loadCategoryData(categoryName) {
 
                 totalLoaded += featuresAdded;
                 
-                // Update progress
-                const progressMessage = totalLoaded >= maxRecords 
-                    ? `Data ${categoryName}: ${totalLoaded} fitur dimuat (maksimum tercapai)`
-                    : `Memuat data ${categoryName}: ${totalLoaded} fitur dimuat...`;
-                    
-                showAlert(progressMessage, totalLoaded >= maxRecords ? "warning" : "info");
+                // Update progress after chunk completion
+                updateLoadingProgress(totalLoaded, estimatedTotal, 
+                    totalLoaded >= maxRecords 
+                        ? `${totalLoaded} fitur dimuat (maksimum tercapai)`
+                        : `${totalLoaded} fitur dimuat...`);
 
                 // Check if we have more data and haven't reached the limit
                 const serverHasMore = geoJsonData.meta?.has_more === true;
                 hasMore = serverHasMore && totalLoaded < maxRecords && featuresAdded > 0;
                 offset += chunkSize;
 
-                // Add small delay to prevent overwhelming the server
+                // Add small delay to prevent overwhelming the server and show progress
                 if (hasMore) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
@@ -583,12 +826,28 @@ async function loadCategoryData(categoryName) {
                 }
                 
                 // For subsequent chunks, just log and break
-                showAlert(`Pemuatan data dihentikan pada ${totalLoaded} fitur karena error: ${chunkError.message}`, "warning");
+                updateLoadingProgress(totalLoaded, estimatedTotal, 
+                    `Error pada chunk ${Math.floor(offset / chunkSize)}: ${chunkError.message}`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Show error for 1 second
                 break;
             }
         }
 
         loadedCategories.add(categoryName);
+        
+        // Final progress update
+        updateLoadingProgress(totalLoaded, totalLoaded, 'Selesai!');
+        
+        // Wait a moment to show completion
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Hide loading states
+        hideLoadingOverlay();
+        updateCheckboxLoadingState(categoryName, false);
+        
+        // Hide loading toast and show success
+        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
+        if (toastInstance) toastInstance.hide();
         
         // Final success message
         let finalMessage;
@@ -605,6 +864,14 @@ async function loadCategoryData(categoryName) {
 
     } catch (error) {
         console.error(`Error loading data for category ${categoryName}:`, error);
+        
+        // Hide loading states
+        hideLoadingOverlay();
+        updateCheckboxLoadingState(categoryName, false);
+        
+        // Hide loading toast
+        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
+        if (toastInstance) toastInstance.hide();
         
         // Show detailed error in alert
         let errorMessage = `Gagal memuat data ${categoryName}`;
@@ -692,21 +959,28 @@ function updateLayerList() {
         checkboxRoot.addEventListener("change", async () => {
             const isChecked = checkboxRoot.checked;
             
-            for (const [subname, layer] of Object.entries(sublayers)) {
-                const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
-                const checkbox = document.getElementById(subId);
-                
-                if (checkbox) {
-                    checkbox.checked = isChecked;
+            // Disable parent checkbox during loading
+            checkboxRoot.disabled = true;
+            
+            try {
+                for (const [subname, layer] of Object.entries(sublayers)) {
+                    const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
+                    const checkbox = document.getElementById(subId);
                     
-                    if (isChecked) {
-                        // Load data on-demand if not loaded yet
-                        await loadCategoryData(subname);
-                        map.addLayer(layer);
-                    } else {
-                        map.removeLayer(layer);
+                    if (checkbox) {
+                        checkbox.checked = isChecked;
+                        
+                        if (isChecked) {
+                            // Load data on-demand if not loaded yet
+                            await loadCategoryData(subname);
+                            map.addLayer(layer);
+                        } else {
+                            map.removeLayer(layer);
+                        }
                     }
                 }
+            } finally {
+                checkboxRoot.disabled = false;
             }
         });
 
@@ -740,27 +1014,34 @@ function updateLayerList() {
             checkbox.style.border = "2px solid #999";
 
             checkbox.addEventListener("change", async () => {
-                if (checkbox.checked) {
-                    // Load data on-demand if not loaded yet
-                    await loadCategoryData(subname);
-                    map.addLayer(layer);
-                } else {
-                    map.removeLayer(layer);
-                }
+                // Disable checkbox during loading
+                checkbox.disabled = true;
+                
+                try {
+                    if (checkbox.checked) {
+                        // Load data on-demand if not loaded yet
+                        await loadCategoryData(subname);
+                        map.addLayer(layer);
+                    } else {
+                        map.removeLayer(layer);
+                    }
 
-                // Update parent state
-                const allSubs = Array.from(subLayerList.querySelectorAll('input[type="checkbox"]'));
-                const checkedCount = allSubs.filter((cb) => cb.checked).length;
+                    // Update parent state
+                    const allSubs = Array.from(subLayerList.querySelectorAll('input[type="checkbox"]'));
+                    const checkedCount = allSubs.filter((cb) => cb.checked).length;
 
-                if (checkedCount === 0) {
-                    checkboxRoot.checked = false;
-                    checkboxRoot.indeterminate = false;
-                } else if (checkedCount === allSubs.length) {
-                    checkboxRoot.checked = true;
-                    checkboxRoot.indeterminate = false;
-                } else {
-                    checkboxRoot.checked = false;
-                    checkboxRoot.indeterminate = true;
+                    if (checkedCount === 0) {
+                        checkboxRoot.checked = false;
+                        checkboxRoot.indeterminate = false;
+                    } else if (checkedCount === allSubs.length) {
+                        checkboxRoot.checked = true;
+                        checkboxRoot.indeterminate = false;
+                    } else {
+                        checkboxRoot.checked = false;
+                        checkboxRoot.indeterminate = true;
+                    }
+                } finally {
+                    checkbox.disabled = false;
                 }
             });
 
@@ -882,8 +1163,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const loadingDiv = document.getElementById("layer-loading");
     if (loadingDiv) loadingDiv.remove();
 
-    console.log("Map application initialized with on-demand loading");
+    console.log("Map application initialized with enhanced loading effects");
 
+    // Rest of the sidebar and UI setup code remains the same
     // Sidebar Elements
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
