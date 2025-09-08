@@ -1,12 +1,11 @@
-// map-app.js - Fixed version based on working original code
+// map.js - Fixed untuk working dengan controller yang sudah diperbaiki
 /**
- * map-app.js - Fixed version based on working original code
- * Entry point utama aplikasi peta frontend.
+ * map.js - True on-demand loading dengan metadata first approach
  */
-console.log("map-app.js loaded");
+console.log("map.js loaded - fixed version for optimized controller");
 
 /**
- * Konfigurasi utama peta, termasuk daftar basemap, center, zoom, dan style default.
+ * Map configuration
  */
 const mapConfig = {
     weight: 6,
@@ -56,223 +55,23 @@ const mapConfig = {
 };
 
 /**
- * Inisialisasi objek Leaflet map dengan konfigurasi awal.
+ * Initialize map
  */
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
 }).setView(mapConfig.center, mapConfig.zoom);
 
+// State management
 let layerGroups = {};
 let currentBaseMap = null;
-let kategoriWarnaMap = {};
-let iconMap = {};
+let kategoriMetadata = {};
+let activeCategories = new Set();
+let loadingCategories = new Set();
+let isCategoriesLoaded = false;
 
 /**
- * Menghasilkan style untuk kategori tertentu.
- * Digunakan untuk styling fitur non-marker (polygon/line).
- * @param {string} kategori - Nama kategori
- * @returns {object} Style Leaflet
- */
-function getStyleForCategory(kategori) {
-    const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
-    return {
-        color: warna,
-        weight: 5,
-        fillColor: warna,
-        fillOpacity: 0.4,
-        opacity: 1,
-    };
-}
-
-/**
- * Membuat dan menampilkan legend pada UI berdasarkan kategori dan icon/warna.
- * Hanya menampilkan kategori yang memiliki data dan icon jika marker.
- */
-function generateLegend() {
-    const legendContainer = document.getElementById("legend-content");
-    if (!legendContainer) return;
-
-    legendContainer.innerHTML = "";
-    const added = new Set();
-
-    Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
-        Object.keys(sublayers).forEach((sub) => {
-            if (added.has(sub)) return;
-
-            // Cek apakah sub adalah marker (point) dan punya icon
-            let icon = iconMap[sub] || null;
-            let color =
-                kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
-
-            // Jika marker, gunakan icon dan warna kategori
-            if (icon) {
-                legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
-                            <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
-                        </div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
-                    </div>
-                `;
-            } else {
-                legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
-                    </div>
-                `;
-            }
-            added.add(sub);
-        });
-    });
-}
-
-/**
- * Membuat dan mengikat konten popup pada setiap fitur peta.
- * Menampilkan info properti, gambar, tombol zoom dan tombol detail.
- * @param {object} feature - GeoJSON feature
- * @param {object} layer - Leaflet layer
- * @param {string} urlPath - Path untuk link detail
- */
-function bindPopupContent(feature, layer, urlPath) {
-    const props = feature.properties;
-    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;"><h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
-        props.kategori || "Feature"
-    }</h5>`;
-
-    if (props.gambar) {
-        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
-    };
-    content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
-        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
-    Object.entries(props).forEach(([key, value]) => {
-        const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
-
-        if (allowedKeys.includes(key.toUpperCase()) && value) {
-            const label = key
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase());
-            content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
-        }
-    });
-
-
-    content += `</table></div>`;
-
-    const geom = feature.geometry;
-    let center = null;
-
-    if (geom) {
-        const type = geom.type;
-        content += `<hr style="margin: 5px 0;"><table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
-        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
-
-        if (type === "LineString" && Array.isArray(geom.coordinates)) {
-            let length = 0;
-            for (let i = 1; i < geom.coordinates.length; i++) {
-                const [lon1, lat1] = geom.coordinates[i - 1];
-                const [lon2, lat2] = geom.coordinates[i];
-                const R = 6371;
-                const rad = Math.PI / 180;
-                const dLat = (lat2 - lat1) * rad;
-                const dLon = (lon2 - lon1) * rad;
-                const a =
-                    Math.sin(dLat / 2) ** 2 +
-                    Math.cos(lat1 * rad) *
-                        Math.cos(lat2 * rad) *
-                        Math.sin(dLon / 2) ** 2;
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                length += R * c;
-            }
-            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
-                2
-            )} km</td></tr>`;
-        }
-
-        // Hitung center
-        if (type === "Point") {
-            center = geom.coordinates;
-        } else if (type === "LineString") {
-            const mid = Math.floor(geom.coordinates.length / 2);
-            center = geom.coordinates[mid];
-        } else if (type === "Polygon") {
-            const poly = geom.coordinates[0];
-            const mid = Math.floor(poly.length / 2);
-            center = poly[mid];
-        } else if (type === "MultiPolygon") {
-            const poly = geom.coordinates[0][0];
-            const mid = Math.floor(poly.length / 2);
-            center = poly[mid];
-        }
-
-        if (center && center.length >= 2) {
-            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
-                5
-            )}, ${center[0].toFixed(5)}</td></tr>`;
-        }
-        content += `</table>`;
-    }
-
-    const id = props.uuid || "";
-    const lat = center?.[1] || 0;
-    const lng = center?.[0] || 0;
-
-    content += `
-        <div class="d-flex justify-content-between">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}" style="font-size: 10px; padding: 4px 8px;">Zoom To</button>
-            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning" style="font-size: 10px; padding: 4px 8px;">Lihat Detail</a>
-        </div>
-    </div>`;
-
-    layer.bindPopup(content);
-
-    layer.on("popupopen", function () {
-        const popupNode = layer.getPopup().getElement();
-        const zoomButton = popupNode.querySelector(".zoomToBtn");
-
-        if (zoomButton) {
-            zoomButton.addEventListener("click", function () {
-                const geom = feature.geometry;
-                if (!geom) return;
-
-                const mapInstance = layer._map;
-                if (geom.type === "Point") {
-                    const lat = parseFloat(this.getAttribute("data-lat"));
-                    const lng = parseFloat(this.getAttribute("data-lng"));
-                    mapInstance.setView([lat, lng], 15);
-                } else if (geom.type === "LineString") {
-                    const latlngs = geom.coordinates.map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "Polygon") {
-                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "MultiPolygon") {
-                    let allLatLngs = [];
-                    geom.coordinates.forEach((poly) => {
-                        poly[0].forEach(([lng, lat]) => {
-                            allLatLngs.push([lat, lng]);
-                        });
-                    });
-                    if (allLatLngs.length > 0) {
-                        mapInstance.fitBounds(allLatLngs);
-                    }
-                }
-            });
-        }
-    });
-}
-
-/**
- * Menampilkan alert/toast pada UI dan log ke console.
- * @param {string} message - Pesan yang ditampilkan
- * @param {string} [type="info"] - Jenis alert (info, warning, danger, dll)
+ * Utility functions
  */
 function showAlert(message, type = "info") {
     console.log(`${type}: ${message}`);
@@ -282,22 +81,39 @@ function showAlert(message, type = "info") {
     const toast = document.createElement("div");
     toast.className = `toast align-items-center text-bg-${type} border-0`;
     toast.setAttribute("role", "alert");
-    toast.setAttribute("aria-live", "assertive");
-    toast.setAttribute("aria-atomic", "true");
     toast.innerHTML = `
     <div class="d-flex">
       <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>`;
     toastContainer.appendChild(toast);
     new bootstrap.Toast(toast).show();
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
 }
 
-/**
- * Mengganti basemap yang aktif sesuai pilihan user.
- * @param {string} baseMapId - ID basemap yang dipilih
- */
+function getDataType(urlPath) {
+    const routes = {
+        "/proyek-strategis-daerah": { type: "proyek_strategis", sub_type: "psd", year: null },
+        "/proyek-strategis-nasional": { type: "proyek_strategis", sub_type: "psn", year: null },
+        "/peta-tematik": { type: "tematik", sub_type: null, year: null },
+        "/usulan-musrenbang": { type: "usulan_musrenbang", sub_type: null, year: null },
+        "/pokir-dprd": { type: "pokir_dprd", sub_type: null, year: null }
+    };
+    return routes[urlPath] || { type: "tematik", sub_type: null, year: null };
+}
+
+function getStyleForCategory(kategori) {
+    const metadata = kategoriMetadata[kategori];
+    const warna = metadata?.warna || "#ECE6D6";
+    return {
+        color: warna,
+        weight: 5,
+        fillColor: warna,
+        fillOpacity: 0.4,
+        opacity: 1,
+    };
+}
+
 function changeBaseMap(baseMapId) {
     if (currentBaseMap) {
         map.removeLayer(currentBaseMap);
@@ -314,284 +130,473 @@ function changeBaseMap(baseMapId) {
     }
 }
 
-// ✅ getDataType function to determine data type based on URL path
 /**
- * Menentukan tipe data berdasarkan path URL.
- * @param {string} urlPath - Path URL yang digunakan
- * @returns {object} Objek dengan properti type dan sub_type
+ * STEP 1: Load metadata kategori saja (NO spatial data)
  */
-function getDataType(urlPath) {
-    // Default return value
-    const defaultResult = { type: "tematik", sub_type: null, year: null };
+async function loadCategoriesMetadata() {
+    if (isCategoriesLoaded) return;
 
-    switch (urlPath) {
-        case "/proyek-strategis-daerah":
-            return { type: "proyek_strategis", sub_type: "psd", year: null };
-        case "/proyek-strategis-nasional":
-            return { type: "proyek_strategis", sub_type: "psn", year: null };
-        case "/peta-tematik":
-            return { type: "tematik", sub_type: null, year: null };
-        case "/usulan-musrenbang":
-            return { type: "usulan_musrenbang", sub_type: null, year: null };
-        case "/pokir-dprd":
-            return { type: "pokir_dprd", sub_type: null, year: null };
-        default:
-            return defaultResult;
+    try {
+        // Show loading di sidebar
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `
+                <div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>`;
+        }
+
+        showAlert("Memuat daftar kategori...", "info");
+
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const tipeLayer = getDataType(urlPath);
+
+        // Request HANYA metadata
+        let queryString = "?metadata_only=true";
+        if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
+        if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
+        if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
+
+        console.log('Requesting metadata:', `/geojson${queryString}`);
+
+        const response = await fetch(`/geojson${queryString}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const metadata = await response.json();
+        console.log('Metadata response:', metadata);
+
+        if (metadata.type === 'error') {
+            throw new Error(metadata.message || 'Server error');
+        }
+
+        if (!metadata?.all_categories?.length) {
+            showAlert("Tidak ada kategori tersedia", "warning");
+            // Show empty state
+            if (layerListContainer) {
+                layerListContainer.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                        <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                        <span class="mt-2 text-muted">Tidak ada kategori tersedia.</span>
+                    </div>`;
+            }
+            return;
+        }
+
+        // Build metadata map
+        kategoriMetadata = {};
+        metadata.all_categories.forEach((cat) => {
+            if (cat.nama) {
+                kategoriMetadata[cat.nama] = {
+                    id: cat.id,
+                    nama: cat.nama,
+                    warna: cat.warna || "#ECE6D6",
+                    icon: cat.icon,
+                    is_marker: cat.is_marker,
+                    parent_id: cat.parent_id,
+                    data_count: cat.data_count || 0
+                };
+            }
+        });
+
+        // Build empty layer structure berdasarkan hierarchy
+        layerGroups = {};
+        const parents = metadata.all_categories.filter(cat => !cat.parent_id);
+        const children = metadata.all_categories.filter(cat => cat.parent_id);
+
+        parents.forEach((parent) => {
+            layerGroups[parent.nama] = {};
+            const anak = children.filter(child => child.parent_id === parent.id);
+
+            if (anak.length > 0) {
+                anak.forEach((child) => {
+                    layerGroups[parent.nama][child.nama] = L.layerGroup();
+                });
+            } else {
+                layerGroups[parent.nama][parent.nama] = L.layerGroup();
+            }
+        });
+
+        // Hide loading
+        const loadingDiv = document.getElementById("layer-loading");
+        if (loadingDiv) loadingDiv.remove();
+
+        updateLayerList();
+        isCategoriesLoaded = true;
+        showAlert(`${metadata.all_categories.length} kategori siap dimuat`, "success");
+
+    } catch (error) {
+        console.error("Error loading categories metadata:", error);
+        
+        // Show error state
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                    <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-muted">Gagal memuat kategori.</span>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadCategoriesMetadata()">Coba Lagi</button>
+                </div>`;
+        }
+        
+        showAlert(`Gagal memuat kategori: ${error.message}`, "danger");
     }
 }
 
-// ✅ Modified initMap with proper hierarchy using all_categories
 /**
- * Inisialisasi peta, memuat data GeoJSON, membangun struktur layer, dan menambahkan fitur ke peta.
- * Melakukan mapping kategori, marker, dan legend secara efisien.
+ * STEP 2: Toggle category data on demand
  */
-async function initMap() {
-    // Tampilkan loading di sidebar layer
-    const layerListContainer = document.getElementById("layer-list");
-    if (layerListContainer) {
-        layerListContainer.innerHTML = `<div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+async function toggleCategoryData(kategori, isChecked) {
+    if (isChecked) {
+        await loadCategoryData(kategori);
+    } else {
+        clearCategoryData(kategori);
     }
+}
+
+/**
+ * Load data untuk kategori spesifik
+ */
+async function loadCategoryData(kategori) {
+    if (activeCategories.has(kategori) || loadingCategories.has(kategori)) {
+        return;
+    }
+
+    loadingCategories.add(kategori);
+
+    try {
+        showAlert(`Memuat data ${kategori}...`, "info");
+
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const tipeLayer = getDataType(urlPath);
+
+        // Request data untuk kategori spesifik
+        let queryString = `?category=${encodeURIComponent(kategori)}`;
+        if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
+        if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
+        if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
+
+        console.log('Requesting category data:', `/geojson${queryString}`);
+
+        const response = await fetch(`/geojson${queryString}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const categoryData = await response.json();
+        console.log('Category data response:', categoryData);
+
+        if (categoryData.type === 'error') {
+            throw new Error(categoryData.message || 'Server error');
+        }
+
+        if (!categoryData?.features?.length) {
+            showAlert(`Tidak ada data untuk kategori ${kategori}`, "warning");
+            loadingCategories.delete(kategori);
+            return;
+        }
+
+        // Get target layer
+        const targetLayer = getTargetLayer(kategori);
+        if (!targetLayer) {
+            throw new Error(`Target layer tidak ditemukan untuk kategori: ${kategori}`);
+        }
+
+        // Clear existing data
+        targetLayer.clearLayers();
+
+        // Get marker options
+        const markerOptions = getMarkerOptions(kategori);
+
+        // Add features to layer
+        let addedCount = 0;
+        categoryData.features.forEach((feature) => {
+            try {
+                L.geoJSON(feature, {
+                    pointToLayer: (feature, latlng) =>
+                        markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
+                    style: getStyleForCategory(kategori),
+                    onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
+                }).addTo(targetLayer);
+                addedCount++;
+            } catch (e) {
+                console.warn(`Error adding feature:`, e);
+            }
+        });
+
+        // Add to map
+        if (!map.hasLayer(targetLayer)) {
+            map.addLayer(targetLayer);
+        }
+
+        activeCategories.add(kategori);
+        loadingCategories.delete(kategori);
+        
+        showAlert(`${addedCount} data ${kategori} berhasil dimuat`, "success");
+        generateLegend();
+
+        // Handle pagination if available
+        if (categoryData.pagination?.has_more) {
+            addLoadMoreButton(kategori, categoryData.pagination);
+        }
+
+    } catch (error) {
+        console.error(`Error loading category ${kategori}:`, error);
+        showAlert(`Gagal memuat data ${kategori}: ${error.message}`, "danger");
+        loadingCategories.delete(kategori);
+    }
+}
+
+/**
+ * Clear category data
+ */
+function clearCategoryData(kategori) {
+    const targetLayer = getTargetLayer(kategori);
+    if (targetLayer) {
+        if (map.hasLayer(targetLayer)) {
+            map.removeLayer(targetLayer);
+        }
+        targetLayer.clearLayers();
+        activeCategories.delete(kategori);
+        showAlert(`Data ${kategori} dihapus`, "info");
+        generateLegend();
+        removeLoadMoreButton(kategori);
+    }
+}
+
+/**
+ * Get target layer for kategori
+ */
+function getTargetLayer(kategori) {
+    for (const [parentName, children] of Object.entries(layerGroups)) {
+        if (children[kategori]) {
+            return children[kategori];
+        }
+    }
+    if (layerGroups[kategori]?.[kategori]) {
+        return layerGroups[kategori][kategori];
+    }
+    return null;
+}
+
+/**
+ * Get marker options for kategori
+ */
+function getMarkerOptions(kategori) {
+    const metadata = kategoriMetadata[kategori];
+    if (metadata && metadata.is_marker && metadata.icon) {
+        return L.ExtraMarkers.icon({
+            icon: metadata.icon,
+            prefix: "fa",
+            svg: true,
+            markerColor: metadata.warna || "blue",
+            iconColor: "white",
+            shape: "circle",
+        });
+    }
+    return null;
+}
+
+/**
+ * Add load more button for paginated data
+ */
+function addLoadMoreButton(kategori, pagination) {
+    const checkboxContainer = document.querySelector(`input[data-category="${kategori}"]`)?.closest('.px-4');
+    if (!checkboxContainer) return;
+
+    removeLoadMoreButton(kategori); // Remove existing button
+
+    const loadMoreBtn = document.createElement('button');
+    loadMoreBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+    loadMoreBtn.style.fontSize = '0.7rem';
+    loadMoreBtn.innerHTML = `<i class="bi bi-plus-circle me-1"></i>Load More (${pagination.page}/${Math.ceil(pagination.total / pagination.limit)})`;
+    loadMoreBtn.setAttribute('data-load-more', kategori);
+    
+    loadMoreBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await loadMoreCategoryData(kategori, pagination.next_page);
+    });
+
+    checkboxContainer.appendChild(loadMoreBtn);
+}
+
+/**
+ * Remove load more button
+ */
+function removeLoadMoreButton(kategori) {
+    const existingBtn = document.querySelector(`button[data-load-more="${kategori}"]`);
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+}
+
+/**
+ * Load more data for category (pagination)
+ */
+async function loadMoreCategoryData(kategori, page) {
+    if (loadingCategories.has(kategori)) return;
+
+    loadingCategories.add(kategori);
+
     try {
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
 
-        const dataType = tipeLayer.type;
-        const subType = tipeLayer.sub_type || null;
-        const year = tipeLayer.year || null;
-
-        // Build query string for API call
-        let queryString = "?";
-        if (dataType) queryString += `type=${dataType}`;
-        if (subType) queryString += `&sub_type=${subType}`;
-        if (year) queryString += `&year=${year}`;
+        let queryString = `?category=${encodeURIComponent(kategori)}&page=${page}`;
+        if (tipeLayer.type) queryString += `&type=${tipeLayer.type}`;
+        if (tipeLayer.sub_type) queryString += `&sub_type=${tipeLayer.sub_type}`;
+        if (tipeLayer.year) queryString += `&year=${tipeLayer.year}`;
 
         const response = await fetch(`/geojson${queryString}`);
-        const geoJsonData = await response.json();
+        const categoryData = await response.json();
 
-        if (!geoJsonData?.features?.length) {
-            // Tampilkan pesan di sidebar layer jika data kosong
-            const layerListContainer = document.getElementById("layer-list");
-            if (layerListContainer) {
-                layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
-                    <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
-                    <span class="mt-2 text-muted">Data peta belum tersedia.</span>
-                </div>`;
-            }
-            showAlert("Data GeoJSON kosong", "warning");
-            return;
-        }
+        if (categoryData?.features?.length) {
+            const targetLayer = getTargetLayer(kategori);
+            const markerOptions = getMarkerOptions(kategori);
 
-        // 🔸 Build kategoriWarnaMap dan iconMap
-        kategoriWarnaMap = {};
-        iconMap = {};
-
-        if (Array.isArray(geoJsonData.all_categories)) {
-            geoJsonData.all_categories.forEach((cat) => {
-                if (!cat.nama || !cat.warna) return;
-                kategoriWarnaMap[cat.nama] = cat.warna;
-                // Jika marker dan punya icon, simpan icon
-                if (cat.is_marker === true && cat.icon) {
-                    iconMap[cat.nama] = cat.icon;
-                }
-            });
-        }
-
-        // 🔸 Hapus layer lama dari peta
-        Object.values(layerGroups).forEach((group) => {
-            Object.values(group).forEach((layer) => {
-                if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
-                }
-            });
-        });
-
-        layerGroups = {};
-
-        // 🔸 Bangun struktur layerGroups dari all_categories (parent-child)
-        if (geoJsonData.all_categories?.length) {
-            const parents = geoJsonData.all_categories.filter(
-                (cat) => !cat.parent_id
-            );
-            const children = geoJsonData.all_categories.filter(
-                (cat) => cat.parent_id
-            );
-
-            parents.forEach((parent) => {
-                layerGroups[parent.nama] = {};
-
-                const anak = children.filter(
-                    (child) => child.parent_id === parent.id
-                );
-
-                if (anak.length > 0) {
-                    anak.forEach((child) => {
-                        layerGroups[parent.nama][child.nama] = L.layerGroup();
-                    });
-                } else {
-                    layerGroups[parent.nama][parent.nama] = L.layerGroup();
-                }
-            });
-            
-        } else if (geoJsonData.root_categories) {
-            geoJsonData.root_categories.forEach((cat) => {
-                const kategori = cat.nama;
-                layerGroups[kategori] = {};
-
-                if (Array.isArray(cat.children) && cat.children.length > 0) {
-                    cat.children.forEach((sub) => {
-                        layerGroups[kategori][sub.nama] = L.layerGroup();
-                    });
-                } else {
-                    layerGroups[kategori][kategori] = L.layerGroup();
-                }
-            });
-        }
-
-        // 🔸 Kelompokkan fitur berdasarkan kategori yang ada datanya
-        const kategoriFiturMap = {};
-        geoJsonData.features.forEach((feature) => {
-            const kategori = (feature.properties?.kategori || "").trim();
-            if (!kategori) return;
-            if (!kategoriFiturMap[kategori]) kategoriFiturMap[kategori] = [];
-            kategoriFiturMap[kategori].push(feature);
-        });
-        // 🔸 Proses hanya kategori yang punya data fitur
-        /**
-         * =============================
-         * 1. Mapping kategori ke targetLayer dan markerOptions
-         * =============================
-         *
-         * - targetLayerMap: Menyimpan referensi layer untuk setiap kategori (baik parent maupun child).
-         * - markerOptionsMap: Menyimpan opsi marker (icon, warna) untuk kategori marker.
-         * - Proses ini hanya dilakukan satu kali per kategori agar efisien dan mudah maintenance.
-         */
-        const targetLayerMap = {};
-        const markerOptionsMap = {};
-
-        // perbaiki penambahan layer ke sidebar Cyz//
-        Object.entries(kategoriFiturMap).forEach(([kategori, fiturList]) => {
-            let targetLayer = null;
-
-            // Cari layer yang sesuai di dalam layerGroups
-            for (const [parentName, children] of Object.entries(layerGroups)) {
-                if (children[kategori]) {
-                    targetLayer = children[kategori];
-                    break;
-                }
-            }
-
-            // Jika belum ditemukan, cek apakah layerGroups[kategori] adalah parent layer
-            if (
-                !targetLayer &&
-                layerGroups[kategori] &&
-                layerGroups[kategori][kategori]
-            ) {
-                targetLayer = layerGroups[kategori][kategori];
-            }
-
-            // Jika tetap tidak ditemukan, buat layer baru
-            if (!targetLayer) {
-                targetLayer = L.layerGroup();
-                if (!layerGroups[kategori]) {
-                    layerGroups[kategori] = {};
-                }
-                layerGroups[kategori][kategori] = targetLayer;
-            }
-
-            targetLayerMap[kategori] = targetLayer;
-
-            // --- Tentukan markerOptions ---
-            let isMarker = false;
-            let iconClass = null;
-            let iconWarna = kategoriWarnaMap[kategori] || "blue"; // Default warna jika tidak ada
-            if (geoJsonData && Array.isArray(geoJsonData.all_categories)) {
-                const catObj = geoJsonData.all_categories.find(
-                    (c) => c.nama === kategori
-                );
-                if (catObj) {
-                    isMarker = !!catObj.is_marker;
-                    iconClass = catObj.icon || null;
-                    iconWarna = catObj.warna || iconWarna;
-                }
-            }
-
-            if (isMarker && iconClass) {
-                markerOptionsMap[kategori] = L.ExtraMarkers.icon({
-                    icon: iconClass,
-                    prefix: "fa",
-                    svg: true,
-                    markerColor: iconWarna,
-                    iconColor: "white",
-                    shape: "circle",
-                    html: `<i class='fa ${iconClass}' style='color:white; background: blue;'></i>`, // titik koma diperbaiki
-                });
-            } else {
-                markerOptionsMap[kategori] = null;
-            }
-        });
-
-        /**
-         * =============================
-         * 2. Penambahan fitur ke layer sesuai kategori
-         * =============================
-         *
-         * - Menggunakan targetLayer dan markerOptions yang sudah di-cache.
-         * - Clean code: tidak ada pemanggilan berulang dan mudah untuk penambahan fitur baru.
-         * - Jika ingin menambah fitur (misal: clustering, filter, custom popup), cukup tambahkan di blok ini.
-         */
-        Object.entries(kategoriFiturMap).forEach(([kategori, fiturList]) => {
-            const targetLayer = targetLayerMap[kategori];
-            const markerOptions = markerOptionsMap[kategori];
-            if (targetLayer) {
-                fiturList.forEach((feature) => {
+            categoryData.features.forEach((feature) => {
+                try {
                     L.geoJSON(feature, {
                         pointToLayer: (feature, latlng) =>
-                            markerOptions
-                                ? L.marker(latlng, { icon: markerOptions })
-                                : L.marker(latlng),
+                            markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
                         style: getStyleForCategory(kategori),
-                        onEachFeature: (f, l) =>
-                            bindPopupContent(f, l, urlPath),
+                        onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
                     }).addTo(targetLayer);
-                });
-            }
-        });
-
-        // 🔸 Bersihkan layer kosong
-        Object.entries(layerGroups).forEach(([kat, subs]) => {
-            Object.entries(subs).forEach(([sub, layer]) => {
-                if (layer.getLayers().length === 0) {
-                    delete layerGroups[kat][sub];
+                } catch (e) {
+                    console.warn(`Error adding feature:`, e);
                 }
             });
-            if (Object.keys(layerGroups[kat]).length === 0) {
-                delete layerGroups[kat];
-            }
-        });
 
-        updateLayerList();
-        // Sembunyikan loading setelah selesai
-        const loadingDiv = document.getElementById("layer-loading");
-        if (loadingDiv) loadingDiv.remove();
-        generateLegend();
-    } catch (error) {
-        console.error("Error:", error);
-        // Tampilkan pesan error di sidebar layer
-        const layerListContainer = document.getElementById("layer-list");
-        if (layerListContainer) {
-            layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
-                <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
-                <span class="mt-2 text-muted">Terjadi kesalahan saat memuat data peta.</span>
-            </div>`;
+            showAlert(`${categoryData.features.length} data tambahan ${kategori} dimuat`, "success");
+
+            if (categoryData.pagination?.has_more) {
+                addLoadMoreButton(kategori, categoryData.pagination);
+            } else {
+                removeLoadMoreButton(kategori);
+            }
         }
-        showAlert("Gagal memuat data peta", "danger");
+
+        loadingCategories.delete(kategori);
+
+    } catch (error) {
+        console.error(`Error loading more data for ${kategori}:`, error);
+        showAlert(`Gagal memuat data tambahan ${kategori}`, "danger");
+        loadingCategories.delete(kategori);
     }
 }
 
-// ✅ Enhanced updateLayerList with dropdown hierarchy
 /**
- * Membuat dan memperbarui daftar layer pada sidebar UI.
- * Menampilkan struktur parent-child kategori dan kontrol checkbox untuk setiap layer.
+ * Generate legend untuk kategori aktif
+ */
+function generateLegend() {
+    const legendContainer = document.getElementById("legend-content");
+    if (!legendContainer) return;
+
+    legendContainer.innerHTML = "";
+
+    activeCategories.forEach((kategori) => {
+        const metadata = kategoriMetadata[kategori];
+        if (!metadata) return;
+
+        const targetLayer = getTargetLayer(kategori);
+        let featureCount = 0;
+        if (targetLayer) {
+            targetLayer.eachLayer(() => featureCount++);
+        }
+
+        if (metadata.icon) {
+            legendContainer.innerHTML += `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                        <i class="${metadata.icon}" style="font-size: 12px; color: ${metadata.warna}; line-height: 1;"></i>
+                    </div>
+                    <span style="font-size: 0.85rem;">${kategori} (${featureCount})</span>
+                </div>
+            `;
+        } else {
+            legendContainer.innerHTML += `
+                <div class="d-flex align-items-center mb-2">
+                    <div style="width: 14px; height: 14px; background-color: ${metadata.warna}; border: 1px solid #333; margin-right: 8px;"></div>
+                    <span style="font-size: 0.85rem;">${kategori} (${featureCount})</span>
+                </div>
+            `;
+        }
+    });
+}
+
+/**
+ * Bind popup content
+ */
+function bindPopupContent(feature, layer, urlPath) {
+    const props = feature.properties;
+    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;"><h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
+        props.kategori || "Feature"
+    }</h5>`;
+
+    if (props.gambar) {
+        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN || ''}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
+    }
+    
+    content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
+        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
+    
+    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN", "deskripsi"];
+    allowedKeys.forEach(key => {
+        const value = props[key] || props[key.toLowerCase()] || props[key.toUpperCase()];
+        if (value) {
+            const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+            content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
+        }
+    });
+
+    content += `</table></div>`;
+
+    const geom = feature.geometry;
+    let center = null;
+
+    if (geom) {
+        const type = geom.type;
+        content += `<hr style="margin: 5px 0;"><table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
+        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
+
+        if (type === "Point") {
+            center = geom.coordinates;
+        } else if (type === "LineString") {
+            const mid = Math.floor(geom.coordinates.length / 2);
+            center = geom.coordinates[mid];
+        } else if (type === "Polygon") {
+            const poly = geom.coordinates[0];
+            const mid = Math.floor(poly.length / 2);
+            center = poly[mid];
+        }
+
+        if (center && center.length >= 2) {
+            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(5)}, ${center[0].toFixed(5)}</td></tr>`;
+        }
+        content += `</table>`;
+    }
+
+    const id = props.uuid || "";
+    const lat = center?.[1] || 0;
+    const lng = center?.[0] || 0;
+
+    content += `
+        <div class="d-flex justify-content-between">
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}" style="font-size: 10px; padding: 4px 8px;">Zoom To</button>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning" style="font-size: 10px; padding: 4px 8px;">Lihat Detail</a>
+        </div>
+    </div>`;
+
+    layer.bindPopup(content);
+}
+
+/**
+ * Update layer list dengan true on-demand checkboxes
  */
 function updateLayerList() {
     const container = document.getElementById("layer-list");
@@ -608,8 +613,7 @@ function updateLayerList() {
 
         // Create header
         const header = document.createElement("div");
-        header.className =
-            "d-flex align-items-center justify-content-between px-3 py-2 border rounded";
+        header.className = "d-flex align-items-center justify-content-between px-3 py-2 border rounded";
         header.style.cursor = "pointer";
 
         const leftSection = document.createElement("div");
@@ -619,17 +623,16 @@ function updateLayerList() {
         const toggleBtn = document.createElement("span");
         toggleBtn.className = "me-2";
         toggleBtn.innerHTML = `<i class="bi bi-chevron-right"></i>`;
-        toggleBtn.style.transition = "transform 0.3s ease";
 
         // Parent checkbox
         const checkboxRoot = document.createElement("input");
         checkboxRoot.type = "checkbox";
         checkboxRoot.className = "form-check-input me-2";
         checkboxRoot.id = rootId;
-        checkboxRoot.style.border = "2px solid #999"; // Atur warna dan ketebalan border
+
         // Parent label
         const labelRoot = document.createElement("label");
-        labelRoot.className = "form-check-label fw-bold ";
+        labelRoot.className = "form-check-label fw-bold";
         labelRoot.style.fontSize = "0.85rem";
         labelRoot.htmlFor = rootId;
         labelRoot.textContent = kategori;
@@ -640,17 +643,19 @@ function updateLayerList() {
         badge.className = "badge bg-light text-dark ms-2";
         badge.textContent = subCount;
 
-        // Parent checkbox controls all children
-        checkboxRoot.addEventListener("change", () => {
+        // Parent checkbox event
+        checkboxRoot.addEventListener("change", async () => {
             const isChecked = checkboxRoot.checked;
-            Object.entries(sublayers).forEach(([subname, layer]) => {
+            
+            for (const [subname] of Object.entries(sublayers)) {
                 const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
                 const checkbox = document.getElementById(subId);
+                
                 if (checkbox) {
                     checkbox.checked = isChecked;
-                    isChecked ? map.addLayer(layer) : map.removeLayer(layer);
+                    await toggleCategoryData(subname, isChecked);
                 }
-            });
+            }
         });
 
         leftSection.appendChild(toggleBtn);
@@ -663,33 +668,30 @@ function updateLayerList() {
         // Create sublayers container
         const subLayerList = document.createElement("div");
         subLayerList.id = groupId;
-        subLayerList.className = "border border-top-0 rounded-bottom bg-light ";
+        subLayerList.className = "border border-top-0 rounded-bottom bg-light";
         subLayerList.style.display = "none";
 
         // Add sublayers
         Object.entries(sublayers).forEach(([subname, layer]) => {
-            // Skip if same name as parent and has multiple children
             const hasChildren = Object.keys(sublayers).length > 1;
             if (subname === kategori && hasChildren) return;
 
             const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
             const row = document.createElement("div");
-            row.className = "d-flex align-items-center px-4 py-2 ";
+            row.className = "d-flex align-items-center px-4 py-2";
 
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
-            checkbox.className = "form-check-input me-3 ";
+            checkbox.className = "form-check-input me-3";
             checkbox.id = subId;
+            checkbox.setAttribute('data-category', subname);
 
-            checkbox.style.border = "2px solid #999"; // Atur warna dan ketebalan border
-
-            checkbox.addEventListener("change", () => {
-                checkbox.checked ? map.addLayer(layer) : map.removeLayer(layer);
+            // Individual checkbox event
+            checkbox.addEventListener("change", async () => {
+                await toggleCategoryData(subname, checkbox.checked);
 
                 // Update parent state
-                const allSubs = Array.from(
-                    subLayerList.querySelectorAll('input[type="checkbox"]')
-                );
+                const allSubs = Array.from(subLayerList.querySelectorAll('input[type="checkbox"]'));
                 const checkedCount = allSubs.filter((cb) => cb.checked).length;
 
                 if (checkedCount === 0) {
@@ -707,30 +709,24 @@ function updateLayerList() {
             const label = document.createElement("label");
             label.className = "form-check-label";
             label.htmlFor = subId;
-            label.textContent = subname;
+            
+            // Show data count
+            const metadata = kategoriMetadata[subname];
+            const dataCount = metadata?.data_count || 0;
+            const labelText = dataCount > 0 ? `${subname} (${dataCount})` : subname;
+            label.textContent = labelText;
 
-            // Parent Row (pastikan ada)
-            row.style.cssText = `
-                display: flex;
-                align-items: center;
-                width: 100%;
-                gap: 0.5rem;
-            `;
-
-            // Label
             label.style.cssText = `
-                font-size: 0.75rem;              /* kecilkan teks */
-                white-space: normal;             /* izinkan teks membungkus */
+                font-size: 0.75rem;
+                white-space: normal;
                 word-wrap: break-word;
                 overflow-wrap: break-word;
-                flex: 1;                         /* isi ruang tersedia */
-                max-width: calc(100% - 40px);    /* sisakan ruang untuk checkbox dan colorIndicator */
+                flex: 1;
                 line-height: 1.2;
             `;
 
             row.appendChild(checkbox);
             row.appendChild(label);
-            // row.appendChild(colorIndicator);
             subLayerList.appendChild(row);
         });
 
@@ -755,62 +751,59 @@ function updateLayerList() {
 }
 
 /**
- * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll).
- * Mengatur interaksi user dengan kontrol peta dan sidebar.
+ * Setup UI controls
  */
 function setupUI() {
+    // Transparency slider
     const transparencySlider = document.getElementById("transparency");
     if (transparencySlider) {
         transparencySlider.addEventListener("input", (e) => {
             const val = e.target.value / 100;
-            Object.values(layerGroups).forEach((group) => {
-                Object.values(group).forEach((layerGroup) => {
-                    if (layerGroup.eachLayer) {
-                        layerGroup.eachLayer((layer) => {
-                            if (layer.setStyle) {
-                                layer.setStyle({
-                                    fillOpacity: val,
-                                    opacity: val,
-                                });
-                            }
-                        });
-                    }
-                });
+            activeCategories.forEach(kategori => {
+                const targetLayer = getTargetLayer(kategori);
+                if (targetLayer) {
+                    targetLayer.eachLayer((layer) => {
+                        if (layer.setStyle) {
+                            layer.setStyle({
+                                fillOpacity: val,
+                                opacity: val,
+                            });
+                        }
+                    });
+                }
             });
         });
     }
 
+    // Basemap controls
     const basemapList = document.getElementById("basemap-list");
     if (basemapList) {
         mapConfig.baseMapsList.forEach((bm, i) => {
             basemapList.innerHTML += `
                 <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${
-                        bm.id
-                    }" value="${bm.id}" ${i === 4 ? "checked" : ""}>
-                    <label class="form-check-label" for="bm-${bm.id}">${
-                bm.label
-            }</label>
+                    <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${bm.id}" value="${bm.id}" ${i === 4 ? "checked" : ""}>
+                    <label class="form-check-label" for="bm-${bm.id}">${bm.label}</label>
                 </div>`;
         });
 
         basemapList.addEventListener("change", (e) => {
-            if (e.target.name === "basemap-radio")
-                changeBaseMap(e.target.value);
+            if (e.target.name === "basemap-radio") changeBaseMap(e.target.value);
         });
     }
 }
 
 /**
- * Entry point aplikasi frontend peta.
- * Menjalankan inisialisasi peta, basemap, dan UI saat DOM siap.
+ * Initialize application
  */
-document.addEventListener("DOMContentLoaded", () => {
-    initMap();
+document.addEventListener("DOMContentLoaded", async () => {
+    // Setup basemap
     changeBaseMap("esri-world-imagery");
     setupUI();
+    
+    // Load categories metadata only
+    await loadCategoriesMetadata();
 
-    // Sidebar Elements
+    // Setup sidebar controls (existing code from original)
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
@@ -819,7 +812,6 @@ document.addEventListener("DOMContentLoaded", () => {
         help: document.getElementById("guideModal"),
     };
 
-    // Toggle Buttons
     const toggleButtons = {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
@@ -828,132 +820,13 @@ document.addEventListener("DOMContentLoaded", () => {
         help: document.getElementById("btn-toggle-sidebar-help"),
     };
 
-    const guideModal = document.getElementById("guideModal");
-    const guideSteps = document.querySelectorAll(".guide-step");
-    const btnPrev = document.getElementById("btnPrev");
-    const btnNext = document.getElementById("btnNext");
-    const btnSkip = document.getElementById("btnSkip");
-    const btnToggleHelp = toggleButtons.help;
-
-    const controlButtons = [
-        toggleButtons.help,
-        toggleButtons.legend,
-        toggleButtons.basemap,
-        toggleButtons.layer,
-        toggleButtons.download,
-        document.getElementById("btn-fullscreen"),
-        document.getElementById("btn-default-zoom"),
-    ];
-
     function closeAllSidebars() {
         Object.values(sidebarElements).forEach((el) => {
-            if (el && el !== guideModal) el.style.display = "none";
+            if (el && el !== sidebarElements.help) el.style.display = "none";
         });
     }
 
-    let currentStep = 1;
-    const totalSteps = guideSteps.length;
-
-    function clearHighlights() {
-        controlButtons.forEach((btn) => {
-            if (btn) {
-                btn.classList.remove("highlighted-control");
-                btn.style.position = "";
-                btn.style.zIndex = "";
-                btn.style.padding = "";
-            }
-        });
-    }
-
-    function showStep(step) {
-        guideSteps.forEach((stepDiv) => {
-            stepDiv.classList.toggle(
-                "d-none",
-                parseInt(stepDiv.dataset.step) !== step
-            );
-        });
-
-        btnPrev.disabled = step === 1;
-        btnNext.textContent = step === totalSteps ? "Finish" : "Next";
-        clearHighlights();
-
-        switch (step) {
-            case 3:
-                controlButtons[0]?.classList.add("highlighted-control");
-                break;
-            case 4:
-                controlButtons[1]?.classList.add("highlighted-control");
-                break;
-            case 5:
-                controlButtons[2]?.classList.add("highlighted-control");
-                break;
-            case 6:
-                controlButtons[3]?.classList.add("highlighted-control");
-                break;
-            case 7:
-                controlButtons[4]?.classList.add("highlighted-control");
-                break;
-            case 8:
-                controlButtons[5]?.classList.add("highlighted-control");
-                break;
-            case 9:
-                controlButtons[6]?.classList.add("highlighted-control");
-                break;
-        }
-    }
-
-    function hideGuideModal() {
-        const modalInstance = bootstrap.Modal.getInstance(guideModal);
-        modalInstance?.hide();
-
-        document.body.classList.remove("modal-open");
-        document
-            .querySelectorAll(".modal-backdrop")
-            .forEach((el) => el.remove());
-        document.querySelector(".guide-overlay")?.remove();
-    }
-
-    btnToggleHelp?.addEventListener("click", () => {
-        const modalInstance =
-            bootstrap.Modal.getInstance(guideModal) ||
-            new bootstrap.Modal(guideModal);
-        const isVisible = guideModal.classList.contains("show");
-
-        closeAllSidebars();
-        clearHighlights();
-
-        if (!isVisible) {
-            currentStep = 1;
-            showStep(currentStep);
-            modalInstance.show();
-        } else {
-            modalInstance.hide();
-        }
-    });
-
-    btnPrev?.addEventListener("click", () => {
-        if (currentStep > 1) {
-            currentStep--;
-            showStep(currentStep);
-        }
-    });
-
-    btnNext?.addEventListener("click", () => {
-        if (currentStep < totalSteps) {
-            currentStep++;
-            showStep(currentStep);
-        } else {
-            hideGuideModal();
-            clearHighlights();
-        }
-    });
-
-    btnSkip?.addEventListener("click", () => {
-        hideGuideModal();
-        clearHighlights();
-    });
-
-    // Sidebar toggles
+    // Sidebar toggles dan event handlers lainnya
     Object.entries(toggleButtons).forEach(([key, button]) => {
         if (button && sidebarElements[key]) {
             button.addEventListener("click", () => {
@@ -997,7 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
         map.setView(mapConfig.center, mapConfig.zoom);
     });
 
-    // Search layer
+    // Layer search
     const layerSearchInput = document.getElementById("layer-search");
     layerSearchInput?.addEventListener("input", (e) => {
         const searchTerm = e.target.value.toLowerCase();
@@ -1008,11 +881,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const childLabels = group.querySelectorAll(".bg-light label");
             let hasMatch = false;
 
-            if (
-                parentLabel &&
-                parentLabel.textContent.toLowerCase().includes(searchTerm)
-            )
-                hasMatch = true;
+            if (parentLabel && parentLabel.textContent.toLowerCase().includes(searchTerm)) hasMatch = true;
 
             childLabels.forEach((label) => {
                 if (label.textContent.toLowerCase().includes(searchTerm)) {
@@ -1020,8 +889,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            group.style.display =
-                hasMatch || searchTerm === "" ? "block" : "none";
+            group.style.display = hasMatch || searchTerm === "" ? "block" : "none";
         });
     });
+
+    // Zoom to feature functionality
+    document.addEventListener("click", (e) => {
+        if (e.target.classList.contains("zoomToBtn")) {
+            const lat = parseFloat(e.target.dataset.lat);
+            const lng = parseFloat(e.target.dataset.lng);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.setView([lat, lng], 15);
+            }
+        }
+    });
+
+    console.log("Map application initialized with true on-demand loading");
 });

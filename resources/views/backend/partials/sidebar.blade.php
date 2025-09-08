@@ -605,11 +605,17 @@
                     <i class="menu-arrow"></i>
                     <i class="mdi mdi-cog-outline menu-icon"></i>
                 </a>
+
                 <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
                     <ul class="nav flex-column sub-menu">
                         <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('users.index') }}">
                                 <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('visitors.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('visitors.index') }}">
+                                <i class="mdi mdi-chart-line me-2"></i>Analytics Pengunjung
                             </a>
                         </li>
                         {{-- <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
