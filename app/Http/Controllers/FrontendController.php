@@ -188,7 +188,7 @@ class FrontendController extends Controller
             }
 
             // Limit results untuk mencegah overload
-            $limit = $request->get('limit', 1000); // Default 1000 records max
+            $limit = $request->get('limit', 3000); // Default 3000 records max
             $offset = $request->get('offset', 0);
             
             if ($limit > 0) {
