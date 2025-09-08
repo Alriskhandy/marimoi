@@ -48,7 +48,7 @@ class FrontendController extends Controller
             'pokir_dprd' => 'pokir-dprd',
             'usulan_musrenbang' => 'usulan-musrenbang',
         ];
-        // dd($dataPeta, $links);
+
         // Total masing-masing kategori
         $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
         $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
@@ -95,6 +95,7 @@ class FrontendController extends Controller
         $documents = Dokumen::all();
         return view('frontend.pages.peta', compact('documents'));
     }
+    
     public function musrenbang()
     {
         $documents = Dokumen::all();
@@ -108,128 +109,222 @@ class FrontendController extends Controller
         return view('frontend.pages.prioritas', compact('documents'));
     }
 
-    // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE //
+    // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE - OPTIMIZED VERSION //
     public function getGeojsonByDataType(Request $request)
     {
-        $dataType = $request->get('type');
-        $subType = $request->get('sub_type');
-        $year = $request->get('year');
-        // dd($dataType, $subType, $year);
+        try {
+            $dataType = $request->get('type');
+            $subType = $request->get('sub_type');
+            $year = $request->get('year');
+            $metadataOnly = $request->boolean('metadata_only');
 
-        $query = DB::table('data_spatial')
-            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
-            ->select(
-                'data_spatial.id',
-                'data_spatial.uuid',
-                'data_spatial.data_type',
-                'data_spatial.sub_type',
-                'data_spatial.gambar',
-                'data_spatial.kategori_id',
-                'data_spatial.tahun',
-                'categories.nama as kategori',
-                'data_spatial.deskripsi',
-                'data_spatial.dbf_attributes',
-                'categories.icon',
-                'categories.warna',
-                'categories.is_marker',
-                DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson')
-            );
-
-        if ($dataType) {
-            $query->where('data_spatial.data_type', $dataType);
-        }
-
-        if ($subType) {
-            $query->where('data_spatial.sub_type', $subType);
-        }
-
-        if ($year) {
-            $query->where('data_spatial.tahun', $year);
-        }
-
-        if ($request->has('kategori') && !empty($request->kategori)) {
-            $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-            $query->whereIn('categories.nama', $categories);
-        }
-
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
-            foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+            // Jika hanya butuh metadata (kategori), return categories saja
+            if ($metadataOnly) {
+                return $this->getCategoriesMetadata($dataType, $subType);
             }
-        }
 
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('categories.nama', 'ILIKE', "%{$search}%")
-                ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
-                ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+            // Build base query
+            $query = DB::table('data_spatial')
+                ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+                ->select(
+                    'data_spatial.id',
+                    'data_spatial.uuid',
+                    'data_spatial.data_type',
+                    'data_spatial.sub_type',
+                    'data_spatial.gambar',
+                    'data_spatial.kategori_id',
+                    'data_spatial.tahun',
+                    'categories.nama as kategori',
+                    'data_spatial.deskripsi',
+                    'data_spatial.dbf_attributes',
+                    'categories.icon',
+                    'categories.warna',
+                    'categories.is_marker',
+                    DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson')
+                );
+
+            // Apply filters
+            if ($dataType) {
+                $query->where('data_spatial.data_type', $dataType);
+            }
+
+            if ($subType) {
+                $query->where('data_spatial.sub_type', $subType);
+            }
+
+            if ($year) {
+                $query->where('data_spatial.tahun', $year);
+            }
+
+            // Filter by specific categories (untuk on-demand loading)
+            if ($request->has('kategori') && !empty($request->kategori)) {
+                $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
+                $query->whereIn('categories.nama', $categories);
+            }
+
+            // Bounding box filter untuk optimasi performa
+            if ($request->has('bbox') && !empty($request->bbox)) {
+                $bbox = explode(',', $request->bbox);
+                if (count($bbox) === 4) {
+                    $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+                }
+            }
+
+            // Search filter
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('categories.nama', 'ILIKE', "%{$search}%")
+                    ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+                });
+            }
+
+            // DBF attribute filter
+            if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
+                foreach ($request->dbf_filter as $attribute => $value) {
+                    $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+                }
+            }
+
+            // Limit results untuk mencegah overload
+            $limit = $request->get('limit', 1000); // Default 1000 records max
+            $offset = $request->get('offset', 0);
+            
+            if ($limit > 0) {
+                $query->limit($limit)->offset($offset);
+            }
+
+            // Add ordering untuk konsistensi
+            $query->orderBy('data_spatial.id');
+
+            $lokasis = $query->get();
+            
+            $features = $lokasis->map(function ($lokasi) {
+                $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
+
+                return [
+                    'type' => 'Feature',
+                    'properties' => array_merge([
+                        'id' => $lokasi->id,
+                        'uuid' => $lokasi->uuid,
+                        'data_type' => $lokasi->data_type,
+                        'sub_type' => $lokasi->sub_type,
+                        'gambar' => $lokasi->gambar ? asset('storage/' . $lokasi->gambar) : null,
+                        'kategori_id' => $lokasi->kategori_id,
+                        'kategori' => $lokasi->kategori,
+                        'tahun' => $lokasi->tahun,
+                        'deskripsi' => $lokasi->deskripsi,
+                        'icon' => $lokasi->icon,
+                        'warna' => $lokasi->warna,
+                        'is_marker' => (bool) $lokasi->is_marker,
+                    ], $dbfAttributes),
+                    'geometry' => json_decode($lokasi->geojson),
+                ];
             });
-        }
 
-        if ($request->has('bbox') && !empty($request->bbox)) {
-            $bbox = explode(',', $request->bbox);
-            if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+
+            // Ambil categories untuk reference
+            $rootCategories = Category::where('type', $categoryType)
+                ->with(['children' => function($query) {
+                    $query->orderBy('nama');
+                }])
+                ->roots()
+                ->orderBy('nama')
+                ->get();
+
+            $allCategories = Category::where('type', $categoryType)
+                ->with('parent')
+                ->orderBy('nama')
+                ->get();
+
+            return response()->json([
+                'type' => 'FeatureCollection',
+                'features' => $features,
+                'root_categories' => $rootCategories,
+                'all_categories' => $allCategories,
+                'meta' => [
+                    'data_type' => $dataType,
+                    'sub_type' => $subType,
+                    'year' => $year,
+                    'total_features' => $features->count(),
+                    'total_root_categories' => $rootCategories->count(),
+                    'total_categories' => $allCategories->count(),
+                    'limit' => $limit,
+                    'offset' => $offset,
+                    'has_more' => $features->count() == $limit, // Indikasi ada data lagi
+                    'generated_at' => now()->toISOString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getGeojsonByDataType: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'message' => 'Terjadi kesalahan saat memuat data.',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Get only categories metadata without spatial data
+     */
+    private function getCategoriesMetadata($dataType, $subType)
+    {
+        try {
+            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+
+            $rootCategories = Category::where('type', $categoryType)
+                ->with(['children' => function($query) {
+                    $query->orderBy('nama');
+                }])
+                ->roots()
+                ->orderBy('nama')
+                ->get();
+
+            $allCategories = Category::where('type', $categoryType)
+                ->with('parent')
+                ->orderBy('nama')
+                ->get();
+
+            // Hitung jumlah data per kategori (optional, bisa di-comment jika lambat)
+            $categoryCounts = [];
+            foreach ($allCategories as $category) {
+                $count = DataSpatial::where('kategori_id', $category->id);
+                if ($dataType) {
+                    $count->where('data_type', $dataType);
+                }
+                if ($subType) {
+                    $count->where('sub_type', $subType);
+                }
+                $categoryCounts[$category->nama] = $count->count();
             }
+
+            return response()->json([
+                'type' => 'MetadataCollection',
+                'root_categories' => $rootCategories,
+                'all_categories' => $allCategories,
+                'category_counts' => $categoryCounts,
+                'meta' => [
+                    'data_type' => $dataType,
+                    'sub_type' => $subType,
+                    'category_type' => $categoryType,
+                    'total_root_categories' => $rootCategories->count(),
+                    'total_categories' => $allCategories->count(),
+                    'generated_at' => now()->toISOString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getCategoriesMetadata: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'message' => 'Gagal memuat metadata kategori.',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        $lokasis = $query->get(); // Langsung eksekusi tanpa cache
-        
-        $features = $lokasis->map(function ($lokasi) {
-            $dbfAttributes = json_decode($lokasi->dbf_attributes, true) ?? [];
-
-            return [
-                'type' => 'Feature',
-                'properties' => array_merge([
-                    'id' => $lokasi->id,
-                    'uuid' => $lokasi->uuid,
-                    'data_type' => $lokasi->data_type,
-                    'sub_type' => $lokasi->sub_type,
-                    'gambar' => $lokasi->gambar ? asset('storage/' . $lokasi->gambar) : null,
-                    'kategori_id' => $lokasi->kategori_id,
-                    'kategori' => $lokasi->kategori,
-                    'tahun' => $lokasi->tahun,
-                    'deskripsi' => $lokasi->deskripsi,
-                    'icon' => $lokasi->icon,
-                    'warna' => $lokasi->warna,
-                    'is_marker' => (bool) $lokasi->is_marker,
-                ], $dbfAttributes),
-                'geometry' => json_decode($lokasi->geojson),
-            ];
-        });
-
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-        // Kategori juga diambil tanpa cache
-        $rootCategories = Category::where('type', $categoryType)
-            ->with(['children' => function($query) {
-                $query->orderBy('nama');
-            }])
-            ->roots()
-            ->orderBy('nama')
-            ->get();
-
-        $allCategories = Category::where('type', $categoryType)
-            ->with('parent')
-            ->orderBy('nama')
-            ->get();
-        // dd($allCategories, $rootCategories, $categoryType);
-        return response()->json([
-            'type' => 'FeatureCollection',
-            'features' => $features,
-            'root_categories' => $rootCategories,
-            'all_categories' => $allCategories,
-            'meta' => [
-                'data_type' => $dataType,
-                'sub_type' => $subType,
-                'year' => $year,
-                'total_features' => $features->count(),
-                'total_root_categories' => $rootCategories->count(),
-                'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
-        ]);
     }
 
     public function getCategoryTypeByDataType($dataType, $subType)
@@ -274,16 +369,11 @@ class FrontendController extends Controller
         return view('frontend.pages.detailTematik', compact('project', 'projectType'));
     }
 
-   /**
+    /**
      * Store feedback for specific project type
      */
     public function store(Request $request)
     {
-        // dd($request->all());
-        
-        // Log the request data for debugging
-        // Log::info('Feedback form submission', $request->all());
-
         // Rules untuk validasi inputan user
         $rules = [
             'data_spatial_id' => 'required',
@@ -343,7 +433,7 @@ class FrontendController extends Controller
                 ], 404);
             }
 
-            $user =  User::find($dataSpatialExists->user_id);
+            $user = User::find($dataSpatialExists->user_id);
             
             // Data dari request user
             $data = $request->only([
@@ -374,36 +464,34 @@ class FrontendController extends Controller
 
             ProjectFeedback::create($data);
 
-           // Data untuk user
-        $userData = [
-            'nama'      => $request->nama_pemberi_aspirasi,
-            'email'     => $request->email,
-            'tanggapan' => $request->tanggapan,
-            'tanggal'   => now()->format('d-m-Y H:i'),
-        ];
+            // Data untuk user
+            $userData = [
+                'nama'      => $request->nama_pemberi_aspirasi,
+                'email'     => $request->email,
+                'tanggapan' => $request->tanggapan,
+                'tanggal'   => now()->format('d-m-Y H:i'),
+            ];
 
-        // Data untuk admin
-        $adminData = [
-            'nama'      =>  $user->name,
-            'email'     =>  $user->email,
-            'tanggapan' => $request->tanggapan,
-            'tanggal'   => now()->format('d-m-Y H:i'),
-            'nama_proyek' => $request->nama_proyek,
-            'kabupaten_kota' => $request->kabupaten_kota,
-            'kecamatan'     => $request->kecamatan,
-            'jenis_tanggapan' => $request->jenis_tanggapan,
-        ];
+            // Data untuk admin
+            $adminData = [
+                'nama'      =>  $user->name,
+                'email'     =>  $user->email,
+                'tanggapan' => $request->tanggapan,
+                'tanggal'   => now()->format('d-m-Y H:i'),
+                'nama_proyek' => $request->nama_proyek,
+                'kabupaten_kota' => $request->kabupaten_kota,
+                'kecamatan'     => $request->kecamatan,
+                'jenis_tanggapan' => $request->jenis_tanggapan,
+            ];
 
-         // Kirim email penerimaan ke pengguna jika ada email
-        if ($request->filled('email')) {
-            Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
-        }
+            // Kirim email penerimaan ke pengguna jika ada email
+            if ($request->filled('email')) {
+                Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
+            }
 
-        // Kirim notifikasi ke admin (gunakan email admin dari user/project terkait)
-        $adminEmail = $user->email ?? config('mail.from.address');
-        Mail::to($adminEmail)->queue(new TanggapanMail($adminData, 'admin'));
-
-        // php artisan queue:work --tries=3
+            // Kirim notifikasi ke admin (gunakan email admin dari user/project terkait)
+            $adminEmail = $user->email ?? config('mail.from.address');
+            Mail::to($adminEmail)->queue(new TanggapanMail($adminData, 'admin'));
 
             return response()->json([
                 'status' => 'success',
@@ -411,7 +499,7 @@ class FrontendController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            // \Log::error('Error storing scoped feedback: ' . $e->getMessage());
+            Log::error('Error storing feedback: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
@@ -420,9 +508,6 @@ class FrontendController extends Controller
     }
 
     public function aspirasiStore(Request $request){
-        // Log the request data for debugging
-        // Log::info('Aspirasi form submission', $request->all());
-
         // Rules untuk validasi inputan user
         $rules = [
             'nama_pengirim' => 'required|string|max:255',
@@ -489,7 +574,6 @@ class FrontendController extends Controller
                 'isi_aspirasi'
             ]);
 
-            
             // Tambahkan kategori dan koordinat jika jenis aspirasi adalah usulan
             if ($request->jenis_aspirasi === 'usulan') {
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
@@ -509,8 +593,6 @@ class FrontendController extends Controller
                     $data['lampiran'] = [$lampiranName]; // Store as array since model expects array
                 }
             }
-
-            // Log::info('Data Akhir sebelum di create', $data);
 
             Aspirasi::create($data);
 
@@ -550,6 +632,7 @@ class FrontendController extends Controller
             return null;
         }
     }
+
     /**
      * Handle image upload
      */
@@ -568,7 +651,7 @@ class FrontendController extends Controller
             return $imageName;
             
         } catch (\Exception $e) {
-            // \Log::error('Error uploading image: ' . $e->getMessage());
+            Log::error('Error uploading image: ' . $e->getMessage());
             return null;
         }
     }
@@ -612,5 +695,4 @@ class FrontendController extends Controller
         
         return 'all'; // Default to show all
     }
-
 }
