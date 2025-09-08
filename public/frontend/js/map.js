@@ -409,6 +409,9 @@ async function loadCategoriesMetadata() {
 /**
  * Load spatial data for specific category on-demand with pagination
  */
+/**
+ * Load spatial data for specific category on-demand with pagination (max 3000 records)
+ */
 async function loadCategoryData(categoryName) {
     if (isLoadingData || loadedCategories.has(categoryName)) {
         return;
@@ -448,120 +451,188 @@ async function loadCategoryData(categoryName) {
         let offset = 0;
         let totalLoaded = 0;
         let hasMore = true;
+        const maxRecords = 3000; // Maximum records to load
+        const chunkSize = 500; // Records per request
 
         // Load data in chunks with pagination
-        while (hasMore) {
-            let queryString = "?";
-            if (dataType) queryString += `type=${dataType}`;
-            if (subType) queryString += `&sub_type=${subType}`;
-            if (year) queryString += `&year=${year}`;
-            queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
-            queryString += `&limit=500&offset=${offset}`; // Load 500 records at a time
+        while (hasMore && totalLoaded < maxRecords) {
+            try {
+                let queryString = "?";
+                if (dataType) queryString += `type=${encodeURIComponent(dataType)}`;
+                if (subType) queryString += `&sub_type=${encodeURIComponent(subType)}`;
+                if (year) queryString += `&year=${encodeURIComponent(year)}`;
+                queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
+                
+                // Calculate remaining records to load
+                const remainingRecords = maxRecords - totalLoaded;
+                const currentChunkSize = Math.min(chunkSize, remainingRecords);
+                
+                queryString += `&limit=${currentChunkSize}&offset=${offset}`;
 
-            console.log(`Loading chunk: ${queryString}`);
+                console.log(`Loading chunk: ${queryString}`);
 
-            const response = await fetch(`/geojson${queryString}`);
-            
-            if (!response.ok) {
-                // Try to get error details from response
-                let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
-                try {
-                    const errorData = await response.json();
-                    if (errorData.message) {
-                        errorDetails += ` - ${errorData.message}`;
-                    }
-                    if (errorData.details) {
-                        errorDetails += ` - Details: ${errorData.details}`;
-                    }
-                    console.error('Server error response:', errorData);
-                } catch (e) {
-                    // If response is not JSON, try to get text
+                const response = await fetch(`/geojson${queryString}`);
+                
+                if (!response.ok) {
+                    // Enhanced error handling
+                    let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
                     try {
-                        const errorText = await response.text();
-                        if (errorText) {
-                            errorDetails += ` - ${errorText.substring(0, 200)}...`;
+                        const errorData = await response.json();
+                        if (errorData.message) {
+                            errorDetails += ` - ${errorData.message}`;
                         }
-                        console.error('Server error text:', errorText);
-                    } catch (e2) {
-                        console.error('Could not parse error response');
+                        if (errorData.details && errorData.details !== errorData.message) {
+                            errorDetails += ` (${errorData.details})`;
+                        }
+                        console.error('Server error response:', errorData);
+                    } catch (e) {
+                        try {
+                            const errorText = await response.text();
+                            if (errorText && errorText.length > 0) {
+                                errorDetails += ` - ${errorText.substring(0, 200)}${errorText.length > 200 ? '...' : ''}`;
+                            }
+                            console.error('Server error text:', errorText);
+                        } catch (e2) {
+                            console.error('Could not parse error response');
+                        }
+                    }
+                    throw new Error(errorDetails);
+                }
+                
+                const geoJsonData = await response.json();
+
+                // Check if we got any features
+                if (!geoJsonData?.features?.length) {
+                    console.log('No more features to load');
+                    break;
+                }
+
+                // Determine marker options (only need to do this once)
+                let markerOptions = null;
+                if (offset === 0) {
+                    const catObj = geoJsonData.all_categories?.find(c => c.nama === categoryName);
+                    if (catObj?.is_marker && catObj.icon) {
+                        markerOptions = L.ExtraMarkers.icon({
+                            icon: catObj.icon,
+                            prefix: "fa",
+                            svg: true,
+                            markerColor: catObj.warna || "blue",
+                            iconColor: "white",
+                            shape: "circle",
+                            html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
+                        });
                     }
                 }
-                throw new Error(errorDetails);
-            }
-            
-            const geoJsonData = await response.json();
 
-            if (!geoJsonData?.features?.length) {
-                break;
-            }
+                // Add features to layer with error handling
+                let featuresAdded = 0;
+                geoJsonData.features.forEach((feature) => {
+                    try {
+                        // Validate feature structure
+                        if (!feature || !feature.geometry) {
+                            console.warn('Skipping invalid feature:', feature);
+                            return;
+                        }
 
-            // Determine marker options (only need to do this once)
-            let markerOptions = null;
-            if (offset === 0) {
-                const catObj = geoJsonData.all_categories?.find(c => c.nama === categoryName);
-                if (catObj?.is_marker && catObj.icon) {
-                    markerOptions = L.ExtraMarkers.icon({
-                        icon: catObj.icon,
-                        prefix: "fa",
-                        svg: true,
-                        markerColor: catObj.warna || "blue",
-                        iconColor: "white",
-                        shape: "circle",
-                        html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
-                    });
+                        L.geoJSON(feature, {
+                            pointToLayer: (feature, latlng) =>
+                                markerOptions
+                                    ? L.marker(latlng, { icon: markerOptions })
+                                    : L.marker(latlng),
+                            style: getStyleForCategory(categoryName),
+                            onEachFeature: (f, l) => {
+                                try {
+                                    bindPopupContent(f, l, urlPath);
+                                } catch (popupError) {
+                                    console.error('Error binding popup:', popupError);
+                                }
+                            },
+                        }).addTo(targetLayer);
+                        
+                        featuresAdded++;
+                    } catch (featureError) {
+                        console.error(`Error adding feature to map:`, featureError, feature);
+                    }
+                });
+
+                totalLoaded += featuresAdded;
+                
+                // Update progress
+                const progressMessage = totalLoaded >= maxRecords 
+                    ? `Data ${categoryName}: ${totalLoaded} fitur dimuat (maksimum tercapai)`
+                    : `Memuat data ${categoryName}: ${totalLoaded} fitur dimuat...`;
+                    
+                showAlert(progressMessage, totalLoaded >= maxRecords ? "warning" : "info");
+
+                // Check if we have more data and haven't reached the limit
+                const serverHasMore = geoJsonData.meta?.has_more === true;
+                hasMore = serverHasMore && totalLoaded < maxRecords && featuresAdded > 0;
+                offset += chunkSize;
+
+                // Add small delay to prevent overwhelming the server
+                if (hasMore) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
-            }
 
-            // Add features to layer
-            geoJsonData.features.forEach((feature) => {
-                try {
-                    L.geoJSON(feature, {
-                        pointToLayer: (feature, latlng) =>
-                            markerOptions
-                                ? L.marker(latlng, { icon: markerOptions })
-                                : L.marker(latlng),
-                        style: getStyleForCategory(categoryName),
-                        onEachFeature: (f, l) => bindPopupContent(f, l, urlPath),
-                    }).addTo(targetLayer);
-                } catch (featureError) {
-                    console.error(`Error adding feature to map:`, featureError, feature);
+            } catch (chunkError) {
+                console.error(`Error loading chunk at offset ${offset}:`, chunkError);
+                
+                // If this is the first chunk, re-throw the error
+                if (offset === 0) {
+                    throw chunkError;
                 }
-            });
-
-            totalLoaded += geoJsonData.features.length;
-            
-            // Update progress
-            showAlert(`Memuat data ${categoryName}: ${totalLoaded} fitur dimuat...`, "info");
-
-            // Check if we have more data
-            hasMore = geoJsonData.meta?.has_more === true;
-            offset += 500;
-
-            // Safety break to prevent infinite loops
-            if (offset > 10000) { // Max 20 requests (10,000 records)
-                showAlert(`Memuat data ${categoryName} dihentikan pada ${totalLoaded} fitur (batas maksimum tercapai)`, "warning");
+                
+                // For subsequent chunks, just log and break
+                showAlert(`Pemuatan data dihentikan pada ${totalLoaded} fitur karena error: ${chunkError.message}`, "warning");
                 break;
             }
         }
 
         loadedCategories.add(categoryName);
-        showAlert(`Data ${categoryName} berhasil dimuat (${totalLoaded} fitur)`, "success");
+        
+        // Final success message
+        let finalMessage;
+        if (totalLoaded >= maxRecords) {
+            finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur - maksimum tercapai)`;
+        } else {
+            finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur)`;
+        }
+        
+        showAlert(finalMessage, "success");
+
+        // Log performance info
+        console.log(`Loaded ${totalLoaded} features for category "${categoryName}"`);
 
     } catch (error) {
         console.error(`Error loading data for category ${categoryName}:`, error);
         
         // Show detailed error in alert
-        let errorMessage = `Gagal memuat data ${categoryName}: ${error.message}`;
+        let errorMessage = `Gagal memuat data ${categoryName}`;
+        
+        // Provide more specific error messages
+        if (error.message.includes('500')) {
+            errorMessage += ': Server mengalami masalah internal. Coba lagi nanti.';
+        } else if (error.message.includes('404')) {
+            errorMessage += ': Data tidak ditemukan.';
+        } else if (error.message.includes('timeout')) {
+            errorMessage += ': Koneksi timeout. Periksa koneksi internet Anda.';
+        } else {
+            errorMessage += `: ${error.message}`;
+        }
         
         // Log full error stack for debugging
-        console.error('Full error stack:', error.stack);
-        console.error('Error details:', {
+        console.error('Full error details:', {
             name: error.name,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
+            categoryName: categoryName
         });
         
         showAlert(errorMessage, "danger");
+        
+        // Remove category from loaded set so user can retry
+        loadedCategories.delete(categoryName);
+        
     } finally {
         isLoadingData = false;
     }
