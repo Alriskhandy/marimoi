@@ -88,10 +88,10 @@
 
     @yield('main')
 
-    @stack('scripts')
+    <!-- Navbar -->
+    <script src="{{ asset('frontend/js/nav.js') }}"></script>
 
-    <!-- Main Application Script (Clean & Organized) -->
-    <script src="{{ asset('frontend/js/main-dark.js') }}"></script>
+    @stack('scripts')
 </body>
 
 </html>
