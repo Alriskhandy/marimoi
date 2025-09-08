@@ -25,27 +25,31 @@ class DataSpatialController extends Controller
 {
     return Auth::user()?->role?->slug === 'admin-opd';
 }
-
 public function index(Request $request) 
 {
-    // Tingkatkan memory limit sementara
+    // Increase memory limit temporarily
     ini_set('memory_limit', '256M');
     
     $type = $request->get('type');
     $subType = $request->get('sub_type');
     $year = $request->get('year');
+    $search = $request->get('search');
+    $perPage = (int) $request->get('per_page', 50); // Default 50, max 200
+    
+    // Limit per_page to maximum 500
+    $perPage = min($perPage, 500);
 
-    // Validasi type
+    // Validate type
     if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
         return redirect()->back();
     }
 
-    // Validasi sub_type untuk proyek strategis
+    // Validate sub_type for proyek strategis
     if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
         return redirect()->back(); 
     }
 
-    // PERBAIKAN UTAMA: Jangan load relasi dan kolom berat sekaligus
+    // Build query
     $query = DataSpatial::query()
         ->select([
             'id',
@@ -57,7 +61,6 @@ public function index(Request $request)
             'kategori_id',
             'user_id',
             'created_at',
-            // TIDAK mengambil kolom 'geom' dan 'dbf_attributes' yang besar
         ]);
 
     // Filter by data type
@@ -73,7 +76,18 @@ public function index(Request $request)
         $query->where('tahun', $year);
     }
 
-    // Filter berdasarkan role pengguna
+    // Search functionality
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('uuid', 'ILIKE', "%{$search}%")
+              ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
+              ->orWhereHas('kategori', function($query) use ($search) {
+                  $query->where('nama', 'ILIKE', "%{$search}%");
+              });
+        });
+    }
+
+    // Filter by user role
     $user = Auth::user();
     $userRole = $user->role->slug ?? null;
 
@@ -81,11 +95,12 @@ public function index(Request $request)
         $query->where('user_id', $user->id);
     }
 
-    // PERBAIKAN: Gunakan pagination untuk membatasi data yang dimuat
+    // Use pagination with custom per page
     $data = $query->orderBy('created_at', 'desc')
-                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama'])->get(); // Batasi ke 50 records per halaman
+                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama'])
+                  ->paginate($perPage);
 
-    // Ambil kategori dengan select terbatas
+    // Get categories
     $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
                               ->with(['children:id,nama,parent_id'])
                               ->roots();

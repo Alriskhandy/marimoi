@@ -77,14 +77,14 @@
                                             $type = 'usulan_musrenbang';
                                             $subType = null;
                                         } else {
-                                            $type = 'lokasi'; // default
+                                            $type = 'tematik'; // changed from 'lokasi' to 'tematik'
                                             $subType = null;
                                         }
                                     }
 
                                     // Label tombol dinamis
                                     $typeLabels = [
-                                        'lokasi' => 'Input Lokasi',
+                                        'tematik' => 'Input Tematik',
                                         'usulan_musrenbang' => 'Input Musrenbang',
                                         'pokir_dprd' => 'Input Pokir DPRD',
                                         'proyek_strategis' => match ($subType) {
@@ -96,7 +96,7 @@
 
                                     // Title dinamis
                                     $titles = [
-                                        'lokasi' => 'Peta Tematik',
+                                        'tematik' => 'Peta Tematik',
                                         'usulan_musrenbang' => 'Usulan Musrenbang',
                                         'pokir_dprd' => 'POKIR DPRD',
                                         'proyek_strategis' => match ($subType) {
@@ -130,6 +130,84 @@
                             </div>
                         </div>
 
+                        <!-- Search and Filter Controls -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <form method="GET" action="{{ request()->url() }}" class="d-flex gap-3 align-items-end">
+                                    <!-- Preserve current parameters -->
+                                    @foreach (request()->query() as $key => $value)
+                                        @if (!in_array($key, ['search', 'per_page', 'page']))
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
+
+                                    <div class="flex-grow-1">
+                                        <label for="search" class="form-label fw-semibold mb-1">
+                                            <i class="mdi mdi-magnify me-1"></i>Cari Data
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="search" name="search"
+                                                value="{{ request('search') }}"
+                                                placeholder="Cari berdasarkan kode, kategori, atau deskripsi...">
+                                            <button class="btn btn-outline-primary" type="submit">
+                                                <i class="mdi mdi-magnify"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    @if (request('search'))
+                                        <div>
+                                            <a href="{{ request()->url() }}?{{ http_build_query(array_filter(request()->query(), fn($k) => !in_array($k, ['search', 'page']), ARRAY_FILTER_USE_KEY)) }}"
+                                                class="btn btn-outline-secondary">
+                                                <i class="mdi mdi-close me-1"></i>Reset
+                                            </a>
+                                        </div>
+                                    @endif
+                                </form>
+                            </div>
+
+                            <div class="col-md-4">
+                                <form method="GET" action="{{ request()->url() }}" class="d-flex flex-column">
+                                    <!-- Preserve current parameters -->
+                                    @foreach (request()->query() as $key => $value)
+                                        @if ($key !== 'per_page' && $key !== 'page')
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
+
+                                    <label for="per_page" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
+                                    </label>
+                                    <select class="form-select" id="per_page" name="per_page"
+                                        onchange="this.form.submit()">
+                                        <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25
+                                            data</option>
+                                        <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50
+                                            data</option>
+                                        <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>100
+                                            data</option>
+                                        <option value="200" {{ request('per_page', 50) == 200 ? 'selected' : '' }}>200
+                                            data</option>
+                                        <option value="500" {{ request('per_page', 50) == 500 ? 'selected' : '' }}>500
+                                            data</option>
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Search Results Info -->
+                        @if (request('search'))
+                            <div class="alert alert-info mb-3">
+                                <i class="mdi mdi-information me-2"></i>
+                                Menampilkan hasil pencarian untuk: <strong>"{{ request('search') }}"</strong>
+                                @if ($data->total() > 0)
+                                    - Ditemukan {{ $data->total() }} data
+                                @else
+                                    - Tidak ada data yang ditemukan
+                                @endif
+                            </div>
+                        @endif
+
                         <!-- Bulk Actions Bar -->
                         <div id="bulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
                             <div class="d-flex justify-content-between align-items-center">
@@ -155,7 +233,7 @@
                             <table id="dataSpasialTable" class="table table-striped" style="width:100%">
                                 <thead>
                                     <tr>
-                                        @if ($data->isNotEmpty())
+                                        @if ($data->count() > 0)
                                             <th style="width: 40px;">
                                                 <div class="checkbox-wrapper">
                                                     <input class="form-check-input" type="checkbox" id="selectAll">
@@ -163,8 +241,8 @@
                                                         <span class="visually-hidden">Select All</span>
                                                     </label>
                                                 </div>
+                                            </th>
                                         @endif
-                                        </th>
                                         <th>No</th>
                                         <th>KODE</th>
                                         <th>Kategori</th>
@@ -191,7 +269,7 @@
                                                     </label>
                                                 </div>
                                             </td>
-                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
                                             <td>{{ $item->uuid }}</td>
                                             <td>
                                                 <span class="badge bg-gradient-info text-white">
@@ -224,7 +302,8 @@
                                                     </button>
 
                                                     <form action="{{ route('data-spatial.destroy', $item->uuid) }}"
-                                                        method="POST" style="display:inline-block;" data-confirm="delete">
+                                                        method="POST" style="display:inline-block;"
+                                                        data-confirm="delete">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button class="btn btn-sm btn-outline-danger" title="Hapus">
@@ -232,7 +311,6 @@
                                                         </button>
                                                     </form>
                                                 </div>
-
                                             </td>
                                         </tr>
                                     @empty
@@ -240,15 +318,54 @@
                                             <td colspan="{{ $hasTahun ? '8' : '7' }}" class="text-center py-4">
                                                 <i class="mdi mdi-database-remove mdi-48px text-muted"></i>
                                                 <br>
-                                                <h5 class="text-muted mt-2">Belum ada data spasial</h5>
-                                                <p class="text-muted">Klik tombol "{{ $label }}" untuk menambah data
-                                                    baru</p>
+                                                <h5 class="text-muted mt-2">
+                                                    @if (request('search'))
+                                                        Tidak ada data yang cocok dengan pencarian
+                                                    @else
+                                                        Belum ada data spasial
+                                                    @endif
+                                                </h5>
+                                                <p class="text-muted">
+                                                    @if (request('search'))
+                                                        Coba gunakan kata kunci yang berbeda atau
+                                                        <a
+                                                            href="{{ request()->url() }}?{{ http_build_query(array_filter(request()->query(), fn($k) => !in_array($k, ['search', 'page']), ARRAY_FILTER_USE_KEY)) }}">hapus
+                                                            filter pencarian</a>
+                                                    @else
+                                                        Klik tombol "{{ $label }}" untuk menambah data baru
+                                                    @endif
+                                                </p>
                                             </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Pagination and Info -->
+                        @if ($data->hasPages() || $data->total() > 0)
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <div class="showing-info">
+                                    <p class="text-muted mb-0">
+                                        @if ($data->total() > 0)
+                                            Menampilkan {{ $data->firstItem() }} sampai {{ $data->lastItem() }}
+                                            dari {{ $data->total() }} total data
+                                            @if (request('search'))
+                                                (hasil pencarian)
+                                            @endif
+                                        @else
+                                            Tidak ada data untuk ditampilkan
+                                        @endif
+                                    </p>
+                                </div>
+
+                                @if ($data->hasPages())
+                                    <div class="pagination-wrapper">
+                                        {{ $data->appends(request()->query())->links() }}
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -329,9 +446,26 @@
 
 @push('styles')
     <style>
-        /* ===========================================
-                                                       CHECKBOX STYLING - PERBAIKAN UTAMA
-                                                    =========================================== */
+        /* Search and filter styling */
+        .form-label {
+            color: #495057;
+            font-size: 0.875rem;
+        }
+
+        .input-group .btn {
+            border-left: none;
+        }
+
+        .input-group .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #80bdff;
+        }
+
+        .input-group .form-control:focus+.btn {
+            border-color: #80bdff;
+        }
+
+        /* Existing styles... */
         .checkbox-wrapper {
             display: flex;
             align-items: center;
@@ -393,7 +527,6 @@
             line-height: 1;
         }
 
-        /* Indeterminate state untuk select all */
         .form-check-input:indeterminate {
             background-color: #6c757d;
             border-color: #6c757d;
@@ -412,9 +545,6 @@
             line-height: 1;
         }
 
-        /* ===========================================
-                                                       TABLE STYLING IMPROVEMENTS
-                                                    =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -450,7 +580,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        /* Badge styling */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -462,87 +591,11 @@
             background: linear-gradient(135deg, #17a2b8, #20c997);
         }
 
-        /* Button group styling */
-        .btn-group .btn {
-            border-radius: 6px !important;
-            margin: 0 2px;
-        }
-
         .btn-sm {
             padding: 6px 12px;
             font-size: 0.875rem;
         }
 
-        /* ===========================================
-                                                       DATATABLE CUSTOM STYLING
-                                                    =========================================== */
-        .dataTables_wrapper {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter,
-        .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate {
-            color: #495057;
-            font-size: 0.875rem;
-        }
-
-        .dataTables_wrapper .dataTables_length select {
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            background-color: #fff;
-            font-size: 0.875rem;
-        }
-
-        .dataTables_wrapper .dataTables_filter input {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            background-color: #fff;
-            font-size: 0.875rem;
-            transition: border-color 0.2s ease;
-        }
-
-        .dataTables_wrapper .dataTables_filter input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-            outline: none;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 8px 12px !important;
-            margin: 0 2px !important;
-            border-radius: 6px !important;
-            border: 1px solid #dee2e6 !important;
-            background: #fff !important;
-            color: #495057 !important;
-            transition: all 0.2s ease !important;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #e9ecef !important;
-            border-color: #adb5bd !important;
-            color: #495057 !important;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: linear-gradient(135deg, #007bff, #0056b3) !important;
-            border-color: #007bff !important;
-            color: white !important;
-            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
-            color: #6c757d !important;
-            background: #f8f9fa !important;
-            border-color: #dee2e6 !important;
-        }
-
-        /* ===========================================
-                                                       BULK ACTIONS BAR
-                                                    =========================================== */
         #bulkActionsBar {
             background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
             border: 1px solid #2196f3;
@@ -563,9 +616,6 @@
             }
         }
 
-        /* ===========================================
-                                                       MODAL IMPROVEMENTS
-                                                    =========================================== */
         .modal-content {
             border: none;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -579,9 +629,6 @@
             border-top: 1px solid #dee2e6;
         }
 
-        /* ===========================================
-                                                       RESPONSIVE IMPROVEMENTS
-                                                    =========================================== */
         @media (max-width: 768px) {
             .checkbox-wrapper {
                 padding: 4px;
@@ -604,27 +651,6 @@
             }
         }
 
-        /* ===========================================
-                                                       LOADING STATES
-                                                    =========================================== */
-        .table-loading {
-            position: relative;
-        }
-
-        .table-loading::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            z-index: 999;
-        }
-
-        /* ===========================================
-                                                       ACCESSIBILITY IMPROVEMENTS
-                                                    =========================================== */
         .visually-hidden {
             position: absolute !important;
             width: 1px !important;
@@ -637,7 +663,6 @@
             border: 0 !important;
         }
 
-        /* Focus indicators */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -649,112 +674,70 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
-            // Initialize DataTable with improved configuration
-            const table = $('#dataSpasialTable').DataTable({
-                "processing": true,
-                "pageLength": 10,
-                "lengthMenu": [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "Semua"]
-                ],
-                "order": [
-                    [1, 'asc']
-                ],
-                "columnDefs": [{
-                        "orderable": false,
-                        "targets": [0, -1] // Disable ordering on checkbox and action columns
-                    },
-                    {
-                        "searchable": false,
-                        "targets": [0, -1] // Disable search on checkbox and action columns
-                    },
-                    {
-                        "className": "text-center",
-                        "targets": [0, 1, -2, -1] // Center align for checkbox, no, date, action columns
-                    }
-                ],
-                "language": {
-                    "processing": "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>",
-                    "lengthMenu": "Tampilkan _MENU_ data per halaman",
-                    "zeroRecords": "Data tidak ditemukan",
-                    "emptyTable": "Tidak ada data tersedia",
-                    "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    "infoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
-                    "infoFiltered": "(difilter dari _MAX_ total data)",
-                    "search": "Cari:",
-                    "paginate": {
-                        "first": "Pertama",
-                        "last": "Terakhir",
-                        "next": "Selanjutnya",
-                        "previous": "Sebelumnya"
-                    }
-                },
-                "dom": '<"row mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                    '<"row"<"col-sm-12"tr>>' +
-                    '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "drawCallback": function(settings) {
-                    // Reinitialize checkbox events after table redraw
-                    initializeCheckboxEvents();
+            // Initialize checkbox events directly
+            initializeCheckboxEvents();
 
-                    // Add smooth animation to new rows
-                    $(this).find('tbody tr').css('opacity', '0').animate({
-                        'opacity': '1'
-                    }, 300);
-                },
-                "initComplete": function() {
-                    // Style the search input
-                    $('.dataTables_filter input').attr('placeholder', 'Ketik untuk mencari...');
-                }
-            });
+            // Add tooltips to action buttons
+            $('[title]').tooltip();
+        });
 
-            // Initialize checkbox events
-            function initializeCheckboxEvents() {
-                // Clear previous event listeners to avoid duplicates
-                $('#selectAll').off('change');
-                $('.row-checkbox').off('change');
+        function initializeCheckboxEvents() {
+            // Select All functionality  
+            $('#selectAll').on('change', function() {
+                const isChecked = this.checked;
+                const checkboxes = $('.row-checkbox');
 
-                // Select All functionality
-                $('#selectAll').on('change', function() {
-                    const isChecked = this.checked;
-                    const visibleCheckboxes = table.$('.row-checkbox', {
-                        "page": "current"
-                    });
-
-                    visibleCheckboxes.each(function() {
-                        this.checked = isChecked;
-                        const value = this.value;
-
-                        if (isChecked && !selectedItems.includes(value)) {
-                            selectedItems.push(value);
-                        } else if (!isChecked) {
-                            selectedItems = selectedItems.filter(id => id !== value);
-                        }
-                    });
-
-                    updateBulkActionsBar();
-                    updateSelectAllState();
-                });
-
-                // Individual checkbox functionality
-                $('.row-checkbox').on('change', function() {
+                checkboxes.each(function() {
+                    this.checked = isChecked;
                     const value = this.value;
 
-                    if (this.checked) {
-                        if (!selectedItems.includes(value)) {
-                            selectedItems.push(value);
-                        }
-                    } else {
+                    if (isChecked && !selectedItems.includes(value)) {
+                        selectedItems.push(value);
+                    } else if (!isChecked) {
                         selectedItems = selectedItems.filter(id => id !== value);
                     }
-
-                    updateBulkActionsBar();
-                    updateSelectAllState();
                 });
-            }
 
-            // Initialize on page load
-            initializeCheckboxEvents();
-        });
+                updateBulkActionsBar();
+            });
+
+            // Individual checkbox functionality
+            $('.row-checkbox').on('change', function() {
+                const value = this.value;
+
+                if (this.checked) {
+                    if (!selectedItems.includes(value)) {
+                        selectedItems.push(value);
+                    }
+                } else {
+                    selectedItems = selectedItems.filter(id => id !== value);
+                }
+
+                updateBulkActionsBar();
+                updateSelectAllState();
+            });
+        }
+
+        function updateSelectAllState() {
+            const checkboxes = $('.row-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            let checkedCount = 0;
+
+            checkboxes.each(function() {
+                if (this.checked) checkedCount++;
+            });
+
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
 
         // Bulk actions functionality
         let selectedItems = [];
@@ -772,37 +755,11 @@
             }
         }
 
-        // Update select all checkbox state
-        function updateSelectAllState() {
-            const table = $('#dataSpasialTable').DataTable();
-            const visibleCheckboxes = table.$('.row-checkbox', {
-                "page": "current"
-            });
-            const selectAllCheckbox = document.getElementById('selectAll');
-            let checkedCount = 0;
-
-            visibleCheckboxes.each(function() {
-                if (this.checked) checkedCount++;
-            });
-
-            if (checkedCount === 0) {
-                selectAllCheckbox.checked = false;
-                selectAllCheckbox.indeterminate = false;
-            } else if (checkedCount === visibleCheckboxes.length) {
-                selectAllCheckbox.checked = true;
-                selectAllCheckbox.indeterminate = false;
-            } else {
-                selectAllCheckbox.checked = false;
-                selectAllCheckbox.indeterminate = true;
-            }
-        }
-
         // Clear selection
         function clearSelection() {
             selectedItems = [];
             document.querySelectorAll('.row-checkbox').forEach(cb => {
                 cb.checked = false;
-                // Add smooth animation
                 $(cb).closest('tr').removeClass('table-active');
             });
             document.getElementById('selectAll').checked = false;
@@ -813,7 +770,6 @@
         // Bulk delete functionality
         function bulkDelete() {
             if (selectedItems.length === 0) {
-                // Enhanced alert with better UX
                 Swal.fire({
                     icon: 'warning',
                     title: 'Tidak ada data terpilih',
@@ -989,11 +945,6 @@
                 e.preventDefault();
                 clearSelection();
             }
-        });
-
-        // Add tooltips to action buttons
-        $(document).ready(function() {
-            $('[title]').tooltip();
         });
 
         // Enhanced form submission with confirmation
