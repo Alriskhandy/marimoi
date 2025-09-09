@@ -336,12 +336,55 @@ function hideToast(toast) {
  */
 function getStyleForCategory(kategori) {
     const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
-    return {
-        color: warna,
-        weight: 5,
-        fillColor: warna,
-        fillOpacity: 0.4,
-        opacity: 1,
+
+    // Return function yang akan dipanggil dengan feature
+    return function (feature) {
+        const geometryType = feature.geometry.type;
+        const categoryStyles = {
+            polygon: {
+                color: warna,
+                weight: 2,
+                opacity: 0.7,
+                fillColor: warna,
+                fillOpacity: 0.4,
+                lineCap: "round",
+                lineJoin: "round",
+            },
+            line: {
+                color: warna,
+                weight: 5,
+                opacity: 0.9,
+                lineCap: "round",
+                lineJoin: "round",
+            },
+        };
+
+        // Tentukan style berdasarkan geometry type
+        if (
+            geometryType === "LineString" ||
+            geometryType === "MultiLineString"
+        ) {
+            return {
+                ...categoryStyles.line,
+                interactive: true,
+                className: "leaflet-interactive-line",
+            };
+        } else if (
+            geometryType === "Polygon" ||
+            geometryType === "MultiPolygon"
+        ) {
+            return {
+                ...categoryStyles.polygon,
+                interactive: true,
+                className: "leaflet-interactive-polygon",
+            };
+        } else {
+            // Point akan menggunakan marker, return basic style
+            return {
+                ...categoryStyles.polygon,
+                interactive: true,
+            };
+        }
     };
 }
 
@@ -390,36 +433,53 @@ function generateLegend() {
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
-    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;"><h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
-        props.kategori || "Feature"
-    }</h5>`;
+    let content = `
+        <div class="p-4 max-w-xs bg-white rounded-lg shadow-lg border border-gray-200">
+            <h5 class="text-md font-semibold text-blue-600 mb-3 border-b border-gray-200 pb-2">
+                ${props.kategori || "Feature"}
+            </h5>`;
 
     if (props.gambar) {
-        content += `<img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px; border: 1.5px solid #ccc;">`;
+        content += `
+            <div class="mb-3">
+                <img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}"
+                    class="w-full h-32 object-cover rounded-md border border-gray-300 shadow-sm">
+            </div>`;
     }
 
-    content += `<hr style="margin: 5px 0;"><div style="max-height: 150px; overflow-y:auto; padding-right: 5px;">
-        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
+    content += `
+        <div class="space-y-2 mb-4">
+            <div class="max-h-40 overflow-y-auto">
+                <table class="w-full text-[9px]" >`;
 
+    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
     Object.entries(props).forEach(([key, value]) => {
-        const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
         if (allowedKeys.includes(key.toUpperCase()) && value) {
             const label = key
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase());
-            content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
+            content += `
+                <tr class="border-b border-gray-100">
+                    <td class="text-[9px] font-medium text-gray-700 py-1 pr-2 align-top">${label}</td>
+                    <td class="text-[9px] text-gray-600 py-1">${value}</td>
+                </tr>`;
         }
     });
 
-    content += `</table></div>`;
+    content += `</table></div></div>`;
 
     const geom = feature.geometry;
     let center = null;
 
     if (geom) {
         const type = geom.type;
-        content += `<hr style="margin: 5px 0;"><table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
-        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
+        content += `
+            <div class="border-t border-gray-200 pt-3 mb-3">
+                <table class="w-full text-[9px]">
+                    <tr class="border-b border-gray-100">
+                        <td class="text-[9px] font-medium text-gray-700 py-1 pr-2">Geometry</td>
+                        <td class="text-[9px] text-gray-600 py-1">${type}</td>
+                    </tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
             let length = 0;
@@ -438,9 +498,13 @@ function bindPopupContent(feature, layer, urlPath) {
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 length += R * c;
             }
-            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
-                2
-            )} km</td></tr>`;
+            content += `
+                <tr class="border-b border-gray-100">
+                    <td class="text-[9px] font-medium text-gray-700 py-1 pr-2">Panjang</td>
+                    <td class="text-[9px] text-gray-600 py-1">${length.toFixed(
+                        2
+                    )} km</td>
+                </tr>`;
         }
 
         // Hitung center
@@ -460,11 +524,15 @@ function bindPopupContent(feature, layer, urlPath) {
         }
 
         if (center && center.length >= 2) {
-            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
-                5
-            )}, ${center[0].toFixed(5)}</td></tr>`;
+            content += `
+                <tr>
+                    <td class="text-[9px] ont-medium text-gray-700 py-1 pr-2">Koordinat</td>
+                    <td class="text-[9px] text-gray-600 py-1 font-mono text-xs">${center[1].toFixed(
+                        5
+                    )}, ${center[0].toFixed(5)}</td>
+                </tr>`;
         }
-        content += `</table>`;
+        content += `</table></div>`;
     }
 
     const id = props.uuid || "";
@@ -472,13 +540,31 @@ function bindPopupContent(feature, layer, urlPath) {
     const lng = center?.[0] || 0;
 
     content += `
-        <div class="d-flex justify-content-between">
-            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}" style="font-size: 10px; padding: 4px 8px;">Zoom To</button>
-            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning" style="font-size: 10px; padding: 4px 8px;">Lihat Detail</a>
+        <div class="flex gap-2 pt-2">
+            <button class="zoomToBtn flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                data-lat="${lat}" data-lng="${lng}">
+                <i class="bi bi-zoom-in mr-1"></i>
+                Zoom To
+            </button>
+            <a href="${urlPath}/${id}"
+                class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 no-underline">
+                <i class="bi bi-eye mr-1"></i>
+                Detail
+            </a>
         </div>
     </div>`;
 
-    layer.bindPopup(content);
+    // Set popup options untuk Tailwind styling
+    const popupOptions = {
+        maxWidth: 320,
+        minWidth: 280,
+        className: "tailwind-popup",
+        closeButton: true,
+        autoClose: false,
+        closeOnEscapeKey: true,
+    };
+
+    layer.bindPopup(content, popupOptions);
 
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
@@ -1103,7 +1189,7 @@ function updateLayerList() {
         const subLayerList = document.createElement("div");
         subLayerList.id = groupId;
         subLayerList.className =
-            "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 hidden";
+            "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 rounded-lg hidden";
 
         // Add sublayers
         Object.entries(sublayers).forEach(([subname, layer]) => {
@@ -1532,9 +1618,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Zoom reset
-    document.getElementById("btn-default-zoom")?.addEventListener("click", () => {
-        map.setView(mapConfig.center, mapConfig.zoom);
-    });
+    document
+        .getElementById("btn-default-zoom")
+        ?.addEventListener("click", () => {
+            map.setView(mapConfig.center, mapConfig.zoom);
+        });
 
     // Search (debounce)
     const layerSearchInput = document.getElementById("layer-search");
@@ -1562,4 +1650,3 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 300);
     });
 });
-

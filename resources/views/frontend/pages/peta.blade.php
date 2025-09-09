@@ -26,6 +26,78 @@
         li {
             font-family: 'Inter', sans-serif;
         }
+
+        .tailwind-popup .leaflet-popup-content-wrapper {
+            @apply bg-white rounded-lg shadow-lg border border-gray-200;
+            padding: 0 !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .tailwind-popup .leaflet-popup-content {
+            margin: 0 !important;
+            line-height: 1.5 !important;
+            font-family: inherit !important;
+        }
+
+        .tailwind-popup .leaflet-popup-close-button {
+            @apply text-gray-400 hover:text-gray-600;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            padding: 8px !important;
+            top: 8px !important;
+            right: 8px !important;
+            width: auto !important;
+            height: auto !important;
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .tailwind-popup .leaflet-popup-tip {
+            @apply bg-white border-gray-200;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Pastikan text dalam popup tidak terpengaruh global styles */
+        .tailwind-popup table td {
+            padding: 0.25rem 0.5rem 0.25rem 0 !important;
+            vertical-align: top !important;
+            border: none !important;
+            background: transparent !important;
+        }
+
+        .tailwind-popup table {
+            width: 100% !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            margin: 0 !important;
+        }
+
+        .tailwind-popup a {
+            text-decoration: none !important;
+        }
+
+        .tailwind-popup button:focus,
+        .tailwind-popup a:focus {
+            outline: 1px solid #3b82f6 !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Mobile responsive popup */
+        @media (max-width: 640px) {
+            .tailwind-popup .leaflet-popup-content-wrapper {
+                max-width: calc(100vw - 40px) !important;
+            }
+        }
+
+        .extra-marker i {
+            position: absolute !important;
+            top: 20% !important;
+            left: 45% !important;
+            transform: translate(-50%, -50%) !important;
+            line-height: 1 !important;
+            font-size: 14px !important;
+        }
     </style>
 @endpush
 
@@ -39,7 +111,7 @@
 
                 <!-- Modal Panduan Awal -->
                 <div id="guideModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
-                    <div class="bg-white text-gray-700 relative self-center rounded-lg shadow-lg w-full max-w-lg">
+                    <div class="mx-3 bg-white text-gray-700 relative self-center rounded-lg shadow-lg w-full max-w-lg">
                         <!-- Header -->
                         <div class="px-4 py-3 border-b border-b-gray-400">
                             <h5 class="text-lg font-semibold">Panduan Penggunaan</h5>
@@ -52,39 +124,48 @@
                                     mengatur tampilan peta.</p>
                             </div>
                             <div class="guide-step hidden" data-step="2">
-                                <p>Tombol <strong><i class="bi bi-plus border border-gray-700 p-1 text-gray-700"></i> Zoom In & <i
-                                            class="bi bi-dash border border-gray-700 p-1 text-gray-700"></i> Zoom Out</strong>, digunakan untuk
+                                <p>Tombol <strong><i class="bi bi-plus border border-gray-700 p-1 text-gray-700"></i> Zoom
+                                        In & <i class="bi bi-dash border border-gray-700 p-1 text-gray-700"></i> Zoom
+                                        Out</strong>, digunakan untuk
                                     mengatur zoom peta.</p>
                             </div>
                             <div class="guide-step hidden" data-step="3">
-                                <p>Gunakan tombol <strong><i class="bi bi-info-circle-fill border border-gray-700 p-1 text-gray-700"></i>
+                                <p>Gunakan tombol <strong><i
+                                            class="bi bi-info-circle-fill border border-gray-700 p-1 text-gray-700"></i>
                                         Bantuan</strong> untuk melihat panduan ini kapan saja.</p>
                             </div>
                             <div class="guide-step hidden" data-step="4">
-                                <p>Tombol <strong><i class="bi bi-list-ul border border-gray-700 p-1 text-gray-700"></i> Legenda Peta</strong>
+                                <p>Tombol <strong><i class="bi bi-list-ul border border-gray-700 p-1 text-gray-700"></i>
+                                        Legenda Peta</strong>
                                     menampilkan keterangan simbol pada peta.</p>
                             </div>
                             <div class="guide-step hidden" data-step="5">
-                                <p>Tombol <strong><i class="bi bi-grid-fill border border-gray-700 p-1 text-gray-700"></i> Basemap Peta</strong>
+                                <p>Tombol <strong><i class="bi bi-grid-fill border border-gray-700 p-1 text-gray-700"></i>
+                                        Basemap Peta</strong>
                                     digunakan untuk memilih jenis peta dasar.
                                 </p>
                             </div>
                             <div class="guide-step hidden" data-step="6">
-                                <p>Tombol <strong><i class="bi bi-layers-fill border border-gray-700 p-1 text-gray-700"></i> Layer Peta</strong>
+                                <p>Tombol <strong><i class="bi bi-layers-fill border border-gray-700 p-1 text-gray-700"></i>
+                                        Layer Peta</strong>
                                     digunakan untuk mengatur layer yang ingin
                                     ditampilkan.</p>
                             </div>
                             <div class="guide-step hidden" data-step="7">
-                                <p>Tombol <strong><i class="bi bi-file-earmark-arrow-down-fill border border-gray-700 p-1 text-gray-700"></i>
+                                <p>Tombol <strong><i
+                                            class="bi bi-file-earmark-arrow-down-fill border border-gray-700 p-1 text-gray-700"></i>
                                         Download Peta</strong> memungkinkan Anda mengunduh peta.</p>
                             </div>
                             <div class="guide-step hidden" data-step="8">
-                                <p>Tombol <strong><i class="bi bi-arrows-fullscreen border border-gray-700 p-1 text-gray-700"></i>
+                                <p>Tombol <strong><i
+                                            class="bi bi-arrows-fullscreen border border-gray-700 p-1 text-gray-700"></i>
                                         Fullscreen</strong> memungkinkan Anda untuk masuk dan keluar dari tampilan
                                     penuh.</p>
                             </div>
                             <div class="guide-step hidden" data-step="9">
-                                <p>Tombol <strong><i class="bi bi-house-door-fill border border-gray-700 p-1 text-gray-700"></i> Home</strong>
+                                <p>Tombol <strong><i
+                                            class="bi bi-house-door-fill border border-gray-700 p-1 text-gray-700"></i>
+                                        Home</strong>
                                     memungkinkan Anda kembali ke default zoom dari peta.</p>
                             </div>
                         </div>
@@ -101,7 +182,6 @@
                         </div>
                     </div>
                 </div>
-
 
                 <!-- Sidebar Layer -->
                 <div id="sidebar-layer"
