@@ -214,7 +214,7 @@
                     <!-- Header with gradient background -->
                     <div
                         class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
-                        <h6 class="text-white mb-0 text-sm font-semibold">Baseamp</h6>
+                        <h6 class="text-white mb-0 text-sm font-semibold">Basemap</h6>
                         <button id="btn-close-sidebar-basemap"
                             class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
                             <i class="bi bi-x-lg text-white"></i>

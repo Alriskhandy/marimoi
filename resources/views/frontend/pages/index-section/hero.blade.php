@@ -106,7 +106,7 @@
     <div class="relative w-full h-full flex items-center justify-center z-[2] bg-transparent border-none justify-self-end md:justify-self-end sm:justify-self-center md:order-2 sm:order-1 sm:h-[300px] md:h-full">
         <div class="w-full h-[500px] lg:h-[450px] md:h-[350px] sm:h-[280px] xs:h-[220px]">
             <model-viewer 
-                src="{{ asset('frontend/models/kantor-gub-3D.glb') }}" 
+                src="{{ asset('frontend/models/peta-sofifi.glb') }}" 
                 alt="3D Model Kantor Gubernur Maluku Utara"
                 camera-controls 
                 auto-rotate 

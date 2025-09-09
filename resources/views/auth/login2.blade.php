@@ -7,12 +7,12 @@
     <title>MARIMOI - Login</title>
 
     <!-- Favicons -->
-    <link href="{{ asset('frontend/favicon/favicon.ico') }}" rel="icon" type="image/webp">
-    <link href="{{ asset('frontend/favicon/apple-touch-icon.png') }}" rel="apple-touch-icon">
-    <link href="{{ asset('frontend/favicon/favicon-32x32.png') }}" rel="icon" sizes="32x32">
-    <link href="{{ asset('frontend/favicon/favicon-16x16.png') }}" rel="icon" sizes="16x16">
-    <link href="{{ asset('frontend/favicon/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
-    <link href="{{ asset('frontend/favicon/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
+    <link href="{{ asset('frontend/favicon_io/favicon.ico') }}" rel="icon" type="image/webp">
+    <link href="{{ asset('frontend/favicon_io/apple-touch-icon.png') }}" rel="apple-touch-icon">
+    <link href="{{ asset('frontend/favicon_io/favicon-32x32.png') }}" rel="icon" sizes="32x32">
+    <link href="{{ asset('frontend/favicon_io/favicon-16x16.png') }}" rel="icon" sizes="16x16">
+    <link href="{{ asset('frontend/favicon_io/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
+    <link href="{{ asset('frontend/favicon_io/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -28,29 +28,31 @@
 
     <!-- Vendor CSS Files -->
     <link href="{{ asset('frontend/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('frontend/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
     <link href="{{ asset('frontend/vendor/aos/aos.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
 
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
     <!-- Main CSS File -->
     <link href="{{ asset('frontend/css/main.css') }}" rel="stylesheet">
 
+    @php
+        $i = Arr::random([1, 2, 3, 4, 5]);
+    @endphp
+
     <style>
         :root {
-            --accent-color: #6c63ff;
-            --gradient-purple: linear-gradient(90deg, rgb(218, 140, 255), rgb(154, 85, 255));
+            --accent-color: #12c8ff;
+            --gradient-purple: linear-gradient(90deg, #007BF6, #0051a2);
             --heading-color: #2e2e4d;
-            --default-color: #4b4b6a;
+            --default-color: #151c31;
             --surface-color: #ffffff;
         }
 
         body {
             font-family: "Poppins", sans-serif;
-            background: url('{{ asset('frontend/img/hero2.png') }}') no-repeat center center / cover;
+            background: url('{{ asset('frontend/img/parallax/'. $i .'.jpg') }}') no-repeat center center / cover;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -65,7 +67,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(14, 29, 52, 0.9) 0%, rgba(14, 29, 52, 0.7) 100%);
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.6) 100%);
             z-index: 1;
         }
 
@@ -131,10 +133,10 @@
         }
 
         .input-group .form-control {
-            width: 100%;
-            padding: 12px 16px 12px 45px;
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 8px;
+            width: 100%;
+            padding: 12px 16px 12px 45px;
             font-size: 15px;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.9);
@@ -154,6 +156,7 @@
             transform: translateY(-50%);
             color: var(--accent-color);
             font-size: 16px;
+            z-index: 10;
         }
 
         .form-check {
@@ -200,7 +203,7 @@
 
         .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(108, 99, 255, 0.3);
+            box-shadow: 0 10px 20px var(--accent-color)
         }
 
         .login-footer {
@@ -272,7 +275,7 @@
     <div class="login-container">
         <div class="login-card" data-aos="fade-up">
             <div class="login-logo">
-                <img src="{{ asset('frontend/img/logo_text.svg') }}" alt="MARIMOI Logo">
+                <img src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="MARIMOI Logo">
             </div>
 
             <div class="login-title">

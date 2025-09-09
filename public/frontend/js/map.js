@@ -13,12 +13,63 @@ const mapConfig = {
     center: [0.735485, 128.028201], // Koordinat tengah Maluku Utara
     zoom: 7,
     baseMapsList: [
+        // OpenStreetMap
         {
             id: "osm",
             label: "OpenStreetMap",
             url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             maxZoom: 19,
         },
+
+        // ESRI Streets
+        {
+            id: "esri-streets",
+            label: "ESRI Streets",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 19,
+        },
+
+        // Topographic
+        {
+            id: "esri-topographic",
+            label: "Topographic",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 19,
+        },
+
+        // ESRI Oceans
+        {
+            id: "esri-oceans",
+            label: "ESRI Oceans",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 16,
+        },
+
+        // ESRI World Imagery
+        {
+            id: "esri-world-imagery",
+            label: "ESRI World Imagery",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 18,
+        },
+
+        // ESRI Dark Gray Canvas
+        {
+            id: "esri-dark-gray",
+            label: "ESRI Dark Gray Canvas",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 16,
+        },
+
+        // Light Gray Canvas
+        {
+            id: "esri-light-gray",
+            label: "Light Gray Canvas",
+            url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            maxZoom: 16,
+        },
+
+        // Google Maps (mungkin perlu API key)
         {
             id: "google-roadmap",
             label: "Google Map (ROADMAP)",
@@ -38,18 +89,6 @@ const mapConfig = {
             label: "Google Map (Terrain)",
             url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
             subdomains: ["mt0", "mt1", "mt2", "mt3"],
-            maxZoom: 16,
-        },
-        {
-            id: "esri-world-imagery",
-            label: "ESRI World Imagery",
-            url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            maxZoom: 18,
-        },
-        {
-            id: "esri-dark-gray",
-            label: "ESRI Dark Gray Canvas",
-            url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
             maxZoom: 16,
         },
     ],
@@ -1301,6 +1340,14 @@ function generatePreviewUrl(basemap) {
             return `/frontend/img/map-preview/${basemap.id}-min.png`;
         case "esri-dark-gray":
             return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-streets":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-topographic":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-oceans":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-light-gray":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
 
         default:
             return "/frontend/img/placeholder.png";
@@ -1360,12 +1407,13 @@ function setupUI() {
             const previewImg = document.createElement("img");
             previewImg.src = generatePreviewUrl(bm);
             previewImg.alt = bm.label;
-            previewImg.className = "w-100 border border-gray-200";
+            previewImg.className = "w-100 border-2 border-white shadow-lg";
             previewImg.style.cssText = `
-            width: 100%;
+            width: 90%;
             height: 70px;
             object-fit: cover;
-            transition: box-shadow 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 6px rgba(0,0,0,1);
         `;
 
             // Error handling
@@ -1420,7 +1468,7 @@ function setupUI() {
                             // reset style
                             const img = item.querySelector("img");
                             const lbl = item.querySelector("div.p-2");
-                            if (img) img.style.boxShadow = "none";
+                            if (img) img.style.boxShadow = "6px rgba(0,0,0,1)";
                             if (lbl) lbl.style.color = "inherit";
                         }
                     });
