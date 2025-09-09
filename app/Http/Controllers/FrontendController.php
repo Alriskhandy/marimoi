@@ -55,7 +55,7 @@ class FrontendController extends Controller
         $totalMusrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')->count();
         $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
 
-        return view('frontend.pages.index', compact(
+        return view('frontend.pages.index-dark', compact(
             'dataPeta',
             'links',
             'totalPsd',
@@ -64,6 +64,19 @@ class FrontendController extends Controller
             'totalPokir'
         ));
     }
+
+    // public function indexDark(){
+    //     $dataPeta = Category::where('is_active', true)->withCount('dataSpatials')->get();
+
+    //     $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
+    //     $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
+
+    //     return view('frontend.pages.index-dark', compact(
+    //         'dataPeta',
+    //         'totalKritik',
+    //         'totalUsulan',
+    //     ));
+    // }
 
     public function aspirasi()
     {

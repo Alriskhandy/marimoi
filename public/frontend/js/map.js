@@ -10,7 +10,7 @@ console.log("map-app.js loaded - enhanced version with loading effects");
  */
 const mapConfig = {
     weight: 6,
-    center: [0.735485, 128.028201],
+    center: [0.735485, 128.028201], // Koordinat tengah Maluku Utara
     zoom: 7,
     baseMapsList: [
         {
@@ -76,10 +76,10 @@ let loadingProgressInterval = null; // For animated progress
  * Create and manage loading overlay
  */
 function createLoadingOverlay() {
-    if (document.getElementById('map-loading-overlay')) return;
-    
-    const overlay = document.createElement('div');
-    overlay.id = 'map-loading-overlay';
+    if (document.getElementById("map-loading-overlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "map-loading-overlay";
     overlay.style.cssText = `
         position: absolute;
         top: 0;
@@ -95,7 +95,7 @@ function createLoadingOverlay() {
         color: white;
         font-family: Arial, sans-serif;
     `;
-    
+
     overlay.innerHTML = `
         <div class="loading-spinner" style="
             width: 60px;
@@ -134,9 +134,9 @@ function createLoadingOverlay() {
             "></div>
         </div>
     `;
-    
+
     // Add CSS animation for spinner
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -154,9 +154,9 @@ function createLoadingOverlay() {
         }
     `;
     document.head.appendChild(style);
-    
-    const mapContainer = document.getElementById('map');
-    mapContainer.style.position = 'relative';
+
+    const mapContainer = document.getElementById("map");
+    mapContainer.style.position = "relative";
     mapContainer.appendChild(overlay);
 }
 
@@ -165,30 +165,30 @@ function createLoadingOverlay() {
  */
 function showLoadingOverlay(categoryName) {
     createLoadingOverlay();
-    const overlay = document.getElementById('map-loading-overlay');
-    const loadingText = document.getElementById('loading-text');
-    const loadingProgress = document.getElementById('loading-progress');
-    const loadingBar = document.getElementById('loading-bar');
-    
+    const overlay = document.getElementById("map-loading-overlay");
+    const loadingText = document.getElementById("loading-text");
+    const loadingProgress = document.getElementById("loading-progress");
+    const loadingBar = document.getElementById("loading-bar");
+
     currentLoadingCategory = categoryName;
     loadingText.textContent = `Memuat data ${categoryName}`;
-    loadingProgress.textContent = 'Mengirim permintaan ke server...';
-    loadingBar.style.width = '10%';
-    
-    overlay.style.display = 'flex';
+    loadingProgress.textContent = "Mengirim permintaan ke server...";
+    loadingBar.style.width = "10%";
+
+    overlay.style.display = "flex";
 }
 
 /**
  * Update loading progress
  */
-function updateLoadingProgress(loaded, total, message = '') {
-    const loadingProgress = document.getElementById('loading-progress');
-    const loadingBar = document.getElementById('loading-bar');
-    
+function updateLoadingProgress(loaded, total, message = "") {
+    const loadingProgress = document.getElementById("loading-progress");
+    const loadingBar = document.getElementById("loading-bar");
+
     if (loadingProgress && loadingBar) {
         const percentage = Math.min(Math.max((loaded / total) * 100, 10), 100);
         loadingBar.style.width = `${percentage}%`;
-        
+
         if (message) {
             loadingProgress.textContent = message;
         } else {
@@ -201,12 +201,12 @@ function updateLoadingProgress(loaded, total, message = '') {
  * Hide loading overlay
  */
 function hideLoadingOverlay() {
-    const overlay = document.getElementById('map-loading-overlay');
+    const overlay = document.getElementById("map-loading-overlay");
     if (overlay) {
-        overlay.style.display = 'none';
+        overlay.style.display = "none";
     }
     currentLoadingCategory = null;
-    
+
     if (loadingProgressInterval) {
         clearInterval(loadingProgressInterval);
         loadingProgressInterval = null;
@@ -214,37 +214,39 @@ function hideLoadingOverlay() {
 }
 
 /**
- * Update checkbox state with loading indicator
+ * Update checkbox state with loading indicator - Tailwind version
  */
 function updateCheckboxLoadingState(categoryName, isLoading) {
     // Find the checkbox for this category
     const container = document.getElementById("layer-list");
     if (!container) return;
-    
-    const labels = container.querySelectorAll('label');
-    labels.forEach(label => {
+
+    const labels = container.querySelectorAll("label");
+    labels.forEach((label) => {
         if (label.textContent.trim() === categoryName) {
             const checkbox = document.getElementById(label.htmlFor);
             if (checkbox) {
                 if (isLoading) {
-                    // Add loading state
+                    // Add loading state with Tailwind classes
                     checkbox.disabled = true;
-                    label.classList.add('loading-pulse');
-                    
-                    // Add loading icon
-                    if (!label.querySelector('.loading-icon')) {
-                        const loadingIcon = document.createElement('span');
-                        loadingIcon.className = 'loading-icon ms-2';
-                        loadingIcon.innerHTML = '<i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i>';
+                    label.classList.add("opacity-75", "animate-pulse");
+
+                    // Add loading icon with Tailwind
+                    if (!label.querySelector(".loading-icon")) {
+                        const loadingIcon = document.createElement("span");
+                        loadingIcon.className =
+                            "loading-icon ml-2 text-blue-500 animate-spin";
+                        loadingIcon.innerHTML =
+                            '<i class="bi bi-arrow-clockwise"></i>';
                         label.appendChild(loadingIcon);
                     }
                 } else {
                     // Remove loading state
                     checkbox.disabled = false;
-                    label.classList.remove('loading-pulse');
-                    
+                    label.classList.remove("opacity-75", "animate-pulse");
+
                     // Remove loading icon
-                    const loadingIcon = label.querySelector('.loading-icon');
+                    const loadingIcon = label.querySelector(".loading-icon");
                     if (loadingIcon) {
                         loadingIcon.remove();
                     }
@@ -254,62 +256,79 @@ function updateCheckboxLoadingState(categoryName, isLoading) {
     });
 }
 
-/**
- * Enhanced toast notifications with loading state
- */
 function showAlert(message, type = "info", persistent = false) {
     console.log(`${type}: ${message}`);
     const toastContainer = document.getElementById("toast-container");
     if (!toastContainer) return;
 
-    // Remove previous loading toasts if new success/error message
-    if (type === 'success' || type === 'danger') {
-        const existingToasts = toastContainer.querySelectorAll('.toast');
-        existingToasts.forEach(toast => {
-            if (toast.textContent.includes('Memuat data') || toast.textContent.includes('Loading')) {
-                const toastInstance = bootstrap.Toast.getInstance(toast);
-                if (toastInstance) toastInstance.hide();
-            }
-        });
-    }
+    // Mapping warna sesuai tipe
+    const colors = {
+        success: "bg-green-500 text-white",
+        danger: "bg-red-500 text-white",
+        warning: "bg-yellow-500 text-black",
+        info: "bg-blue-500 text-white",
+    };
 
+    const isLoading =
+        type === "info" &&
+        (message.includes("Memuat") || message.includes("Loading"));
+
+    // Elemen toast
     const toast = document.createElement("div");
-    toast.className = `toast align-items-center text-bg-${type} border-0 ${persistent ? 'toast-persistent' : ''}`;
-    toast.setAttribute("role", "alert");
-    toast.setAttribute("aria-live", "assertive");
-    toast.setAttribute("aria-atomic", "true");
-    
-    // Different structure for loading vs regular toasts
-    const isLoading = type === 'info' && (message.includes('Memuat') || message.includes('Loading'));
-    
+    toast.className = `
+        flex items-center px-4 py-3 rounded-lg shadow-lg text-sm font-medium
+        ${colors[type] || colors.info}
+        transform transition-all duration-500 opacity-0 translate-y-2
+    `;
+
     if (isLoading) {
         toast.innerHTML = `
-            <div class="d-flex align-items-center">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div class="toast-body flex-grow-1">${message}</div>
-            </div>`;
+            <div class="flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>${message}</span>
+            </div>
+        `;
     } else {
         toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>`;
+            <span class="flex-1">${message}</span>
+            <button class="ml-3 text-lg leading-none focus:outline-none">&times;</button>
+        `;
+
+        // Tombol close
+        toast
+            .querySelector("button")
+            .addEventListener("click", () => hideToast(toast));
     }
-    
+
     toastContainer.appendChild(toast);
-    
-    const toastInstance = new bootstrap.Toast(toast, {
-        autohide: !persistent && !isLoading,
-        delay: isLoading ? 0 : (type === 'success' ? 4000 : 6000)
-    });
-    
-    toastInstance.show();
-    
-    toast.addEventListener("hidden.bs.toast", () => toast.remove());
-    
+
+    // Trigger animasi masuk
+    setTimeout(() => {
+        toast.classList.remove("opacity-0", "translate-y-2");
+        toast.classList.add("opacity-100", "translate-y-0");
+    }, 50);
+
+    // Auto hide
+    if (!persistent && !isLoading) {
+        const delay = type === "success" ? 4000 : 6000;
+        setTimeout(() => hideToast(toast), delay);
+    }
+
     return toast;
+}
+
+function hideToast(toast) {
+    if (!toast || !toast.parentNode) return;
+
+    toast.classList.add("opacity-0", "translate-y-2");
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.remove();
+        }
+    }, 500);
 }
 
 /**
@@ -341,20 +360,21 @@ function generateLegend() {
             if (added.has(sub)) return;
 
             let icon = iconMap[sub] || null;
-            let color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+            let color =
+                kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
 
             if (icon) {
                 legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="custom-fa-icon d-flex align-items-center justify-content-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
-                            <i class="${icon}" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+                    <div class="inline-flex align-items-center mb-2">
+                        <div class="custom-fa-icon inline-flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                            <i class="${icon} text-[${color}]" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
                         </div>
                         <span style="font-size: 0.85rem;">${sub}</span>
                     </div>
                 `;
             } else {
                 legendContainer.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
+                    <div class="inline-flex items-center mb-2">
                         <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
                         <span style="font-size: 0.85rem;">${sub}</span>
                     </div>
@@ -384,7 +404,9 @@ function bindPopupContent(feature, layer, urlPath) {
     Object.entries(props).forEach(([key, value]) => {
         const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
         if (allowedKeys.includes(key.toUpperCase()) && value) {
-            const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+            const label = key
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
             content += `<tr><td class="fw-medium">${label}</td><td>${value}</td></tr>`;
         }
     });
@@ -410,11 +432,15 @@ function bindPopupContent(feature, layer, urlPath) {
                 const dLon = (lon2 - lon1) * rad;
                 const a =
                     Math.sin(dLat / 2) ** 2 +
-                    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+                    Math.cos(lat1 * rad) *
+                        Math.cos(lat2 * rad) *
+                        Math.sin(dLon / 2) ** 2;
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 length += R * c;
             }
-            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(2)} km</td></tr>`;
+            content += `<tr><td class="fw-medium">Panjang</td><td>${length.toFixed(
+                2
+            )} km</td></tr>`;
         }
 
         // Hitung center
@@ -434,7 +460,9 @@ function bindPopupContent(feature, layer, urlPath) {
         }
 
         if (center && center.length >= 2) {
-            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(5)}, ${center[0].toFixed(5)}</td></tr>`;
+            content += `<tr><td class="fw-medium">Koordinat</td><td>${center[1].toFixed(
+                5
+            )}, ${center[0].toFixed(5)}</td></tr>`;
         }
         content += `</table>`;
     }
@@ -467,10 +495,16 @@ function bindPopupContent(feature, layer, urlPath) {
                     const lng = parseFloat(this.getAttribute("data-lng"));
                     mapInstance.setView([lat, lng], 15);
                 } else if (geom.type === "LineString") {
-                    const latlngs = geom.coordinates.map(([lng, lat]) => [lat, lng]);
+                    const latlngs = geom.coordinates.map(([lng, lat]) => [
+                        lat,
+                        lng,
+                    ]);
                     mapInstance.fitBounds(latlngs);
                 } else if (geom.type === "Polygon") {
-                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [lat, lng]);
+                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [
+                        lat,
+                        lng,
+                    ]);
                     mapInstance.fitBounds(latlngs);
                 } else if (geom.type === "MultiPolygon") {
                     let allLatLngs = [];
@@ -534,8 +568,13 @@ function getDataType(urlPath) {
  */
 async function loadCategoriesMetadata() {
     try {
-        const loadingToast = showAlert("Memuat daftar kategori...", "info", true);
-        
+        // tampilkan loading toast (persistent)
+        const loadingToast = showAlert(
+            "Memuat daftar kategori...",
+            "info",
+            true
+        );
+
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
         const dataType = tipeLayer.type;
@@ -548,13 +587,13 @@ async function loadCategoriesMetadata() {
         if (year) queryString += `&year=${year}`;
 
         console.log("Requesting metadata:", `/geojson${queryString}`);
-        
+
         const response = await fetch(`/geojson${queryString}`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
 
         // Build kategoriWarnaMap dan iconMap
@@ -573,14 +612,16 @@ async function loadCategoriesMetadata() {
 
         // Initialize empty layer structure
         layerGroups = {};
-        
+
         if (data.all_categories?.length) {
             const parents = data.all_categories.filter((cat) => !cat.parent_id);
             const children = data.all_categories.filter((cat) => cat.parent_id);
 
             parents.forEach((parent) => {
                 layerGroups[parent.nama] = {};
-                const anak = children.filter((child) => child.parent_id === parent.id);
+                const anak = children.filter(
+                    (child) => child.parent_id === parent.id
+                );
 
                 if (anak.length > 0) {
                     anak.forEach((child) => {
@@ -607,24 +648,26 @@ async function loadCategoriesMetadata() {
 
         updateLayerList();
         generateLegend();
-        
-        // Hide loading toast and show success
-        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
-        if (toastInstance) toastInstance.hide();
-        
-        showAlert("Kategori berhasil dimuat. Pilih layer untuk memuat data.", "success");
-        
+
+        // Tutup loading toast manual
+        if (loadingToast) hideToast(loadingToast);
+
+        // Tampilkan pesan sukses
+        showAlert(
+            "Kategori berhasil dimuat. Pilih layer untuk memuat data.",
+            "success"
+        );
     } catch (error) {
         console.error("Error loading categories metadata:", error);
         showAlert(`Gagal memuat kategori: ${error.message}`, "danger");
-        
+
         const layerListContainer = document.getElementById("layer-list");
         if (layerListContainer) {
             layerListContainer.innerHTML = `
-                <div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
-                    <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
-                    <span class="mt-2 text-muted">Terjadi kesalahan saat memuat kategori.</span>
-                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadCategoriesMetadata()">Coba Lagi</button>
+                <div class="flex flex-col items-center justify-center text-center h-[120px] text-gray-700">
+                    <i class="bi bi-x-circle text-red" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-sm">Terjadi kesalahan saat memuat kategori.</span>
+                    <button class="mt-3 text-sm py-1 px-3 rounded bg-gray-500 text-white hover:bg-gray-600 transition" onclick="loadCategoriesMetadata()">Coba Lagi</button>
                 </div>`;
         }
     }
@@ -638,16 +681,22 @@ async function loadCategoryData(categoryName) {
         return;
     }
 
+    let loadingToast = null;
+
     try {
         isLoadingData = true;
-        
+
         // Show loading overlay
         showLoadingOverlay(categoryName);
-        
+
         // Update checkbox to show loading state
         updateCheckboxLoadingState(categoryName, true);
-        
-        const loadingToast = showAlert(`Memuat data untuk ${categoryName}...`, "info", true);
+
+        loadingToast = showAlert(
+            `Memuat data untuk ${categoryName}...`,
+            "info",
+            true
+        );
 
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
@@ -687,24 +736,32 @@ async function loadCategoryData(categoryName) {
         while (hasMore && totalLoaded < maxRecords) {
             try {
                 let queryString = "?";
-                if (dataType) queryString += `type=${encodeURIComponent(dataType)}`;
-                if (subType) queryString += `&sub_type=${encodeURIComponent(subType)}`;
+                if (dataType)
+                    queryString += `type=${encodeURIComponent(dataType)}`;
+                if (subType)
+                    queryString += `&sub_type=${encodeURIComponent(subType)}`;
                 if (year) queryString += `&year=${encodeURIComponent(year)}`;
-                queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
-                
+                queryString += `&kategori[]=${encodeURIComponent(
+                    categoryName
+                )}`;
+
                 // Calculate remaining records to load
                 const remainingRecords = maxRecords - totalLoaded;
                 const currentChunkSize = Math.min(chunkSize, remainingRecords);
-                
+
                 queryString += `&limit=${currentChunkSize}&offset=${offset}`;
 
                 console.log(`Loading chunk: ${queryString}`);
-                
+
                 // Update loading progress
-                updateLoadingProgress(totalLoaded, estimatedTotal, `Memuat chunk ${Math.floor(offset / chunkSize) + 1}...`);
+                updateLoadingProgress(
+                    totalLoaded,
+                    estimatedTotal,
+                    `Memuat chunk ${Math.floor(offset / chunkSize) + 1}...`
+                );
 
                 const response = await fetch(`/geojson${queryString}`);
-                
+
                 if (!response.ok) {
                     // Enhanced error handling
                     let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
@@ -713,41 +770,52 @@ async function loadCategoryData(categoryName) {
                         if (errorData.message) {
                             errorDetails += ` - ${errorData.message}`;
                         }
-                        if (errorData.details && errorData.details !== errorData.message) {
+                        if (
+                            errorData.details &&
+                            errorData.details !== errorData.message
+                        ) {
                             errorDetails += ` (${errorData.details})`;
                         }
-                        console.error('Server error response:', errorData);
+                        console.error("Server error response:", errorData);
                     } catch (e) {
                         try {
                             const errorText = await response.text();
                             if (errorText && errorText.length > 0) {
-                                errorDetails += ` - ${errorText.substring(0, 200)}${errorText.length > 200 ? '...' : ''}`;
+                                errorDetails += ` - ${errorText.substring(
+                                    0,
+                                    200
+                                )}${errorText.length > 200 ? "..." : ""}`;
                             }
-                            console.error('Server error text:', errorText);
+                            console.error("Server error text:", errorText);
                         } catch (e2) {
-                            console.error('Could not parse error response');
+                            console.error("Could not parse error response");
                         }
                     }
                     throw new Error(errorDetails);
                 }
-                
+
                 const geoJsonData = await response.json();
 
                 // Check if we got any features
                 if (!geoJsonData?.features?.length) {
-                    console.log('No more features to load');
+                    console.log("No more features to load");
                     break;
                 }
 
                 // Update estimate if we have metadata
                 if (geoJsonData.meta?.total_features && offset === 0) {
-                    estimatedTotal = Math.min(geoJsonData.meta.total_features, maxRecords);
+                    estimatedTotal = Math.min(
+                        geoJsonData.meta.total_features,
+                        maxRecords
+                    );
                 }
 
                 // Determine marker options (only need to do this once)
                 let markerOptions = null;
                 if (offset === 0) {
-                    const catObj = geoJsonData.all_categories?.find(c => c.nama === categoryName);
+                    const catObj = geoJsonData.all_categories?.find(
+                        (c) => c.nama === categoryName
+                    );
                     if (catObj?.is_marker && catObj.icon) {
                         markerOptions = L.ExtraMarkers.icon({
                             icon: catObj.icon,
@@ -767,7 +835,7 @@ async function loadCategoryData(categoryName) {
                     try {
                         // Validate feature structure
                         if (!feature || !feature.geometry) {
-                            console.warn('Skipping invalid feature:', feature);
+                            console.warn("Skipping invalid feature:", feature);
                             return;
                         }
 
@@ -781,74 +849,99 @@ async function loadCategoryData(categoryName) {
                                 try {
                                     bindPopupContent(f, l, urlPath);
                                 } catch (popupError) {
-                                    console.error('Error binding popup:', popupError);
+                                    console.error(
+                                        "Error binding popup:",
+                                        popupError
+                                    );
                                 }
                             },
                         }).addTo(targetLayer);
-                        
+
                         featuresAdded++;
-                        
+
                         // Update progress periodically during feature loading
                         if (index % 50 === 0) {
-                            updateLoadingProgress(totalLoaded + featuresAdded, estimatedTotal, 
-                                `Memproses fitur ${totalLoaded + featuresAdded}...`);
+                            updateLoadingProgress(
+                                totalLoaded + featuresAdded,
+                                estimatedTotal,
+                                `Memproses fitur ${
+                                    totalLoaded + featuresAdded
+                                }...`
+                            );
                         }
-                        
                     } catch (featureError) {
-                        console.error(`Error adding feature to map:`, featureError, feature);
+                        console.error(
+                            `Error adding feature to map:`,
+                            featureError,
+                            feature
+                        );
                     }
                 });
 
                 totalLoaded += featuresAdded;
-                
+
                 // Update progress after chunk completion
-                updateLoadingProgress(totalLoaded, estimatedTotal, 
-                    totalLoaded >= maxRecords 
+                updateLoadingProgress(
+                    totalLoaded,
+                    estimatedTotal,
+                    totalLoaded >= maxRecords
                         ? `${totalLoaded} fitur dimuat (maksimum tercapai)`
-                        : `${totalLoaded} fitur dimuat...`);
+                        : `${totalLoaded} fitur dimuat...`
+                );
 
                 // Check if we have more data and haven't reached the limit
                 const serverHasMore = geoJsonData.meta?.has_more === true;
-                hasMore = serverHasMore && totalLoaded < maxRecords && featuresAdded > 0;
+                hasMore =
+                    serverHasMore &&
+                    totalLoaded < maxRecords &&
+                    featuresAdded > 0;
                 offset += chunkSize;
 
                 // Add small delay to prevent overwhelming the server and show progress
                 if (hasMore) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise((resolve) => setTimeout(resolve, 100));
                 }
-
             } catch (chunkError) {
-                console.error(`Error loading chunk at offset ${offset}:`, chunkError);
-                
+                console.error(
+                    `Error loading chunk at offset ${offset}:`,
+                    chunkError
+                );
+
                 // If this is the first chunk, re-throw the error
                 if (offset === 0) {
                     throw chunkError;
                 }
-                
+
                 // For subsequent chunks, just log and break
-                updateLoadingProgress(totalLoaded, estimatedTotal, 
-                    `Error pada chunk ${Math.floor(offset / chunkSize)}: ${chunkError.message}`);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Show error for 1 second
+                updateLoadingProgress(
+                    totalLoaded,
+                    estimatedTotal,
+                    `Error pada chunk ${Math.floor(offset / chunkSize)}: ${
+                        chunkError.message
+                    }`
+                );
+                await new Promise((resolve) => setTimeout(resolve, 1000)); // Show error for 1 second
                 break;
             }
         }
 
         loadedCategories.add(categoryName);
-        
+
         // Final progress update
-        updateLoadingProgress(totalLoaded, totalLoaded, 'Selesai!');
-        
+        updateLoadingProgress(totalLoaded, totalLoaded, "Selesai!");
+
         // Wait a moment to show completion
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         // Hide loading states
         hideLoadingOverlay();
         updateCheckboxLoadingState(categoryName, false);
-        
-        // Hide loading toast and show success
-        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
-        if (toastInstance) toastInstance.hide();
-        
+
+        // Hide loading toast safely
+        if (loadingToast) {
+            hideToast(loadingToast);
+        }
+
         // Final success message
         let finalMessage;
         if (totalLoaded >= maxRecords) {
@@ -856,57 +949,62 @@ async function loadCategoryData(categoryName) {
         } else {
             finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur)`;
         }
-        
+
         showAlert(finalMessage, "success");
 
         // Log performance info
-        console.log(`Loaded ${totalLoaded} features for category "${categoryName}"`);
-
+        console.log(
+            `Loaded ${totalLoaded} features for category "${categoryName}"`
+        );
     } catch (error) {
-        console.error(`Error loading data for category ${categoryName}:`, error);
-        
+        console.error(
+            `Error loading data for category ${categoryName}:`,
+            error
+        );
+
         // Hide loading states
         hideLoadingOverlay();
         updateCheckboxLoadingState(categoryName, false);
-        
-        // Hide loading toast
-        const toastInstance = bootstrap.Toast.getInstance(loadingToast);
-        if (toastInstance) toastInstance.hide();
-        
+
+        // Hide loading toast safely
+        if (loadingToast) {
+            hideToast(loadingToast);
+        }
+
         // Show detailed error in alert
         let errorMessage = `Gagal memuat data ${categoryName}`;
-        
+
         // Provide more specific error messages
-        if (error.message.includes('500')) {
-            errorMessage += ': Server mengalami masalah internal. Coba lagi nanti.';
-        } else if (error.message.includes('404')) {
-            errorMessage += ': Data tidak ditemukan.';
-        } else if (error.message.includes('timeout')) {
-            errorMessage += ': Koneksi timeout. Periksa koneksi internet Anda.';
+        if (error.message.includes("500")) {
+            errorMessage +=
+                ": Server mengalami masalah internal. Coba lagi nanti.";
+        } else if (error.message.includes("404")) {
+            errorMessage += ": Data tidak ditemukan.";
+        } else if (error.message.includes("timeout")) {
+            errorMessage += ": Koneksi timeout. Periksa koneksi internet Anda.";
         } else {
             errorMessage += `: ${error.message}`;
         }
-        
+
         // Log full error stack for debugging
-        console.error('Full error details:', {
+        console.error("Full error details:", {
             name: error.name,
             message: error.message,
             stack: error.stack,
-            categoryName: categoryName
+            categoryName: categoryName,
         });
-        
+
         showAlert(errorMessage, "danger");
-        
+
         // Remove category from loaded set so user can retry
         loadedCategories.delete(categoryName);
-        
     } finally {
         isLoadingData = false;
     }
 }
 
 /**
- * Enhanced updateLayerList with on-demand loading
+ * Enhanced updateLayerList with on-demand loading - Tailwind version
  */
 function updateLayerList() {
     const container = document.getElementById("layer-list");
@@ -917,59 +1015,65 @@ function updateLayerList() {
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         const groupId = `group-${kategori.replace(/\s+/g, "-")}`;
         const groupWrapper = document.createElement("div");
-        groupWrapper.classList.add("layer-group", "mb-2");
+        groupWrapper.className = "mb-3";
 
         const rootId = `root-${kategori.replace(/\s+/g, "-")}`;
 
-        // Create header
+        // Create header with Tailwind classes
         const header = document.createElement("div");
-        header.className = "d-flex align-items-center justify-content-between px-3 py-2 border rounded";
-        header.style.cursor = "pointer";
+        header.className =
+            "flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200";
 
         const leftSection = document.createElement("div");
-        leftSection.className = "d-flex align-items-center";
+        leftSection.className = "flex items-center";
 
-        // Toggle icon
+        // Toggle icon with Tailwind
         const toggleBtn = document.createElement("span");
-        toggleBtn.className = "me-2";
-        toggleBtn.innerHTML = `<i class="bi bi-chevron-right"></i>`;
-        toggleBtn.style.transition = "transform 0.3s ease";
+        toggleBtn.className =
+            "mr-2 transition-transform duration-300 ease-in-out";
+        toggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-600"></i>`;
 
-        // Parent checkbox
+        // Parent checkbox with Tailwind
         const checkboxRoot = document.createElement("input");
         checkboxRoot.type = "checkbox";
-        checkboxRoot.className = "form-check-input me-2";
+        checkboxRoot.className =
+            "mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded";
         checkboxRoot.id = rootId;
-        checkboxRoot.style.border = "2px solid #999";
 
-        // Parent label
+        // Parent label with Tailwind
         const labelRoot = document.createElement("label");
-        labelRoot.className = "form-check-label fw-bold";
-        labelRoot.style.fontSize = "0.85rem";
+        labelRoot.className =
+            "font-semibold text-gray-900 text-sm cursor-pointer";
         labelRoot.htmlFor = rootId;
         labelRoot.textContent = kategori;
 
-        // Count badge
+        // Count badge with Tailwind
         const subCount = Object.keys(sublayers).length;
         const badge = document.createElement("span");
-        badge.className = "badge bg-light text-dark ms-2";
+        badge.className =
+            "ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full";
         badge.textContent = subCount;
 
         // Parent checkbox controls all children with on-demand loading
         checkboxRoot.addEventListener("change", async () => {
             const isChecked = checkboxRoot.checked;
-            
+
             // Disable parent checkbox during loading
             checkboxRoot.disabled = true;
-            
+            checkboxRoot.className =
+                checkboxRoot.className + " opacity-50 cursor-not-allowed";
+
             try {
                 for (const [subname, layer] of Object.entries(sublayers)) {
-                    const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
+                    const subId = `sub-${kategori}-${subname}`.replace(
+                        /\s+/g,
+                        "-"
+                    );
                     const checkbox = document.getElementById(subId);
-                    
+
                     if (checkbox) {
                         checkbox.checked = isChecked;
-                        
+
                         if (isChecked) {
                             // Load data on-demand if not loaded yet
                             await loadCategoryData(subname);
@@ -981,6 +1085,10 @@ function updateLayerList() {
                 }
             } finally {
                 checkboxRoot.disabled = false;
+                checkboxRoot.className = checkboxRoot.className.replace(
+                    " opacity-50 cursor-not-allowed",
+                    ""
+                );
             }
         });
 
@@ -991,11 +1099,11 @@ function updateLayerList() {
         header.appendChild(leftSection);
         groupWrapper.appendChild(header);
 
-        // Create sublayers container
+        // Create sublayers container with Tailwind
         const subLayerList = document.createElement("div");
         subLayerList.id = groupId;
-        subLayerList.className = "border border-top-0 rounded-bottom bg-light";
-        subLayerList.style.display = "none";
+        subLayerList.className =
+            "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 hidden";
 
         // Add sublayers
         Object.entries(sublayers).forEach(([subname, layer]) => {
@@ -1005,18 +1113,21 @@ function updateLayerList() {
 
             const subId = `sub-${kategori}-${subname}`.replace(/\s+/g, "-");
             const row = document.createElement("div");
-            row.className = "d-flex align-items-center px-4 py-2";
+            row.className =
+                "flex items-center px-4 py-2 hover:bg-gray-100 transition-colors duration-150";
 
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
-            checkbox.className = "form-check-input me-3";
+            checkbox.className =
+                "mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded";
             checkbox.id = subId;
-            checkbox.style.border = "2px solid #999";
 
             checkbox.addEventListener("change", async () => {
-                // Disable checkbox during loading
+                // Disable checkbox during loading with Tailwind
                 checkbox.disabled = true;
-                
+                checkbox.className =
+                    checkbox.className + " opacity-50 cursor-not-allowed";
+
                 try {
                     if (checkbox.checked) {
                         // Load data on-demand if not loaded yet
@@ -1027,8 +1138,12 @@ function updateLayerList() {
                     }
 
                     // Update parent state
-                    const allSubs = Array.from(subLayerList.querySelectorAll('input[type="checkbox"]'));
-                    const checkedCount = allSubs.filter((cb) => cb.checked).length;
+                    const allSubs = Array.from(
+                        subLayerList.querySelectorAll('input[type="checkbox"]')
+                    );
+                    const checkedCount = allSubs.filter(
+                        (cb) => cb.checked
+                    ).length;
 
                     if (checkedCount === 0) {
                         checkboxRoot.checked = false;
@@ -1042,44 +1157,37 @@ function updateLayerList() {
                     }
                 } finally {
                     checkbox.disabled = false;
+                    checkbox.className = checkbox.className.replace(
+                        " opacity-50 cursor-not-allowed",
+                        ""
+                    );
                 }
             });
 
             const label = document.createElement("label");
-            label.className = "form-check-label";
+            label.className =
+                "text-sm text-gray-700 cursor-pointer flex-1 leading-tight";
             label.htmlFor = subId;
             label.textContent = subname;
-
-            // Style for better text wrapping
-            row.style.cssText = `
-                display: flex;
-                align-items: center;
-                width: 100%;
-                gap: 0.5rem;
-            `;
-
-            label.style.cssText = `
-                font-size: 0.75rem;
-                white-space: normal;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                flex: 1;
-                max-width: calc(100% - 40px);
-                line-height: 1.2;
-            `;
 
             row.appendChild(checkbox);
             row.appendChild(label);
             subLayerList.appendChild(row);
         });
 
-        // Toggle functionality
+        // Toggle functionality with Tailwind
         const toggleDropdown = () => {
-            const isVisible = subLayerList.style.display !== "none";
-            subLayerList.style.display = isVisible ? "none" : "block";
-            toggleBtn.innerHTML = isVisible
-                ? `<i class="bi bi-chevron-right"></i>`
-                : `<i class="bi bi-chevron-down"></i>`;
+            const isVisible = !subLayerList.classList.contains("hidden");
+
+            if (isVisible) {
+                subLayerList.classList.add("hidden");
+                toggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-600"></i>`;
+                toggleBtn.classList.remove("rotate-90");
+            } else {
+                subLayerList.classList.remove("hidden");
+                toggleBtn.innerHTML = `<i class="bi bi-chevron-down text-gray-600"></i>`;
+                toggleBtn.classList.add("rotate-90");
+            }
         };
 
         header.addEventListener("click", (e) => {
@@ -1093,12 +1201,37 @@ function updateLayerList() {
     });
 }
 
+function generatePreviewUrl(basemap) {
+    switch (basemap.id) {
+        case "osm":
+            return `frontend/img/map-preview/${basemap.id}-min.png`;
+        case "google-roadmap":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "google-hybrid":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "google-terrain":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-world-imagery":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+        case "esri-dark-gray":
+            return `/frontend/img/map-preview/${basemap.id}-min.png`;
+
+        default:
+            return "/frontend/img/placeholder.png";
+    }
+}
+
 /**
- * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll).
+ * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll) - Tailwind version
  */
 function setupUI() {
     const transparencySlider = document.getElementById("transparency");
     if (transparencySlider) {
+        // Add Tailwind classes to slider if not already present
+        if (!transparencySlider.classList.contains("range")) {
+            transparencySlider.className = "range range-primary w-full";
+        }
+
         transparencySlider.addEventListener("input", (e) => {
             const val = e.target.value / 100;
             Object.values(layerGroups).forEach((group) => {
@@ -1120,20 +1253,115 @@ function setupUI() {
 
     const basemapList = document.getElementById("basemap-list");
     if (basemapList) {
+        basemapList.innerHTML = "";
+
+        const gridContainer = document.createElement("div");
+        gridContainer.className = "grid grid-cols-2 gap-3";
+
         mapConfig.baseMapsList.forEach((bm, i) => {
-            basemapList.innerHTML += `
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="radio" role="switch" name="basemap-radio" id="bm-${
-                        bm.id
-                    }" value="${bm.id}" ${i === 4 ? "checked" : ""}>
-                    <label class="form-check-label" for="bm-${bm.id}">${bm.label}</label>
-                </div>`;
+            const itemContainer = document.createElement("div");
+            itemContainer.className = "col-span-1";
+
+            const basemapItem = document.createElement("div");
+            basemapItem.className =
+                "basemap-item overflow-hidden cursor-pointer position-relative";
+            basemapItem.style.cssText = `
+            transition: all 0.2s ease;
+            cursor: pointer;
+        `;
+
+            // Preview image
+            const previewImg = document.createElement("img");
+            previewImg.src = generatePreviewUrl(bm);
+            previewImg.alt = bm.label;
+            previewImg.className = "w-100 border border-gray-200";
+            previewImg.style.cssText = `
+            width: 100%;
+            height: 70px;
+            object-fit: cover;
+            transition: box-shadow 0.2s ease;
+        `;
+
+            // Error handling
+            previewImg.onerror = function () {
+                this.style.display = "none";
+                const placeholder = document.createElement("div");
+                placeholder.className =
+                    "flex items-center justify-center bg-white";
+                placeholder.style.cssText = `
+                width: 100%;
+                height: 80px;
+            `;
+                placeholder.innerHTML = `
+                <div class="text-center">
+                    <i class="bi bi-image text-muted" style="font-size: 1.1rem;"></i>
+                    <div class="small text-muted text-xs">Preview tidak tersedia</div>
+                </div>
+            `;
+                this.parentNode.insertBefore(placeholder, this);
+            };
+
+            // Label
+            const label = document.createElement("div");
+            label.className = "p-2";
+            label.style.cssText = `
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+            transition: color 0.2s ease;
+        `;
+            label.textContent = bm.label;
+
+            // Radio input (hidden)
+            const radioInput = document.createElement("input");
+            radioInput.type = "radio";
+            radioInput.name = "basemap-radio";
+            radioInput.id = `bm-${bm.id}`;
+            radioInput.value = bm.id;
+            radioInput.className = "hidden";
+            radioInput.style.cssText = "display:none;";
+            if (i === 4) radioInput.checked = true;
+
+            // Click handler
+            basemapItem.addEventListener("click", function () {
+                document
+                    .querySelectorAll('input[name="basemap-radio"]')
+                    .forEach((input) => {
+                        input.checked = false;
+                        const item = input.closest(".basemap-item");
+                        if (item) {
+                            // reset style
+                            const img = item.querySelector("img");
+                            const lbl = item.querySelector("div.p-2");
+                            if (img) img.style.boxShadow = "none";
+                            if (lbl) lbl.style.color = "inherit";
+                        }
+                    });
+
+                // Aktifkan yang dipilih
+                radioInput.checked = true;
+                previewImg.style.boxShadow = "0 0 10px rgba(0, 123, 255, 0.6)";
+                label.style.color = "#0d6efd";
+
+                changeBaseMap(bm.id);
+            });
+
+            // Set initial state
+            if (radioInput.checked) {
+                previewImg.style.boxShadow = "0 0 10px rgba(0, 123, 255, 0.6)";
+                label.style.color = "#0d6efd";
+            }
+
+            basemapItem.appendChild(previewImg);
+            basemapItem.appendChild(label);
+            basemapItem.appendChild(radioInput);
+
+            itemContainer.appendChild(basemapItem);
+            gridContainer.appendChild(itemContainer);
         });
 
-        basemapList.addEventListener("change", (e) => {
-            if (e.target.name === "basemap-radio")
-                changeBaseMap(e.target.value);
-        });
+        basemapList.appendChild(gridContainer);
     }
 }
 
@@ -1141,32 +1369,28 @@ function setupUI() {
  * Entry point aplikasi frontend peta dengan optimized loading.
  */
 document.addEventListener("DOMContentLoaded", async () => {
-    // Initialize map and basemap first
+    // Init map
     changeBaseMap("esri-world-imagery");
     setupUI();
 
-    // Set loading indicator
+    // Show loading spinner
     const layerListContainer = document.getElementById("layer-list");
     if (layerListContainer) {
         layerListContainer.innerHTML = `
-            <div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+            <div id="layer-loading" class="flex items-center justify-center h-[120px]">
+                <div class="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>`;
     }
 
-    // Load only categories metadata first
+    // Load metadata
     await loadCategoriesMetadata();
 
-    // Remove loading indicator
-    const loadingDiv = document.getElementById("layer-loading");
-    if (loadingDiv) loadingDiv.remove();
+    // Remove spinner
+    document.getElementById("layer-loading")?.remove();
 
-    console.log("Map application initialized with enhanced loading effects");
+    console.log("Map app initialized ✅");
 
-    // Rest of the sidebar and UI setup code remains the same
-    // Sidebar Elements
+    // Sidebar elements
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
@@ -1175,7 +1399,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         help: document.getElementById("guideModal"),
     };
 
-    // Toggle Buttons
+    // Toggle buttons
     const toggleButtons = {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
@@ -1203,7 +1427,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function closeAllSidebars() {
         Object.values(sidebarElements).forEach((el) => {
-            if (el && el !== guideModal) el.style.display = "none";
+            if (el && el !== guideModal) el.classList.add("hidden");
         });
     }
 
@@ -1212,81 +1436,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function clearHighlights() {
         controlButtons.forEach((btn) => {
-            if (btn) {
-                btn.classList.remove("highlighted-control");
-                btn.style.position = "";
-                btn.style.zIndex = "";
-                btn.style.padding = "";
-            }
+            btn?.classList.remove("ring-2", "ring-white", "shadow-lg", "z-50");
         });
     }
 
     function showStep(step) {
-        guideSteps.forEach((stepDiv) => {
-            stepDiv.classList.toggle(
-                "d-none",
-                parseInt(stepDiv.dataset.step) !== step
-            );
+        guideSteps.forEach((div) => {
+            div.classList.toggle("hidden", parseInt(div.dataset.step) !== step);
         });
 
         btnPrev.disabled = step === 1;
         btnNext.textContent = step === totalSteps ? "Finish" : "Next";
-        clearHighlights();
 
-        switch (step) {
-            case 3:
-                controlButtons[0]?.classList.add("highlighted-control");
-                break;
-            case 4:
-                controlButtons[1]?.classList.add("highlighted-control");
-                break;
-            case 5:
-                controlButtons[2]?.classList.add("highlighted-control");
-                break;
-            case 6:
-                controlButtons[3]?.classList.add("highlighted-control");
-                break;
-            case 7:
-                controlButtons[4]?.classList.add("highlighted-control");
-                break;
-            case 8:
-                controlButtons[5]?.classList.add("highlighted-control");
-                break;
-            case 9:
-                controlButtons[6]?.classList.add("highlighted-control");
-                break;
+        clearHighlights();
+        if (controlButtons[step - 3]) {
+            controlButtons[step - 3]?.classList.add(
+                "ring-2",
+                "ring-white",
+                "shadow-lg",
+                "z-50"
+            );
         }
+    }
+
+    function showGuideModal() {
+        closeAllSidebars();
+        currentStep = 1;
+        showStep(currentStep);
+        guideModal.classList.remove("hidden");
+        guideModal.classList.add("flex");
     }
 
     function hideGuideModal() {
-        const modalInstance = bootstrap.Modal.getInstance(guideModal);
-        modalInstance?.hide();
-
-        document.body.classList.remove("modal-open");
-        document
-            .querySelectorAll(".modal-backdrop")
-            .forEach((el) => el.remove());
-        document.querySelector(".guide-overlay")?.remove();
+        guideModal.classList.add("hidden");
+        guideModal.classList.remove("flex");
+        clearHighlights();
     }
 
+    // Modal help toggle
     btnToggleHelp?.addEventListener("click", () => {
-        const modalInstance =
-            bootstrap.Modal.getInstance(guideModal) ||
-            new bootstrap.Modal(guideModal);
-        const isVisible = guideModal.classList.contains("show");
-
-        closeAllSidebars();
-        clearHighlights();
-
-        if (!isVisible) {
-            currentStep = 1;
-            showStep(currentStep);
-            modalInstance.show();
-        } else {
-            modalInstance.hide();
-        }
+        const isHidden = guideModal.classList.contains("hidden");
+        isHidden ? showGuideModal() : hideGuideModal();
     });
 
+    // Modal controls
     btnPrev?.addEventListener("click", () => {
         if (currentStep > 1) {
             currentStep--;
@@ -1300,28 +1493,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             showStep(currentStep);
         } else {
             hideGuideModal();
-            clearHighlights();
         }
     });
 
-    btnSkip?.addEventListener("click", () => {
-        hideGuideModal();
-        clearHighlights();
-    });
+    btnSkip?.addEventListener("click", hideGuideModal);
 
     // Sidebar toggles
-    Object.entries(toggleButtons).forEach(([key, button]) => {
-        if (button && sidebarElements[key]) {
-            button.addEventListener("click", () => {
+    Object.entries(toggleButtons).forEach(([key, btn]) => {
+        if (btn && sidebarElements[key]) {
+            btn.addEventListener("click", () => {
                 const sidebar = sidebarElements[key];
-                const isVisible = sidebar.style.display === "block";
+                const isHidden = sidebar.classList.contains("hidden");
                 closeAllSidebars();
-
-                if (key === "help" && window.bootstrap) {
-                    const modal = new bootstrap.Modal(sidebar);
-                    if (!isVisible) modal.show();
-                } else {
-                    sidebar.style.display = isVisible ? "none" : "block";
+                if (key !== "help") {
+                    sidebar.classList.toggle("hidden", !isHidden);
                 }
             });
         }
@@ -1332,14 +1517,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
             closeBtn.addEventListener("click", () => {
-                sidebarElements[type].style.display = "none";
+                sidebarElements[type].classList.add("hidden");
             });
         }
     });
 
-    // Fullscreen toggle
-    const btnFullscreen = document.getElementById("btn-fullscreen");
-    btnFullscreen?.addEventListener("click", () => {
+    // Fullscreen
+    document.getElementById("btn-fullscreen")?.addEventListener("click", () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(console.error);
         } else {
@@ -1348,41 +1532,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Zoom reset
-    const btnDefaultZoom = document.getElementById("btn-default-zoom");
-    btnDefaultZoom?.addEventListener("click", () => {
+    document.getElementById("btn-default-zoom")?.addEventListener("click", () => {
         map.setView(mapConfig.center, mapConfig.zoom);
     });
 
-    // Search layer with debouncing for better performance
+    // Search (debounce)
     const layerSearchInput = document.getElementById("layer-search");
     let searchTimeout;
-    
     layerSearchInput?.addEventListener("input", (e) => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const layerGroups = document.querySelectorAll(".layer-group");
+            const term = e.target.value.toLowerCase();
+            const groups = document.querySelectorAll(".layer-group");
 
-            layerGroups.forEach((group) => {
-                const parentLabel = group.querySelector(".fw-bold");
-                const childLabels = group.querySelectorAll(".bg-light label");
-                let hasMatch = false;
+            groups.forEach((group) => {
+                const parent = group.querySelector(".fw-bold");
+                const children = group.querySelectorAll(".bg-light label");
 
-                if (
-                    parentLabel &&
-                    parentLabel.textContent.toLowerCase().includes(searchTerm)
-                )
-                    hasMatch = true;
+                const matchParent =
+                    parent && parent.textContent.toLowerCase().includes(term);
 
-                childLabels.forEach((label) => {
-                    if (label.textContent.toLowerCase().includes(searchTerm)) {
-                        hasMatch = true;
-                    }
-                });
+                const matchChild = Array.from(children).some((label) =>
+                    label.textContent.toLowerCase().includes(term)
+                );
 
                 group.style.display =
-                    hasMatch || searchTerm === "" ? "block" : "none";
+                    matchParent || matchChild || term === "" ? "block" : "none";
             });
-        }, 300); // 300ms debounce
+        }, 300);
     });
 });
+

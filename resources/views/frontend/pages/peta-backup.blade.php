@@ -1,10 +1,9 @@
 @extends('frontend.layouts.app', ['title' => 'Peta Interaktif - MARIMOI'])
 
 @push('styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/map.css') }}">
 @endpush
 
@@ -115,8 +114,7 @@
                             <button id="btn-close-sidebar-legend" class="btn btn-sm"><i
                                     class="bi bi-x-lg text-white"></i></button>
                         </div>
-                        <div id="legend-content" class="ms-2"
-                            style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                        <div id="legend-content" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
                             <!-- Legend content will be populated dynamically -->
                             <p>Legend content placeholder</p>
                         </div>
@@ -144,24 +142,24 @@
                     <!-- Sidebar Control Buttons -->
                     <div id="sidebar-control-buttons" class="btn-group position-absolute" role="group"
                         aria-label="Sidebar Control Buttons">
-                        <button id="btn-toggle-sidebar-help" type="button" class="btn btn-sm" title="Bantuan"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        <button id="btn-toggle-sidebar-help" type="button" class="btn btn-sm"
+                            title="Bantuan" class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
                             data-bs-title="Bantuan">
                             <i class="bi bi-info-circle-fill"></i>
                         </button>
-                        <button id="btn-toggle-sidebar-legend" type="button" class="btn btn-sm" title="Legenda Peta"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            data-bs-title="Legenda Peta">
+                        <button id="btn-toggle-sidebar-legend" type="button" class="btn btn-sm"
+                            title="Legenda Peta" class="control-button" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Legenda Peta">
                             <i class="bi bi-list-ul"></i>
                         </button>
-                        <button id="btn-toggle-sidebar-basemap" type="button" class="btn btn-sm" title="Basemap Peta"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            data-bs-title="Basemap Peta">
+                        <button id="btn-toggle-sidebar-basemap" type="button" class="btn btn-sm"
+                            title="Basemap Peta" class="control-button" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Basemap Peta">
                             <i class="bi bi-grid-fill"></i>
                         </button>
-                        <button id="btn-toggle-sidebar-layer" type="button" class="btn btn-sm" title="Layer Peta"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            data-bs-title="Layer Peta">
+                        <button id="btn-toggle-sidebar-layer" type="button" class="btn btn-sm"
+                            title="Layer Peta" class="control-button" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Layer Peta">
                             <i class="bi bi-layers-fill"></i>
                         </button>
                     </div>
@@ -174,14 +172,14 @@
                             data-bs-placement="bottom" data-bs-title="Download Peta">
                             <i class="bi bi-file-earmark-arrow-down-fill"></i>
                         </button>
-                        <button id="btn-fullscreen" type="button" class="btn btn-sm" title="Tampilan Penuh"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            data-bs-title="Tampilan Penuh">
+                        <button id="btn-fullscreen" type="button" class="btn btn-sm"
+                            title="Tampilan Penuh" class="control-button" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Tampilan Penuh">
                             <i class="bi bi-arrows-fullscreen"></i>
                         </button>
-                        <button id="btn-default-zoom" type="button" class="btn btn-sm" title="Default Zoom"
-                            class="control-button" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            data-bs-title="Default Zoom">
+                        <button id="btn-default-zoom" type="button" class="btn btn-sm"
+                            title="Default Zoom" class="control-button" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" data-bs-title="Default Zoom">
                             <i class="bi bi-house-door-fill"></i>
                         </button>
                     </div>
