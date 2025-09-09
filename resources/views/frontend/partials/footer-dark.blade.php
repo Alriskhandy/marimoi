@@ -72,8 +72,8 @@
 
             <div class="contact-item" style="margin-top: 5px;">
                 <span style="color: #000">
-                    <a href="#" style="text-decoration: none; color: inherit;">Kebijakan Privasi</a> |
-                    <a href="#" style="text-decoration: none; color: inherit;">Syarat & Ketentuan</a>
+                    <a href="{{ route('kebijakan_privasi') }}" style="text-decoration: none; color: inherit;">Kebijakan Privasi</a> |
+                    <a href="{{ route('syarat_ketentuan') }}" style="text-decoration: none; color: inherit;">Syarat & Ketentuan</a>
                 </span>
             </div>
         </div>
