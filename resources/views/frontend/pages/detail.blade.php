@@ -94,17 +94,33 @@
     <section class="min-h-auto mt-[76px] pt-8 pb-12 bg-slate-50">
         <!-- Section Title -->
         <div class="container mx-auto px-4 text-center mb-8 max-w-6xl">
-            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-4">Detail Kegiatan</h2>
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Detail Peta</h2>
         </div>
 
         <div class="container mx-auto px-4 max-w-7xl">
             @if (isset($project))
                 <div class="grid grid-cols-1 {{ $project->gambar ? 'lg:grid-cols-2' : 'lg:grid-cols-1' }} gap-6 mb-8">
+                    <!-- Navigasi -->
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url()->previous() }}"
+                            class="inline-flex items-center px-2 py-1.5 md:px-4 md:py-2 bg-slate-100 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Kembali
+                        </a>
+
+                        <span class="text-slate-400">/</span>
+                        <h4 class="text-sm md:text-md lg:text-lg font-medium text-slate-600">
+                            {{ $project->kategori->deskripsi ?? $project->kategori->nama }}
+                        </h4>
+                    </div>
+
                     <!-- Detail Map -->
                     <div class="w-full">
                         <div class="bg-white shadow-xl rounded-xl overflow-hidden h-full">
-                            <div class="p-6">
-                                <div id="map-detail" class="w-full h-96 lg:h-[400px] rounded-lg"></div>
+                            <div class="p-2 md:p-6">
+                                <div id="map-detail" class="w-full h-96 lg:h-[400px] rounded-lg z-[101]"></div>
                             </div>
                         </div>
                     </div>
@@ -113,7 +129,7 @@
                     @if (!empty($project->gambar))
                         <div class="w-full">
                             <div class="bg-white shadow-xl rounded-xl overflow-hidden h-full">
-                                <div class="p-6">
+                                <div class="p-2 md:p-6">
                                     <img src="{{ asset('storage/' . $project->gambar) }}" alt="{{ $project->judul }}"
                                         class="w-full h-96 lg:h-[400px] object-cover rounded-lg">
                                 </div>
@@ -125,7 +141,7 @@
                 <!-- Deskripsi -->
                 <div class="w-full mb-8">
                     <div class="bg-white shadow-xl rounded-xl overflow-hidden">
-                        <div class="p-6">
+                        <div class="p-2 md:p-6">
                             <div class="overflow-x-auto">
                                 <table class="detail-table w-full border-collapse">
                                     <tbody>
@@ -184,7 +200,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div class="lg:col-span-7">
                         <div class="bg-slate-50 rounded-xl p-6 lg:p-8 h-full">
-                            <h3 class="text-xl text-center md:text-2xl font-bold text-slate-800 mb-6">Formulir Tanggapan Kegiatan</h3>
+                            <h3 class="text-xl text-center md:text-2xl font-bold text-slate-800 mb-6">Formulir Tanggapan
+                                Kegiatan</h3>
                             <div class="space-y-6">
                                 <form id="feedbackForm" action="{{ route('feedback.store') }}" method="POST"
                                     enctype="multipart/form-data">
