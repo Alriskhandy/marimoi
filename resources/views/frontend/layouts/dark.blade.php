@@ -62,7 +62,7 @@
                             <span class="arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu" role="menu" aria-label="Proyek Strategis Menu">
-                            <li role="none"><a href="{{ route('tampil.psn') }}" role="menuitem"
+                            <li role="none"><a href="{{ route('tampil.psd') }}" role="menuitem"
                                     class="{{ request()->routeIs('tampil.psd') ? 'active' : '' }}">Proyek Strategis
                                     Daerah</a></li>
                             <li role="none"><a href="{{ route('tampil.psn') }}" role="menuitem"
