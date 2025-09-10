@@ -19,64 +19,74 @@ use Illuminate\Support\Facades\Validator;
 
 class FrontendController extends Controller
 {
-    public function index()
-    {
-        // Ambil 6 data PSD secara random
-        $psd = DataSpatial::where('data_type', 'proyek_strategis')
-        ->where('sub_type', 'psd')
-        ->orderBy('views', 'desc')->limit(6)->get();
+    // public function index()
+    // {
+    //     // Ambil 6 data PSD secara random
+    //     $psd = DataSpatial::where('data_type', 'proyek_strategis')
+    //     ->where('sub_type', 'psd')
+    //     ->orderBy('views', 'desc')->limit(6)->get();
         
-        // Ambil 6 data PSN secara random
-        $psn = DataSpatial::where('data_type', 'proyek_strategis')
-        ->where('sub_type', 'psn')
-        ->orderBy('views', 'desc')->limit(6)->get();
+    //     // Ambil 6 data PSN secara random
+    //     $psn = DataSpatial::where('data_type', 'proyek_strategis')
+    //     ->where('sub_type', 'psn')
+    //     ->orderBy('views', 'desc')->limit(6)->get();
         
-        // Ambil 6 data Pokir secara random
-        $pokir = DataSpatial::where('data_type', 'pokir_dprd')
-        ->orderBy('views', 'desc')->limit(6)->get();
+    //     // Ambil 6 data Pokir secara random
+    //     $pokir = DataSpatial::where('data_type', 'pokir_dprd')
+    //     ->orderBy('views', 'desc')->limit(6)->get();
         
-        // Ambil 6 data Musrenbang secara random
-        $musrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')
-        ->orderBy('views', 'desc')->limit(6)->get();
+    //     // Ambil 6 data Musrenbang secara random
+    //     $musrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')
+    //     ->orderBy('views', 'desc')->limit(6)->get();
 
-        // Menggabungkan semuanya dengan concat
-        $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
+    //     // Menggabungkan semuanya dengan concat
+    //     $dataPeta = collect()->concat($psd)->concat($psn)->concat($pokir)->concat($musrenbang);
         
-        $links = [
-            'psd' => 'proyek-strategis-daerah',
-            'psn' => 'proyek-strategis-nasional',
-            'pokir_dprd' => 'pokir-dprd',
-            'usulan_musrenbang' => 'usulan-musrenbang',
-        ];
+    //     $links = [
+    //         'psd' => 'proyek-strategis-daerah',
+    //         'psn' => 'proyek-strategis-nasional',
+    //         'pokir_dprd' => 'pokir-dprd',
+    //         'usulan_musrenbang' => 'usulan-musrenbang',
+    //     ];
 
-        // Total masing-masing kategori
-        $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
-        $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
-        $totalMusrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')->count();
-        $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
-
-        return view('frontend.pages.index-dark', compact(
-            'dataPeta',
-            'links',
-            'totalPsd',
-            'totalPsn',
-            'totalMusrenbang',
-            'totalPokir'
-        ));
-    }
-
-    // public function indexDark(){
-    //     $dataPeta = Category::where('is_active', true)->withCount('dataSpatials')->get();
-
-    //     $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
-    //     $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
+    //     // Total masing-masing kategori
+    //     $totalPsd = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psd')->count();
+    //     $totalPsn = DataSpatial::where('data_type', 'proyek_strategis')->where('sub_type', 'psn')->count();
+    //     $totalMusrenbang = DataSpatial::where('data_type', 'usulan_musrenbang')->count();
+    //     $totalPokir = DataSpatial::where('data_type', 'pokir_dprd')->count();
 
     //     return view('frontend.pages.index-dark', compact(
     //         'dataPeta',
-    //         'totalKritik',
-    //         'totalUsulan',
+    //         'links',
+    //         'totalPsd',
+    //         'totalPsn',
+    //         'totalMusrenbang',
+    //         'totalPokir'
     //     ));
     // }
+
+    public function indexDark(){
+        $petaTematik = [
+            'Batas Administrasi' => asset('frontend/img/peta-tematik/batas-administrasi-min.png'),
+            'Kawasan Izin Pertambangan' => asset('frontend/img/peta-tematik/izin-pertambangan-min.png'),
+            'Kawasan Permukiman' => asset('frontend/img/peta-tematik/permukiman-min.png'),
+            'Kawasan Perkebunan Rakyat' => asset('frontend/img/peta-tematik/perkebunan-rakyat-min.png'),
+            'Kawasan Pertanian' => asset('frontend/img/peta-tematik/pertanian-min.png'),
+            'Kawasan Peruntukan Industri' => asset('frontend/img/peta-tematik/peruntukan-industri-min.png'),
+            'Kawasan Ekosistem Mangrove' => asset('frontend/img/peta-tematik/ekosistem-mangrove-min.png'),
+            'Kawasan Transportasi' => asset('frontend/img/peta-tematik/transportasi-min.png'),
+            'Kawasan Konservasi' => asset('frontend/img/peta-tematik/konservasi-min.png'),
+        ];
+
+        $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
+        $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
+
+        return view('frontend.pages.index-dark', compact(
+            'petaTematik',
+            'totalKritik',
+            'totalUsulan',
+        ));
+    }
 
     public function aspirasi()
     {

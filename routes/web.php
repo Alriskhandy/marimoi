@@ -5,7 +5,7 @@ use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
-Route::get('/', [FrontendController::class, 'index'])->name('beranda');
+Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');

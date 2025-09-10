@@ -315,21 +315,20 @@
 
     @php
         $show = true;
-        $dummys = [1, 2, 3, 4, 5, 6, 7];
     @endphp
 
     @if ($show)
-        @if ($dummys)
+        @if ($petaTematik && count($petaTematik) > 0)
             <!-- Swiper Container -->
             <div
                 class="swiper swiper-container-spacing w-full max-w-[1400px] mx-auto py-[60px] md:py-10 sm:py-[20px] xs:py-[20px] px-5 md:px-4 sm:px-[15px] xs:px-[10px] overflow-visible">
                 <div class="swiper-wrapper items-center">
-                    @foreach ($dummys as $i)
+                    @foreach ($petaTematik as $nama => $gambar)
                         <div class="swiper-slide"
-                            style="background: url('{{ asset('frontend/img/carousel/' . $i . '.jpg') }}') no-repeat 50% 50% / cover;"
+                            style="background: url('{{ $gambar }}') no-repeat 50% 50% / cover;"
                             loading="lazy">
                             <div class="swiper-footer">
-                                <h2>Peta Contoh {{ $i }}</h2>
+                                <h2>Peta {{ $nama }}</h2>
                                 <a href="{{ route('tampil.tematik') }}" class="view-map-btn">Lihat Peta</a>
                             </div>
                         </div>
