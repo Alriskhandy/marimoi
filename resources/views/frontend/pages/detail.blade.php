@@ -93,7 +93,7 @@
     <!-- Detail Section -->
     <section class="min-h-auto mt-[76px] pt-8 pb-12 bg-slate-50">
         <!-- Section Title -->
-        <div class="container mx-auto px-4 text-center mb-8 max-w-6xl">
+        <div class="container mx-auto px-4 text-center mb-8 max-w-7xl">
             <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Detail Peta</h2>
         </div>
 
@@ -101,7 +101,7 @@
             <!-- Navigasi -->
             <div class="flex items-center space-x-2 mb-3">
                 <a href="{{ url()->previous() }}"
-                    class="inline-flex items-center px-2 py-1.5 md:px-4 md:py-2 bg-slate-100 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    class="inline-flex items-center px-2 py-1 md:px-4 md:py-2 bg-slate-100 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -113,7 +113,7 @@
                     {{ $project->kategori->deskripsi ?? $project->kategori->nama }}
                 </h4>
             </div>
-            
+
             @if (isset($project))
                 <div class="grid grid-cols-1 {{ $project->gambar ? 'lg:grid-cols-2' : 'lg:grid-cols-1' }} gap-6 mb-8">
                     <!-- Detail Map -->
