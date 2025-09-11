@@ -876,13 +876,13 @@ async function loadCategoryData(categoryName) {
 
                 queryString += `&limit=${currentChunkSize}&offset=${offset}`;
 
-                console.log(`Loading chunk: ${queryString}`);
+                console.log(`Loading Layer: ${queryString}`);
 
                 // Update loading progress
                 updateLoadingProgress(
                     totalLoaded,
                     estimatedTotal,
-                    `Memuat chunk ${Math.floor(offset / chunkSize) + 1}...`
+                    `Memuat Layer ${Math.floor(offset / chunkSize) + 1}...`
                 );
 
                 const response = await fetch(`/geojson${queryString}`);
@@ -1028,7 +1028,7 @@ async function loadCategoryData(categoryName) {
                 }
             } catch (chunkError) {
                 console.error(
-                    `Error loading chunk at offset ${offset}:`,
+                    `Error loading layer at offset ${offset}:`,
                     chunkError
                 );
 
@@ -1041,7 +1041,7 @@ async function loadCategoryData(categoryName) {
                 updateLoadingProgress(
                     totalLoaded,
                     estimatedTotal,
-                    `Error pada chunk ${Math.floor(offset / chunkSize)}: ${
+                    `Error pada Layer ${Math.floor(offset / chunkSize)}: ${
                         chunkError.message
                     }`
                 );

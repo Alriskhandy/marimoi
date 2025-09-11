@@ -16,11 +16,11 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
                 KategoriLayerSeeder::class,
-                ProjectFeedbackSeeder::class,
+                // ProjectFeedbackSeeder::class,
                 RoleSeeder::class,
                 OpdSeeder::class,
-                KategoriAspirasiSeeder::class,
-                AspirasiSeeder::class,
+                // KategoriAspirasiSeeder::class,
+                // AspirasiSeeder::class,
             ]);
 
              User::create([
