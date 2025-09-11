@@ -57,15 +57,35 @@
                 /* Allow scroll on mobile */
             }
 
+            .zoom-container {
+                /* Enable both horizontal and vertical scroll on mobile */
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+                /* Smooth scrolling on iOS */
+                position: relative;
+            }
+
             .zoomable-content {
                 flex-direction: column;
                 width: 100%;
                 height: auto;
+                min-height: 100%;
+                /* Ensure content is properly centered when zoomed */
+                margin: 0 auto;
             }
 
             .horizontal-scroll-section img {
                 width: 100%;
                 height: auto;
+                display: block;
+                margin-bottom: 0;
+                /* Ensure images don't have extra spacing */
+                vertical-align: top;
+            }
+
+            /* When zoomed on mobile, ensure proper overflow handling */
+            .zoomable-content[style*="scale"] {
+                transform-origin: center top;
             }
         }
 
@@ -89,26 +109,6 @@
             background: #555;
         }
 
-        /* Zoom indicator */
-        .zoom-indicator {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            color: black;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 1000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .zoom-indicator.show {
-            opacity: 1;
-        }
-
         /* Pan cursor */
         .panning {
             cursor: grabbing !important;
@@ -117,57 +117,10 @@
         .pannable {
             cursor: grab !important;
         }
-
-        /* Zoom controls */
-        .zoom-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 1000;
-        }
-
-        .zoom-btn {
-            width: 30px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.95);
-            color: black;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: background 0.2s ease;
-        }
-
-        .zoom-btn:hover {
-            background: rgba(201, 201, 201, 0.9);
-        }
-
-        .zoom-btn:disabled {
-            opacity: 0.8;
-            cursor: not-allowed;
-        }
     </style>
 @endpush
 
 @section('main')
-    <!-- Zoom Indicator -->
-    <div id="zoomIndicator" class="zoom-indicator">
-        Zoom: <span id="zoomLevel">100%</span>
-    </div>
-
-    <!-- Zoom Controls -->
-    <div class="zoom-controls">
-        <button id="zoomIn" class="zoom-btn" title="Zoom In">+</button>
-        <button id="zoomOut" class="zoom-btn" title="Zoom Out">−</button>
-        <button id="zoomReset" class="zoom-btn" title="Reset Zoom">⌂</button>
-    </div>
-
     <!-- Document Section -->
     <section
         class="horizontal-scroll-section 
@@ -247,11 +200,6 @@
             const zoomContainer = document.getElementById('zoomContainer');
             const zoomableContent = document.getElementById('zoomableContent');
             const images = document.querySelectorAll('.priority-image');
-            const zoomIndicator = document.getElementById('zoomIndicator');
-            const zoomLevel = document.getElementById('zoomLevel');
-            const zoomInBtn = document.getElementById('zoomIn');
-            const zoomOutBtn = document.getElementById('zoomOut');
-            const zoomResetBtn = document.getElementById('zoomReset');
 
             // State management
             let currentZoom = 1;
@@ -277,8 +225,6 @@
                 isDesktop = window.innerWidth >= 768;
                 setContainerHeight();
                 setupEventListeners();
-                updateZoomIndicator();
-                updateZoomButtons();
             }
 
             function setContainerHeight() {
@@ -307,17 +253,14 @@
 
                 // Touch events
                 zoomContainer.addEventListener('touchstart', handleTouchStart, {
-                    passive: false
+                    passive: true // Allow passive for better performance
                 });
                 zoomContainer.addEventListener('touchmove', handleTouchMove, {
-                    passive: false
+                    passive: false // Need to prevent default for pinch zoom
                 });
-                zoomContainer.addEventListener('touchend', handleTouchEnd);
-
-                // Zoom button events
-                zoomInBtn.addEventListener('click', () => zoom(1.2));
-                zoomOutBtn.addEventListener('click', () => zoom(0.8));
-                zoomResetBtn.addEventListener('click', resetZoom);
+                zoomContainer.addEventListener('touchend', handleTouchEnd, {
+                    passive: true
+                });
 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', handleKeyDown);
@@ -388,10 +331,14 @@
                     const touch = e.touches[0];
                     lastTouchX = touch.clientX;
                     lastTouchY = touch.clientY;
-                    startX = touch.clientX;
-                    startY = touch.clientY;
-                    initialScrollLeft = zoomContainer.scrollLeft;
-                    initialScrollTop = zoomContainer.scrollTop;
+
+                    // Only set up panning if zoomed in
+                    if (currentZoom > 1) {
+                        startX = touch.clientX;
+                        startY = touch.clientY;
+                        initialScrollLeft = zoomContainer.scrollLeft;
+                        initialScrollTop = zoomContainer.scrollTop;
+                    }
                 } else if (e.touches.length === 2) {
                     // Initialize pinch
                     const touch1 = e.touches[0];
@@ -404,19 +351,22 @@
             }
 
             function handleTouchMove(e) {
-                e.preventDefault();
-
                 if (e.touches.length === 1) {
-                    // Single touch - pan
-                    const touch = e.touches[0];
-                    const deltaX = touch.clientX - startX;
-                    const deltaY = touch.clientY - startY;
+                    // Single touch - only prevent default and pan if zoomed in
+                    if (currentZoom > 1) {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const deltaX = touch.clientX - startX;
+                        const deltaY = touch.clientY - startY;
 
-                    zoomContainer.scrollLeft = initialScrollLeft - deltaX;
-                    zoomContainer.scrollTop = initialScrollTop - deltaY;
+                        zoomContainer.scrollLeft = initialScrollLeft - deltaX;
+                        zoomContainer.scrollTop = initialScrollTop - deltaY;
+                    }
+                    // If not zoomed, let browser handle natural scrolling
 
                 } else if (e.touches.length === 2) {
-                    // Pinch to zoom
+                    // Pinch to zoom - always prevent default
+                    e.preventDefault();
                     const touch1 = e.touches[0];
                     const touch2 = e.touches[1];
                     const distance = Math.sqrt(
@@ -476,13 +426,25 @@
             }
 
             function zoom(factor, centerX = null, centerY = null) {
-                const newZoom = Math.min(Math.max(currentZoom * factor, minZoom), maxZoom);
+                // Adjust zoom limits based on device type
+                const mobileMaxZoom = 4; // Higher max zoom for mobile
+                const effectiveMaxZoom = isDesktop ? maxZoom : mobileMaxZoom;
+
+                const newZoom = Math.min(Math.max(currentZoom * factor, minZoom), effectiveMaxZoom);
 
                 if (newZoom !== currentZoom) {
                     // Calculate zoom center
                     const rect = zoomContainer.getBoundingClientRect();
-                    const x = centerX !== null ? centerX - rect.left : rect.width / 2;
-                    const y = centerY !== null ? centerY - rect.top : rect.height / 2;
+                    let x, y;
+
+                    if (!isDesktop) {
+                        // On mobile, prefer center-top origin for better UX
+                        x = centerX !== null ? centerX - rect.left : rect.width / 2;
+                        y = centerY !== null ? centerY - rect.top : 0; // Top origin
+                    } else {
+                        x = centerX !== null ? centerX - rect.left : rect.width / 2;
+                        y = centerY !== null ? centerY - rect.top : rect.height / 2;
+                    }
 
                     // Adjust scroll position to maintain zoom center
                     const zoomRatio = newZoom / currentZoom;
@@ -491,14 +453,20 @@
 
                     // Apply zoom to content
                     currentZoom = newZoom;
+
+                    // Set appropriate transform-origin for mobile vs desktop
+                    if (!isDesktop) {
+                        zoomableContent.style.transformOrigin = 'center top';
+                    } else {
+                        zoomableContent.style.transformOrigin = '0 0';
+                    }
+
                     zoomableContent.style.transform = `scale(${currentZoom})`;
 
                     // Set new scroll position
                     zoomContainer.scrollLeft = newScrollLeft;
                     zoomContainer.scrollTop = newScrollTop;
 
-                    updateZoomIndicator();
-                    updateZoomButtons();
                     updateCursor();
                 }
             }
@@ -508,30 +476,7 @@
                 zoomableContent.style.transform = 'scale(1)';
                 zoomContainer.scrollLeft = 0;
                 zoomContainer.scrollTop = 0;
-                updateZoomIndicator();
-                updateZoomButtons();
                 updateCursor();
-            }
-
-            function updateZoomIndicator() {
-                const percentage = Math.round(currentZoom * 100);
-                zoomLevel.textContent = `${percentage}%`;
-
-                if (currentZoom !== 1) {
-                    zoomIndicator.classList.add('show');
-                    setTimeout(() => {
-                        if (currentZoom === 1) {
-                            zoomIndicator.classList.remove('show');
-                        }
-                    }, 2000);
-                } else {
-                    zoomIndicator.classList.remove('show');
-                }
-            }
-
-            function updateZoomButtons() {
-                zoomInBtn.disabled = currentZoom >= maxZoom;
-                zoomOutBtn.disabled = currentZoom <= minZoom;
             }
 
             function updateCursor() {
