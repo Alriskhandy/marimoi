@@ -1515,26 +1515,393 @@
                             }
 
                             // Lampiran
-                            if (aspirasi.lampiran) {
-                                const lampiran = typeof aspirasi.lampiran === 'string' ?
-                                    JSON.parse(aspirasi.lampiran) : aspirasi.lampiran;
-                                let lampiranHtml = '';
-                                lampiran.forEach(function(file, index) {
-                                    lampiranHtml += `
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="mdi mdi-file-outline me-2"></i>
-                                            <span>${file.original_name}</span>
-                                            <a href="{{ route('aspirasi.downloadLampiran', ['aspirasi' => '__ID__', 'index' => '__INDEX__']) }}" 
-                                               class="btn btn-outline-primary btn-sm ms-auto" download>
-                                                <i class="mdi mdi-download"></i>
-                                            </a>
-                                        </div>
-                                    `.replace('__ID__', aspirasi.id).replace('__INDEX__', index);
-                                });
-                                $('#show_lampiran_list').html(lampiranHtml);
-                                $('#show_lampiran_container').show();
+                            // Perbaikan untuk bagian lampiran - SINGLE FILE (String)
+                            // Ganti bagian lampiran yang ada dengan kode ini:
+
+                            // Lampiran - Handler untuk single file (string)
+                            if (aspirasi.lampiran && aspirasi.lampiran.trim() !== '') {
+                                try {
+                                    // Lampiran sekarang adalah string, bukan array
+                                    const filename = aspirasi.lampiran;
+
+                                    // Buat URL untuk download dan preview
+                                    const downloadUrl =
+                                        `/storage/aspirasi_lampiran/${filename}`;
+                                    const directDownloadUrl =
+                                        `/dashboard/aspirasi/${aspirasi.id}/lampiran/0/download`;
+                                    const previewUrl =
+                                        `/dashboard/aspirasi/${aspirasi.id}/lampiran/0/preview`;
+
+                                    // Extract nama file tanpa timestamp
+                                    const originalName = filename.replace(
+                                        /^\d+_[a-f0-9]+\./, '');
+                                    const displayName = originalName.length > 30 ?
+                                        originalName.substring(0, 30) + '...' :
+                                        originalName;
+
+                                    const fileExt = filename.split('.').pop()
+                                        .toLowerCase();
+                                    let iconClass = 'mdi-file-outline';
+                                    let canPreview = false;
+
+                                    // Tentukan icon dan kemampuan preview
+                                    switch (fileExt) {
+                                        case 'pdf':
+                                            iconClass = 'mdi-file-pdf-box';
+                                            canPreview = true;
+                                            break;
+                                        case 'jpg':
+                                        case 'jpeg':
+                                        case 'png':
+                                        case 'gif':
+                                        case 'bmp':
+                                        case 'webp':
+                                            iconClass = 'mdi-file-image-box';
+                                            canPreview = true;
+                                            break;
+                                        case 'doc':
+                                        case 'docx':
+                                            iconClass = 'mdi-file-word-box';
+                                            canPreview = false;
+                                            break;
+                                        case 'xls':
+                                        case 'xlsx':
+                                            iconClass = 'mdi-file-excel-box';
+                                            canPreview = false;
+                                            break;
+                                        case 'dwg':
+                                        case 'dxf':
+                                            iconClass = 'mdi-file-cad-box';
+                                            canPreview = false;
+                                            break;
+                                        default:
+                                            iconClass = 'mdi-file-outline';
+                                            canPreview = false;
+                                    }
+
+                                    const lampiranHtml = `
+            <div class="d-flex align-items-center mb-2 p-3 border rounded lampiran-item" 
+                 data-file-name="${filename}"
+                 data-file-ext="${fileExt}"
+                 data-aspirasi-id="${aspirasi.id}"
+                 data-direct-url="${downloadUrl}">
+                <i class="mdi ${iconClass} me-3 text-primary" style="font-size: 1.5rem;"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold text-dark" title="${originalName}">${displayName}</div>
+                    <small class="text-muted">${fileExt.toUpperCase()} • Single File</small>
+                </div>
+                <div class="btn-group ms-2">
+                    ${canPreview ? `
+                                <button type="button" class="btn btn-outline-info btn-sm btn-preview-single" 
+                                        data-preview-url="${previewUrl}"
+                                        data-direct-url="${downloadUrl}"
+                                        data-filename="${originalName}"
+                                        data-ext="${fileExt}"
+                                        title="Preview ${originalName}">
+                                    <i class="mdi mdi-eye"></i>
+                                    <span class="d-none d-md-inline ms-1">Preview</span>
+                                </button>
+                            ` : ''}
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-download-single" 
+                            data-download-url="${directDownloadUrl}"
+                            data-direct-url="${downloadUrl}"
+                            data-filename="${originalName}"
+                            title="Download ${originalName}">
+                        <i class="mdi mdi-download"></i>
+                        <span class="d-none d-md-inline ms-1">Download</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+                                    $('#show_lampiran_list').html(lampiranHtml);
+                                    $('#show_lampiran_container').show();
+
+                                    // Bind event handlers untuk single file
+                                    bindSingleLampiranEvents();
+
+                                } catch (error) {
+                                    console.error('Error processing lampiran:', error);
+                                    $('#show_lampiran_container').hide();
+                                }
                             } else {
                                 $('#show_lampiran_container').hide();
+                            }
+
+                            // Function untuk bind event handlers single file
+                            function bindSingleLampiranEvents() {
+                                // Remove existing handlers
+                                $(document).off('click', '.btn-download-single');
+                                $(document).off('click', '.btn-preview-single');
+
+                                // Download button handler untuk single file
+                                $(document).on('click', '.btn-download-single',
+                                    function(e) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+
+                                        const $btn = $(this);
+                                        const downloadUrl = $btn.data(
+                                            'download-url');
+                                        const directUrl = $btn.data('direct-url');
+                                        const filename = $btn.data('filename');
+
+                                        if (!filename) {
+                                            showAlert('Data file tidak lengkap',
+                                                'error');
+                                            return;
+                                        }
+
+                                        downloadSingleFile(downloadUrl, directUrl,
+                                            filename, $btn);
+                                    });
+
+                                // Preview button handler untuk single file
+                                $(document).on('click', '.btn-preview-single', function(
+                                    e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    const $btn = $(this);
+                                    const previewUrl = $btn.data('preview-url');
+                                    const directUrl = $btn.data('direct-url');
+                                    const filename = $btn.data('filename');
+                                    const ext = $btn.data('ext');
+
+                                    if (!filename) {
+                                        showAlert('Data file tidak lengkap',
+                                            'error');
+                                        return;
+                                    }
+
+                                    previewSingleFile(previewUrl, directUrl,
+                                        filename, ext, $btn);
+                                });
+                            }
+
+                            // Function untuk download single file dengan fallback
+                            function downloadSingleFile(downloadUrl, directUrl,
+                                filename, $btn) {
+                                const originalHtml = $btn.html();
+                                $btn.prop('disabled', true).html(
+                                    '<i class="mdi mdi-loading mdi-spin"></i>');
+
+                                // Coba download via controller terlebih dahulu
+                                fetch(downloadUrl)
+                                    .then(response => {
+                                        if (response.ok) {
+                                            // Jika controller berhasil, download via controller
+                                            window.location.href = downloadUrl;
+                                            showAlert(
+                                                `Download ${filename} dimulai...`,
+                                                'success');
+                                        } else {
+                                            // Jika controller gagal, coba direct URL
+                                            console.log(
+                                                'Controller download failed, trying direct URL...'
+                                            );
+                                            window.location.href = directUrl;
+                                            showAlert(
+                                                `Download ${filename} dimulai (direct)...`,
+                                                'success');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Download error:', error);
+                                        // Fallback ke direct URL
+                                        window.location.href = directUrl;
+                                        showAlert(
+                                            `Download ${filename} dimulai (fallback)...`,
+                                            'success');
+                                    })
+                                    .finally(() => {
+                                        setTimeout(() => {
+                                            $btn.prop('disabled', false)
+                                                .html(originalHtml);
+                                        }, 1000);
+                                    });
+                            }
+
+                            // Function untuk preview single file dengan fallback
+                            function previewSingleFile(previewUrl, directUrl, filename,
+                                fileExt, $btn) {
+                                const originalHtml = $btn.html();
+                                $btn.prop('disabled', true).html(
+                                    '<i class="mdi mdi-loading mdi-spin"></i>');
+
+                                const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp',
+                                    'webp'
+                                ];
+                                const pdfExts = ['pdf'];
+
+                                if (imageExts.includes(fileExt.toLowerCase())) {
+                                    // Preview gambar
+                                    previewSingleImage(previewUrl, directUrl, filename,
+                                        $btn, originalHtml);
+                                } else if (pdfExts.includes(fileExt.toLowerCase())) {
+                                    // Preview PDF di tab baru
+                                    window.open(previewUrl, '_blank');
+                                    $btn.prop('disabled', false).html(originalHtml);
+                                } else {
+                                    // File lain, langsung download
+                                    downloadSingleFile(previewUrl.replace('preview',
+                                        'download'), directUrl, filename, $btn);
+                                }
+                            }
+
+                            // Function untuk preview single image dengan fallback
+                            function previewSingleImage(previewUrl, directUrl, filename,
+                                $btn, originalHtml) {
+                                // Test image load dari controller terlebih dahulu
+                                const testImg = new Image();
+
+                                testImg.onload = function() {
+                                    showSingleImageModal(previewUrl, filename);
+                                    $btn.prop('disabled', false).html(originalHtml);
+                                };
+
+                                testImg.onerror = function() {
+                                    console.log(
+                                        'Controller preview failed, trying direct URL...'
+                                    );
+
+                                    // Jika controller gagal, coba direct URL
+                                    const fallbackImg = new Image();
+
+                                    fallbackImg.onload = function() {
+                                        showSingleImageModal(directUrl,
+                                            filename);
+                                        $btn.prop('disabled', false).html(
+                                            originalHtml);
+                                    };
+
+                                    fallbackImg.onerror = function() {
+                                        console.error(
+                                            'Both preview methods failed');
+                                        showAlert(
+                                            'Gagal memuat preview gambar. File mungkin tidak dapat diakses.',
+                                            'error');
+                                        $btn.prop('disabled', false).html(
+                                            originalHtml);
+                                    };
+
+                                    fallbackImg.src = directUrl;
+                                };
+
+                                testImg.src = previewUrl;
+                            }
+
+                            // Function untuk menampilkan modal gambar single file
+                            function showSingleImageModal(imageUrl, filename) {
+                                const modalHtml = `
+        <div class="modal fade" id="singleImagePreviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="mdi mdi-image me-2"></i>${filename}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center p-0" style="background: #000;">
+                        <img src="${imageUrl}" class="img-fluid" style="max-height: 70vh; max-width: 100%;" alt="${filename}">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-light" onclick="window.open('${imageUrl}', '_blank')">
+                            <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab Baru
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="mdi mdi-close me-1"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+                                // Remove existing modal
+                                $('#singleImagePreviewModal').remove();
+
+                                // Add and show modal
+                                $('body').append(modalHtml);
+                                const modal = new bootstrap.Modal(document
+                                    .getElementById('singleImagePreviewModal'));
+                                modal.show();
+
+                                // Clean up when modal is hidden
+                                $('#singleImagePreviewModal').on('hidden.bs.modal',
+                                    function() {
+                                        $(this).remove();
+                                    });
+                            }
+
+                            // CSS untuk single lampiran
+                            const singleLampiranCSS = `
+<style id="single-lampiran-styles">
+.lampiran-item {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+    background: #fff;
+}
+
+.lampiran-item:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.lampiran-item .mdi-file-pdf-box { color: #dc3545; }
+.lampiran-item .mdi-file-word-box { color: #2b579a; }
+.lampiran-item .mdi-file-excel-box { color: #217346; }
+.lampiran-item .mdi-file-image-box { color: #6f42c1; }
+.lampiran-item .mdi-file-cad-box { color: #ff9800; }
+.lampiran-item .mdi-file-outline { color: #6c757d; }
+
+.lampiran-item .btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.lampiran-item .btn-group .btn:hover {
+    transform: scale(1.05);
+}
+
+#singleImagePreviewModal .modal-content {
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+#singleImagePreviewModal .modal-body {
+    background: #000;
+}
+
+#singleImagePreviewModal img {
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+    .lampiran-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .lampiran-item .btn-group {
+        margin-top: 10px;
+        margin-left: 0 !important;
+        width: 100%;
+    }
+    
+    .lampiran-item .btn-group .btn {
+        flex: 1;
+    }
+}
+</style>
+`;
+
+                            // Append CSS jika belum ada
+                            if (!$('#single-lampiran-styles').length) {
+                                $('head').append(singleLampiranCSS);
                             }
 
                             // Admin info

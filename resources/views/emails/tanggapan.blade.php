@@ -46,29 +46,54 @@
     <div class="content">
         @if ($type === 'penerimaan')
             <h2>Halo {{ $data->nama ?? $data['nama'] }},</h2>
-            <p>Terima kasih telah memberikan tanggapan di <strong>Marimoi</strong>. Masukan Anda sudah kami terima dan
-                akan segera diproses.</p>
+            <p>
+                Terima kasih telah memberikan tanggapan di <strong>Marimoi</strong>. Masukan Anda sudah kami terima dan
+                akan segera diproses.
+            </p>
+            <p>
+                <strong>Tanggapan Admin:</strong><br>
+                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+            </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
             </div>
         @elseif($type === 'diproses')
             <h2>Halo {{ $data->nama ?? $data['nama'] }},</h2>
-            <p>Tanggapan Anda saat ini sedang <strong>diproses</strong> oleh tim kami. Kami akan segera menghubungi Anda
-                jika diperlukan informasi tambahan.</p>
+            <p>
+                Tanggapan Anda saat ini sedang <strong>diproses</strong> oleh tim kami. Kami akan segera menghubungi
+                Anda
+                jika diperlukan informasi tambahan.
+            </p>
+            <p>
+                <strong>Tanggapan Admin:</strong><br>
+                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+            </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
             </div>
         @elseif($type === 'selesai')
             <h2>Halo {{ $data->nama ?? $data['nama'] }},</h2>
-            <p>Tanggapan Anda telah kami <strong>selesaikan</strong>. Terima kasih atas partisipasi Anda membantu kami
-                meningkatkan layanan.</p>
+            <p>
+                Tanggapan Anda telah kami <strong>selesaikan</strong>. Terima kasih atas partisipasi Anda membantu kami
+                meningkatkan layanan.
+            </p>
+            <p>
+                <strong>Tanggapan Admin:</strong><br>
+                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+            </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
             </div>
         @elseif($type === 'ditolak')
             <h2>Halo {{ $data->nama ?? $data['nama'] }},</h2>
-            <p>Mohon maaf, setelah kami tinjau, tanggapan Anda <strong>ditolak</strong> karena tidak memenuhi kriteria
-                yang telah ditentukan.</p>
+            <p>
+                Mohon maaf, setelah kami tinjau, tanggapan Anda <strong>ditolak</strong> karena tidak memenuhi kriteria
+                yang telah ditentukan.
+            </p>
+            <p>
+                <strong>Tanggapan Admin:</strong><br>
+                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+            </p>
             <p>Jika ada pertanyaan lebih lanjut, silakan hubungi tim kami.</p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>

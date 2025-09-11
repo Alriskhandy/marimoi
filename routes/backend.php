@@ -63,7 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Add this to your routes file
-Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisitorStatistics'])->name('dashboard.visitor.statistics');
+    Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisitorStatistics'])->name('dashboard.visitor.statistics');
 });
 
 /*
@@ -73,11 +73,11 @@ Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisi
 */
 
 Route::prefix('dashboard')->middleware(['auth'])->group(function () {
-      // Visitor Analytics routes
+    // Visitor Analytics routes
     Route::get('/visitors/export', [VisitorsController::class, 'export'])->name('visitors.export');
     Route::post('/visitors/analytics', [VisitorsController::class, 'analytics'])->name('visitors.analytics');
     Route::delete('/visitors/bulk-destroy', [VisitorsController::class, 'bulkDestroy'])->name('visitors.bulk-destroy');
-    
+
     // Resource routes for visitors
     Route::resource('visitors', VisitorsController::class)->only(['index', 'show', 'destroy']);
     /*
@@ -85,7 +85,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Unified Data Spatial Management
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'index'])->name('index');
         Route::get('/create', [DataSpatialController::class, 'create'])->name('create');
@@ -93,14 +93,14 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
-    
-         
+
+
         // Debug routes for file uploads
         Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
         Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz');
 
         // Detail endpoint for modal
-        Route::get('/{uuid}/details', function($uuid) {
+        Route::get('/{uuid}/details', function ($uuid) {
             $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
             return response()->json([
                 'success' => $data ? true : false,
@@ -115,19 +115,19 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Peta RPJMD (Tematik) Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('tematik')->name('tematik.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index');
-        Route::get('/create', function() {
+        Route::get('/create', function () {
             return redirect()->route('data-spatial.create') . '?type=tematik';
         })->name('create');
-        Route::get('/{uuid}/edit', function($id) {
+        Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
         })->name('edit');
-        Route::put('/{uuid}', function($id) {
+        Route::put('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.update', $id);
         })->name('update');
-        Route::delete('/{uuid}', function($id) {
+        Route::delete('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
     });
@@ -137,23 +137,21 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Usulan Musrenbang Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('usulan-musrenbang')->name('usulan-musrenbang.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexUsulanmusrenbang'])->name('index');
-        Route::get('/create', function() {
+        Route::get('/create', function () {
             return redirect()->route('data-spatial.create') . '?type=usulan_musrenbang';
         })->name('create');
-        Route::get('/{uuid}/edit', function($id) {
+        Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
         })->name('edit');
-        Route::put('/{uuid}', function($id) {
+        Route::put('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.update', $id);
         })->name('update');
-        Route::delete('/{uuid}', function($id) {
+        Route::delete('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
-
-     
     });
 
     /*
@@ -161,19 +159,19 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Pokir DPRD Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('pokir-dprd')->name('pokir-dprd.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexPokirDprd'])->name('index');
-        Route::get('/create', function() {
+        Route::get('/create', function () {
             return redirect()->route('data-spatial.create') . '?type=pokir_dprd';
         })->name('create');
-        Route::get('/{uuid}/edit', function($id) {
+        Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
         })->name('edit');
-        Route::put('/{uuid}', function($id) {
+        Route::put('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.update', $id);
         })->name('update');
-        Route::delete('/{uuid}', function($id) {
+        Route::delete('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
     });
@@ -183,20 +181,18 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Proyek Strategis Daerah Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('proyek-strategis-daerah')->name('psd.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('index');
-        Route::get('/create', function() {
+        Route::get('/create', function () {
             return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psd';
         })->name('create');
-        
+
         // Routes berdasarkan tahun
         Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function($year) {
+        Route::get('/tahun/{year}/create', function ($year) {
             return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psd&year={$year}";
         })->name('tahun.create');
-        
-       
     });
 
     /*
@@ -204,16 +200,16 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Proyek Strategis Nasional Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('proyek-strategis-nasional')->name('psn.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('index');
-        Route::get('/create', function() {
+        Route::get('/create', function () {
             return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psn';
         })->name('create');
-        
+
         // Routes berdasarkan tahun
         Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function($year) {
+        Route::get('/tahun/{year}/create', function ($year) {
             return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psn&year={$year}";
         })->name('tahun.create');
     });
@@ -223,7 +219,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Category Management
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
         Route::get('/create', [CategoryController::class, 'create'])->name('create');
@@ -232,7 +228,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
         Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
-        
+
         // API routes untuk categories
         Route::get('/api/by-type/{type}', [CategoryController::class, 'getByType'])->name('api.by-type');
         Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree');
@@ -244,7 +240,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Document Upload Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->prefix('upload-dokumen')->name('dokumen.')->group(function () {
         Route::get('/', [DokumenController::class, 'index'])->name('index');
         Route::post('/', [DokumenController::class, 'store'])->name('store');
@@ -257,18 +253,18 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Project Feedback Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('project-feedbacks')->name('project-feedbacks.')->group(function () {
         Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index');
         Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store');
         Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show');
         Route::put('/{id}', [ProjectFeedbackController::class, 'update'])->name('update');
         Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy');
-        
+
         // Admin Response
         Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
         Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
-         // Route untuk update OPD feedback
+        // Route untuk update OPD feedback
         Route::put('/feedback/{feedback}/update-opd', [ProjectFeedbackController::class, 'updateOpd'])->name('update-opd');
     });
 
@@ -277,43 +273,54 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Resource Routes
     |--------------------------------------------------------------------------
     */
-    
+
     // Aspirasi Management
     Route::resource('aspirasi', AspirasiController::class);
     Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
-    Route::get('aspirasi/{aspirasi}/download/{index}', [AspirasiController::class, 'downloadLampiran'])->name('aspirasi.downloadLampiran');
-   
-   Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
+    // Routes untuk lampiran
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/download', [AspirasiController::class, 'downloadLampiran'])
+        ->name('aspirasi.downloadLampiran')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/preview', [AspirasiController::class, 'previewLampiran'])
+        ->name('aspirasi.previewLampiran')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/info', [AspirasiController::class, 'getFileInfo'])
+        ->name('aspirasi.getFileInfo')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
     Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
     Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
 
 
-// Bulk operations - also before resource routes
-Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
+    // Bulk operations - also before resource routes
+    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
 
-    
-    
-    // Kategori Aspirasi Management
-Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
+
 
     // Kategori Aspirasi Management
-    Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
-    Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
-    Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
+    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
 
-    // OPD Management
-    Route::resource('opd', OpdController::class);
-    Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
-    Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
-    Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+        // Kategori Aspirasi Management
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
+        Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
+        Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
 
-    // User Management
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-});
+        // OPD Management
+        Route::resource('opd', OpdController::class);
+        Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
+        Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
+        Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+
+        // User Management
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
 
 
     /*
@@ -321,15 +328,15 @@ Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function ()
     | General API Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::prefix('api')->name('api.')->group(function () {
-        
+
         // Categories
         Route::get('/categories', [DataSpatialController::class, 'getCategories'])->name('categories');
         Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd');
-        
+
         // Data Spatial Details
-        Route::get('/data-spatial/{uuid}/details', function($uuid) {
+        Route::get('/data-spatial/{uuid}/details', function ($uuid) {
             $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
             return response()->json([
                 'success' => $data ? true : false,
@@ -344,7 +351,7 @@ Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function ()
     | Utility Routes
     |--------------------------------------------------------------------------
     */
-    
+
     Route::get('/coming-soon', function () {
         return view('backend.cooming_soon');
     })->name('cooming_soon');
