@@ -437,34 +437,102 @@ function generateLegend() {
     legendContainer.innerHTML = "";
     const added = new Set();
 
+    // BACKUP
+    // Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
+    //     Object.keys(sublayers).forEach((sub) => {
+    //         if (added.has(sub)) return;
+
+    //         let icon = iconMap[sub] || null;
+    //         let color =
+    //             kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+
+    //         if (icon) {
+    //             legendContainer.innerHTML += `
+    //                 <div class="inline-flex align-items-center mb-2">
+    //                     <div class="custom-fa-icon inline-flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+    //                         <i class="${icon} text-[${color}]" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
+    //                     </div>
+    //                     <span style="font-size: 0.85rem;">${sub}</span>
+    //                 </div>
+    //             `;
+    //         } else {
+    //             legendContainer.innerHTML += `
+    //                 <div class="inline-flex items-center mb-2">
+    //                     <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333;   margin-right: 8px;"></div>
+    //                     <span style="font-size: 0.85rem;">${sub}</span>
+    //                 </div>
+    //             `;
+    //         }
+    //         added.add(sub);
+    //     });
+    // });
+
+    // BARU
+    // Ambil layer yang sedang aktif
+    const activeLayers = new Set();
+
+    // Cek layer yang di tambahkan ke peta
+    Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
+        Object.entries(sublayers).forEach(([subname, layer]) => {
+            // Check if layer is added to map and has layers
+            if (map.hasLayer(layer) && layer.getLayers().length > 0) {
+                activeLayers.add(subname);
+            }
+        });
+    });
+
+    // If no active layers, show message
+    if (activeLayers.size === 0) {
+        legendContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center text-center py-8 text-gray-500">
+                <i class="bi bi-layers text-3xl mb-2"></i>
+                <p class="text-sm">Tidak ada layer aktif</p>
+                <p class="text-xs">Aktifkan layer untuk melihat legenda</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Only show legend for active layers
     Object.entries(layerGroups).forEach(([kategori, sublayers]) => {
         Object.keys(sublayers).forEach((sub) => {
-            if (added.has(sub)) return;
+            // Skip if not active or already added
+            if (!activeLayers.has(sub) || added.has(sub)) return;
 
             let icon = iconMap[sub] || null;
-            let color =
-                kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+            let color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
 
             if (icon) {
                 legendContainer.innerHTML += `
-                    <div class="inline-flex align-items-center mb-2">
-                        <div class="custom-fa-icon inline-flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                    <div class="flex items-center mb-2 w-full">
+                        <div class="custom-fa-icon flex-shrink-0 flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
                             <i class="${icon} text-[${color}]" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
                         </div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                        <span class="flex-1" style="font-size: 0.85rem;">${sub}</span>
                     </div>
                 `;
             } else {
                 legendContainer.innerHTML += `
-                    <div class="inline-flex items-center mb-2">
-                        <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                    <div class="flex items-center mb-2 w-full">
+                        <div class="flex-shrink-0" style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                        <span class="flex-1" style="font-size: 0.85rem;">${sub}</span>
                     </div>
                 `;
             }
             added.add(sub);
         });
     });
+
+    // If no legend items were added (edge case), show empty message
+    if (added.size === 0) {
+        legendContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center text-center py-8 text-gray-500">
+                <i class="bi bi-exclamation-triangle text-3xl mb-2"></i>
+                <p class="text-sm">Legenda tidak tersedia</p>
+                <p class="text-xs">Layer aktif tidak memiliki legenda</p>
+            </div>
+        `;
+    }
 }
 
 /**
@@ -1208,6 +1276,8 @@ function updateLayerList() {
                         }
                     }
                 }
+
+                generateLegend();
             } finally {
                 checkboxRoot.disabled = false;
                 checkboxRoot.className = checkboxRoot.className.replace(
@@ -1280,6 +1350,9 @@ function updateLayerList() {
                         checkboxRoot.checked = false;
                         checkboxRoot.indeterminate = true;
                     }
+
+                    // Update legend after individual layer change
+                    generateLegend();
                 } finally {
                     checkbox.disabled = false;
                     checkbox.className = checkbox.className.replace(
