@@ -1237,15 +1237,196 @@
                                 }
 
                                 // Gambar
-                                if (feedback.laporan_gambar) {
-                                    const imagePath =
-                                        `/storage/feedback_images/${feedback.laporan_gambar}`;
-                                    $('#show_laporan_gambar').attr('src', imagePath);
-                                    $('#download_gambar').attr('href', imagePath);
-                                    $('#show_gambar_container').show();
+                                // Gambar - Handler untuk single file (string)
+                                if (feedback.laporan_gambar && feedback.laporan_gambar.trim() !==
+                                    '') {
+                                    try {
+                                        // laporan_gambar sekarang adalah string, bukan array
+                                        const filename = feedback.laporan_gambar;
+
+                                        // Buat path URL untuk gambar
+                                        const imagePath = `/storage/aspirasi_lampiran/${filename}`;
+                                        const downloadUrl =
+                                            `/dashboard/project-feedbacks/${feedback.id}/download-image`;
+
+                                        // Extract nama file tanpa timestamp untuk display
+                                        const originalName = filename.replace(/^\d+_[a-f0-9]+\./,
+                                            '');
+                                        const displayName = originalName.length > 20 ? originalName
+                                            .substring(0, 20) + '...' : originalName;
+
+                                        const fileExt = filename.split('.').pop().toLowerCase();
+                                        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp',
+                                            'webp'
+                                        ];
+
+                                        if (imageExts.includes(fileExt)) {
+                                            // Untuk gambar, tampilkan preview dan tombol download
+                                            $('#show_laporan_gambar').attr('src', imagePath).on(
+                                                'error',
+                                                function() {
+                                                    // Jika direct path gagal, coba via controller
+                                                    $(this).attr('src', downloadUrl);
+                                                });
+
+                                            // Update download link dengan filename yang benar
+                                            $('#download_gambar')
+                                                .attr('href', downloadUrl)
+                                                .attr('download', originalName)
+                                                .text(`Download ${displayName}`)
+                                                .off('click')
+                                                .on('click', function(e) {
+                                                    e.preventDefault();
+                                                    downloadSingleImage(downloadUrl,
+                                                        originalName, filename);
+                                                });
+
+                                            $('#show_gambar_container').show();
+                                        } else {
+                                            // Untuk file non-gambar, tampilkan info file dengan tombol download
+                                            $('#show_gambar_container').html(`
+                <div class="mb-3">
+                    <strong>Lampiran File:</strong>
+                    <div class="mt-2 p-3 border rounded bg-light">
+                        <div class="d-flex align-items-center">
+                            <i class="mdi mdi-file-outline me-2 text-primary" style="font-size: 1.5rem;"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">${displayName}</div>
+                                <small class="text-muted">${fileExt.toUpperCase()}</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                    onclick="downloadSingleImage('${downloadUrl}', '${originalName}', '${filename}')">
+                                <i class="mdi mdi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).show();
+                                        }
+
+                                    } catch (error) {
+                                        console.error('Error processing laporan_gambar:', error);
+                                        $('#show_gambar_container').hide();
+                                    }
                                 } else {
                                     $('#show_gambar_container').hide();
                                 }
+
+                                // Function untuk download single image/file
+                                function downloadSingleImage(downloadUrl, originalName, filename) {
+                                    // Tampilkan loading state
+                                    const loadingToast = Swal.mixin({
+                                        toast: true,
+                                        position: 'top-end',
+                                        showConfirmButton: false,
+                                        timer: 3000,
+                                        timerProgressBar: true
+                                    });
+
+                                    loadingToast.fire({
+                                        icon: 'info',
+                                        title: `Mengunduh ${originalName}...`
+                                    });
+
+                                    // Coba download via fetch terlebih dahulu
+                                    fetch(downloadUrl)
+                                        .then(response => {
+                                            if (response.ok) {
+                                                return response.blob();
+                                            } else {
+                                                throw new Error('Controller download failed');
+                                            }
+                                        })
+                                        .then(blob => {
+                                            // Jika berhasil via controller, download blob
+                                            const url = window.URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = originalName;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            window.URL.revokeObjectURL(url);
+
+                                            loadingToast.fire({
+                                                icon: 'success',
+                                                title: `${originalName} berhasil diunduh!`
+                                            });
+                                        })
+                                        .catch(error => {
+                                            console.log(
+                                                'Controller download failed, trying direct URL...',
+                                                error);
+
+                                            // Fallback ke direct URL
+                                            const directUrl =
+                                                `/storage/aspirasi_lampiran/${filename}`;
+                                            const link = document.createElement('a');
+                                            link.href = directUrl;
+                                            link.download = originalName;
+                                            link.style.display = 'none';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+
+                                            loadingToast.fire({
+                                                icon: 'success',
+                                                title: `${originalName} berhasil diunduh (direct)!`
+                                            });
+                                        });
+                                }
+
+                                // Function untuk preview gambar dengan modal (jika diperlukan)
+                                function previewSingleImage(imagePath, filename) {
+                                    const modalHtml = `
+        <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="mdi mdi-image me-2"></i>${filename}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center p-0" style="background: #000;">
+                        <img src="${imagePath}" class="img-fluid" style="max-height: 70vh; max-width: 100%;" alt="${filename}">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-light" onclick="window.open('${imagePath}', '_blank')">
+                            <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab Baru
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="mdi mdi-close me-1"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+                                    // Remove existing modal
+                                    $('#imagePreviewModal').remove();
+
+                                    // Add and show modal
+                                    $('body').append(modalHtml);
+                                    const modal = new bootstrap.Modal(document.getElementById(
+                                        'imagePreviewModal'));
+                                    modal.show();
+
+                                    // Clean up when modal is hidden
+                                    $('#imagePreviewModal').on('hidden.bs.modal', function() {
+                                        $(this).remove();
+                                    });
+                                }
+
+                                // Optional: Tambahkan click handler untuk preview gambar
+                                $(document).on('click', '#show_laporan_gambar', function() {
+                                    const src = $(this).attr('src');
+                                    const alt = $(this).attr('alt') || 'Laporan Gambar';
+                                    if (src) {
+                                        previewSingleImage(src, alt);
+                                    }
+                                });
 
                                 // Response admin
                                 if (feedback.response_admin) {
