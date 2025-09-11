@@ -52,7 +52,7 @@
             </p>
             <p>
                 <strong>Tanggapan Admin:</strong><br>
-                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+                {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
             </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
@@ -66,7 +66,7 @@
             </p>
             <p>
                 <strong>Tanggapan Admin:</strong><br>
-                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+                {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
             </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
@@ -79,7 +79,7 @@
             </p>
             <p>
                 <strong>Tanggapan Admin:</strong><br>
-                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+                {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
             </p>
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
@@ -92,7 +92,7 @@
             </p>
             <p>
                 <strong>Tanggapan Admin:</strong><br>
-                {{ $data->tanggapan_admin ?? ($data['tanggapan_admin'] ?? '-') }}
+                {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
             </p>
             <p>Jika ada pertanyaan lebih lanjut, silakan hubungi tim kami.</p>
             <div class="footer">

@@ -176,7 +176,7 @@ class AspirasiController extends Controller
         $validated['admin_id'] = Auth::id();
 
         // Data untuk user
-        $userData = [
+        $data = [
             'nama'      => $aspirasi->nama_pengirim,
             'email'     => $aspirasi->email,
             'tanggapan_admin' => $aspirasi->tanggapan_admin,
@@ -202,7 +202,7 @@ class AspirasiController extends Controller
 
         // Kirim email jika ada alamat email pengguna & tipe email ditentukan
         if (!empty($aspirasi->email) && $emailType) {
-            Mail::to($aspirasi->email)->queue(new TanggapanMail($userData, $emailType));
+            Mail::to($aspirasi->email)->queue(new TanggapanMail($data, $emailType));
         }
 
         $aspirasi->update($validated);
