@@ -42,7 +42,7 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
     }
 

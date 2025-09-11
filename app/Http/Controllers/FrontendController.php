@@ -533,7 +533,7 @@ class FrontendController extends Controller
             'laporan_gambar.image' => 'File harus berupa gambar',
             'laporan_gambar.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
             'laporan_gambar.max' => 'Ukuran gambar maksimal 2MB',
-            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -673,7 +673,7 @@ class FrontendController extends Controller
             'lampiran.file' => 'Lampiran harus berupa file',
             'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, gif, pdf, dwg, atau dxf',
             'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
-            'h-captcha-response.required' => 'CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
