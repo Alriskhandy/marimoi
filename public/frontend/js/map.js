@@ -504,18 +504,18 @@ function generateLegend() {
 
             if (icon) {
                 legendContainer.innerHTML += `
-                    <div class="inline-flex align-items-center mb-2">
-                        <div class="custom-fa-icon inline-flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
+                    <div class="flex items-center mb-2 w-full">
+                        <div class="custom-fa-icon flex-shrink-0 flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
                             <i class="${icon} text-[${color}]" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
                         </div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                        <span class="flex-1" style="font-size: 0.85rem;">${sub}</span>
                     </div>
                 `;
             } else {
                 legendContainer.innerHTML += `
-                    <div class="inline-flex items-center mb-2">
-                        <div style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                        <span style="font-size: 0.85rem;">${sub}</span>
+                    <div class="flex items-center mb-2 w-full">
+                        <div class="flex-shrink-0" style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
+                        <span class="flex-1" style="font-size: 0.85rem;">${sub}</span>
                     </div>
                 `;
             }
