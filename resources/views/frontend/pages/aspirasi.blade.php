@@ -517,7 +517,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
-                                        Format: JPG, PNG, GIF, PDF, DWG, DXF (maks. 5MB)
+                                        Format: JPG, JPEG, PNG, PDF, DOC, DOCX (maks. 5MB)
                                     </p>
                                     <div id="fileInfo"
                                         class="hidden p-2 text-sm bg-green-50 text-green-700 rounded-lg border border-green-200">
@@ -800,12 +800,14 @@
                 if (!isValidType) {
                     this.validateField(e.target, false, 'Format file tidak didukung');
                     this.elements.fileInfo.classList.add('hidden');
+                    this.resetCaptcha(); // Reset captcha when file format validation fails
                     return;
                 }
 
                 if (!isValidSize) {
                     this.validateField(e.target, false, 'Ukuran file maksimal 5MB');
                     this.elements.fileInfo.classList.add('hidden');
+                    this.resetCaptcha(); // Reset captcha when file size validation fails
                     return;
                 }
 
@@ -974,6 +976,7 @@
 
                 if (!this.validateForm()) {
                     this.showModal('error', 'Data tidak lengkap', 'Mohon periksa kembali data yang Anda masukkan.');
+                    this.resetCaptcha(); // Reset captcha when client-side validation fails
                     return;
                 }
 
@@ -983,10 +986,12 @@
                 if (jenisAspirasi === 'usulan') {
                     if (!this.elements.kategoriSelect.value) {
                         this.showModal('error', 'Kategori belum dipilih', 'Pilih kategori usulan terlebih dahulu.');
+                        this.resetCaptcha(); // Reset captcha when category validation fails
                         return;
                     }
                     if (!this.elements.latitude.value || !this.elements.longitude.value) {
                         this.showModal('error', 'Lokasi belum dipilih', 'Pilih lokasi pada peta terlebih dahulu.');
+                        this.resetCaptcha(); // Reset captcha when location validation fails
                         return;
                     }
                 }
@@ -1063,6 +1068,8 @@
                 } catch (error) {
                     console.error('Submit error:', error);
                     this.showModal('error', 'Koneksi Bermasalah', 'Terjadi kesalahan koneksi. Silakan coba lagi.');
+                    // Reset captcha on connection errors as well
+                    this.resetCaptcha();
                 } finally {
                     this.isSubmitting = false;
                     this.elements.submitBtn.disabled = false;
@@ -1070,10 +1077,13 @@
             }
 
             handleSubmitError(data) {
+                // Always reset captcha when there are any validation errors
+                // This prevents users from thinking captcha is valid when other fields fail
                 if (data.errors) {
+                    this.resetCaptcha();
+                    
                     if (data.errors['h-captcha-response']) {
                         this.showModal('error', 'Verifikasi Captcha Gagal', data.errors['h-captcha-response'][0]);
-                        this.resetCaptcha();
                     } else {
                         const firstError = Object.values(data.errors)[0];
                         this.showModal('error', 'Validasi Gagal', Array.isArray(firstError) ? firstError[0] :
