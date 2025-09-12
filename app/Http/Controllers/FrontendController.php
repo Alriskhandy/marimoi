@@ -741,7 +741,7 @@ class FrontendController extends Controller
             $data['status'] = 'pending';
 
             $adminData = User::where('role_id', 1)->first();
-            $opdData = KategoriAspirasi::with('opd')->find($data['kategori_aspirasi_id']);
+            $opdData = KategoriAspirasi::with('opd')->find($request->kategori_aspirasi_id);
             
 
             // Handle data berdasarkan jenis aspirasi
