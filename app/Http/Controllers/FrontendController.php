@@ -692,7 +692,7 @@ class FrontendController extends Controller
             'lampiran.file' => 'Lampiran harus berupa file',
             'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, gif, pdf, dwg, atau dxf',
             'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
-            // 'h-captcha-response.required' => 'CAPTCHA tidak valid.',
+            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
