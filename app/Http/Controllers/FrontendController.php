@@ -534,7 +534,7 @@ class FrontendController extends Controller
             'laporan_gambar.file' => 'Lampiran harus berupa file',
             'laporan_gambar.mimes' => 'Format file harus jpeg, png, jpg, gif, pdf, doc, atau docx',
             'laporan_gambar.max' => 'Ukuran file maksimal 5MB',
-            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
+            'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -660,6 +660,7 @@ class FrontendController extends Controller
             'jenis_aspirasi' => 'required|in:usulan,kritik & saran',
             'judul_aspirasi' => 'required|string|min:5|max:150',
             'isi_aspirasi' => 'required|string|min:10|max:1000',
+            'agreement' => 'required|accepted',
             'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
 
@@ -672,8 +673,11 @@ class FrontendController extends Controller
         } elseif ($request->jenis_aspirasi === 'kritik & saran') {
             // Untuk Kritik & Saran: semua field wajib diisi kecuali lampiran (tidak wajib)
             $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,doc,docx,pdf,|max:5120';
+            $rules['latitude'] = 'nullable|numeric|between:-90,90';
+            $rules['longitude'] = 'nullable|numeric|between:-180,180';
         }
 
+        // Custom messages untuk validasi
         $messages = [
             'nama_pengirim.required' => 'Nama lengkap wajib diisi',
             'nama_pengirim.min' => 'Nama lengkap minimal 3 karakter',
@@ -693,27 +697,30 @@ class FrontendController extends Controller
             'isi_aspirasi.required' => 'Isi aspirasi wajib diisi',
             'isi_aspirasi.min' => 'Isi aspirasi minimal 10 karakter',
             'isi_aspirasi.max' => 'Isi aspirasi maksimal 1000 karakter',
-            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih untuk jenis aspirasi: usulan pembangunan',
+            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih untuk usulan pembangunan',
             'kategori_aspirasi_id.exists' => 'Kategori usulan tidak valid',
-            'latitude.required' => 'Koordinat lokasi wajib diisi untuk jenis aspirasi: usulan pembangunan',
-            'longitude.required' => 'Koordinat lokasi wajib diisi untuk jenis aspirasi: usulan pembangunan',
+            'latitude.required' => 'Lokasi wajib diisi untuk usulan pembangunan',
+            'longitude.required' => 'Lokasi wajib diisi untuk usulan pembangunan',
             'latitude.numeric' => 'Koordinat latitude harus berupa angka',
-            'latitude.between' => 'Koordinat latitude harus berada antara -90 dan 90',
+            'latitude.between' => 'Koordinat latitude tidak valid',
             'longitude.numeric' => 'Koordinat longitude harus berupa angka',
-            'longitude.between' => 'Koordinat longitude harus berada antara -180 dan 180',
-            'lampiran.required' => 'Lampiran wajib disertakan untuk jenis aspirasi: usulan pembangunan.',
+            'longitude.between' => 'Koordinat longitude tidak valid',
+            'lampiran.required' => 'Lampiran wajib disertakan untuk usulan pembangunan.',
             'lampiran.file' => 'Lampiran harus berupa file',
-            'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, doc, docx, atau pdf.',
+            'lampiran.mimes' => 'Format lampiran: JPG, PNG, JPEG, DOC, DOCX, atau PDF.',
             'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
-            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
+            'agreement.required' => 'Anda harus menyetujui syarat dan ketentuan',
+            'agreement.accepted' => 'Anda harus menyetujui syarat dan ketentuan',
+            'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
 
+        // Jika validasi gagal, kembalikan response dengan error
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Validasi gagal',
+                'message' => 'Validasi gagal. Periksa kembali data Anda.',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -730,13 +737,23 @@ class FrontendController extends Controller
                 'isi_aspirasi'
             ]);
 
-            // Tambahkan kategori dan koordinat berdasarkan jenis aspirasi
+            // Set default status ke pending;
+            $data['status'] = 'pending';
+
+            $adminData = User::where('role_id', 1)->first();
+            $opdData = KategoriAspirasi::with('opd')->find($data['kategori_aspirasi_id']);
+            
+
+            // Handle data berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
+                $data['admin_id'] = $opdData->opd ? $opdData->opd->id : null;
+                
                 // Untuk Usulan Pembangunan: wajib ada kategori dan koordinat
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
             } else {
+                $data['admin_id'] = $adminData ? $adminData->id : null;
                 // Untuk Kritik & Saran: tidak memerlukan kategori dan koordinat
                 // Tapi tetap berikan kategori default untuk compatibility database
                 $data['kategori_aspirasi_id'] = 1; // ID kategori default untuk kritik & saran
@@ -744,46 +761,92 @@ class FrontendController extends Controller
                 $data['longitude'] = $request->longitude ?? null; // Optional coordinate dari geolocation
             }
 
-            // Tambahkan data status = pending (default);
-            $data['status'] = 'pending';
-
-            // Handle single file upload langsung
+            // Handle file(lampiran) upload
             if ($request->hasFile('lampiran')) {
                 $file = $request->file('lampiran');
 
                 if ($file->isValid()) {
-                    // Generate unique filename
-                    $timestamp = now()->timestamp;
-                    $randomString = Str::random(13);
-                    $extension = $file->getClientOriginalExtension();
-                    $filename = $timestamp . '_' . $randomString . '.' . $extension;
 
-                    // Store file
-                    $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
-
-                    if ($path) {
-                        $data['lampiran'] = $filename; // Store as string, not array
-
-                        Log::info('Lampiran uploaded', [
-                            'original' => $file->getClientOriginalName(),
-                            'saved' => $filename,
-                            'size' => $file->getSize()
-                        ]);
+                    try {
+                        // Generate unique filename
+                        $timestamp = now()->timestamp;
+                        $randomString = Str::random(13);
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = $timestamp . '_' . $randomString . '.' . $extension;
+    
+                        // Store file
+                        $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
+    
+                        if ($path) {
+                            $data['lampiran'] = $filename; // Store as string, not array
+    
+                            Log::info('Lampiran uploaded', [
+                                'original' => $file->getClientOriginalName(),
+                                'saved' => $filename,
+                                'size' => $file->getSize()
+                            ]);
+                        } else {
+                            Log::error('Failed to store file');
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('File upload error: ' . $e->getMessage());
+                        // Proses tetap di lanjutkan tanpa file lampiran
                     }
                 }
             }
 
-            Aspirasi::create($data);
+            // Create aspirasi record
+            $aspirasi = Aspirasi::create($data);
+
+            // Prepare data for notifications
+            $userData = [
+                'nama_pengirim' => $data['nama_pengirim'],
+                'email' => $data['email'],
+                'jenis_aspirasi' => $data['jenis_aspirasi'],
+                'judul_aspirasi' => $data['judul_aspirasi'],
+                'isi_aspirasi' => $data['isi_aspirasi'],
+                'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
+                'id_aspirasi' => $aspirasi->id
+            ];
+
+            // Kirim email konfirmasi ke user (masyarakat)
+            if ($request->filled('email')) {
+                try {
+                    Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
+                    Log::info('Confirmation email queued for user: ' . $request->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue user email: ' . $e->getMessage());
+                    // Proses tetap lanjut walaupun email gagal dikirim.
+                }
+            }
+
+            // Log successful creation
+            Log::info('Aspirasi created successfully', [
+                'id' => $aspirasi->id,
+                'jenis' => $data['jenis_aspirasi'],
+                'pengirim' => $data['nama_pengirim']
+            ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Aspirasi berhasil dikirim.',
-            ]);
+                'message' => 'Aspirasi Anda telah berhasil dikirim. Email konfirmasi telah dikirim ke alamat email Anda.',
+                'data' => [
+                    'id' => $aspirasi->id,
+                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s')
+                ]
+            ], 201);
+
         } catch (\Exception $e) {
-            Log::error('Error storing aspirasi: ' . $e->getMessage());
+            Log::error('Error storing aspirasi', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat menyimpan data.'
+                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi admin jika masalah berlanjut.'
             ], 500);
         }
     }
