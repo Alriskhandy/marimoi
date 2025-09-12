@@ -651,46 +651,59 @@ class FrontendController extends Controller
 
     public function aspirasiStore(Request $request)
     {
-        // Rules untuk validasi inputan user
+        // Base rules yang berlaku untuk semua jenis aspirasi
         $rules = [
-            'nama_pengirim' => 'required|string|max:255',
+            'nama_pengirim' => 'required|string|min:3|max:100',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'alamat' => 'required|string|max:255',
+            'alamat' => 'required|string|min:5|max:200',
             'jenis_aspirasi' => 'required|in:usulan,kritik & saran',
-            'judul_aspirasi' => 'required|string|max:255',
-            'isi_aspirasi' => 'required|string',
-            // 'h-captcha-response' => ['required', new ValidHCaptcha()],
+            'judul_aspirasi' => 'required|string|min:5|max:150',
+            'isi_aspirasi' => 'required|string|min:10|max:1000',
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
 
-        // Cek Jenis Aspirasi, jika usulan maka wajib ada kategori dan koordinat
+        // Validasi berdasarkan jenis aspirasi
         if ($request->jenis_aspirasi === 'usulan') {
             $rules['kategori_aspirasi_id'] = 'required|exists:kategori_aspirasi,id';
-            $rules['latitude'] = 'required|numeric';
-            $rules['longitude'] = 'required|numeric';
+            $rules['latitude'] = 'required|numeric|between:-90,90';
+            $rules['longitude'] = 'required|numeric|between:-180,180';
+            $rules['lampiran'] = 'required|file|mimes:jpeg,png,jpg,doc,docx,pdf,|max:5120';
+        } elseif ($request->jenis_aspirasi === 'kritik & saran') {
+            // Untuk Kritik & Saran: semua field wajib diisi kecuali lampiran (tidak wajib)
+            $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,doc,docx,pdf,|max:5120';
         }
-
-        // Lampiran tidak wajib, tapi jika ada harus berupa file
-        $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,dwg,dxf|max:5120';
 
         $messages = [
             'nama_pengirim.required' => 'Nama lengkap wajib diisi',
+            'nama_pengirim.min' => 'Nama lengkap minimal 3 karakter',
+            'nama_pengirim.max' => 'Nama lengkap maksimal 100 karakter',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
             'phone.required' => 'Nomor WhatsApp wajib diisi',
+            'phone.regex' => 'Format nomor WhatsApp tidak valid (contoh: 08xxxxxxxxxx)',
             'alamat.required' => 'Alamat wajib diisi',
+            'alamat.min' => 'Alamat minimal 5 karakter',
+            'alamat.max' => 'Alamat maksimal 200 karakter',
             'jenis_aspirasi.required' => 'Jenis aspirasi wajib dipilih',
             'jenis_aspirasi.in' => 'Jenis aspirasi tidak valid',
             'judul_aspirasi.required' => 'Judul aspirasi wajib diisi',
+            'judul_aspirasi.min' => 'Judul aspirasi minimal 5 karakter',
+            'judul_aspirasi.max' => 'Judul aspirasi maksimal 150 karakter',
             'isi_aspirasi.required' => 'Isi aspirasi wajib diisi',
-            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih',
+            'isi_aspirasi.min' => 'Isi aspirasi minimal 10 karakter',
+            'isi_aspirasi.max' => 'Isi aspirasi maksimal 1000 karakter',
+            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih untuk jenis aspirasi usulan pembangunan',
             'kategori_aspirasi_id.exists' => 'Kategori usulan tidak valid',
-            'latitude.required' => 'Koordinat latitude wajib diisi',
-            'longitude.required' => 'Koordinat longitude wajib diisi',
+            'latitude.required' => 'Koordinat lokasi wajib diisi untuk jenis aspirasi usulan pembangunan',
+            'longitude.required' => 'Koordinat lokasi wajib diisi untuk jenis aspirasi usulan pembangunan',
             'latitude.numeric' => 'Koordinat latitude harus berupa angka',
+            'latitude.between' => 'Koordinat latitude harus berada antara -90 dan 90',
             'longitude.numeric' => 'Koordinat longitude harus berupa angka',
+            'longitude.between' => 'Koordinat longitude harus berada antara -180 dan 180',
+            'lampiran.required' => 'Lampiran wajib dilampirkan untuk jenis aspirasi usulan pembangunan',
             'lampiran.file' => 'Lampiran harus berupa file',
-            'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, gif, pdf, dwg, atau dxf',
+            'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, doc, docx, atau pdf.',
             'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
             'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
@@ -717,13 +730,18 @@ class FrontendController extends Controller
                 'isi_aspirasi'
             ]);
 
-            // Tambahkan kategori dan koordinat jika jenis aspirasi adalah usulan
+            // Tambahkan kategori dan koordinat berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
+                // Untuk Usulan Pembangunan: wajib ada kategori dan koordinat
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
             } else {
-                $data['kategori_aspirasi_id'] = 1;
+                // Untuk Kritik & Saran: tidak memerlukan kategori dan koordinat
+                // Tapi tetap berikan kategori default untuk compatibility database
+                $data['kategori_aspirasi_id'] = 1; // ID kategori default untuk kritik & saran
+                $data['latitude'] = $request->latitude ?? null; // Optional coordinate dari geolocation
+                $data['longitude'] = $request->longitude ?? null; // Optional coordinate dari geolocation
             }
 
             // Tambahkan data status = pending (default);
