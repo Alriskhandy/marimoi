@@ -69,17 +69,9 @@ class FrontendController extends Controller
 
     public function indexDark()
     {
-        $petaTematik = [
-            'Batas Administrasi' => asset('frontend/img/peta-tematik/batas-administrasi-min.png'),
-            'Kawasan Izin Pertambangan' => asset('frontend/img/peta-tematik/izin-pertambangan-min.png'),
-            'Kawasan Permukiman' => asset('frontend/img/peta-tematik/permukiman-min.png'),
-            'Kawasan Perkebunan Rakyat' => asset('frontend/img/peta-tematik/perkebunan-rakyat-min.png'),
-            'Kawasan Pertanian' => asset('frontend/img/peta-tematik/pertanian-min.png'),
-            'Kawasan Peruntukan Industri' => asset('frontend/img/peta-tematik/peruntukan-industri-min.png'),
-            'Kawasan Ekosistem Mangrove' => asset('frontend/img/peta-tematik/ekosistem-mangrove-min.png'),
-            'Kawasan Transportasi' => asset('frontend/img/peta-tematik/transportasi-min.png'),
-            'Kawasan Konservasi' => asset('frontend/img/peta-tematik/konservasi-min.png'),
-        ];
+        $petaTematik = Category::where('type', 'tematik')
+            ->where('is_active', true)
+            ->get();
 
         $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
         $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
