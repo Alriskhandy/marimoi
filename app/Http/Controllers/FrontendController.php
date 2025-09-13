@@ -71,6 +71,7 @@ class FrontendController extends Controller
     {
         $petaTematik = Category::where('type', 'tematik')
             ->where('is_active', true)
+            ->where('gambar', '!=', null)
             ->get();
 
         $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
