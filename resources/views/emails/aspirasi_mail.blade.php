@@ -71,7 +71,7 @@
                     <li><strong>Isi Aspirasi:</strong><br>
                         <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
                     </li>
-                    @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
+                    {{-- @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
                         <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
                         <li><strong>OPD Penanggung Jawab:</strong> {{ $data['opd_terkait'] ?? '-' }}</li>
                     @endif
@@ -80,7 +80,7 @@
                     @endif
                     @if (isset($data['lampiran']) && !empty($data['lampiran']))
                         <li><strong>Lampiran:</strong> {{ $data['lampiran'] }}</li>
-                    @endif
+                    @endif --}}
                 </ul>
             </div>
 
@@ -104,7 +104,7 @@
                     <li><strong>Isi Aspirasi:</strong><br>
                         <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
                     </li>
-                    @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
+                    {{-- @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
                         <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
                     @endif
                     @if (isset($data['latitude']) && isset($data['longitude']) && !empty($data['latitude']) && !empty($data['longitude']))
@@ -115,7 +115,7 @@
                     @endif
                     @if (isset($data['tanggal']) && !empty($data['tanggal']))
                         <li><strong>Tanggal Diterima:</strong> {{ $data['tanggal'] }}</li>
-                    @endif
+                    @endif --}}
                 </ul>
             </div>
 
