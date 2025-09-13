@@ -92,32 +92,19 @@
         @elseif($type === 'opd')
             <h2>Halo Tim OPD,</h2>
             <p>Ada aspirasi baru yang perlu ditindaklanjuti oleh OPD Anda melalui <strong>Marimoi</strong>:</p>
+            <p><strong>Ringkasan Aspirasi:</strong></p>
 
-            <div class="admin-details">
-                <ul>
-                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
-                    <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
-                    <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? '-' }}</li>
-                    <li><strong>Alamat:</strong> {{ $data['alamat'] ?? '-' }}</li>
-                    <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
-                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
-                    <li><strong>Isi Aspirasi:</strong><br>
-                        <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
-                    </li>
-                    {{-- @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
-                        <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
-                    @endif
-                    @if (isset($data['latitude']) && isset($data['longitude']) && !empty($data['latitude']) && !empty($data['longitude']))
-                        <li><strong>Koordinat:</strong> {{ $data['latitude'] }}, {{ $data['longitude'] }}</li>
-                    @endif
-                    @if (isset($data['lampiran']) && !empty($data['lampiran']))
-                        <li><strong>Lampiran:</strong> {{ $data['lampiran'] }}</li>
-                    @endif
-                    @if (isset($data['tanggal']) && !empty($data['tanggal']))
-                        <li><strong>Tanggal Diterima:</strong> {{ $data['tanggal'] }}</li>
-                    @endif --}}
-                </ul>
-            </div>
+            <ul>
+                <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
+                <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
+                <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? '-' }}</li>
+                <li><strong>Alamat:</strong> {{ $data['alamat'] ?? '-' }}</li>
+                <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
+                <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
+                <li><strong>Isi Aspirasi:</strong><br>
+                    <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
+                </li>
+            </ul>
 
             <p>Silakan login ke sistem untuk memberikan tanggapan atau tindak lanjut yang diperlukan.</p>
             <div class="footer">
