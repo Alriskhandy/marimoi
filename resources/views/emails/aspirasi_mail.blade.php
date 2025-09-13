@@ -45,14 +45,14 @@
 <body>
     <div class="content">
         @if ($type === 'penerimaan')
-            <h2>Halo {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? 'Pengirim') }},</h2>
+            <h2>Halo {{ $data['nama_pengirim'] ?? 'Pengirim' }},</h2>
             <p>Terima kasih telah mengirimkan aspirasi melalui <strong>Marimoi</strong>. Aspirasi Anda telah kami terima
                 dan akan kami tinjau.</p>
 
             <p><strong>Ringkasan Aspirasi:</strong></p>
             <ul>
-                <li><strong>Jenis:</strong> {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}</li>
-                <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
+                <li><strong>Jenis:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
+                <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
             </ul>
 
             <div class="footer">
@@ -64,29 +64,22 @@
 
             <div class="admin-details">
                 <ul>
-                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? '-') }}
-                    </li>
-                    <li><strong>Email:</strong> {{ $data['email'] ?? ($data->email ?? '-') }}</li>
-                    <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}
-                    </li>
-                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
+                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
+                    <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
+                    <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
+                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
                     <li><strong>Isi Aspirasi:</strong><br>
-                        <em>"{{ $data['isi_aspirasi'] ?? ($data->isi_aspirasi ?? '-') }}"</em>
+                        <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
                     </li>
-                    @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
-                        <li><strong>Kategori ID:</strong>
-                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
-                        <li><strong>Kategori Usulan:</strong>
-                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
+                    @if (($data['jenis_aspirasi'] ?? '') == 'usulan')
+                        <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
+                        <li><strong>OPD Penanggung Jawab:</strong> {{ $data['opd_terkait'] ?? '-' }}</li>
                     @endif
-                    @if (!empty($data['latitude'] ?? ($data->latitude ?? null)) && !empty($data['longitude'] ?? ($data->longitude ?? null)))
-                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? ($data->latitude ?? '-') }},
-                            {{ $data['longitude'] ?? ($data->longitude ?? '-') }}</li>
+                    @if (!empty($data['latitude'] ?? '') && !empty($data['longitude'] ?? ''))
+                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? '-' }}, {{ $data['longitude'] ?? '-' }}</li>
                     @endif
-                    @if (!empty($data['lampiran'] ?? ($data->lampiran ?? null)))
-                        <li><strong>Lampiran:</strong>
-                            {{ is_string($data['lampiran'] ?? ($data->lampiran ?? '')) ? $data['lampiran'] ?? $data->lampiran : (is_array($data['lampiran'] ?? ($data->lampiran ?? [])) ? implode(', ', $data['lampiran'] ?? ($data->lampiran ?? [])) : '-') }}
-                        </li>
+                    @if (!empty($data['lampiran'] ?? ''))
+                        <li><strong>Lampiran:</strong> {{ $data['lampiran'] ?? '-' }}</li>
                     @endif
                 </ul>
             </div>
@@ -101,33 +94,26 @@
 
             <div class="admin-details">
                 <ul>
-                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? '-') }}
-                    </li>
-                    <li><strong>Email:</strong> {{ $data['email'] ?? ($data->email ?? '-') }}</li>
-                    <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? ($data->phone ?? '-') }}</li>
-                    <li><strong>Alamat:</strong> {{ $data['alamat'] ?? ($data->alamat ?? '-') }}</li>
-                    <li><strong>Jenis Aspirasi:</strong>
-                        {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}
-                    </li>
-                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
+                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
+                    <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
+                    <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? '-' }}</li>
+                    <li><strong>Alamat:</strong> {{ $data['alamat'] ?? '-' }}</li>
+                    <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
+                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
                     <li><strong>Isi Aspirasi:</strong><br>
-                        <em>"{{ $data['isi_aspirasi'] ?? ($data->isi_aspirasi ?? '-') }}"</em>
+                        <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
                     </li>
-                    @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
-                        <li><strong>Kategori ID:</strong>
-                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
+                    @if (($data['jenis_aspirasi'] ?? '') == 'usulan')
+                        <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
                     @endif
-                    @if (!empty($data['latitude'] ?? ($data->latitude ?? null)) && !empty($data['longitude'] ?? ($data->longitude ?? null)))
-                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? ($data->latitude ?? '-') }},
-                            {{ $data['longitude'] ?? ($data->longitude ?? '-') }}</li>
+                    @if (!empty($data['latitude'] ?? '') && !empty($data['longitude'] ?? ''))
+                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? '-' }}, {{ $data['longitude'] ?? '-' }}</li>
                     @endif
-                    @if (!empty($data['lampiran'] ?? ($data->lampiran ?? null)))
-                        <li><strong>Lampiran:</strong>
-                            {{ is_string($data['lampiran'] ?? ($data->lampiran ?? '')) ? $data['lampiran'] ?? $data->lampiran : (is_array($data['lampiran'] ?? ($data->lampiran ?? [])) ? implode(', ', $data['lampiran'] ?? ($data->lampiran ?? [])) : '-') }}
-                        </li>
+                    @if (!empty($data['lampiran'] ?? ''))
+                        <li><strong>Lampiran:</strong> {{ $data['lampiran'] ?? '-' }}</li>
                     @endif
-                    @if (!empty($data['tanggal'] ?? ($data->tanggal ?? null)))
-                        <li><strong>Tanggal Diterima:</strong> {{ $data['tanggal'] ?? ($data->tanggal ?? '-') }}</li>
+                    @if (!empty($data['tanggal'] ?? ''))
+                        <li><strong>Tanggal Diterima:</strong> {{ $data['tanggal'] ?? '-' }}</li>
                     @endif
                 </ul>
             </div>

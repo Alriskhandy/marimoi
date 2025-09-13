@@ -803,6 +803,8 @@ class FrontendController extends Controller
             $userData = $data;
             $userData['tanggal'] = $aspirasi->created_at->format('d-m-Y H:i:s');
             $userData['id_aspirasi'] = $aspirasi->id;
+            $userData['kategori_aspirasi'] = $opdData->nama_kategori ?? 'N/A';
+            $userData['opd_terkait'] = $opdData ? $opdData->opd->singkatan : 'N/A';
 
             // 1. Kirim email konfirmasi ke user (masyarakat)
             if ($request->filled('email')) {
