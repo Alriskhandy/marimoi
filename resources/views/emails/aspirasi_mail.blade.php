@@ -72,16 +72,19 @@
                     <li><strong>Isi Aspirasi:</strong><br>
                         <em>"{{ $data->isi_aspirasi ?? ($data['isi_aspirasi'] ?? '-') }}"</em>
                     </li>
-                    @if ($data->jenis_aspirasi != 'kritik & saran')
-                        <li><strong>Kategori ID:</strong> {{ $data->kategori_aspirasi_id }}</li>
-                        <li><strong>Kategori Usulan:</strong> {{ $data->kategori_aspirasi_id }}</li>
+                    @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
+                        <li><strong>Kategori ID:</strong>
+                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
+                        <li><strong>Kategori Usulan:</strong>
+                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
                     @endif
-                    @if (!empty($data->latitude) && !empty($data->longitude))
-                        <li><strong>Koordinat:</strong> {{ $data->latitude }}, {{ $data->longitude }}</li>
+                    @if (!empty($data['latitude'] ?? ($data->latitude ?? null)) && !empty($data['longitude'] ?? ($data->longitude ?? null)))
+                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? ($data->latitude ?? '-') }},
+                            {{ $data['longitude'] ?? ($data->longitude ?? '-') }}</li>
                     @endif
-                    @if (!empty($data->lampiran))
+                    @if (!empty($data['lampiran'] ?? ($data->lampiran ?? null)))
                         <li><strong>Lampiran:</strong>
-                            {{ is_string($data->lampiran) ? $data->lampiran : (is_array($data->lampiran) ? implode(', ', $data->lampiran) : '-') }}
+                            {{ is_string($data['lampiran'] ?? ($data->lampiran ?? '')) ? $data['lampiran'] ?? $data->lampiran : (is_array($data['lampiran'] ?? ($data->lampiran ?? [])) ? implode(', ', $data['lampiran'] ?? ($data->lampiran ?? [])) : '-') }}
                         </li>
                     @endif
                 </ul>
@@ -108,19 +111,21 @@
                     <li><strong>Isi Aspirasi:</strong><br>
                         <em>"{{ $data->isi_aspirasi ?? ($data['isi_aspirasi'] ?? '-') }}"</em>
                     </li>
-                    @if ($data->jenis_aspirasi != 'kritik & saran')
-                        <li><strong>Kategori ID:</strong> {{ $data->kategori_aspirasi_id }}</li>
+                    @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
+                        <li><strong>Kategori ID:</strong>
+                            {{ $data['kategori_aspirasi_id'] ?? ($data->kategori_aspirasi_id ?? '-') }}</li>
                     @endif
-                    @if (!empty($data->latitude) && !empty($data->longitude))
-                        <li><strong>Koordinat:</strong> {{ $data->latitude }}, {{ $data->longitude }}</li>
+                    @if (!empty($data['latitude'] ?? ($data->latitude ?? null)) && !empty($data['longitude'] ?? ($data->longitude ?? null)))
+                        <li><strong>Koordinat:</strong> {{ $data['latitude'] ?? ($data->latitude ?? '-') }},
+                            {{ $data['longitude'] ?? ($data->longitude ?? '-') }}</li>
                     @endif
-                    @if (!empty($data->lampiran))
+                    @if (!empty($data['lampiran'] ?? ($data->lampiran ?? null)))
                         <li><strong>Lampiran:</strong>
-                            {{ is_string($data->lampiran) ? $data->lampiran : (is_array($data->lampiran) ? implode(', ', $data->lampiran) : '-') }}
+                            {{ is_string($data['lampiran'] ?? ($data->lampiran ?? '')) ? $data['lampiran'] ?? $data->lampiran : (is_array($data['lampiran'] ?? ($data->lampiran ?? [])) ? implode(', ', $data['lampiran'] ?? ($data->lampiran ?? [])) : '-') }}
                         </li>
                     @endif
-                    @if (!empty($data->tanggal))
-                        <li><strong>Tanggal Diterima:</strong> {{ $data->tanggal }}</li>
+                    @if (!empty($data['tanggal'] ?? ($data->tanggal ?? null)))
+                        <li><strong>Tanggal Diterima:</strong> {{ $data['tanggal'] ?? ($data->tanggal ?? '-') }}</li>
                     @endif
                 </ul>
             </div>
