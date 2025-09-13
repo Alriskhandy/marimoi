@@ -501,6 +501,7 @@ class ProjectFeedbackController extends Controller
                 $data = [
                     'nama'      => $feedback->nama_pemberi_aspirasi,
                     'email'     => $feedback->email,
+                    'kode'      => 'MARIMOI-FDB-' . now()->format('Ymd') . '-' . str_pad($feedback->id, 4, '0', STR_PAD_LEFT),
                     'tanggapan' => $feedback->tanggapan,
                     'tanggal'   => now()->format('d-m-Y H:i'),
                     'response_admin' => $request->response_admin,
@@ -520,6 +521,7 @@ class ProjectFeedbackController extends Controller
                     Mail::to($feedback->email)->queue(new TanggapanMail($data, $type));
                 }
             }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Response berhasil dikirim',

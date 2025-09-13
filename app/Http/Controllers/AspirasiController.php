@@ -153,6 +153,7 @@ class AspirasiController extends Controller
      */
     public function updateStatus(Request $request, Aspirasi $aspirasi)
     {
+
         $user = Auth::user();
 
         // Jika user adalah admin-opd, pastikan aspirasi miliknya
@@ -178,8 +179,9 @@ class AspirasiController extends Controller
         // Data untuk user
         $data = [
             'nama'      => $aspirasi->nama_pengirim,
+            'kode'      => $aspirasi->nomor_tiket,
             'email'     => $aspirasi->email,
-            'tanggapan_admin' => $aspirasi->tanggapan_admin,
+            'tanggapan_admin' => $request->tanggapan_admin,
             'tanggal'   => now()->format('d-m-Y H:i'),
         ];
 

@@ -30,6 +30,22 @@
             margin: 15px 0;
         }
 
+        .kode-container {
+            background-color: #e8f4f8;
+            border: 1px solid #3498db;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .kode-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            letter-spacing: 1px;
+        }
+
         .footer {
             margin-top: 20px;
             padding-top: 15px;
@@ -50,6 +66,14 @@
                 Terima kasih telah memberikan tanggapan di <strong>Marimoi</strong>. Masukan Anda sudah kami terima dan
                 akan segera diproses.
             </p>
+
+            @if (isset($data['kode']))
+                <div class="kode-container">
+                    <p style="margin: 0; font-size: 14px;">Nomor Tiket Anda:</p>
+                    <span class="kode-text">{{ $data['kode'] }}</span>
+                </div>
+            @endif
+
             <p>
                 <strong>Tanggapan Admin:</strong><br>
                 {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
@@ -61,9 +85,16 @@
             <h2>Halo {{ $data->nama ?? $data['nama'] }},</h2>
             <p>
                 Tanggapan Anda saat ini sedang <strong>diproses</strong> oleh tim kami. Kami akan segera menghubungi
-                Anda
-                jika diperlukan informasi tambahan.
+                Anda jika diperlukan informasi tambahan.
             </p>
+
+            @if (isset($data['kode']))
+                <div class="kode-container">
+                    <p style="margin: 0; font-size: 14px;">Nomor Tiket:</p>
+                    <span class="kode-text">{{ $data['kode'] }}</span>
+                </div>
+            @endif
+
             <p>
                 <strong>Tanggapan Admin:</strong><br>
                 {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
@@ -77,6 +108,14 @@
                 Tanggapan Anda telah kami <strong>selesaikan</strong>. Terima kasih atas partisipasi Anda membantu kami
                 meningkatkan layanan.
             </p>
+
+            @if (isset($data['kode']))
+                <div class="kode-container">
+                    <p style="margin: 0; font-size: 14px;">Nomor Tiket:</p>
+                    <span class="kode-text">{{ $data['kode'] }}</span>
+                </div>
+            @endif
+
             <p>
                 <strong>Tanggapan Admin:</strong><br>
                 {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
@@ -90,6 +129,14 @@
                 Mohon maaf, setelah kami tinjau, tanggapan Anda <strong>ditolak</strong> karena tidak memenuhi kriteria
                 yang telah ditentukan.
             </p>
+
+            @if (isset($data['kode']))
+                <div class="kode-container">
+                    <p style="margin: 0; font-size: 14px;">Nomor Tiket:</p>
+                    <span class="kode-text">{{ $data['kode'] }}</span>
+                </div>
+            @endif
+
             <p>
                 <strong>Tanggapan Admin:</strong><br>
                 {{ $data['response_admin'] ?? ($data['tanggapan_admin'] ?? '-') }}
@@ -103,6 +150,11 @@
             <p>Ada tanggapan baru dari pengguna melalui <strong>Marimoi</strong>:</p>
             <div class="admin-details">
                 <ul>
+                    @if (isset($data['kode']))
+                        <li><strong>Kode Tiket:</strong> <span
+                                style="font-family: monospace; background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">{{ $data['kode'] }}</span>
+                        </li>
+                    @endif
                     <li><strong>Nama Pengguna:</strong> {{ $data->nama ?? $data['nama'] }}</li>
                     <li><strong>Email:</strong> {{ $data->email ?? $data['email'] }}</li>
                     <li><strong>Tanggal/Waktu:</strong>
