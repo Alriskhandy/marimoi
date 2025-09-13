@@ -14,6 +14,9 @@ Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->nam
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
+// Log monitoring (careful: restrict in production)
+Route::get('/logs', [FrontendController::class, 'showLogs'])->name('logs.view');
+
 // HALAMAN DETAIL //
 Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psd');
 Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psn');
@@ -23,16 +26,16 @@ Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name(
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
 // FAQ //
-Route::get('/faq', function(){
+Route::get('/faq', function () {
     return view('frontend.pages.faq');
 })->name('faq');
 
-Route::get('/syarat-ketentuan', function(){
+Route::get('/syarat-ketentuan', function () {
     return view('frontend.pages.syarat_ketentuan');
 })->name('syarat_ketentuan');
 
 
-Route::get('/kebijakan-privasi', function(){
+Route::get('/kebijakan-privasi', function () {
     return view('frontend.pages.kebijakan_privasi');
 })->name('kebijakan_privasi');
 
@@ -48,5 +51,5 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
-require __DIR__.'/auth.php';
-require __DIR__.'/backend.php';
+require __DIR__ . '/auth.php';
+require __DIR__ . '/backend.php';
