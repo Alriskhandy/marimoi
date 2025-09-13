@@ -103,10 +103,10 @@
                                         name="kategori_id" required>
                                         <option value="">-- Pilih Kategori --</option>
                                         @foreach ($categories as $kategori)
-                                            <option value="{{ $kategori->id }}"
-                                                {{ old('kategori', $data->kategori_id) == $kategori->id ? 'selected' : '' }}>
-                                                {{ $kategori->nama }}
-                                            </option>
+                                            @include('backend.partials.kategori_option', [
+                                                'kategori' => $kategori,
+                                                'level' => 0,
+                                            ])
                                         @endforeach
                                     </select>
                                     @error('kategori')

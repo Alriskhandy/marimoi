@@ -13,12 +13,14 @@ class Category extends Model
     protected $fillable = [
         'type',
         'nama',
-        'warna', 
+        'warna',
         'icon',
         'is_marker',
         'user_id',
         'deskripsi',
-        'parent_id'
+        'parent_id',
+        'is_active',
+        'gambar',
     ];
 
     protected $casts = [

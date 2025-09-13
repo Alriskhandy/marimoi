@@ -7,438 +7,526 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
     public function index(Request $request)
-{
-    $type = $request->get('type');
+    {
+        $type = $request->get('type');
 
-    // Daftar tipe yang diperbolehkan
-    $validTypes = ['tematik', 'psd', 'psn', 'pokir_dprd', 'usulan_musrenbang'];
+        // Daftar tipe yang diperbolehkan
+        $validTypes = ['tematik', 'psd', 'psn', 'pokir_dprd', 'usulan_musrenbang'];
 
-    // Cek jika type ada dan tidak valid
-    if ($type && !in_array($type, $validTypes)) {
-        return redirect()->back(); // langsung stop jika tidak sesuai
+        // Cek jika type ada dan tidak valid
+        if ($type && !in_array($type, $validTypes)) {
+            return redirect()->back(); // langsung stop jika tidak sesuai
+        }
+
+        // Ambil semua kategori untuk dropdown parent
+        $allCategories = Category::orderBy('nama', 'asc')->get();
+
+        // Query utama
+        $query = Category::withCount('dataSpatial');
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        $categories = $query->orderBy('parent_id', 'asc')
+            ->orderBy('nama', 'asc')
+            ->get();
+
+        // Label yang akan ditampilkan
+        $typeLabels = [
+            'tematik' => 'Peta Tematik',
+            'psd' => 'PSD (Proyek Strategis Daerah)',
+            'psn' => 'PSN (Proyek Strategis Nasional)',
+            'pokir_dprd' => 'Pokir DPRD',
+            'usulan_musrenbang' => 'Usulan Musrenbang'
+        ];
+
+        $typeLabel = $type ? ($typeLabels[$type] ?? '') : '';
+
+        return view('backend.pages.categories.index', compact(
+            'categories',
+            'allCategories',
+            'type',
+            'typeLabel'
+        ));
     }
-
-    // Ambil semua kategori untuk dropdown parent
-    $allCategories = Category::orderBy('nama', 'asc')->get();
-
-    // Query utama
-    $query = Category::withCount('dataSpatial');
-    if ($type) {
-        $query->where('type', $type);
-    }
-
-    $categories = $query->orderBy('parent_id', 'asc')
-                        ->orderBy('nama', 'asc')
-                        ->get();
-
-    // Label yang akan ditampilkan
-    $typeLabels = [
-        'tematik' => 'Peta Tematik',
-        'psd' => 'PSD (Proyek Strategis Daerah)',
-        'psn' => 'PSN (Proyek Strategis Nasional)',
-        'pokir_dprd' => 'Pokir DPRD',
-        'usulan_musrenbang' => 'Usulan Musrenbang'
-    ];
-
-    $typeLabel = $type ? ($typeLabels[$type] ?? '') : '';
-
-    return view('backend.pages.categories.index', compact(
-        'categories',
-        'allCategories',
-        'type',
-        'typeLabel'
-    ));
-}
-
 
     public function create(Request $request)
     {
         $type = $request->get('type');
         $parentId = $request->get('parent_id');
-        
+
         // Get available types
         $types = [
             'tematik' => 'Peta Tematik',
-            'musrenbang' => 'Usulan Musrenbang', 
+            'musrenbang' => 'Usulan Musrenbang',
             'pokir' => 'POKIR DPRD',
             'psd' => 'Proyek Strategis Daerah',
             'psn' => 'Proyek Strategis Nasional'
         ];
-        
+
         // Get potential parents if type is selected
         $potentialParents = [];
         if ($type) {
             $potentialParents = Category::where('type', $type)
-                                      ->whereNull('parent_id') // Only root categories can be parents
-                                      ->orderBy('name')
-                                      ->get();
+                ->whereNull('parent_id') // Only root categories can be parents
+                ->orderBy('name')
+                ->get();
         }
-        
+
         return view('backend.pages.categories.create', compact('types', 'type', 'parentId', 'potentialParents'));
     }
 
-   public function store(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
-        'nama' => 'required|string|max:255',
-        'warna' => 'nullable|string|max:25',
-        'icon' => 'nullable|string|max:255',
-        'is_marker' => 'boolean',
-        'deskripsi' => 'nullable|string',
-        'parent_id' => 'nullable|exists:categories,id'
-    ], [
-        'type.required' => 'Tipe kategori harus dipilih',
-        'type.in' => 'Tipe kategori tidak valid',
-        'nama.required' => 'Nama kategori harus diisi',
-        'nama.max' => 'Nama kategori maksimal 255 karakter',
-        'parent_id.exists' => 'Kategori induk tidak ditemukan',
-    ]);
+    /**
+     * Validasi maksimal 10 kategori aktif per tipe
+     */
+    private function validateMaxActiveCategories($type, $excludeId = null)
+    {
+        $query = Category::where('type', $type)->where('is_active', true);
 
-    if ($validator->fails()) {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
         }
-        
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
+
+        $activeCount = $query->count();
+
+        return $activeCount < 10;
     }
 
-    // Validasi parent_id jika ada
-    if ($request->parent_id) {
-        $parent = Category::find($request->parent_id);
-        
-        // 1. Parent harus memiliki type yang sama
-        if ($parent->type !== $request->type) {
-            $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
-            
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
+            'nama' => 'required|string|max:255',
+            'warna' => 'nullable|string|max:25',
+            'icon' => 'nullable|string|max:255',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'is_marker' => 'boolean',
+            'is_active' => 'boolean',
+            'deskripsi' => 'nullable|string',
+            'parent_id' => 'nullable|exists:categories,id'
+        ], [
+            'type.required' => 'Tipe kategori harus dipilih',
+            'type.in' => 'Tipe kategori tidak valid',
+            'nama.required' => 'Nama kategori harus diisi',
+            'nama.max' => 'Nama kategori maksimal 255 karakter',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif, svg, webp',
+            'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'parent_id.exists' => 'Kategori induk tidak ditemukan',
+        ]);
+
+        if ($validator->fails()) {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $error
+                    'errors' => $validator->errors()
                 ], 422);
             }
-            
+
             return redirect()->back()
-                ->withErrors($error)
+                ->withErrors($validator)
                 ->withInput();
         }
 
-        // 2. ✅ LOGIC YANG BENAR: Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
-        // Parent harus kategori level 1 (root), bukan child dari kategori lain
-        if ($parent->parent_id !== null) {
-            $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
+        // Validasi maksimal 10 kategori aktif jika is_active = true
+        if ($request->boolean('is_active')) {
+            if (!$this->validateMaxActiveCategories($request->type)) {
+                $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
             }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
         }
 
-        // ✅ HAPUS VALIDASI INI: Parent BOLEH memiliki banyak anak
-        // Validasi lama yang salah:
-        // $hasChildren = Category::where('parent_id', $request->parent_id)->exists();
-        // Logic baru: Parent boleh punya unlimited children, yang penting anak tidak boleh punya anak
-    }
+        // Validasi parent_id jika ada
+        if ($request->parent_id) {
+            $parent = Category::find($request->parent_id);
 
-    try {
-        DB::beginTransaction();
+            // 1. Parent harus memiliki type yang sama
+            if ($parent->type !== $request->type) {
+                $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
 
-        $category = Category::create([
-            'type' => $request->type,
-            'user_id' => Auth::user()->id,  
-            'nama' => $request->nama,
-            'warna' => $request->warna,
-            'icon' => $request->icon,
-            'is_marker' => $request->boolean('is_marker'),
-            'deskripsi' => $request->deskripsi,
-            'parent_id' => $request->parent_id
-        ]);
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
 
-        DB::commit();
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
 
-        Log::info('Category created successfully', [
-            'id' => $category->id,
-            'type' => $category->type,
-            'nama' => $category->nama,
-            'parent_id' => $category->parent_id
-        ]);
+            // 2. Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
+            if ($parent->parent_id !== null) {
+                $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Kategori berhasil dibuat',
-                'data' => $category
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $gambarPath = null;
+            // Handle gambar upload
+            if ($request->hasFile('gambar')) {
+                $gambarPath = $request->file('gambar')->store('categories', 'public');
+            }
+
+            $category = Category::create([
+                'type' => $request->type,
+                'user_id' => Auth::user()->id,
+                'nama' => $request->nama,
+                'warna' => $request->warna,
+                'icon' => $request->icon,
+                'gambar' => $gambarPath,
+                'is_marker' => $request->boolean('is_marker'),
+                'is_active' => $request->boolean('is_active'),
+                'deskripsi' => $request->deskripsi,
+                'parent_id' => $request->parent_id
             ]);
-        }
 
-        return redirect()->route('categories.index', ['type' => $category->type])
-            ->with('success', 'Kategori berhasil dibuat');
+            DB::commit();
 
-    } catch (\Exception $e) {
-        DB::rollback();
-        Log::error('Error creating category: ' . $e->getMessage());
-        
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()
-            ], 500);
+            Log::info('Category created successfully', [
+                'id' => $category->id,
+                'type' => $category->type,
+                'nama' => $category->nama,
+                'parent_id' => $category->parent_id,
+                'is_active' => $category->is_active
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kategori berhasil dibuat',
+                    'data' => $category
+                ]);
+            }
+
+            return redirect()->route('categories.index', ['type' => $category->type])
+                ->with('success', 'Kategori berhasil dibuat');
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            // Delete uploaded gambar if exists
+            if (isset($gambarPath) && $gambarPath) {
+                Storage::disk('public')->delete($gambarPath);
+            }
+
+            Log::error('Error creating category: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()])
+                ->withInput();
         }
-        
-        return redirect()->back()
-            ->withErrors(['error' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()])
-            ->withInput();
     }
-}
 
     public function show($id)
     {
         $category = Category::with(['parent', 'children', 'dataSpatial'])->findOrFail($id);
-        
+
         if (request()->ajax()) {
             return response()->json([
                 'success' => true,
                 'data' => $category
             ]);
         }
-        
+
         return view('backend.pages.categories.show', compact('category'));
     }
 
     public function edit($id)
     {
         $category = Category::with(['parent', 'children'])->findOrFail($id);
-        
+
         $types = [
             'peta_tematik' => 'Peta Tematik (Lokasi)',
-            'musrenbang' => 'Usulan Musrenbang', 
+            'musrenbang' => 'Usulan Musrenbang',
             'pokir' => 'POKIR DPRD',
             'psd' => 'Proyek Strategis Daerah',
             'psn' => 'Proyek Strategis Nasional'
         ];
-        
+
         // Get potential parents (exclude self and children to prevent circular reference)
         $excludeIds = [$category->id];
         $this->getChildrenIds($category, $excludeIds);
-        
+
         $potentialParents = Category::where('type', $category->type)
-                                  ->whereNotIn('id', $excludeIds)
-                                  ->whereNull('parent_id') // Only root categories can be parents
-                                  ->orderBy('name')
-                                  ->get();
-        
+            ->whereNotIn('id', $excludeIds)
+            ->whereNull('parent_id') // Only root categories can be parents
+            ->orderBy('name')
+            ->get();
+
         return view('backend.pages.categories.edit', compact('category', 'types', 'potentialParents'));
     }
 
     public function update(Request $request, $id)
-{
-    $category = Category::findOrFail($id);
-    $user = Auth::user();
-    $userRole = $user->role->slug ?? null;
+    {
+        $category = Category::findOrFail($id);
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
 
-    // ✅ Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
-    if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
-        return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengedit kategori ini.');
-    }
-
-    $validator = Validator::make($request->all(), [
-        'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
-        'nama' => 'required|string|max:255',
-        'warna' => 'nullable|string|max:25',
-        'icon' => 'nullable|string|max:255',
-        'is_marker' => 'boolean',
-        'deskripsi' => 'nullable|string',
-        'parent_id' => 'nullable|exists:categories,id'
-    ], [
-        'type.required' => 'Tipe kategori harus dipilih',
-        'type.in' => 'Tipe kategori tidak valid',
-        'nama.required' => 'Nama kategori harus diisi',
-        'nama.max' => 'Nama kategori maksimal 255 karakter',
-        'parent_id.exists' => 'Kategori induk tidak ditemukan',
-    ]);
-
-    if ($validator->fails()) {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
-    }
-
-    // Validasi parent_id jika ada
-    if ($request->parent_id) {
-        $parent = Category::find($request->parent_id);
-        
-        // 1. Parent harus memiliki type yang sama
-        if ($parent->type !== $request->type) {
-            $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
-            }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
-        }
-        
-        // 2. Prevent circular reference (kategori tidak boleh menjadi parent dari dirinya sendiri)
-        if ($request->parent_id == $category->id) {
-            $error = ['parent_id' => ['Kategori tidak boleh menjadi induk dari dirinya sendiri']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
-            }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
-        }
-        
-        // 3. Check if parent is a child of current category (prevent hierarchy reversal)
-        $childrenIds = [];
-        $this->getChildrenIds($category, $childrenIds);
-        if (in_array($request->parent_id, $childrenIds)) {
-            $error = ['parent_id' => ['Kategori induk tidak boleh merupakan anak dari kategori ini']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
-            }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
+        // Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengedit kategori ini.');
         }
 
-        // 4. ✅ LOGIC YANG BENAR: Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
-        // Parent harus kategori level 1 (root), bukan child dari kategori lain
-        if ($parent->parent_id !== null) {
-            $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
-            }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
-        }
-
-        // 5. ✅ LOGIC YANG BENAR: Jika kategori ini sudah punya anak, tidak boleh dijadikan child
-        // Karena akan membuat 3 level hierarki (parent > current > children)
-        $hasChildren = Category::where('parent_id', $category->id)->exists();
-        if ($hasChildren) {
-            $error = ['parent_id' => ['Kategori ini sudah memiliki sub-kategori. Kategori yang memiliki anak tidak dapat dijadikan sub-kategori.']];
-            
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $error
-                ], 422);
-            }
-            
-            return redirect()->back()
-                ->withErrors($error)
-                ->withInput();
-        }
-    }
-
-    try {
-        DB::beginTransaction();
-
-        $category->update([
-            'type' => $request->type,
-            'nama' => $request->nama,
-            'warna' => $request->warna,
-            'icon' => $request->icon,
-            'is_marker' => $request->boolean('is_marker'),
-            'deskripsi' => $request->deskripsi,
-            'parent_id' => $request->parent_id
+        $validator = Validator::make($request->all(), [
+            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
+            'nama' => 'required|string|max:255',
+            'warna' => 'nullable|string|max:25',
+            'icon' => 'nullable|string|max:255',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'is_marker' => 'boolean',
+            'is_active' => 'boolean',
+            'deskripsi' => 'nullable|string',
+            'parent_id' => 'nullable|exists:categories,id'
+        ], [
+            'type.required' => 'Tipe kategori harus dipilih',
+            'type.in' => 'Tipe kategori tidak valid',
+            'nama.required' => 'Nama kategori harus diisi',
+            'nama.max' => 'Nama kategori maksimal 255 karakter',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif, svg, webp',
+            'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'parent_id.exists' => 'Kategori induk tidak ditemukan',
         ]);
 
-        DB::commit();
+        if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        Log::info('Category updated successfully', [
-            'id' => $category->id,
-            'type' => $category->type,
-            'nama' => $category->nama,
-            'parent_id' => $category->parent_id
-        ]);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Kategori berhasil diperbarui',
-                'data' => $category
+        // Validasi maksimal 10 kategori aktif jika is_active = true
+        if ($request->boolean('is_active')) {
+            if (!$this->validateMaxActiveCategories($request->type, $category->id)) {
+                $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+        }
+
+        // Validasi parent_id jika ada
+        if ($request->parent_id) {
+            $parent = Category::find($request->parent_id);
+
+            // 1. Parent harus memiliki type yang sama
+            if ($parent->type !== $request->type) {
+                $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+
+            // 2. Prevent circular reference
+            if ($request->parent_id == $category->id) {
+                $error = ['parent_id' => ['Kategori tidak boleh menjadi induk dari dirinya sendiri']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+
+            // 3. Check if parent is a child of current category
+            $childrenIds = [];
+            $this->getChildrenIds($category, $childrenIds);
+            if (in_array($request->parent_id, $childrenIds)) {
+                $error = ['parent_id' => ['Kategori induk tidak boleh merupakan anak dari kategori ini']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+
+            // 4. Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
+            if ($parent->parent_id !== null) {
+                $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+
+            // 5. Jika kategori ini sudah punya anak, tidak boleh dijadikan child
+            $hasChildren = Category::where('parent_id', $category->id)->exists();
+            if ($hasChildren) {
+                $error = ['parent_id' => ['Kategori ini sudah memiliki sub-kategori. Kategori yang memiliki anak tidak dapat dijadikan sub-kategori.']];
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $error
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withErrors($error)
+                    ->withInput();
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $updateData = [
+                'type' => $request->type,
+                'nama' => $request->nama,
+                'warna' => $request->warna,
+                'icon' => $request->icon,
+                'is_marker' => $request->boolean('is_marker'),
+                'is_active' => $request->boolean('is_active'),
+                'deskripsi' => $request->deskripsi,
+                'parent_id' => $request->parent_id
+            ];
+
+            // Handle gambar upload
+            if ($request->hasFile('gambar')) {
+                // Delete old gambar
+                if ($category->gambar) {
+                    Storage::disk('public')->delete($category->gambar);
+                }
+
+                // Upload new gambar
+                $updateData['gambar'] = $request->file('gambar')->store('categories', 'public');
+            } elseif ($request->has('remove_gambar') && $request->remove_gambar) {
+                // Remove gambar if requested
+                if ($category->gambar) {
+                    Storage::disk('public')->delete($category->gambar);
+                }
+                $updateData['gambar'] = null;
+            }
+
+            $category->update($updateData);
+
+            DB::commit();
+
+            Log::info('Category updated successfully', [
+                'id' => $category->id,
+                'type' => $category->type,
+                'nama' => $category->nama,
+                'parent_id' => $category->parent_id,
+                'is_active' => $category->is_active
             ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kategori berhasil diperbarui',
+                    'data' => $category
+                ]);
+            }
+
+            return redirect()->route('categories.index', ['type' => $category->type])
+                ->with('success', 'Kategori berhasil diperbarui');
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error updating category: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()])
+                ->withInput();
         }
+    }
 
-        return redirect()->route('categories.index', ['type' => $category->type])
-            ->with('success', 'Kategori berhasil diperbarui');
+    /**
+     * Helper method untuk mendapatkan semua children IDs
+     */
+    private function getChildrenIds($category, &$childrenIds)
+    {
+        $children = Category::where('parent_id', $category->id)->get();
 
-    } catch (\Exception $e) {
-        DB::rollback();
-        Log::error('Error updating category: ' . $e->getMessage());
-        
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()
-            ], 500);
+        foreach ($children as $child) {
+            $childrenIds[] = $child->id;
+            // Recursive call untuk anak dari anak (jika ada)
+            $this->getChildrenIds($child, $childrenIds);
         }
-        
-        return redirect()->back()
-            ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()])
-            ->withInput();
     }
-}
-
-/**
- * Helper method untuk mendapatkan semua children IDs
- */
-private function getChildrenIds($category, &$childrenIds)
-{
-    $children = Category::where('parent_id', $category->id)->get();
-    
-    foreach ($children as $child) {
-        $childrenIds[] = $child->id;
-        // Recursive call untuk anak dari anak (jika ada)
-        $this->getChildrenIds($child, $childrenIds);
-    }
-}
 
     public function destroy($id)
     {
@@ -446,16 +534,17 @@ private function getChildrenIds($category, &$childrenIds)
         $user = Auth::user();
         $userRole = $user->role->slug ?? null;
 
-        // ✅ Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
+        // Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
         if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus kategori ini.');
         }
+
         // Check if category has children
         if ($category->children->count() > 0) {
             return redirect()->back()
                 ->with('error', 'Kategori tidak dapat dihapus karena masih memiliki sub-kategori');
         }
-        
+
         // Check if category is used by data spatial
         if ($category->dataSpatial->count() > 0) {
             return redirect()->back()
@@ -464,6 +553,12 @@ private function getChildrenIds($category, &$childrenIds)
 
         try {
             $categoryType = $category->type;
+
+            // Delete gambar file if exists
+            if ($category->gambar) {
+                Storage::disk('public')->delete($category->gambar);
+            }
+
             $category->delete();
 
             Log::info('Category deleted successfully', [
@@ -473,18 +568,83 @@ private function getChildrenIds($category, &$childrenIds)
 
             return redirect()->route('categories.index', ['type' => $categoryType])
                 ->with('success', 'Kategori berhasil dihapus');
-
         } catch (\Exception $e) {
             Log::error('Error deleting category: ' . $e->getMessage());
-            
+
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan saat menghapus kategori: ' . $e->getMessage());
         }
     }
 
     /**
-     * Helper method to get all children IDs recursively
+     * Toggle status aktif kategori
      */
+    public function toggleActive($id)
+    {
+        $category = Category::findOrFail($id);
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        // Cek otorisasi
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengubah status kategori ini.'
+            ], 403);
+        }
+
+        try {
+            // Jika ingin mengaktifkan, cek batas maksimal
+            if (!$category->is_active) {
+                if (!$this->validateMaxActiveCategories($category->type, $category->id)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Maksimal hanya 10 kategori yang dapat diaktifkan per tipe'
+                    ], 422);
+                }
+            }
+
+            $category->is_active = !$category->is_active;
+            $category->save();
+
+            $status = $category->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+            Log::info('Category status toggled', [
+                'id' => $category->id,
+                'nama' => $category->nama,
+                'is_active' => $category->is_active
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Kategori berhasil {$status}",
+                'is_active' => $category->is_active
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling category status: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah status kategori'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get active categories by type
+     */
+    public function getActiveByType($type)
+    {
+        $categories = Category::where('type', $type)
+            ->where('is_active', true)
+            ->orderBy('nama')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ]);
+    }
 
     /**
      * API method to get categories by type
@@ -492,9 +652,9 @@ private function getChildrenIds($category, &$childrenIds)
     public function getByType($type)
     {
         $categories = Category::where('type', $type)
-                            ->orderBy('name')
-                            ->get();
-        
+            ->orderBy('name')
+            ->get();
+
         return response()->json([
             'success' => true,
             'data' => $categories
@@ -507,15 +667,15 @@ private function getChildrenIds($category, &$childrenIds)
     public function getTree($type = null)
     {
         $query = Category::with('children');
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         $categories = $query->whereNull('parent_id')
-                           ->orderBy('name')
-                           ->get();
-        
+            ->orderBy('name')
+            ->get();
+
         return response()->json([
             'success' => true,
             'data' => $categories
@@ -528,36 +688,28 @@ private function getChildrenIds($category, &$childrenIds)
     public function getOptions($type)
     {
         $categories = Category::where('type', $type)
-                            ->whereNull('parent_id')
-                            ->orderBy('nama')
-                            ->get(['id', 'nama']);
-        
+            ->whereNull('parent_id')
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+
         return response()->json([
             'success' => true,
             'data' => $categories
         ]);
     }
 
-    // === HELPER METHODS ===
-    
-    // private function getChildrenIds($category, &$ids)
-    // {
-    //     foreach ($category->children as $child) {
-    //         $ids[] = $child->id;
-    //         $this->getChildrenIds($child, $ids);
-    //     }
-    // }
-
     private function buildTree($categories)
     {
-        return $categories->map(function($category) {
+        return $categories->map(function ($category) {
             return [
                 'id' => $category->id,
                 'nama' => $category->nama,
                 'type' => $category->type,
                 'warna' => $category->warna,
                 'icon' => $category->icon,
+                'gambar' => $category->gambar,
                 'is_marker' => $category->is_marker,
+                'is_active' => $category->is_active,
                 'deskripsi' => $category->deskripsi,
                 'parent_id' => $category->parent_id,
                 'children' => $this->buildTree($category->children)
@@ -566,17 +718,21 @@ private function getChildrenIds($category, &$childrenIds)
     }
 
     // === UTILITY METHODS ===
-    
+
     public function getStatistics()
     {
         $stats = [
             'total_categories' => Category::count(),
-            'by_type' => Category::select('type', DB::raw('count(*) as total'))
-                               ->groupBy('type')
-                               ->get(),
+            'active_categories' => Category::where('is_active', true)->count(),
+            'by_type' => Category::select(
+                'type',
+                DB::raw('count(*) as total'),
+                DB::raw('sum(case when is_active = 1 then 1 else 0 end) as active')
+            )->groupBy('type')->get(),
             'root_categories' => Category::roots()->count(),
             'child_categories' => Category::whereNotNull('parent_id')->count(),
-            'marker_categories' => Category::markers()->count()
+            'marker_categories' => Category::markers()->count(),
+            'categories_with_images' => Category::whereNotNull('gambar')->count()
         ];
 
         return response()->json([
@@ -590,7 +746,7 @@ private function getChildrenIds($category, &$childrenIds)
         $validator = Validator::make($request->all(), [
             'categories' => 'required|array',
             'categories.*.id' => 'required|exists:categories,id',
-            'action' => 'required|in:delete,update_type,toggle_marker'
+            'action' => 'required|in:delete,update_type,toggle_marker,toggle_active'
         ]);
 
         if ($validator->fails()) {
@@ -610,17 +766,25 @@ private function getChildrenIds($category, &$childrenIds)
                 case 'delete':
                     // Check if any category has children or is used by data spatial
                     $categoriesWithChildren = Category::whereIn('id', $categoryIds)
-                                                    ->has('children')
-                                                    ->count();
-                    
+                        ->has('children')
+                        ->count();
+
                     $categoriesWithData = Category::whereIn('id', $categoryIds)
-                                                ->has('dataSpatial')
-                                                ->count();
-                    
+                        ->has('dataSpatial')
+                        ->count();
+
                     if ($categoriesWithChildren > 0 || $categoriesWithData > 0) {
                         throw new \Exception('Beberapa kategori tidak dapat dihapus karena masih memiliki sub-kategori atau digunakan oleh data spatial');
                     }
-                    
+
+                    // Delete associated images
+                    $categories = Category::whereIn('id', $categoryIds)->get();
+                    foreach ($categories as $category) {
+                        if ($category->gambar) {
+                            Storage::disk('public')->delete($category->gambar);
+                        }
+                    }
+
                     $updatedCount = Category::whereIn('id', $categoryIds)->delete();
                     break;
 
@@ -628,9 +792,9 @@ private function getChildrenIds($category, &$childrenIds)
                     if (!$request->has('new_type')) {
                         throw new \Exception('Tipe baru harus disediakan');
                     }
-                    
+
                     $updatedCount = Category::whereIn('id', $categoryIds)
-                                          ->update(['type' => $request->new_type]);
+                        ->update(['type' => $request->new_type]);
                     break;
 
                 case 'toggle_marker':
@@ -638,6 +802,24 @@ private function getChildrenIds($category, &$childrenIds)
                     foreach ($categoryIds as $id) {
                         $category = Category::find($id);
                         $category->is_marker = !$category->is_marker;
+                        $category->save();
+                        $updatedCount++;
+                    }
+                    break;
+
+                case 'toggle_active':
+                    // Toggle is_active for each category dengan validasi batas maksimal
+                    foreach ($categoryIds as $id) {
+                        $category = Category::find($id);
+
+                        // Jika ingin mengaktifkan, cek batas maksimal
+                        if (!$category->is_active) {
+                            if (!$this->validateMaxActiveCategories($category->type, $category->id)) {
+                                throw new \Exception("Maksimal 10 kategori aktif untuk tipe {$category->type}. Kategori '{$category->nama}' tidak dapat diaktifkan.");
+                            }
+                        }
+
+                        $category->is_active = !$category->is_active;
                         $category->save();
                         $updatedCount++;
                     }
@@ -657,11 +839,10 @@ private function getChildrenIds($category, &$childrenIds)
                 'message' => "Berhasil {$request->action} {$updatedCount} kategori",
                 'updated_count' => $updatedCount
             ]);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error in bulk category update: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -672,11 +853,12 @@ private function getChildrenIds($category, &$childrenIds)
     public function duplicate(Request $request, $id)
     {
         $originalCategory = Category::with('children')->findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
-            'include_children' => 'boolean'
+            'include_children' => 'boolean',
+            'copy_image' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -689,20 +871,33 @@ private function getChildrenIds($category, &$childrenIds)
         try {
             DB::beginTransaction();
 
+            $newGambarPath = null;
+            // Copy gambar if requested and exists
+            if ($request->boolean('copy_image') && $originalCategory->gambar) {
+                if (Storage::disk('public')->exists($originalCategory->gambar)) {
+                    $extension = pathinfo($originalCategory->gambar, PATHINFO_EXTENSION);
+                    $newGambarPath = 'categories/' . uniqid() . '.' . $extension;
+                    Storage::disk('public')->copy($originalCategory->gambar, $newGambarPath);
+                }
+            }
+
             // Create duplicate of main category
             $newCategory = Category::create([
                 'type' => $request->type ?? $originalCategory->type,
+                'user_id' => Auth::user()->id,
                 'nama' => $request->nama,
                 'warna' => $originalCategory->warna,
                 'icon' => $originalCategory->icon,
+                'gambar' => $newGambarPath,
                 'is_marker' => $originalCategory->is_marker,
+                'is_active' => false, // Duplicate dimulai sebagai tidak aktif
                 'deskripsi' => $originalCategory->deskripsi,
                 'parent_id' => $originalCategory->parent_id
             ]);
 
             // Duplicate children if requested
             if ($request->boolean('include_children')) {
-                $this->duplicateChildren($originalCategory, $newCategory);
+                $this->duplicateChildren($originalCategory, $newCategory, $request->boolean('copy_image'));
             }
 
             DB::commit();
@@ -710,7 +905,8 @@ private function getChildrenIds($category, &$childrenIds)
             Log::info('Category duplicated successfully', [
                 'original_id' => $originalCategory->id,
                 'new_id' => $newCategory->id,
-                'include_children' => $request->boolean('include_children')
+                'include_children' => $request->boolean('include_children'),
+                'copy_image' => $request->boolean('copy_image')
             ]);
 
             return response()->json([
@@ -718,11 +914,16 @@ private function getChildrenIds($category, &$childrenIds)
                 'message' => 'Kategori berhasil diduplikasi',
                 'category' => $newCategory->load('children')
             ]);
-
         } catch (\Exception $e) {
             DB::rollback();
+
+            // Delete copied gambar if exists
+            if (isset($newGambarPath) && $newGambarPath) {
+                Storage::disk('public')->delete($newGambarPath);
+            }
+
             Log::error('Error duplicating category: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menduplikasi kategori: ' . $e->getMessage()
@@ -730,22 +931,36 @@ private function getChildrenIds($category, &$childrenIds)
         }
     }
 
-    private function duplicateChildren($originalCategory, $newParent)
+    private function duplicateChildren($originalCategory, $newParent, $copyImages = false)
     {
         foreach ($originalCategory->children as $child) {
+            $childGambarPath = null;
+
+            // Copy child gambar if requested and exists
+            if ($copyImages && $child->gambar) {
+                if (Storage::disk('public')->exists($child->gambar)) {
+                    $extension = pathinfo($child->gambar, PATHINFO_EXTENSION);
+                    $childGambarPath = 'categories/' . uniqid() . '.' . $extension;
+                    Storage::disk('public')->copy($child->gambar, $childGambarPath);
+                }
+            }
+
             $newChild = Category::create([
                 'type' => $newParent->type,
+                'user_id' => Auth::user()->id,
                 'nama' => $child->nama,
                 'warna' => $child->warna,
                 'icon' => $child->icon,
+                'gambar' => $childGambarPath,
                 'is_marker' => $child->is_marker,
+                'is_active' => false, // Children juga dimulai sebagai tidak aktif
                 'deskripsi' => $child->deskripsi,
                 'parent_id' => $newParent->id
             ]);
 
             // Recursively duplicate grandchildren
             if ($child->children->count() > 0) {
-                $this->duplicateChildren($child, $newChild);
+                $this->duplicateChildren($child, $newChild, $copyImages);
             }
         }
     }
@@ -753,7 +968,7 @@ private function getChildrenIds($category, &$childrenIds)
     public function move(Request $request, $id)
     {
         $category = Category::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'new_parent_id' => 'nullable|exists:categories,id',
             'new_type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn'
@@ -770,18 +985,18 @@ private function getChildrenIds($category, &$childrenIds)
             // Validate new parent
             if ($request->new_parent_id) {
                 $newParent = Category::find($request->new_parent_id);
-                
+
                 // Check type compatibility
                 $targetType = $request->new_type ?? $category->type;
                 if ($newParent->type !== $targetType) {
                     throw new \Exception('Kategori induk harus memiliki tipe yang sama');
                 }
-                
+
                 // Prevent circular reference
                 if ($request->new_parent_id == $category->id) {
                     throw new \Exception('Kategori tidak boleh menjadi induk dari dirinya sendiri');
                 }
-                
+
                 // Check if new parent is a child of current category
                 $childrenIds = [];
                 $this->getChildrenIds($category, $childrenIds);
@@ -798,7 +1013,7 @@ private function getChildrenIds($category, &$childrenIds)
             }
             if ($request->has('new_type')) {
                 $updateData['type'] = $request->new_type;
-                
+
                 // Update children type as well
                 $this->updateChildrenType($category, $request->new_type);
             }
@@ -818,11 +1033,10 @@ private function getChildrenIds($category, &$childrenIds)
                 'message' => 'Kategori berhasil dipindahkan',
                 'category' => $category->fresh(['parent', 'children'])
             ]);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error moving category: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memindahkan kategori: ' . $e->getMessage()
@@ -842,13 +1056,13 @@ private function getChildrenIds($category, &$childrenIds)
     {
         $type = $request->get('type');
         $format = $request->get('format', 'json');
-        
+
         $query = Category::with(['parent', 'children']);
-        
+
         if ($type) {
             $query->where('type', $type);
         }
-        
+
         $categories = $query->orderBy('type')->orderBy('nama')->get();
 
         switch ($format) {
@@ -870,21 +1084,32 @@ private function getChildrenIds($category, &$childrenIds)
     private function exportToCsv($categories, $type)
     {
         $filename = 'categories' . ($type ? "_$type" : '') . '_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ];
 
-        $callback = function() use ($categories) {
+        $callback = function () use ($categories) {
             $file = fopen('php://output', 'w');
-            
+
             // CSV headers
             fputcsv($file, [
-                'ID', 'Type', 'Nama', 'Warna', 'Icon', 'Is Marker', 
-                'Deskripsi', 'Parent ID', 'Parent Nama', 'Created At', 'Updated At'
+                'ID',
+                'Type',
+                'Nama',
+                'Warna',
+                'Icon',
+                'Gambar',
+                'Is Marker',
+                'Is Active',
+                'Deskripsi',
+                'Parent ID',
+                'Parent Nama',
+                'Created At',
+                'Updated At'
             ]);
-            
+
             foreach ($categories as $category) {
                 fputcsv($file, [
                     $category->id,
@@ -892,7 +1117,9 @@ private function getChildrenIds($category, &$childrenIds)
                     $category->nama,
                     $category->warna,
                     $category->icon,
+                    $category->gambar,
                     $category->is_marker ? 'Yes' : 'No',
+                    $category->is_active ? 'Yes' : 'No',
                     $category->deskripsi,
                     $category->parent_id,
                     $category->parent?->nama,
@@ -900,7 +1127,7 @@ private function getChildrenIds($category, &$childrenIds)
                     $category->updated_at
                 ]);
             }
-            
+
             fclose($file);
         };
 
@@ -936,9 +1163,9 @@ private function getChildrenIds($category, &$childrenIds)
         try {
             $file = $request->file('file');
             $extension = $file->getClientOriginalExtension();
-            
+
             $importedCount = 0;
-            
+
             DB::beginTransaction();
 
             if ($extension === 'json') {
@@ -960,11 +1187,10 @@ private function getChildrenIds($category, &$childrenIds)
                 'message' => "Berhasil mengimpor {$importedCount} kategori",
                 'imported_count' => $importedCount
             ]);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error importing categories: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengimpor: ' . $e->getMessage()
@@ -976,13 +1202,13 @@ private function getChildrenIds($category, &$childrenIds)
     {
         $content = file_get_contents($file->getRealPath());
         $data = json_decode($content, true);
-        
+
         if (!$data || !is_array($data)) {
             throw new \Exception('Format JSON tidak valid');
         }
 
         $importedCount = 0;
-        
+
         foreach ($data as $item) {
             if (!isset($item['nama'])) {
                 continue;
@@ -990,10 +1216,13 @@ private function getChildrenIds($category, &$childrenIds)
 
             $categoryData = [
                 'type' => $type,
+                'user_id' => Auth::user()->id,
                 'nama' => $item['nama'],
                 'warna' => $item['warna'] ?? null,
                 'icon' => $item['icon'] ?? null,
+                'gambar' => null, // Import tidak menyertakan file gambar
                 'is_marker' => $item['is_marker'] ?? false,
+                'is_active' => false, // Import dimulai sebagai tidak aktif
                 'deskripsi' => $item['deskripsi'] ?? null,
                 'parent_id' => null // Handle parent relationships in second pass
             ];
@@ -1018,14 +1247,14 @@ private function getChildrenIds($category, &$childrenIds)
     private function importFromCsv($file, $type, $overwrite)
     {
         $handle = fopen($file->getRealPath(), 'r');
-        
+
         if (!$handle) {
             throw new \Exception('Tidak dapat membaca file CSV');
         }
 
         $importedCount = 0;
         $isFirstRow = true;
-        
+
         while (($row = fgetcsv($handle)) !== false) {
             if ($isFirstRow) {
                 $isFirstRow = false;
@@ -1038,10 +1267,13 @@ private function getChildrenIds($category, &$childrenIds)
 
             $categoryData = [
                 'type' => $type,
+                'user_id' => Auth::user()->id,
                 'nama' => $row[1] ?? '',
                 'warna' => $row[2] ?? null,
                 'icon' => $row[3] ?? null,
+                'gambar' => null, // Import tidak menyertakan file gambar
                 'is_marker' => ($row[4] ?? '') === 'Yes',
+                'is_active' => false, // Import dimulai sebagai tidak aktif
                 'deskripsi' => $row[5] ?? null,
                 'parent_id' => null
             ];

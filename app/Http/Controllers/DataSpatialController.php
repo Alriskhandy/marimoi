@@ -22,138 +22,138 @@ class DataSpatialController extends Controller
 {
 
     protected function isAdminOPD()
-{
-    return Auth::user()?->role?->slug === 'admin-opd';
-}
-public function index(Request $request) 
-{
-    // Increase memory limit temporarily
-    ini_set('memory_limit', '256M');
-    
-    $type = $request->get('type');
-    $subType = $request->get('sub_type');
-    $year = $request->get('year');
-    $search = $request->get('search');
-    $perPage = (int) $request->get('per_page', 50); // Default 50, max 200
-    
-    // Limit per_page to maximum 500
-    $perPage = min($perPage, 500);
-
-    // Validate type
-    if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
-        return redirect()->back();
+    {
+        return Auth::user()?->role?->slug === 'admin-opd';
     }
+    public function index(Request $request)
+    {
+        // Increase memory limit temporarily
+        ini_set('memory_limit', '256M');
 
-    // Validate sub_type for proyek strategis
-    if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
-        return redirect()->back(); 
+        $type = $request->get('type');
+        $subType = $request->get('sub_type');
+        $year = $request->get('year');
+        $search = $request->get('search');
+        $perPage = (int) $request->get('per_page', 50); // Default 50, max 200
+
+        // Limit per_page to maximum 500
+        $perPage = min($perPage, 500);
+
+        // Validate type
+        if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
+            return redirect()->back();
+        }
+
+        // Validate sub_type for proyek strategis
+        if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
+            return redirect()->back();
+        }
+
+        // Build query
+        $query = DataSpatial::query()
+            ->select([
+                'id',
+                'uuid',
+                'data_type',
+                'sub_type',
+                'tahun',
+                'deskripsi',
+                'kategori_id',
+                'user_id',
+                'created_at',
+            ]);
+
+        // Filter by data type
+        $query->where('data_type', $type);
+
+        // Filter by sub type for proyek strategis
+        if ($subType && $type === 'proyek_strategis') {
+            $query->where('sub_type', $subType);
+        }
+
+        // Filter by year if provided
+        if ($year) {
+            $query->where('tahun', $year);
+        }
+
+        // Search functionality
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('uuid', 'ILIKE', "%{$search}%")
+                    ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
+                    ->orWhereHas('kategori', function ($query) use ($search) {
+                        $query->where('nama', 'ILIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        // Filter by user role
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            $query->where('user_id', $user->id);
+        }
+
+        // Use pagination with custom per page
+        $data = $query->orderBy('created_at', 'desc')
+            ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama'])
+            ->paginate($perPage);
+
+        // Get categories
+        $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
+            ->with(['children:id,nama,parent_id'])
+            ->roots();
+
+        if ($type === 'proyek_strategis') {
+            $categories = $categoriesQuery->where('type', $subType)->get();
+        } else {
+            $categoryType = $this->getCategoryTypeByDataType($type, $subType);
+            $categories = $categoriesQuery->where('type', $categoryType)->get();
+        }
+
+        return view('backend.pages.data_spatial.index', compact(
+            'data',
+            'categories',
+            'type',
+            'subType',
+            'year'
+        ));
     }
-
-    // Build query
-    $query = DataSpatial::query()
-        ->select([
-            'id',
-            'uuid', 
-            'data_type',
-            'sub_type',
-            'tahun',
-            'deskripsi',
-            'kategori_id',
-            'user_id',
-            'created_at',
-        ]);
-
-    // Filter by data type
-    $query->where('data_type', $type);
-
-    // Filter by sub type for proyek strategis
-    if ($subType && $type === 'proyek_strategis') {
-        $query->where('sub_type', $subType);
-    }
-
-    // Filter by year if provided
-    if ($year) {
-        $query->where('tahun', $year);
-    }
-
-    // Search functionality
-    if ($search) {
-        $query->where(function($q) use ($search) {
-            $q->where('uuid', 'ILIKE', "%{$search}%")
-              ->orWhere('deskripsi', 'ILIKE', "%{$search}%")
-              ->orWhereHas('kategori', function($query) use ($search) {
-                  $query->where('nama', 'ILIKE', "%{$search}%");
-              });
-        });
-    }
-
-    // Filter by user role
-    $user = Auth::user();
-    $userRole = $user->role->slug ?? null;
-
-    if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
-        $query->where('user_id', $user->id);
-    }
-
-    // Use pagination with custom per page
-    $data = $query->orderBy('created_at', 'desc')
-                  ->with(['kategori:id,nama,parent_id', 'kategori.parent:id,nama'])
-                  ->paginate($perPage);
-
-    // Get categories
-    $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
-                              ->with(['children:id,nama,parent_id'])
-                              ->roots();
-
-    if ($type === 'proyek_strategis') {
-        $categories = $categoriesQuery->where('type', $subType)->get();
-    } else {
-        $categoryType = $this->getCategoryTypeByDataType($type, $subType);
-        $categories = $categoriesQuery->where('type', $categoryType)->get();
-    }
-
-    return view('backend.pages.data_spatial.index', compact(
-        'data',
-        'categories',
-        'type',
-        'subType',
-        'year'
-    ));
-}
 
 
     public function create(Request $request)
-        {
-            $dataType = $request->get('type');
-            $subType = $request->get('sub_type');
-            $year = $request->get('year');
-            
-            // Tentukan kategori berdasarkan data type dan sub type
-            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-            
-            // Query kategori
-            $categoriesQuery = Category::with('children')->roots();
-            
-            // Logika untuk menentukan filter kategori
-            if ($dataType === 'proyek_strategis' && in_array($subType, ['psd', 'psn'])) {
-                // Untuk proyek strategis, gunakan sub_type sebagai type
-                $categories = $categoriesQuery->where('type', $subType)->get();
+    {
+        $dataType = $request->get('type');
+        $subType = $request->get('sub_type');
+        $year = $request->get('year');
+
+        // Tentukan kategori berdasarkan data type dan sub type
+        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+
+        // Query kategori
+        $categoriesQuery = Category::with('children')->roots();
+
+        // Logika untuk menentukan filter kategori
+        if ($dataType === 'proyek_strategis' && in_array($subType, ['psd', 'psn'])) {
+            // Untuk proyek strategis, gunakan sub_type sebagai type
+            $categories = $categoriesQuery->where('type', $subType)->get();
+        } else {
+            // Untuk data type lain, gunakan category type
+            if ($subType) {
+                $categories = $categoriesQuery->where('sub_type', $categoryType)->get();
             } else {
-                // Untuk data type lain, gunakan category type
-                if ($subType) {
-                    $categories = $categoriesQuery->where('sub_type', $categoryType)->get();
-                } else {
-                    $categories = $categoriesQuery->where('type', $categoryType)->get();
-                }
+                $categories = $categoriesQuery->where('type', $categoryType)->get();
             }
-            
-            return view('backend.pages.data_spatial.create', compact(
-                'categories', 
-                'dataType', 
-                'subType', 
-                'year'
-            ));
         }
+
+        return view('backend.pages.data_spatial.create', compact(
+            'categories',
+            'dataType',
+            'subType',
+            'year'
+        ));
+    }
 
     public function store(Request $request)
     {
@@ -166,11 +166,11 @@ public function index(Request $request)
             'input_type' => 'required|in:shapefile,coordinates,kmz',
         ];
 
-          // Validasi tambahan untuk proyek strategis
-            if ($request->data_type === 'proyek_strategis') {
-                $rules['sub_type'] = 'required|in:psn,psd';
-                $rules['tahun'] = 'required|integer|min:2000|max:2050';
-            }
+        // Validasi tambahan untuk proyek strategis
+        if ($request->data_type === 'proyek_strategis') {
+            $rules['sub_type'] = 'required|in:psn,psd';
+            $rules['tahun'] = 'required|integer|min:2000|max:2050';
+        }
 
         $request->validate($rules);
 
@@ -200,265 +200,259 @@ public function index(Request $request)
             DB::commit();
 
             $message = "Berhasil menyimpan {$recordCount} record dengan metode {$inputType}.";
-            
+
             // Redirect berdasarkan data type
             return $this->getRedirectAfterStore($request, $message);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error storing data spatial: ' . $e->getMessage());
             return back()->withErrors(['Gagal menyimpan data: ' . $e->getMessage()])->withInput();
         }
     }
-public function edit($uuid)
-{
-    // Ambil data dengan relasi kategori
-   $data = DataSpatial::with(['kategori', 'kategori.parent'])
-    ->where('uuid', $uuid)
-    ->firstOrFail();
+    public function edit($uuid)
+    {
+        // Ambil data dengan relasi kategori
+        $data = DataSpatial::with(['kategori', 'kategori.parent'])
+            ->where('uuid', $uuid)
+            ->firstOrFail();
 
-    
-    // Ambil data type dan sub type dari data yang ada
-    $dataType = $data->data_type;
-    $subType = $data->sub_type;
-    $year = $data->tahun;
-    
-    // Tentukan kategori berdasarkan data type dan sub type
-    $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-    
-    // Query kategori
-    $categoriesQuery = Category::with('children')->roots();
-    
-    // Logika untuk menentukan filter kategori (sama persis dengan create)
-    if ($dataType === 'proyek_strategis' && in_array($subType, ['psd', 'psn'])) {
-        // Untuk proyek strategis, gunakan sub_type sebagai type
-        $categories = $categoriesQuery->where('type', $subType)->get();
-    } else {
-        // Untuk data type lain, gunakan category type
-        if ($subType) {
-            $categories = $categoriesQuery->where('sub_type', $categoryType)->get();
+
+        // Ambil data type dan sub type dari data yang ada
+        $dataType = $data->data_type;
+        $subType = $data->sub_type;
+        $year = $data->tahun;
+
+        // Tentukan kategori berdasarkan data type dan sub type
+        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+
+        // Get categories
+        $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
+            ->with(['children:id,nama,parent_id'])
+            ->roots();
+
+        if ($dataType === 'proyek_strategis') {
+            $categories = $categoriesQuery->where('type', $subType)->get();
         } else {
+            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
             $categories = $categoriesQuery->where('type', $categoryType)->get();
         }
+
+        return view('backend.pages.data_spatial.edit', compact(
+            'data',
+            'categories',
+            'dataType',
+            'subType',
+            'year'
+        ));
     }
-    
-    return view('backend.pages.data_spatial.edit', compact(
-        'data',
-        'categories', 
-        'dataType', 
-        'subType', 
-        'year'
-    ));
-}
 
 
     public function update(Request $request, $id)
-{
-    // dd($request->kategori_id);
-    $validator = Validator::make($request->all(), [
-        'kategori_id' => 'required|exists:categories,id',
-        'deskripsi' => 'nullable|string|max:255',
-        'dbf_attributes' => 'nullable|string',
-        'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048' // Validasi gambar
-    ], [
-        'kategori_id.required' => 'Kategori harus dipilih',
-        'kategori_id.exists' => 'Kategori tidak valid',
-        'deskripsi.max' => 'Deskripsi maksimal 255 karakter',
-        'gambar.image' => 'File harus berupa gambar',
-        'gambar.mimes' => 'Format gambar harus jpeg, jpg, png, atau gif',
-        'gambar.max' => 'Ukuran gambar maksimal 2MB'
-    ]);
-
-    if ($validator->fails()) {
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
-    }
-
-    try {
-        $data = DataSpatial::find($id);
-        if (!$data) {
-            return redirect()->route('data-spatial.index')
-                ->with('error', 'Data tidak ditemukan');
-        }
-
-        // Handle DBF Attributes
-        $dbfAttributes = [];
-        if ($request->dbf_attributes) {
-            $json = $request->dbf_attributes;
-            $dbfAttributes = json_decode($json, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return redirect()->back()
-                    ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: ' . json_last_error_msg()])
-                    ->withInput();
-            }
-        }
-
-        // Handle Image Upload
-        $imagePath = $data->gambar; // Keep existing image path
-        
-        if ($request->hasFile('gambar')) {
-            // Delete old image if exists
-            if ($data->gambar && Storage::disk('public')->exists($data->gambar)) {
-                Storage::disk('public')->delete($data->gambar);
-            }
-            
-            // Store new image
-            $file = $request->file('gambar');
-            $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-            $imagePath = $file->storeAs('images/spatial', $fileName, 'public');
-        }
-
-        // Update data
-        $data->kategori_id = $request->kategori_id;
-        $data->deskripsi = $request->deskripsi;
-        $data->dbf_attributes = $dbfAttributes;
-        $data->gambar = $imagePath;
-        $data->save();
-
-        Log::info('Data spatial updated successfully', [
-            'id' => $id,
-            'data_type' => $data->data_type,
-            'kategori_id' => $request->kategori_id,
-            'attributes_count' => count($dbfAttributes),
-            'image_uploaded' => $request->hasFile('gambar')
+    {
+        // dd($request->kategori_id);
+        $validator = Validator::make($request->all(), [
+            'kategori_id' => 'required|exists:categories,id',
+            'deskripsi' => 'nullable|string|max:255',
+            'dbf_attributes' => 'nullable|string',
+            'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048' // Validasi gambar
+        ], [
+            'kategori_id.required' => 'Kategori harus dipilih',
+            'kategori_id.exists' => 'Kategori tidak valid',
+            'deskripsi.max' => 'Deskripsi maksimal 255 karakter',
+            'gambar.image' => 'File harus berupa gambar',
+            'gambar.mimes' => 'Format gambar harus jpeg, jpg, png, atau gif',
+            'gambar.max' => 'Ukuran gambar maksimal 2MB'
         ]);
 
-        return $this->getRedirectAfterUpdate($data)
-            ->with('success', 'Data berhasil diperbarui');
-            
-    } catch (\Exception $e) {
-        // If there was an error and a new image was uploaded, delete it
-        if ($request->hasFile('gambar') && isset($imagePath) && $imagePath !== $data->gambar) {
-            Storage::disk('public')->delete($imagePath);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
-        
-        Log::error('Error updating data spatial: ' . $e->getMessage(), [
-            'id' => $id,
-            'trace' => $e->getTraceAsString()
-        ]);
 
-        return redirect()->back()
-            ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()])
-            ->withInput();
+        try {
+            $data = DataSpatial::find($id);
+            if (!$data) {
+                return redirect()->route('data-spatial.index')
+                    ->with('error', 'Data tidak ditemukan');
+            }
+
+            // Handle DBF Attributes
+            $dbfAttributes = [];
+            if ($request->dbf_attributes) {
+                $json = $request->dbf_attributes;
+                $dbfAttributes = json_decode($json, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return redirect()->back()
+                        ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: ' . json_last_error_msg()])
+                        ->withInput();
+                }
+            }
+
+            // Handle Image Upload
+            $imagePath = $data->gambar; // Keep existing image path
+
+            if ($request->hasFile('gambar')) {
+                // Delete old image if exists
+                if ($data->gambar && Storage::disk('public')->exists($data->gambar)) {
+                    Storage::disk('public')->delete($data->gambar);
+                }
+
+                // Store new image
+                $file = $request->file('gambar');
+                $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                $imagePath = $file->storeAs('images/spatial', $fileName, 'public');
+            }
+
+            // Update data
+            $data->kategori_id = $request->kategori_id;
+            $data->deskripsi = $request->deskripsi;
+            $data->dbf_attributes = $dbfAttributes;
+            $data->gambar = $imagePath;
+            $data->save();
+
+            Log::info('Data spatial updated successfully', [
+                'id' => $id,
+                'data_type' => $data->data_type,
+                'kategori_id' => $request->kategori_id,
+                'attributes_count' => count($dbfAttributes),
+                'image_uploaded' => $request->hasFile('gambar')
+            ]);
+
+            return $this->getRedirectAfterUpdate($data)
+                ->with('success', 'Data berhasil diperbarui');
+        } catch (\Exception $e) {
+            // If there was an error and a new image was uploaded, delete it
+            if ($request->hasFile('gambar') && isset($imagePath) && $imagePath !== $data->gambar) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            Log::error('Error updating data spatial: ' . $e->getMessage(), [
+                'id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
-}
 
 
 
     // === METHODS KHUSUS BERDASARKAN DATA TYPE ===
-    
-   public function indexLokasi(Request $request)
-{
-    if ($request->get('type') !== 'tematik') {
-        return redirect()->back();
+
+    public function indexLokasi(Request $request)
+    {
+        if ($request->get('type') !== 'tematik') {
+            return redirect()->back();
+        }
+
+        $query = DataSpatial::with('kategori')
+            ->where('data_type', 'tematik');
+
+        if ($this->isAdminOPD()) {
+            $query->where('user_id', Auth::user()->id);
+        }
+
+        $data = $query->get();
+
+        $categories = Category::layers()->with('children')->roots()->get();
+
+        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
     }
-
-    $query = DataSpatial::with('kategori')
-        ->where('data_type', 'tematik');
-
-    if ($this->isAdminOPD()) {
-        $query->where('user_id', Auth::user()->id);
-    }
-
-    $data = $query->get();
-
-    $categories = Category::layers()->with('children')->roots()->get();
-    
-    return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-}
 
 
     public function indexUsulanMusrenbang(Request $request)
-{
-    if ($request->get('type') !== 'usulan_musrenbang') {
-        return redirect()->back();
+    {
+        if ($request->get('type') !== 'usulan_musrenbang') {
+            return redirect()->back();
+        }
+
+        $query = DataSpatial::with('kategori')
+            ->where('data_type', 'usulan_musrenbang');
+
+        if ($this->isAdminOPD()) {
+            $query->where('user_id', Auth::user()->id);
+        }
+
+        $data = $query->get();
+
+        $categories = Category::musenbangs()->with('children')->roots()->get();
+
+        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
     }
 
-    $query = DataSpatial::with('kategori')
-        ->where('data_type', 'usulan_musrenbang');
+    public function indexPokirDprd(Request $request)
+    {
+        if ($request->get('type') !== 'pokir_dprd') {
+            return redirect()->back();
+        }
 
-    if ($this->isAdminOPD()) {
-        $query->where('user_id', Auth::user()->id);
+        $query = DataSpatial::with('kategori')
+            ->where('data_type', 'pokir_dprd');
+
+        if ($this->isAdminOPD()) {
+            $query->where('user_id', Auth::user()->id);
+        }
+
+        $data = $query->get();
+
+        $categories = Category::pokirDprds()->with('children')->roots()->get();
+
+        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
     }
 
-    $data = $query->get();
+    public function indexProyekStrategisDaerah($year = null)
+    {
+        $query = DataSpatial::where('sub_type', 'psd');
 
-    $categories = Category::musenbangs()->with('children')->roots()->get();
+        if ($year) {
+            $query->where('tahun', $year);
+        }
 
-    return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-}
+        if ($this->isAdminOPD()) {
+            $query->where('user_id', Auth::user()->id);
+        }
 
-public function indexPokirDprd(Request $request)
-{
-    if ($request->get('type') !== 'pokir_dprd') {
-        return redirect()->back();
+        $data = $query->paginate(100);
+
+        $categories = Category::psd()->with('children')->roots()->get();
+
+        $statistics = null;
+        if ($year) {
+            $statistics = [
+                'total' => $data->count(),
+                'categories' => $data->groupBy('kategori_id')->map->count(),
+                'year' => $year
+            ];
+        }
+
+        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
     }
 
-    $query = DataSpatial::with('kategori')
-        ->where('data_type', 'pokir_dprd');
+    public function indexProyekStrategisNasional($year = null)
+    {
+        $query = DataSpatial::where('sub_type', 'psn');
 
-    if ($this->isAdminOPD()) {
-        $query->where('user_id', Auth::user()->id );
+        if ($year) {
+            $query->where('tahun', $year);
+        }
+
+        if ($this->isAdminOPD()) {
+            $query->where('user_id', Auth::user()->id);
+        }
+
+        $data = $query->paginate(100);
+
+        $categories = Category::psn()->with('children')->roots()->get();
+
+        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
     }
-
-    $data = $query->get();
-
-    $categories = Category::pokirDprds()->with('children')->roots()->get();
-
-    return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-}
-
-public function indexProyekStrategisDaerah($year = null)
-{
-    $query = DataSpatial::where('sub_type', 'psd');
-
-    if ($year) {
-        $query->where('tahun', $year);
-    }
-
-    if ($this->isAdminOPD()) {
-        $query->where('user_id', Auth::user()->id);
-    }
-
-    $data = $query->paginate(100);
-
-    $categories = Category::psd()->with('children')->roots()->get();
-
-    $statistics = null;
-    if ($year) {
-        $statistics = [
-            'total' => $data->count(),
-            'categories' => $data->groupBy('kategori_id')->map->count(),
-            'year' => $year
-        ];
-    }
-
-    return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
-}
-
-public function indexProyekStrategisNasional($year = null)
-{
-    $query = DataSpatial::where('sub_type', 'psn');
-
-    if ($year) {
-        $query->where('tahun', $year);
-    }
-
-    if ($this->isAdminOPD()) {
-        $query->where('user_id', Auth::user()->id);
-    }
-
-   $data = $query->paginate(100);
-
-    $categories = Category::psn()->with('children')->roots()->get();
-
-    return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
-}
 
 
     // === GEOJSON METHODS ===
-    
+
     public function geojson(Request $request)
     {
         $dataType = $request->get('data_type');
@@ -515,8 +509,8 @@ public function indexProyekStrategisNasional($year = null)
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('categories.nama', 'ILIKE', "%{$search}%")
-                  ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
-                  ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+                    ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
             });
         }
 
@@ -554,18 +548,18 @@ public function indexProyekStrategisNasional($year = null)
         // Get categories untuk response
         $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
         $rootCategories = Category::where('type', $categoryType)
-                    ->with(['children' => function($query) {
-                        $query->orderBy('nama');
-                    }])
-                    ->roots()
-                    ->orderBy('nama')
-                    ->get();
-                
+            ->with(['children' => function ($query) {
+                $query->orderBy('nama');
+            }])
+            ->roots()
+            ->orderBy('nama')
+            ->get();
+
         $allCategories = Category::where('type', $categoryType)
-                       ->with('parent')
-                       ->orderBy('nama')
-                       ->get();
-         
+            ->with('parent')
+            ->orderBy('nama')
+            ->get();
+
         return response()->json([
             'type' => 'FeatureCollection',
             'features' => $features,
@@ -584,7 +578,7 @@ public function indexProyekStrategisNasional($year = null)
     }
 
     // === PROCESSING INPUT METHODS ===
-    
+
     private function processShapefileInput(Request $request)
     {
         $request->validate([
@@ -751,7 +745,7 @@ public function indexProyekStrategisNasional($year = null)
         foreach ($placemarks as $placemark) {
             $name = $xpath->query('.//kml:name', $placemark)->item(0);
             $description = $xpath->query('.//kml:description', $placemark)->item(0);
-            
+
             $nameText = $name ? trim($name->textContent) : 'Unnamed';
             $descText = $description ? trim($description->textContent) : '';
 
@@ -782,7 +776,7 @@ public function indexProyekStrategisNasional($year = null)
     }
 
     // === HELPER METHODS ===
-    
+
     private function saveDataSpatial(Request $request, $description, $dbfAttributes, $wkt)
     {
         try {
@@ -791,7 +785,7 @@ public function indexProyekStrategisNasional($year = null)
                 'kategori_id' => $request->kategori_id,
                 'deskripsi' => $description,
                 'dbf_attributes' => $dbfAttributes,
-              
+
                 'geom' => DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$wkt}'), 4326), 4326)")
             ];
 
@@ -813,38 +807,38 @@ public function indexProyekStrategisNasional($year = null)
     }
 
     private function validateCategoryType(Request $request)
-{
-    $category = Category::find($request->kategori_id);
+    {
+        $category = Category::find($request->kategori_id);
 
-    if (!$category) {
-        throw new \Exception("Kategori tidak ditemukan.");
+        if (!$category) {
+            throw new \Exception("Kategori tidak ditemukan.");
+        }
+
+        $expectedType = $this->getCategoryTypeByDataType(
+            $request->data_type,
+            $request->sub_type
+        );
+
+        if ($category->type !== $expectedType) {
+            throw new \Exception("Kategori harus bertipe '{$expectedType}' untuk data '{$request->data_type}'.");
+        }
     }
 
-    $expectedType = $this->getCategoryTypeByDataType(
-        $request->data_type,
-        $request->sub_type
-    );
-
-    if ($category->type !== $expectedType) {
-        throw new \Exception("Kategori harus bertipe '{$expectedType}' untuk data '{$request->data_type}'.");
+    private function getCategoryTypeByDataType($dataType, $subType = null)
+    {
+        return match ($dataType) {
+            'tematik' => 'tematik',
+            'usulan_musrenbang' => 'usulan_musrenbang',
+            'pokir_dprd' => 'pokir_dprd',
+            'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
+            default => 'tematik',
+        };
     }
-}
-
-private function getCategoryTypeByDataType($dataType, $subType = null)
-{
-    return match ($dataType) {
-        'tematik' => 'tematik',
-        'usulan_musrenbang' => 'usulan_musrenbang',
-        'pokir_dprd' => 'pokir_dprd',
-       'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
-        default => 'tematik',
-    };
-}
 
 
     private function getDefaultNameByDataType($dataType, $index)
     {
-        return match($dataType) {
+        return match ($dataType) {
             'tematik' => "Tematik {$index}",
             'usulan_musrenbang' => "Usulan Musrenbang {$index}",
             'pokir_dprd' => "Pokir DPRD {$index}",
@@ -853,25 +847,25 @@ private function getCategoryTypeByDataType($dataType, $subType = null)
         };
     }
 
-   private function getRedirectAfterStore(Request $request, $message)
-{
-    if ($request->data_type === 'proyek_strategis') {
-        if ($request->has('tahun')) {
-            $routeName = $request->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-            return redirect()->route($routeName, ['year' => $request->tahun])
-                ->with('success', $message);
+    private function getRedirectAfterStore(Request $request, $message)
+    {
+        if ($request->data_type === 'proyek_strategis') {
+            if ($request->has('tahun')) {
+                $routeName = $request->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
+                return redirect()->route($routeName, ['year' => $request->tahun])
+                    ->with('success', $message);
+            }
+
+            $routeName = $request->sub_type === 'psn' ? 'psn.index' : 'psd.index';
+            return redirect()->route($routeName)->with('success', $message);
         }
 
-        $routeName = $request->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-        return redirect()->route($routeName)->with('success', $message);
+        // Redirect dinamis ke data-spatial.index dengan query string
+        return redirect()->route('data-spatial.index', array_filter([
+            'type' => $request->data_type,
+            'sub_type' => $request->sub_type ?? null,
+        ]))->with('success', $message);
     }
-
-    // Redirect dinamis ke data-spatial.index dengan query string
-    return redirect()->route('data-spatial.index', array_filter([
-        'type' => $request->data_type,
-        'sub_type' => $request->sub_type ?? null,
-    ]))->with('success', $message);
-}
 
 
     // private function getRedirectAfterUpdate(DataSpatial $data)
@@ -886,24 +880,24 @@ private function getCategoryTypeByDataType($dataType, $subType = null)
     //         default => redirect()->route('data-spatial.index')
     //     };
     // }
-private function getRedirectAfterUpdate(DataSpatial $data)
-{
-    if ($data->data_type === 'proyek_strategis') {
-        if ($data->tahun) {
-            $routeName = $data->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-            return redirect()->route($routeName, ['year' => $data->tahun]);
+    private function getRedirectAfterUpdate(DataSpatial $data)
+    {
+        if ($data->data_type === 'proyek_strategis') {
+            if ($data->tahun) {
+                $routeName = $data->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
+                return redirect()->route($routeName, ['year' => $data->tahun]);
+            }
+
+            $routeName = $data->sub_type === 'psn' ? 'psn.index' : 'psd.index';
+            return redirect()->route($routeName);
         }
 
-        $routeName = $data->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-        return redirect()->route($routeName);
+        // Redirect dinamis ke data-spatial.index
+        return redirect()->route('data-spatial.index', array_filter([
+            'type' => $data->data_type,
+            'sub_type' => $data->sub_type ?? null,
+        ]));
     }
-
-    // Redirect dinamis ke data-spatial.index
-    return redirect()->route('data-spatial.index', array_filter([
-        'type' => $data->data_type,
-        'sub_type' => $data->sub_type ?? null,
-    ]));
-}
 
 
 
@@ -1007,11 +1001,11 @@ private function getRedirectAfterUpdate(DataSpatial $data)
         foreach ($dbfData as $key => $value) {
             $cleanKey = trim($key);
             $cleanValue = is_string($value) ? trim($value) : $value;
-            
+
             if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
                 $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
             }
-            
+
             $cleanDbfData[$cleanKey] = $cleanValue;
         }
         return $cleanDbfData;
@@ -1053,9 +1047,8 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             } elseif (strpos($wkt, 'Z ') !== false || strpos($wkt, 'M ') !== false) {
                 return $wkt;
             }
-            
+
             return $this->stripGeometryDimensions($wkt);
-            
         } catch (\Exception $e) {
             Log::warning("Gagal memproses geometri: " . $e->getMessage());
             return $this->stripGeometryDimensions($wkt);
@@ -1066,21 +1059,21 @@ private function getRedirectAfterUpdate(DataSpatial $data)
     {
         // Hapus suffix ZM, Z, atau M dari tipe geometri
         $wkt = preg_replace('/\b(MULTIPOLYGON|POLYGON|MULTIPOINT|POINT|MULTILINESTRING|LINESTRING|GEOMETRYCOLLECTION)(ZM|Z|M)\b/i', '$1', $wkt);
-        
+
         // Hapus koordinat Z dan M
-        $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)/', function($matches) {
+        $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)/', function ($matches) {
             return $matches[1] . ' ' . $matches[2];
         }, $wkt);
-        
-        $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)(?!\s+\-?\d)/', function($matches) {
+
+        $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)(?!\s+\-?\d)/', function ($matches) {
             return $matches[1] . ' ' . $matches[2];
         }, $wkt);
-        
+
         return $wkt;
     }
 
     // === DEBUG METHODS ===
-    
+
     public function debugShapefile(Request $request)
     {
         $request->validate([
@@ -1110,7 +1103,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
                 if ($feature->isDeleted()) continue;
 
                 $dbfData = $feature->getDataArray();
-                
+
                 if (empty($dbfColumns)) {
                     $dbfColumns = array_keys($dbfData);
                 }
@@ -1136,237 +1129,236 @@ private function getRedirectAfterUpdate(DataSpatial $data)
     }
 
     public function debugKmz(Request $request)
-{
-    $request->validate([
-        'kmz_file' => 'required|file|mimes:kmz,kml',
-    ]);
+    {
+        $request->validate([
+            'kmz_file' => 'required|file|mimes:kmz,kml',
+        ]);
 
-    try {
-        $file = $request->file('kmz_file');
-        $extension = $file->getClientOriginalExtension();
-        
-        // Create temp directory with proper permissions
-        $tempDir = storage_path('app/temp_kmz');
-        if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-        
-        // Clean directory if it exists
-        if (file_exists($tempDir)) {
-            File::cleanDirectory($tempDir);
-        }
+        try {
+            $file = $request->file('kmz_file');
+            $extension = $file->getClientOriginalExtension();
 
-        $kmlContent = null;
-
-        if ($extension === 'kmz') {
-            // Save uploaded file to temp directory
-            $kmzPath = $tempDir . '/temp.kmz';
-            $file->move($tempDir, 'temp.kmz');
-
-            // Check if file was moved successfully
-            if (!file_exists($kmzPath)) {
-                throw new \Exception('Failed to save KMZ file to temporary directory.');
+            // Create temp directory with proper permissions
+            $tempDir = storage_path('app/temp_kmz');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
             }
 
-            // Extract KML from KMZ
-            $zip = new ZipArchive;
-            $result = $zip->open($kmzPath);
-            
-            if ($result === TRUE) {
-                $kmlFound = false;
-                
-                // Look for KML files in the archive
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $filename = $zip->getNameIndex($i);
-                    $fileExtension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                    
-                    // Check for both .kml files and files without extension (some KMZ have KML without extension)
-                    if ($fileExtension === 'kml' || (empty($fileExtension) && !str_contains($filename, '/'))) {
-                        $kmlContent = $zip->getFromIndex($i);
-                        if (!empty($kmlContent)) {
-                            $kmlFound = true;
-                            break;
+            // Clean directory if it exists
+            if (file_exists($tempDir)) {
+                File::cleanDirectory($tempDir);
+            }
+
+            $kmlContent = null;
+
+            if ($extension === 'kmz') {
+                // Save uploaded file to temp directory
+                $kmzPath = $tempDir . '/temp.kmz';
+                $file->move($tempDir, 'temp.kmz');
+
+                // Check if file was moved successfully
+                if (!file_exists($kmzPath)) {
+                    throw new \Exception('Failed to save KMZ file to temporary directory.');
+                }
+
+                // Extract KML from KMZ
+                $zip = new ZipArchive;
+                $result = $zip->open($kmzPath);
+
+                if ($result === TRUE) {
+                    $kmlFound = false;
+
+                    // Look for KML files in the archive
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $filename = $zip->getNameIndex($i);
+                        $fileExtension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+                        // Check for both .kml files and files without extension (some KMZ have KML without extension)
+                        if ($fileExtension === 'kml' || (empty($fileExtension) && !str_contains($filename, '/'))) {
+                            $kmlContent = $zip->getFromIndex($i);
+                            if (!empty($kmlContent)) {
+                                $kmlFound = true;
+                                break;
+                            }
                         }
                     }
-                }
-                
-                $zip->close();
-                
-                if (!$kmlFound) {
-                    // List all files in the archive for debugging
-                    $zip->open($kmzPath);
-                    $files = [];
-                    for ($i = 0; $i < $zip->numFiles; $i++) {
-                        $files[] = $zip->getNameIndex($i);
-                    }
+
                     $zip->close();
-                    
-                    throw new \Exception('No KML file found in KMZ archive. Files found: ' . implode(', ', $files));
+
+                    if (!$kmlFound) {
+                        // List all files in the archive for debugging
+                        $zip->open($kmzPath);
+                        $files = [];
+                        for ($i = 0; $i < $zip->numFiles; $i++) {
+                            $files[] = $zip->getNameIndex($i);
+                        }
+                        $zip->close();
+
+                        throw new \Exception('No KML file found in KMZ archive. Files found: ' . implode(', ', $files));
+                    }
+                } else {
+                    // Provide more specific error messages
+                    $errorMessages = [
+                        ZipArchive::ER_OK => 'No error',
+                        ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+                        ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+                        ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+                        ZipArchive::ER_SEEK => 'Seek error',
+                        ZipArchive::ER_READ => 'Read error',
+                        ZipArchive::ER_WRITE => 'Write error',
+                        ZipArchive::ER_CRC => 'CRC error',
+                        ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+                        ZipArchive::ER_NOENT => 'No such file',
+                        ZipArchive::ER_EXISTS => 'File already exists',
+                        ZipArchive::ER_OPEN => 'Can\'t open file',
+                        ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+                        ZipArchive::ER_ZLIB => 'Zlib error',
+                        ZipArchive::ER_MEMORY => 'Memory allocation failure',
+                        ZipArchive::ER_CHANGED => 'Entry has been changed',
+                        ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+                        ZipArchive::ER_EOF => 'Premature EOF',
+                        ZipArchive::ER_INVAL => 'Invalid argument',
+                        ZipArchive::ER_NOZIP => 'Not a zip archive',
+                        ZipArchive::ER_INTERNAL => 'Internal error',
+                        ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+                        ZipArchive::ER_REMOVE => 'Can\'t remove file',
+                        ZipArchive::ER_DELETED => 'Entry has been deleted',
+                    ];
+
+                    $errorMsg = $errorMessages[$result] ?? 'Unknown error';
+                    throw new \Exception("Cannot open KMZ file. Error: {$errorMsg} (Code: {$result})");
                 }
             } else {
-                // Provide more specific error messages
-                $errorMessages = [
-                    ZipArchive::ER_OK => 'No error',
-                    ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
-                    ZipArchive::ER_RENAME => 'Renaming temporary file failed',
-                    ZipArchive::ER_CLOSE => 'Closing zip archive failed',
-                    ZipArchive::ER_SEEK => 'Seek error',
-                    ZipArchive::ER_READ => 'Read error',
-                    ZipArchive::ER_WRITE => 'Write error',
-                    ZipArchive::ER_CRC => 'CRC error',
-                    ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
-                    ZipArchive::ER_NOENT => 'No such file',
-                    ZipArchive::ER_EXISTS => 'File already exists',
-                    ZipArchive::ER_OPEN => 'Can\'t open file',
-                    ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
-                    ZipArchive::ER_ZLIB => 'Zlib error',
-                    ZipArchive::ER_MEMORY => 'Memory allocation failure',
-                    ZipArchive::ER_CHANGED => 'Entry has been changed',
-                    ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
-                    ZipArchive::ER_EOF => 'Premature EOF',
-                    ZipArchive::ER_INVAL => 'Invalid argument',
-                    ZipArchive::ER_NOZIP => 'Not a zip archive',
-                    ZipArchive::ER_INTERNAL => 'Internal error',
-                    ZipArchive::ER_INCONS => 'Zip archive inconsistent',
-                    ZipArchive::ER_REMOVE => 'Can\'t remove file',
-                    ZipArchive::ER_DELETED => 'Entry has been deleted',
+                // Handle KML file directly
+                $kmlContent = file_get_contents($file->getRealPath());
+            }
+
+            if (empty($kmlContent)) {
+                throw new \Exception('KML content is empty or could not be read.');
+            }
+
+            // Validate XML content
+            libxml_use_internal_errors(true);
+            $dom = new DOMDocument();
+            $dom->formatOutput = true;
+
+            // Try to load XML with error handling
+            if (!$dom->loadXML($kmlContent)) {
+                $errors = libxml_get_errors();
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = trim($error->message);
+                }
+                throw new \Exception('Invalid XML in KML file: ' . implode(', ', $errorMessages));
+            }
+
+            libxml_clear_errors();
+
+            // Create XPath with proper namespace handling
+            $xpath = new DOMXPath($dom);
+
+            // Register multiple possible namespaces
+            $xpath->registerNamespace('kml', 'http://www.opengis.net/kml/2.2');
+            $xpath->registerNamespace('kml21', 'http://earth.google.com/kml/2.1');
+            $xpath->registerNamespace('kml20', 'http://earth.google.com/kml/2.0');
+
+            $features = [];
+
+            // Try different namespace queries
+            $placemarks = $xpath->query('//kml:Placemark') ?:
+                $xpath->query('//kml21:Placemark') ?:
+                $xpath->query('//kml20:Placemark') ?:
+                $xpath->query('//Placemark'); // Fallback without namespace
+
+            if ($placemarks->length === 0) {
+                // Check what elements exist in the document
+                $allElements = $xpath->query('//*');
+                $elementNames = [];
+                foreach ($allElements as $element) {
+                    $elementNames[] = $element->nodeName;
+                }
+                $uniqueElements = array_unique($elementNames);
+
+                throw new \Exception('No Placemark elements found in KML. Elements found: ' . implode(', ', $uniqueElements));
+            }
+
+            foreach ($placemarks as $index => $placemark) {
+                if ($index >= 10) break; // Limit preview
+
+                // Try multiple namespace prefixes for child elements
+                $name = $xpath->query('.//kml:name | .//kml21:name | .//kml20:name | .//name', $placemark)->item(0);
+                $description = $xpath->query('.//kml:description | .//kml21:description | .//kml20:description | .//description', $placemark)->item(0);
+
+                $nameText = $name ? trim($name->textContent) : 'Unnamed';
+                $descText = $description ? trim($description->textContent) : '';
+
+                // Detect geometry type with multiple namespace support
+                $geometryType = 'Unknown';
+                if ($xpath->query('.//kml:Point | .//kml21:Point | .//kml20:Point | .//Point', $placemark)->length > 0) {
+                    $geometryType = 'Point';
+                } elseif ($xpath->query('.//kml:LineString | .//kml21:LineString | .//kml20:LineString | .//LineString', $placemark)->length > 0) {
+                    $geometryType = 'LineString';
+                } elseif ($xpath->query('.//kml:Polygon | .//kml21:Polygon | .//kml20:Polygon | .//Polygon', $placemark)->length > 0) {
+                    $geometryType = 'Polygon';
+                } elseif ($xpath->query('.//kml:MultiGeometry | .//kml21:MultiGeometry | .//kml20:MultiGeometry | .//MultiGeometry', $placemark)->length > 0) {
+                    $geometryType = 'MultiGeometry';
+                }
+
+                // Extract coordinates for additional validation
+                $coordinates = '';
+                $coordNodes = $xpath->query('.//kml:coordinates | .//kml21:coordinates | .//kml20:coordinates | .//coordinates', $placemark);
+                if ($coordNodes->length > 0) {
+                    $coordinates = trim($coordNodes->item(0)->textContent);
+                }
+
+                $features[] = [
+                    'name' => $nameText,
+                    'description' => $descText,
+                    'geometry_type' => $geometryType,
+                    'has_coordinates' => !empty($coordinates),
+                    'coordinate_preview' => substr($coordinates, 0, 100) . (strlen($coordinates) > 100 ? '...' : '')
                 ];
-                
-                $errorMsg = $errorMessages[$result] ?? 'Unknown error';
-                throw new \Exception("Cannot open KMZ file. Error: {$errorMsg} (Code: {$result})");
-            }
-        } else {
-            // Handle KML file directly
-            $kmlContent = file_get_contents($file->getRealPath());
-        }
-
-        if (empty($kmlContent)) {
-            throw new \Exception('KML content is empty or could not be read.');
-        }
-
-        // Validate XML content
-        libxml_use_internal_errors(true);
-        $dom = new DOMDocument();
-        $dom->formatOutput = true;
-        
-        // Try to load XML with error handling
-        if (!$dom->loadXML($kmlContent)) {
-            $errors = libxml_get_errors();
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = trim($error->message);
-            }
-            throw new \Exception('Invalid XML in KML file: ' . implode(', ', $errorMessages));
-        }
-        
-        libxml_clear_errors();
-
-        // Create XPath with proper namespace handling
-        $xpath = new DOMXPath($dom);
-        
-        // Register multiple possible namespaces
-        $xpath->registerNamespace('kml', 'http://www.opengis.net/kml/2.2');
-        $xpath->registerNamespace('kml21', 'http://earth.google.com/kml/2.1');
-        $xpath->registerNamespace('kml20', 'http://earth.google.com/kml/2.0');
-
-        $features = [];
-        
-        // Try different namespace queries
-        $placemarks = $xpath->query('//kml:Placemark') ?: 
-                     $xpath->query('//kml21:Placemark') ?: 
-                     $xpath->query('//kml20:Placemark') ?:
-                     $xpath->query('//Placemark'); // Fallback without namespace
-
-        if ($placemarks->length === 0) {
-            // Check what elements exist in the document
-            $allElements = $xpath->query('//*');
-            $elementNames = [];
-            foreach ($allElements as $element) {
-                $elementNames[] = $element->nodeName;
-            }
-            $uniqueElements = array_unique($elementNames);
-            
-            throw new \Exception('No Placemark elements found in KML. Elements found: ' . implode(', ', $uniqueElements));
-        }
-
-        foreach ($placemarks as $index => $placemark) {
-            if ($index >= 10) break; // Limit preview
-
-            // Try multiple namespace prefixes for child elements
-            $name = $xpath->query('.//kml:name | .//kml21:name | .//kml20:name | .//name', $placemark)->item(0);
-            $description = $xpath->query('.//kml:description | .//kml21:description | .//kml20:description | .//description', $placemark)->item(0);
-            
-            $nameText = $name ? trim($name->textContent) : 'Unnamed';
-            $descText = $description ? trim($description->textContent) : '';
-
-            // Detect geometry type with multiple namespace support
-            $geometryType = 'Unknown';
-            if ($xpath->query('.//kml:Point | .//kml21:Point | .//kml20:Point | .//Point', $placemark)->length > 0) {
-                $geometryType = 'Point';
-            } elseif ($xpath->query('.//kml:LineString | .//kml21:LineString | .//kml20:LineString | .//LineString', $placemark)->length > 0) {
-                $geometryType = 'LineString';
-            } elseif ($xpath->query('.//kml:Polygon | .//kml21:Polygon | .//kml20:Polygon | .//Polygon', $placemark)->length > 0) {
-                $geometryType = 'Polygon';
-            } elseif ($xpath->query('.//kml:MultiGeometry | .//kml21:MultiGeometry | .//kml20:MultiGeometry | .//MultiGeometry', $placemark)->length > 0) {
-                $geometryType = 'MultiGeometry';
             }
 
-            // Extract coordinates for additional validation
-            $coordinates = '';
-            $coordNodes = $xpath->query('.//kml:coordinates | .//kml21:coordinates | .//kml20:coordinates | .//coordinates', $placemark);
-            if ($coordNodes->length > 0) {
-                $coordinates = trim($coordNodes->item(0)->textContent);
-            }
-
-            $features[] = [
-                'name' => $nameText,
-                'description' => $descText,
-                'geometry_type' => $geometryType,
-                'has_coordinates' => !empty($coordinates),
-                'coordinate_preview' => substr($coordinates, 0, 100) . (strlen($coordinates) > 100 ? '...' : '')
-            ];
-        }
-
-        // Clean up temp files
-        if (file_exists($tempDir)) {
-            File::deleteDirectory($tempDir);
-        }
-
-        return response()->json([
-            'success' => true,
-            'features' => $features,
-            'total_features' => $placemarks->length,
-            'file_info' => [
-                'original_name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'extension' => $extension,
-                'kml_size' => strlen($kmlContent)
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        // Clean up temp files on error
-        if (isset($tempDir) && file_exists($tempDir)) {
-            try {
+            // Clean up temp files
+            if (file_exists($tempDir)) {
                 File::deleteDirectory($tempDir);
-            } catch (\Exception $cleanupError) {
-                // Ignore cleanup errors
             }
-        }
 
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'file_info' => [
-                'original_name' => $request->file('kmz_file') ? $request->file('kmz_file')->getClientOriginalName() : 'Unknown',
-                'size' => $request->file('kmz_file') ? $request->file('kmz_file')->getSize() : 0,
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'features' => $features,
+                'total_features' => $placemarks->length,
+                'file_info' => [
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'extension' => $extension,
+                    'kml_size' => strlen($kmlContent)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            // Clean up temp files on error
+            if (isset($tempDir) && file_exists($tempDir)) {
+                try {
+                    File::deleteDirectory($tempDir);
+                } catch (\Exception $cleanupError) {
+                    // Ignore cleanup errors
+                }
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'file_info' => [
+                    'original_name' => $request->file('kmz_file') ? $request->file('kmz_file')->getClientOriginalName() : 'Unknown',
+                    'size' => $request->file('kmz_file') ? $request->file('kmz_file')->getSize() : 0,
+                ]
+            ]);
+        }
     }
-}
 
     // === STATISTICS AND UTILITIES ===
-    
+
     public function getStatistics(Request $request)
     {
         $dataType = $request->get('data_type');
@@ -1391,18 +1383,18 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             'total_data' => $query->count(),
             'categories_count' => $query->distinct('kategori_id')->count(),
             'by_data_type' => DataSpatial::select('data_type', 'sub_type', DB::raw('count(*) as total'))
-                                        ->when($dataType, fn($q) => $q->where('data_type', $dataType))
-                                        ->when($subType, fn($q) => $q->where('sub_type', $subType))
-                                        ->when($year, fn($q) => $q->where('tahun', $year))
-                                        ->groupBy('data_type', 'sub_type')
-                                        ->get(),
+                ->when($dataType, fn($q) => $q->where('data_type', $dataType))
+                ->when($subType, fn($q) => $q->where('sub_type', $subType))
+                ->when($year, fn($q) => $q->where('tahun', $year))
+                ->groupBy('data_type', 'sub_type')
+                ->get(),
             'by_year' => DataSpatial::select('tahun', DB::raw('count(*) as total'))
-                                   ->whereNotNull('tahun')
-                                   ->when($dataType, fn($q) => $q->where('data_type', $dataType))
-                                   ->when($subType, fn($q) => $q->where('sub_type', $subType))
-                                   ->groupBy('tahun')
-                                   ->orderBy('tahun', 'desc')
-                                   ->get(),
+                ->whereNotNull('tahun')
+                ->when($dataType, fn($q) => $q->where('data_type', $dataType))
+                ->when($subType, fn($q) => $q->where('sub_type', $subType))
+                ->groupBy('tahun')
+                ->orderBy('tahun', 'desc')
+                ->get(),
             'geometry_stats' => [
                 'with_geometry' => $query->whereNotNull('geom')->count(),
                 'without_geometry' => $query->whereNull('geom')->count()
@@ -1411,13 +1403,13 @@ private function getRedirectAfterUpdate(DataSpatial $data)
 
         // Bounds calculation
         $bounds = $query->whereNotNull('geom')
-                       ->select(
-                           DB::raw('ST_XMin(ST_Extent(geom)) as min_lng'),
-                           DB::raw('ST_YMin(ST_Extent(geom)) as min_lat'),
-                           DB::raw('ST_XMax(ST_Extent(geom)) as max_lng'),
-                           DB::raw('ST_YMax(ST_Extent(geom)) as max_lat')
-                       )
-                       ->first();
+            ->select(
+                DB::raw('ST_XMin(ST_Extent(geom)) as min_lng'),
+                DB::raw('ST_YMin(ST_Extent(geom)) as min_lat'),
+                DB::raw('ST_XMax(ST_Extent(geom)) as max_lng'),
+                DB::raw('ST_YMax(ST_Extent(geom)) as max_lat')
+            )
+            ->first();
 
         if ($bounds) {
             $stats['bounds'] = $bounds;
@@ -1461,7 +1453,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
 
         $columns = DB::select($query, $params);
 
-        $columnNames = array_map(function($col) {
+        $columnNames = array_map(function ($col) {
             return $col->column_name;
         }, $columns);
 
@@ -1481,7 +1473,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
         $subType = $request->get('sub_type');
 
         $query = DataSpatial::whereNotNull('dbf_attributes')
-                           ->whereRaw("dbf_attributes ? ?", [$column]);
+            ->whereRaw("dbf_attributes ? ?", [$column]);
 
         if ($dataType) {
             $query->where('data_type', $dataType);
@@ -1492,10 +1484,10 @@ private function getRedirectAfterUpdate(DataSpatial $data)
         }
 
         $values = $query->pluck(DB::raw("DISTINCT dbf_attributes->>'{$column}'"))
-                       ->filter(function($value) {
-                           return !is_null($value) && $value !== '';
-                       })
-                       ->values();
+            ->filter(function ($value) {
+                return !is_null($value) && $value !== '';
+            })
+            ->values();
 
         return response()->json([
             'success' => true,
@@ -1512,7 +1504,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
     {
         $dataType = $request->get('data_type');
         $subType = $request->get('sub_type');
-        
+
         $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
 
         $categories = DB::table('data_spatial')
@@ -1556,13 +1548,13 @@ private function getRedirectAfterUpdate(DataSpatial $data)
 
             // Regular single delete
             $data = DataSpatial::where('uuid', $uuid)->first();
-            
+
             if (!$data) {
                 Log::warning('Data not found for deletion', [
                     'uuid' => $uuid,
                     'user_id' => auth()->id()
                 ]);
-                
+
                 return redirect()
                     ->back()
                     ->with('error', 'Data tidak ditemukan atau sudah terhapus.');
@@ -1571,7 +1563,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             // Filter berdasarkan role pengguna (keamanan)
             $user = auth()->user();
             $userRole = $user->role->slug ?? null;
-            
+
             if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $data->user_id !== $user->id) {
                 return redirect()
                     ->back()
@@ -1589,14 +1581,13 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             return redirect()
                 ->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
                 ->with('success', 'Data berhasil dihapus.');
-                
         } catch (\Exception $e) {
             Log::error('Delete error: ' . $e->getMessage(), [
                 'uuid' => $uuid,
                 'user_id' => auth()->id(),
                 'error' => $e->getTraceAsString()
             ]);
-            
+
             return redirect()
                 ->back()
                 ->with('error', 'Terjadi kesalahan saat menghapus data.');
@@ -1639,7 +1630,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
 
             // Convert to integers dan filter yang valid
             $ids = array_filter(array_map('intval', $request->ids));
-            
+
             if (empty($ids)) {
                 Log::error('No valid IDs after conversion', [
                     'original_ids' => $request->ids,
@@ -1665,21 +1656,21 @@ private function getRedirectAfterUpdate(DataSpatial $data)
 
             // Get data to delete dengan debugging
             $dataToDelete = DataSpatial::whereIn('id', $ids)->get();
-            
+
             Log::info('Database query result', [
                 'requested_ids' => $ids,
                 'found_count' => $dataToDelete->count(),
                 'found_ids' => $dataToDelete->pluck('id')->toArray(),
                 'sample_all_ids' => DataSpatial::pluck('id')->take(10)->toArray()
             ]);
-            
+
             if ($dataToDelete->isEmpty()) {
                 Log::warning('No data found for bulk delete', [
                     'ids' => $ids,
                     'total_in_db' => $totalRecords,
                     'sample_records' => DataSpatial::select('id', 'uuid', 'deskripsi')->take(5)->get()->toArray()
                 ]);
-                
+
                 return redirect()
                     ->back()
                     ->with('error', 'Data yang dipilih tidak ditemukan dalam database. IDs: ' . implode(', ', $ids));
@@ -1688,23 +1679,23 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             // Security check
             $user = auth()->user();
             $userRole = $user->role->slug ?? null;
-            
+
             Log::info('Security check', [
                 'user_id' => $user->id,
                 'user_role' => $userRole,
                 'is_admin' => in_array($userRole, ['super-admin', 'admin-bappeda'])
             ]);
-            
+
             if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
                 $originalCount = $dataToDelete->count();
                 $dataToDelete = $dataToDelete->where('user_id', $user->id);
-                
+
                 Log::info('User permission filter applied', [
                     'original_count' => $originalCount,
                     'after_filter_count' => $dataToDelete->count(),
                     'user_owned_ids' => $dataToDelete->pluck('id')->toArray()
                 ]);
-                
+
                 if ($dataToDelete->isEmpty()) {
                     return redirect()
                         ->back()
@@ -1715,17 +1706,17 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             // Get redirect route
             $firstItem = $dataToDelete->first();
             $redirectRoute = $this->getRedirectAfterDestroy($firstItem);
-            
+
             Log::info('Redirect route determined', $redirectRoute);
 
             // Perform deletion
             $idsToDelete = $dataToDelete->pluck('id')->toArray();
-            
+
             Log::info('About to delete', [
                 'ids_to_delete' => $idsToDelete,
                 'count' => count($idsToDelete)
             ]);
-            
+
             $deletedCount = DataSpatial::whereIn('id', $idsToDelete)->delete();
 
             Log::info('Bulk delete completed', [
@@ -1733,7 +1724,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
                 'deleted_ids' => $idsToDelete
             ]);
 
-            $message = $deletedCount === 1 
+            $message = $deletedCount === 1
                 ? "Berhasil menghapus {$deletedCount} data spasial."
                 : "Berhasil menghapus {$deletedCount} data spasial.";
 
@@ -1742,7 +1733,6 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             return redirect()
                 ->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
                 ->with('success', $message);
-
         } catch (ValidationException $e) {
             Log::error('Bulk delete validation error', [
                 'errors' => $e->errors(),
@@ -1751,7 +1741,6 @@ private function getRedirectAfterUpdate(DataSpatial $data)
             return redirect()
                 ->back()
                 ->with('error', 'Data yang dipilih tidak valid: ' . implode(', ', array_flatten($e->errors())));
-                
         } catch (\Exception $e) {
             Log::error('Bulk delete error: ' . $e->getMessage(), [
                 'error_message' => $e->getMessage(),
@@ -1760,7 +1749,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
                 'request_data' => $request->all(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return redirect()
                 ->back()
                 ->with('error', 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage());
@@ -1777,7 +1766,7 @@ private function getRedirectAfterUpdate(DataSpatial $data)
         // Dapatkan parameter dari request saat ini
         $currentType = request()->get('type');
         $currentSubType = request()->get('sub_type');
-        
+
         // Prioritaskan parameter dari request, baru dari data
         $dataType = $currentType ?? $data->data_type ?? 'tematik';
         $subType = $currentSubType ?? $data->sub_type;
@@ -1860,7 +1849,6 @@ private function getRedirectAfterUpdate(DataSpatial $data)
                     'updated_at' => $data->updated_at?->format('d M Y H:i')
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Details fetch error: ' . $e->getMessage(), [
                 'uuid' => $uuid,
