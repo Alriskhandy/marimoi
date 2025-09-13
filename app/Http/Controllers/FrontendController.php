@@ -106,7 +106,38 @@ class FrontendController extends Controller
     public function tematik()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.peta', compact('documents'));
+
+        // Get selected category from session if exists
+        $selectedCategory = session('selectedCategory');
+
+        return view('frontend.pages.peta', compact('documents', 'selectedCategory'));
+    }
+
+    public function lihatTematik($id)
+    {
+        // $category = Category::findOrFail($id);
+        // $documents = Dokumen::all();
+        // return redirect()->route('tampil.tematik')
+        //     ->with('selectedCategory', $category->nama)
+        //     ->with('documents', $documents);
+
+        try {
+            $category = Category::findOrFail($id);
+            $documents = Dokumen::all();
+
+            // Store selected category in session
+            session(['selectedCategory' => $category->nama]);
+
+            // Flash message for user feedback
+            session()->flash('info', "Memuat peta {$category->nama}...");
+
+            return redirect()->route('tampil.tematik');
+        } catch (\Exception $e) {
+            Log::error('Error in lihatTematik: ' . $e->getMessage());
+
+            return redirect()->route('tampil.tematik')
+                ->with('error', 'Kategori peta tidak ditemukan.');
+        }
     }
 
     public function pokir()

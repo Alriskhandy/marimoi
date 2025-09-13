@@ -329,7 +329,10 @@
                             loading="lazy">
                             <div class="swiper-footer">
                                 <h2>Peta {{ $peta->nama }}</h2>
-                                <a href="{{ route('tampil.tematik') }}" class="view-map-btn">Lihat Peta</a>
+                                <form action="{{ route('post.tematik', $peta->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="view-map-btn">Lihat Peta</a>
+                                </form>
                             </div>
                         </div>
                     @endforeach

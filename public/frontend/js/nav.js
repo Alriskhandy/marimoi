@@ -116,8 +116,6 @@ const Navigation = {
         navLinks.forEach((link) => {
             link.addEventListener("click", closeMobileMenu);
         });
-
-        console.log("✓ Navigation module initialized");
     },
 };
 
@@ -147,8 +145,6 @@ const VerticalMenu = {
                 }
             });
         });
-
-        console.log("✓ Vertical menu module initialized");
     },
 };
 
