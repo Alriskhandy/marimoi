@@ -45,14 +45,14 @@
 <body>
     <div class="content">
         @if ($type === 'penerimaan')
-            <h2>Halo {{ $data->nama_pengirim ?? $data['nama_pengirim'] }},</h2>
+            <h2>Halo {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? 'Pengirim') }},</h2>
             <p>Terima kasih telah mengirimkan aspirasi melalui <strong>Marimoi</strong>. Aspirasi Anda telah kami terima
                 dan akan kami tinjau.</p>
 
             <p><strong>Ringkasan Aspirasi:</strong></p>
             <ul>
-                <li><strong>Jenis:</strong> {{ $data->jenis_aspirasi ?? ($data['jenis_aspirasi'] ?? '-') }}</li>
-                <li><strong>Judul:</strong> {{ $data->judul_aspirasi ?? ($data['judul_aspirasi'] ?? '-') }}</li>
+                <li><strong>Jenis:</strong> {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}</li>
+                <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
             </ul>
 
             <div class="footer">
@@ -64,13 +64,14 @@
 
             <div class="admin-details">
                 <ul>
-                    <li><strong>Nama Pengirim:</strong> {{ $data->nama_pengirim ?? $data['nama_pengirim'] }}</li>
-                    <li><strong>Email:</strong> {{ $data->email ?? $data['email'] }}</li>
-                    <li><strong>Jenis Aspirasi:</strong> {{ $data->jenis_aspirasi ?? ($data['jenis_aspirasi'] ?? '-') }}
+                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? '-') }}
                     </li>
-                    <li><strong>Judul:</strong> {{ $data->judul_aspirasi ?? ($data['judul_aspirasi'] ?? '-') }}</li>
+                    <li><strong>Email:</strong> {{ $data['email'] ?? ($data->email ?? '-') }}</li>
+                    <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}
+                    </li>
+                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
                     <li><strong>Isi Aspirasi:</strong><br>
-                        <em>"{{ $data->isi_aspirasi ?? ($data['isi_aspirasi'] ?? '-') }}"</em>
+                        <em>"{{ $data['isi_aspirasi'] ?? ($data->isi_aspirasi ?? '-') }}"</em>
                     </li>
                     @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
                         <li><strong>Kategori ID:</strong>
@@ -100,16 +101,17 @@
 
             <div class="admin-details">
                 <ul>
-                    <li><strong>Nama Pengirim:</strong> {{ $data->nama_pengirim ?? $data['nama_pengirim'] }}</li>
-                    <li><strong>Email:</strong> {{ $data->email ?? $data['email'] }}</li>
-                    <li><strong>No. Telepon:</strong> {{ $data->phone ?? $data['phone'] }}</li>
-                    <li><strong>Alamat:</strong> {{ $data->alamat ?? $data['alamat'] }}</li>
-                    <li><strong>Jenis Aspirasi:</strong>
-                        {{ $data->jenis_aspirasi ?? ($data['jenis_aspirasi'] ?? '-') }}
+                    <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? ($data->nama_pengirim ?? '-') }}
                     </li>
-                    <li><strong>Judul:</strong> {{ $data->judul_aspirasi ?? ($data['judul_aspirasi'] ?? '-') }}</li>
+                    <li><strong>Email:</strong> {{ $data['email'] ?? ($data->email ?? '-') }}</li>
+                    <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? ($data->phone ?? '-') }}</li>
+                    <li><strong>Alamat:</strong> {{ $data['alamat'] ?? ($data->alamat ?? '-') }}</li>
+                    <li><strong>Jenis Aspirasi:</strong>
+                        {{ $data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? '-') }}
+                    </li>
+                    <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? ($data->judul_aspirasi ?? '-') }}</li>
                     <li><strong>Isi Aspirasi:</strong><br>
-                        <em>"{{ $data->isi_aspirasi ?? ($data['isi_aspirasi'] ?? '-') }}"</em>
+                        <em>"{{ $data['isi_aspirasi'] ?? ($data->isi_aspirasi ?? '-') }}"</em>
                     </li>
                     @if (($data['jenis_aspirasi'] ?? ($data->jenis_aspirasi ?? null)) != 'kritik & saran')
                         <li><strong>Kategori ID:</strong>
