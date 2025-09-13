@@ -50,6 +50,7 @@
 
             <p><strong>Ringkasan Aspirasi:</strong></p>
             <ul>
+                <li><strong>Nomor Tiket:</strong> {{ $data['nomor_tiket'] ?? '-' }}</li>
                 <li><strong>Jenis:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
                 <li><strong>Judul:</strong> {{ $data['judul_aspirasi'] ?? '-' }}</li>
             </ul>
@@ -57,13 +58,13 @@
             <div class="footer">
                 <p>Salam hangat,<br><strong>Tim Marimoi</strong></p>
             </div>
-
         @elseif($type === 'admin')
             <h2>Halo Admin,</h2>
             <p>Ada aspirasi baru yang masuk melalui <strong>Marimoi</strong>:</p>
 
             <div class="admin-details">
                 <ul>
+                    <li><strong>Nomor Tiket:</strong> {{ $data['nomor_tiket'] ?? '-' }}</li>
                     <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
                     <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
                     <li><strong>Jenis Aspirasi:</strong> {{ $data['jenis_aspirasi'] ?? '-' }}</li>
@@ -71,16 +72,7 @@
                     <li><strong>Isi Aspirasi:</strong><br>
                         <em>"{{ $data['isi_aspirasi'] ?? '-' }}"</em>
                     </li>
-                    {{-- @if (isset($data['jenis_aspirasi']) && $data['jenis_aspirasi'] === 'usulan')
-                        <li><strong>Kategori Usulan:</strong> {{ $data['kategori_aspirasi'] ?? '-' }}</li>
-                        <li><strong>OPD Penanggung Jawab:</strong> {{ $data['opd_terkait'] ?? '-' }}</li>
-                    @endif
-                    @if (isset($data['latitude']) && isset($data['longitude']) && !empty($data['latitude']) && !empty($data['longitude']))
-                        <li><strong>Koordinat:</strong> {{ $data['latitude'] }}, {{ $data['longitude'] }}</li>
-                    @endif
-                    @if (isset($data['lampiran']) && !empty($data['lampiran']))
-                        <li><strong>Lampiran:</strong> {{ $data['lampiran'] }}</li>
-                    @endif --}}
+
                 </ul>
             </div>
 
@@ -88,13 +80,13 @@
             <div class="footer">
                 <p><strong>Sistem Notifikasi Marimoi</strong></p>
             </div>
-
         @elseif($type === 'opd')
             <h2>Halo Tim OPD,</h2>
             <p>Ada aspirasi baru yang perlu ditindaklanjuti oleh OPD Anda melalui <strong>Marimoi</strong>:</p>
             <p><strong>Ringkasan Aspirasi:</strong></p>
 
             <ul>
+                <li><strong>Nomor Tiket:</strong> {{ $data['nomor_tiket'] ?? '-' }}</li>
                 <li><strong>Nama Pengirim:</strong> {{ $data['nama_pengirim'] ?? '-' }}</li>
                 <li><strong>Email:</strong> {{ $data['email'] ?? '-' }}</li>
                 <li><strong>No. Telepon:</strong> {{ $data['phone'] ?? '-' }}</li>
