@@ -63,15 +63,21 @@
                     </svg>
                 </a>
 
-                <a href="#"
+                <a href="https://www.instagram.com/bappeda_malut/" target="_blank" rel="noopener noreferrer"
                     class="bg-black/10 text-black w-9 h-9 rounded-md flex items-center justify-center no-underline transition-all duration-300 border border-white/20 hover:bg-[var(--bg-secondary)] hover:text-white hover:-translate-y-0.5">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path
-                            d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.219-.359-1.219c0-1.142.662-1.995 1.482-1.995.699 0 1.037.219 1.037 1.142 0 .696-.219 1.738-.359 2.699-.199.937.699 1.699 2.061 1.699 2.466 0 4.128-3.075 4.128-6.7 0-2.76-1.855-4.827-5.226-4.827-3.794 0-6.177 2.774-6.177 5.875 0 1.07.262 1.826.698 2.403.199.241.219.359.159.657-.041.219-.159.657-.199.837-.041.298-.199.359-.462.219-1.657-.716-2.466-2.774-2.466-5.032 0-3.794 3.197-7.894 9.56-7.894 5.027 0 8.342 3.598 8.342 7.418 0 5.072-2.787 8.898-6.898 8.898-1.381 0-2.679-.758-3.118-1.699 0 0-.739 2.997-.898 3.654-.301 1.142-1.142 2.563-1.699 3.437C9.177 23.812 10.561 24 12.017 24c6.624 0 11.99-5.367 11.99-11.987C24.007 5.367 18.641.001 12.017.001z" />
+                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                     </svg>
                 </a>
-
-                <a href="#"
+                <a href="https://www.facebook.com/bappedamalut/" target="_blank" rel="noopener noreferrer"
+                    class="bg-black/10 text-black w-9 h-9 rounded-md flex items-center justify-center no-underline transition-all duration-300 border border-white/20 hover:bg-[var(--bg-secondary)] hover:text-white hover:-translate-y-0.5">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                </a>
+                <a href="https://www.youtube.com/@Bappeda_Malut" target="_blank" rel="noopener noreferrer"
                     class="bg-black/10 text-black w-9 h-9 rounded-md flex items-center justify-center no-underline transition-all duration-300 border border-white/20 hover:bg-[var(--bg-secondary)] hover:text-white hover:-translate-y-0.5">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path
@@ -83,7 +89,7 @@
             <div class="flex items-center gap-2.5 mt-1.5 text-black text-sm">
                 <span>
                     <a href="{{ route('kebijakan_privasi') }}" class="no-underline text-inherit">Kebijakan Privasi</a> |
-                    <a href="{{  route('syarat_ketentuan') }}" class="no-underline text-inherit">Syarat & Ketentuan</a>
+                    <a href="{{ route('syarat_ketentuan') }}" class="no-underline text-inherit">Syarat & Ketentuan</a>
                 </span>
             </div>
         </div>
@@ -166,29 +172,29 @@
         });
     </script>
 @endpush
-@push('styles')    
+@push('styles')
     <style>
         /* Custom CSS for elements that need CSS variables */
         .floating-buttons .float-btn:nth-child(1) {
             animation: fadeInUp 0.3s ease 0.1s both;
         }
-    
+
         .floating-buttons .float-btn:nth-child(2) {
             animation: fadeInUp 0.3s ease 0.2s both;
         }
-    
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
             }
-    
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-    
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .floating-buttons {
@@ -196,60 +202,60 @@
                 right: 15px;
                 gap: 10px;
             }
-    
+
             .float-btn {
                 width: 50px;
                 height: 50px;
                 box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             }
-    
+
             .float-btn:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             }
-    
+
             .float-btn svg {
                 width: 18px;
                 height: 18px;
             }
         }
-    
+
         @media (max-width: 480px) {
             .floating-buttons {
                 bottom: 12px;
                 right: 12px;
                 gap: 8px;
             }
-    
+
             .float-btn {
                 width: 45px;
                 height: 45px;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             }
-    
+
             .float-btn:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
             }
-    
+
             .float-btn svg {
                 width: 16px;
                 height: 16px;
             }
         }
-    
+
         @media (max-width: 360px) {
             .floating-buttons {
                 bottom: 10px;
                 right: 10px;
                 gap: 6px;
             }
-    
+
             .float-btn {
                 width: 42px;
                 height: 42px;
             }
-    
+
             .float-btn svg {
                 width: 15px;
                 height: 15px;

@@ -18,6 +18,7 @@
     <link href="{{ asset('frontend/favicon_io/favicon-32x32.png') }}" rel="icon" sizes="32x32">
     <link href="{{ asset('frontend/favicon_io/favicon-16x16.png') }}" rel="icon" sizes="16x16">
     <link href="{{ asset('frontend/favicon_io/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
+    <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
     <!-- Android/Chrome -->
     <link href="{{ asset('frontend/favicon_io/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
 
@@ -59,7 +60,7 @@
                         <a href="#" class="dropdown-trigger {{ $isDropdownActive ? 'active' : '' }}"
                             aria-haspopup="true" aria-expanded="false" role="button">
                             Proyek Strategis
-                            <span class="arrow">▼</span>
+                            <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
                         </a>
                         <ul class="dropdown-menu" role="menu" aria-label="Proyek Strategis Menu">
                             <li role="none"><a href="{{ route('tampil.psd') }}" role="menuitem"
