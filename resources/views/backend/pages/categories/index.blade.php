@@ -65,7 +65,7 @@
     <!-- Statistics Cards -->
     @if ($categories->count() > 0)
         <div class="row mb-4">
-            <div class="col-md-4 stretch-card grid-margin">
+            <div class="col-md-3 stretch-card grid-margin">
                 <div class="card bg-gradient-primary card-img-holder text-white">
                     <div class="card-body">
                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
@@ -80,7 +80,7 @@
                 </div>
             </div>
 
-            <div class="col-md-4 stretch-card grid-margin">
+            <div class="col-md-3 stretch-card grid-margin">
                 <div class="card bg-gradient-success card-img-holder text-white">
                     <div class="card-body">
                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
@@ -96,7 +96,7 @@
                 </div>
             </div>
 
-            <div class="col-md-4 stretch-card grid-margin">
+            <div class="col-md-3 stretch-card grid-margin">
                 <div class="card bg-gradient-warning card-img-holder text-white">
                     <div class="card-body">
                         <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
@@ -108,6 +108,22 @@
                         <h2 class="mb-5">{{ $categories->where('is_marker', true)->count() }}
                         </h2>
                         <h6 class="card-text">Kategori marker point</h6>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 stretch-card grid-margin">
+                <div class="card bg-gradient-info card-img-holder text-white">
+                    <div class="card-body">
+                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                            alt="circle" />
+                        <h4 class="font-weight-normal mb-3">
+                            Status Aktif
+                            <i class="mdi mdi-check-circle mdi-24px float-end"></i>
+                        </h4>
+                        <h2 class="mb-5">{{ $categories->where('is_active', true)->count() }}
+                        </h2>
+                        <h6 class="card-text">Kategori aktif</h6>
                     </div>
                 </div>
             </div>
@@ -135,12 +151,14 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
+                                    <th>Gambar</th>
                                     <th>Nama</th>
                                     <th>Type</th>
                                     <th>Parent</th>
                                     <th>Warna</th>
                                     <th>Jenis</th>
                                     <th>Icon</th>
+                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -156,6 +174,19 @@
                                     <tr data-category-id="{{ $kategori->id }}" data-parent-id="{{ $kategori->parent_id }}"
                                         class="parent-category">
                                         <td>{{ $no++ }}</td>
+                                        <td class="text-center">
+                                            @if ($kategori->gambar)
+                                                <img src="{{ asset('storage/' . $kategori->gambar) }}"
+                                                    alt="{{ $kategori->nama }}" class="category-image img-thumbnail"
+                                                    style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                                    onclick="showImageModal('{{ asset('storage/' . $kategori->gambar) }}', '{{ $kategori->nama }}')">
+                                            @else
+                                                <div class="text-muted"
+                                                    style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px dashed #dee2e6; border-radius: 4px;">
+                                                    <i class="mdi mdi-image-outline"></i>
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
@@ -220,6 +251,17 @@
                                                 <span class="text-muted">-</span>
                                             @endif
                                         </td>
+                                        <td class="text-center">
+                                            @if ($kategori->is_active)
+                                                <span class="badge bg-success text-white">
+                                                    <i class="mdi mdi-check-circle"></i> Aktif
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary text-white">
+                                                    <i class="mdi mdi-pause-circle"></i> Nonaktif
+                                                </span>
+                                            @endif
+                                        </td>
                                         <td>
                                             @php
                                                 $user = Auth::user();
@@ -234,7 +276,9 @@
                                                         data-parent-id="{{ $kategori->parent_id }}"
                                                         data-warna="{{ $kategori->warna }}"
                                                         data-is-marker="{{ $kategori->is_marker }}"
+                                                        data-is-active="{{ $kategori->is_active }}"
                                                         data-icon="{{ $kategori->icon }}"
+                                                        data-gambar="{{ $kategori->gambar }}"
                                                         data-deskripsi="{{ $kategori->deskripsi }}"
                                                         data-bs-toggle="modal" data-bs-target="#editModal"
                                                         title="Edit">
@@ -263,6 +307,20 @@
                                                 class="child-category children-{{ $kategori->id }}"
                                                 style="display: none;">
                                                 <td>{{ $no++ }}</td>
+                                                <td class="text-center">
+                                                    @if ($child->gambar)
+                                                        <img src="{{ asset('storage/' . $child->gambar) }}"
+                                                            alt="{{ $child->nama }}"
+                                                            class="category-image img-thumbnail"
+                                                            style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;"
+                                                            onclick="showImageModal('{{ asset('storage/' . $child->gambar) }}', '{{ $child->nama }}')">
+                                                    @else
+                                                        <div class="text-muted"
+                                                            style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px dashed #dee2e6; border-radius: 4px;">
+                                                            <i class="mdi mdi-image-outline"></i>
+                                                        </div>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="hierarchy-line me-2">
@@ -321,6 +379,17 @@
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
+                                                <td class="text-center">
+                                                    @if ($child->is_active)
+                                                        <span class="badge bg-success text-white">
+                                                            <i class="mdi mdi-check-circle"></i> Aktif
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-secondary text-white">
+                                                            <i class="mdi mdi-pause-circle"></i> Nonaktif
+                                                        </span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     @if ($role === 'super-admin' || $role === 'admin-bappeda' || $child->user_id === $user->id)
                                                         <div class="btn-group" role="group">
@@ -332,7 +401,9 @@
                                                                 data-parent-id="{{ $child->parent_id }}"
                                                                 data-warna="{{ $child->warna }}"
                                                                 data-is-marker="{{ $child->is_marker }}"
+                                                                data-is-active="{{ $child->is_active }}"
                                                                 data-icon="{{ $child->icon }}"
+                                                                data-gambar="{{ $child->gambar }}"
                                                                 data-deskripsi="{{ $child->deskripsi }}"
                                                                 data-bs-toggle="modal" data-bs-target="#editModal"
                                                                 title="Edit">
@@ -357,7 +428,7 @@
                                     @endif
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">
+                                        <td colspan="10" class="text-center py-4">
                                             <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada kategori yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Kategori" untuk memulai</p>
@@ -376,6 +447,21 @@
         </div>
     </div>
 
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">Preview Gambar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="" class="img-fluid" style="max-height: 500px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Modal -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -386,7 +472,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addForm">
+                <form id="addForm" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         <div class="row">
@@ -457,14 +543,50 @@
                             </div>
                         </div>
 
-                        <div class="form-group mb-3 text-center">
-                            <div class="form-check d-inline-block">
-                                <input type="hidden" name="is_marker" value="0">
-                                <input class="form-check-input" type="checkbox" value="1" id="add_is_marker"
-                                    name="is_marker">
-                                <label class="form-check-label" for="add_is_marker">
-                                    Gunakan sebagai Marker (Point)
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="add_gambar" class="form-label">
+                                        <i class="mdi mdi-image me-1"></i> Upload Gambar
+                                    </label>
+                                    <input type="file" class="form-control" id="add_gambar" name="gambar"
+                                        accept="image/*" onchange="previewImage(this, 'add_imagePreview')">
+                                    <div class="form-text">Format: JPG, PNG, GIF. Maksimal 2MB</div>
+                                    <div class="invalid-feedback"></div>
+
+                                    <!-- Image Preview -->
+                                    <div id="add_imagePreview" class="mt-3" style="display: none;">
+                                        <img id="add_previewImg" src="" alt="Preview" class="img-thumbnail"
+                                            style="max-width: 200px; max-height: 150px;">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2"
+                                            onclick="removeImagePreview('add')">
+                                            <i class="mdi mdi-close"></i> Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3 text-center">
+                                    <label class="form-label">Status & Jenis Kategori</label>
+
+                                    <div class="form-check d-inline-block me-3">
+                                        <input type="hidden" name="is_active" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1"
+                                            id="add_is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="add_is_active">
+                                            <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Kategori
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check d-inline-block">
+                                        <input type="hidden" name="is_marker" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1"
+                                            id="add_is_marker" name="is_marker">
+                                        <label class="form-check-label" for="add_is_marker">
+                                            <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -510,7 +632,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="editForm">
+                <form id="editForm" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <input type="hidden" id="edit_id" name="id">
@@ -565,14 +687,59 @@
                             </div>
                         </div>
 
-                        <div class="form-group mb-3 text-center">
-                            <div class="form-check d-inline-block">
-                                <input type="hidden" name="is_marker" value="0">
-                                <input class="form-check-input" type="checkbox" value="1" id="edit_is_marker"
-                                    name="is_marker">
-                                <label class="form-check-label" for="edit_is_marker">
-                                    Gunakan sebagai Marker (Point)
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="edit_gambar" class="form-label">
+                                        <i class="mdi mdi-image me-1"></i> Upload Gambar
+                                    </label>
+                                    <input type="file" class="form-control" id="edit_gambar" name="gambar"
+                                        accept="image/*" onchange="previewImage(this, 'edit_imagePreview')">
+                                    <div class="form-text">Format: JPG, PNG, GIF. Maksimal 2MB. Kosongkan jika tidak ingin
+                                        mengubah.</div>
+                                    <div class="invalid-feedback"></div>
+
+                                    <!-- Current Image Display -->
+                                    <div id="edit_currentImage" class="mt-2" style="display: none;">
+                                        <small class="text-muted d-block mb-2">Gambar saat ini:</small>
+                                        <img id="edit_currentImg" src="" alt="Current" class="img-thumbnail"
+                                            style="max-width: 150px; max-height: 100px;">
+                                    </div>
+
+                                    <!-- New Image Preview -->
+                                    <div id="edit_imagePreview" class="mt-2" style="display: none;">
+                                        <small class="text-muted d-block mb-2">Preview gambar baru:</small>
+                                        <img id="edit_previewImg" src="" alt="Preview" class="img-thumbnail"
+                                            style="max-width: 150px; max-height: 100px;">
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2"
+                                            onclick="removeImagePreview('edit')">
+                                            <i class="mdi mdi-close"></i> Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3 text-center">
+                                    <label class="form-label">Status & Jenis Kategori</label>
+
+                                    <div class="form-check d-inline-block me-3">
+                                        <input type="hidden" name="is_active" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1"
+                                            id="edit_is_active" name="is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Kategori
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check d-inline-block">
+                                        <input type="hidden" name="is_marker" value="0">
+                                        <input class="form-check-input" type="checkbox" value="1"
+                                            id="edit_is_marker" name="is_marker">
+                                        <label class="form-check-label" for="edit_is_marker">
+                                            <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -611,8 +778,8 @@
 @push('styles')
     <style>
         /* ===========================================
-                                                                                                                                       FORM STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               FORM STYLING
+                                                                                                                                            =========================================== */
         .form-control-color {
             max-width: 50px;
             height: 38px;
@@ -626,8 +793,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       TABLE STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               TABLE STYLING
+                                                                                                                                            =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -677,9 +844,20 @@
             background-color: rgba(0, 123, 255, 0.08) !important;
         }
 
+        /* Category Image Styling */
+        .category-image {
+            transition: transform 0.2s ease;
+            border-radius: 6px;
+        }
+
+        .category-image:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
         /* ===========================================
-                                                                                                                                       BADGE STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               BADGE STYLING
+                                                                                                                                            =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -699,9 +877,13 @@
             background-color: #ffc107 !important;
         }
 
+        .bg-success {
+            background-color: #28a745 !important;
+        }
+
         /* ===========================================
-                                                                                                                                       COLOR PREVIEW STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               COLOR PREVIEW STYLING
+                                                                                                                                            =========================================== */
         .color-preview {
             display: flex;
             align-items: center;
@@ -714,8 +896,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       BUTTON GROUP STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               BUTTON GROUP STYLING
+                                                                                                                                            =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -727,8 +909,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       DATATABLE STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               DATATABLE STYLING
+                                                                                                                                            =========================================== */
         .dataTables_wrapper {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -794,8 +976,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       MODAL STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               MODAL STYLING
+                                                                                                                                            =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -814,8 +996,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       ICON PREVIEW STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               ICON PREVIEW STYLING
+                                                                                                                                            =========================================== */
         .icon-preview-container {
             min-height: 60px;
             display: flex;
@@ -868,11 +1050,12 @@
         }
 
         /* ===========================================
-                                                                                                                                       STATISTICS CARDS
-                                                                                                                                    =========================================== */
+                                                                                                                                               STATISTICS CARDS
+                                                                                                                                            =========================================== */
         .card.bg-gradient-primary,
         .card.bg-gradient-success,
-        .card.bg-gradient-warning {
+        .card.bg-gradient-warning,
+        .card.bg-gradient-info {
             border: none;
             border-radius: 10px;
             overflow: hidden;
@@ -886,8 +1069,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       HIERARCHY CONTROLS STYLING
-                                                                                                                                    =========================================== */
+                                                                                                                                               HIERARCHY CONTROLS STYLING
+                                                                                                                                            =========================================== */
         .hierarchy-controls {
             margin-bottom: 10px;
         }
@@ -925,8 +1108,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       UTILITY CLASSES
-                                                                                                                                    =========================================== */
+                                                                                                                                               UTILITY CLASSES
+                                                                                                                                            =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -936,8 +1119,8 @@
         }
 
         /* ===========================================
-                                                                                                                                       RESPONSIVE IMPROVEMENTS
-                                                                                                                                    =========================================== */
+                                                                                                                                               RESPONSIVE IMPROVEMENTS
+                                                                                                                                            =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -964,11 +1147,16 @@
                 font-size: 2em;
                 margin-right: 10px;
             }
+
+            .category-image {
+                width: 35px !important;
+                height: 35px !important;
+            }
         }
 
         /* ===========================================
-                                                                                                                                       FOCUS AND ACCESSIBILITY
-                                                                                                                                    =========================================== */
+                                                                                                                                               FOCUS AND ACCESSIBILITY
+                                                                                                                                            =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -986,11 +1174,114 @@
             white-space: nowrap !important;
             border: 0 !important;
         }
+
+        /* ===========================================
+                                                                                                                                               ACTIVE COUNT WARNING STYLES
+                                                                                                                                            =========================================== */
+        .form-text.text-warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-check.text-muted {
+            opacity: 0.6;
+        }
+
+        .form-check.text-muted .form-check-label {
+            color: #6c757d !important;
+        }
+
+        .form-check-input:disabled {
+            opacity: 0.5;
+        }
+
+        /* Active count badge styling */
+        .active-count-badge {
+            background: linear-gradient(135deg, #ffc107, #ff8f00);
+            color: #212529;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .active-count-badge.warning {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
     </style>
 @endpush
 
 @push('scripts')
     <script>
+        // Image preview function
+        function previewImage(input, previewId) {
+            const file = input.files[0];
+            const preview = document.getElementById(previewId);
+            const previewImg = document.getElementById(previewId.replace('_imagePreview', '_previewImg'));
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+
+                    // Hide current image when preview new one (for edit modal)
+                    if (previewId === 'edit_imagePreview') {
+                        const currentImageDiv = document.getElementById('edit_currentImage');
+                        if (currentImageDiv) {
+                            currentImageDiv.style.display = 'none';
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                previewImg.src = '';
+            }
+        }
+
+        // Remove image preview function
+        function removeImagePreview(type) {
+            const fileInput = document.getElementById(`${type}_gambar`);
+            const preview = document.getElementById(`${type}_imagePreview`);
+            const previewImg = document.getElementById(`${type}_previewImg`);
+
+            // Reset file input
+            fileInput.value = '';
+
+            // Hide preview
+            preview.style.display = 'none';
+            previewImg.src = '';
+
+            // Show current image again (for edit modal)
+            if (type === 'edit') {
+                const currentImageDiv = document.getElementById('edit_currentImage');
+                if (currentImageDiv) {
+                    currentImageDiv.style.display = 'block';
+                }
+            }
+        }
+
+        // Show image modal function
+        function showImageModal(imageSrc, altText) {
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            const modalImage = document.getElementById('modalImage');
+            const modalTitle = document.getElementById('imageModalLabel');
+
+            modalImage.src = imageSrc;
+            modalImage.alt = altText;
+            modalTitle.textContent = `Preview: ${altText}`;
+
+            modal.show();
+        }
+
         $(document).ready(function() {
             // Global state tracking - declare at the top
             let isAllExpanded = false;
@@ -1010,7 +1301,9 @@
                     },
                     {
                         "className": "text-center",
-                        "targets": [0, 5, -1] // Center align for no, icon, action columns
+                        "targets": [0, 1, 7, 8, -
+                            1
+                        ] // Center align for no, image, icon, status, action columns
                     }
                 ],
                 "language": {
@@ -1364,6 +1657,14 @@
                     '<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>').removeClass(
                     'has-icon');
 
+                // Reset image preview
+                $('#add_imagePreview').hide();
+                $('#add_previewImg').attr('src', '');
+
+                // Set default values
+                $('#add_is_active').prop('checked', false); // Default to active
+                $('#add_is_marker').prop('checked', false);
+
                 // Set default type if coming from filtered page
                 const currentType = '{{ request('type') }}';
                 if (currentType) {
@@ -1424,6 +1725,10 @@
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
                 $('#edit_colorPreview').css('background-color', $(this).data('warna') || '#007bff');
 
+                // Handle is_active checkbox
+                const isActive = $(this).data('is-active');
+                $('#edit_is_active').prop('checked', isActive);
+
                 // Handle marker checkbox and icon
                 const isMarker = $(this).data('is-marker');
                 $('#edit_is_marker').prop('checked', isMarker);
@@ -1441,6 +1746,20 @@
                             '<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>')
                         .removeClass('has-icon');
                 }
+
+                // Handle current image display
+                const currentImage = $(this).data('gambar');
+                if (currentImage) {
+                    $('#edit_currentImage').show();
+                    $('#edit_currentImg').attr('src', `{{ asset('storage/') }}/${currentImage}`);
+                } else {
+                    $('#edit_currentImage').hide();
+                }
+
+                // Reset new image preview
+                $('#edit_imagePreview').hide();
+                $('#edit_previewImg').attr('src', '');
+                $('#edit_gambar').val('');
 
                 // Load parent categories
                 const type = $(this).data('type');

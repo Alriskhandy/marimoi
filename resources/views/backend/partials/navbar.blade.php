@@ -1,10 +1,13 @@
 <nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
     <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
         <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}">
-            <img src="{{ asset('backend/assets/images/logo.png') }}" alt="logo" style="height: 50px; width: auto;" />
+            <h2>MARIMOI</h2>
         </a>
+
+        {{-- <h1 class="fw-bold fs-4 d-none d-md-inline">MARIMOI</h1> --}}
+
         <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-            <img src="{{ asset('backend/assets/images/logo.png') }}" alt="logo" style="height: 40px; width: auto;" />
+            <img src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="logo" style="height: 40px; width: auto;" />
         </a>
     </div>
 

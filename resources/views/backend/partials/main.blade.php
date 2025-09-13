@@ -27,7 +27,7 @@
     {{-- <link rel="stylesheet" href="{{ asset('backend/DataTables/datatables.js') }}"> --}}
     <!-- End layout styles -->
     <link rel="stylesheet" href="{{ asset('backend/datatables/datatables.min.css') }}">
-    <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
+    <link rel="shortcut icon" href="{{ asset('frontend/img/logo/logo-white.png') }}" />
     @stack('styles')
     <style>
         .nav .nav-item .nav-link,

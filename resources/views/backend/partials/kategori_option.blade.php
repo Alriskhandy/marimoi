@@ -10,7 +10,7 @@
     $label = $isRoot ? $kategori->nama . ($hasChild ? ' (Tidak Bisa Dipilih)' : ' ') : $indent . '› ' . $kategori->nama;
 @endphp
 
-<option value="{{ $kategori->id }}" {{ old('kategori_id') == $kategori->id ? 'selected' : '' }}
+<option value="{{ $kategori->id }}" {{ old('kategori_id', $data->kategori_id ?? '') == $kategori->id ? 'selected' : '' }}
     {{ $isDisabled ? 'disabled' : '' }}
     style="
         color: {{ $isDisabled ? '#9ca3af' : '#374151' }};
