@@ -733,25 +733,25 @@ class FrontendController extends Controller
             // Set default status ke pending;
             $data['status'] = 'pending';
 
+            // Ambil data admin dan OPD di awal untuk memastikan ketersediaan data
             $adminData = User::where('role_id', 1)->first();
-            $opdData = KategoriAspirasi::with('opd')->find($request->kategori_aspirasi_id);
+            $opdData = null;
 
+            if ($request->jenis_aspirasi === 'usulan' && $request->kategori_aspirasi_id) {
+                $opdData = KategoriAspirasi::with('opd')->find($request->kategori_aspirasi_id);
+            }
 
             // Handle data berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
-                $data['admin_id'] = $opdData->opd ? $opdData->opd->id : null;
-
-                // Untuk Usulan Pembangunan: wajib ada kategori dan koordinat
+                $data['admin_id'] = $opdData && $opdData->opd ? $opdData->opd->id : ($adminData ? $adminData->id : null);
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
             } else {
                 $data['admin_id'] = $adminData ? $adminData->id : null;
-                // Untuk Kritik & Saran: tidak memerlukan kategori dan koordinat
-                // Tapi tetap berikan kategori default untuk compatibility database
                 $data['kategori_aspirasi_id'] = 1; // ID kategori default untuk kritik & saran
-                $data['latitude'] = $request->latitude ?? null; // Optional coordinate dari geolocation
-                $data['longitude'] = $request->longitude ?? null; // Optional coordinate dari geolocation
+                $data['latitude'] = $request->latitude ?? null;
+                $data['longitude'] = $request->longitude ?? null;
             }
 
             // Handle file(lampiran) upload
@@ -759,7 +759,6 @@ class FrontendController extends Controller
                 $file = $request->file('lampiran');
 
                 if ($file->isValid()) {
-
                     try {
                         // Generate unique filename
                         $timestamp = now()->timestamp;
@@ -771,8 +770,7 @@ class FrontendController extends Controller
                         $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
 
                         if ($path) {
-                            $data['lampiran'] = $filename; // Store as string, not array
-
+                            $data['lampiran'] = $filename;
                             Log::info('Lampiran uploaded', [
                                 'original' => $file->getClientOriginalName(),
                                 'saved' => $filename,
@@ -783,7 +781,6 @@ class FrontendController extends Controller
                         }
                     } catch (\Exception $e) {
                         Log::error('File upload error: ' . $e->getMessage());
-                        // Proses tetap di lanjutkan tanpa file lampiran
                     }
                 }
             }
@@ -791,61 +788,134 @@ class FrontendController extends Controller
             // Create aspirasi record
             $aspirasi = Aspirasi::create($data);
 
-            // Prepare data for notifications
-            $userData = $data;
-            $userData['tanggal'] = $aspirasi->created_at->format('d-m-Y H:i:s');
-            $userData['id_aspirasi'] = $aspirasi->id;
-            $userData['kategori_aspirasi'] = $opdData->nama_kategori ?? 'N/A';
-            $userData['opd_terkait'] = $opdData ? $opdData->opd->singkatan : 'N/A';
+            // Prepare data for notifications dengan validasi data yang lebih aman
+            $userData = [
+                'id_aspirasi' => $aspirasi->id,
+                'nama_pengirim' => $data['nama_pengirim'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'alamat' => $data['alamat'],
+                'jenis_aspirasi' => $data['jenis_aspirasi'],
+                'judul_aspirasi' => $data['judul_aspirasi'],
+                'isi_aspirasi' => $data['isi_aspirasi'],
+                'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
+                'kategori_aspirasi' => $opdData ? $opdData->nama_kategori : 'N/A',
+                'opd_terkait' => ($opdData && $opdData->opd) ? $opdData->opd->singkatan : 'N/A'
+            ];
+
+            // Track email sending status
+            $emailStatus = [
+                'user_email' => false,
+                'admin_email' => false,
+                'opd_email' => false
+            ];
 
             // 1. Kirim email konfirmasi ke user (masyarakat)
-            if ($request->filled('email')) {
+            if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
                 try {
                     Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
-                    Log::info('Confirmation email queued for user: ' . $request->email);
+                    $emailStatus['user_email'] = true;
+                    Log::info('Confirmation email queued successfully', [
+                        'aspirasi_id' => $aspirasi->id,
+                        'user_email' => $request->email
+                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to queue user email: ' . $e->getMessage());
-                    // Proses tetap lanjut walaupun email gagal dikirim.
+                    Log::error('Failed to queue user confirmation email', [
+                        'aspirasi_id' => $aspirasi->id,
+                        'user_email' => $request->email,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
+            } else {
+                Log::warning('Invalid user email format', [
+                    'aspirasi_id' => $aspirasi->id,
+                    'email' => $request->email
+                ]);
             }
 
             // 2. Kirim email notifikasi ke admin sistem
-            if ($adminData && !empty($adminData->email)) {
+            if ($adminData && !empty($adminData->email) && filter_var($adminData->email, FILTER_VALIDATE_EMAIL)) {
                 try {
                     Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
-                    Log::info('Admin notification email queued for: ' . $adminData->email);
+                    $emailStatus['admin_email'] = true;
+                    Log::info('Admin notification email queued successfully', [
+                        'aspirasi_id' => $aspirasi->id,
+                        'admin_email' => $adminData->email,
+                        'admin_id' => $adminData->id
+                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to queue admin email: ' . $e->getMessage());
+                    Log::error('Failed to queue admin notification email', [
+                        'aspirasi_id' => $aspirasi->id,
+                        'admin_email' => $adminData->email ?? 'N/A',
+                        'admin_id' => $adminData->id ?? 'N/A',
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             } else {
-                Log::warning('Admin data not found or admin email is empty');
+                Log::warning('Admin email not available or invalid', [
+                    'aspirasi_id' => $aspirasi->id,
+                    'admin_found' => $adminData ? 'yes' : 'no',
+                    'admin_email' => $adminData->email ?? 'N/A'
+                ]);
             }
 
             // 3. Kirim email notifikasi ke OPD terkait (hanya untuk usulan)
-            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && !empty($opdData->opd->email)) {
-                try {
-                    Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
-                    Log::info('OPD notification email queued for: ' . $opdData->opd->email . ' (OPD: ' . $opdData->opd->name . ')');
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue OPD email: ' . $e->getMessage());
+            if ($request->jenis_aspirasi === 'usulan') {
+                if ($opdData && $opdData->opd && !empty($opdData->opd->email) && filter_var($opdData->opd->email, FILTER_VALIDATE_EMAIL)) {
+                    try {
+                        Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
+                        $emailStatus['opd_email'] = true;
+                        Log::info('OPD notification email queued successfully', [
+                            'aspirasi_id' => $aspirasi->id,
+                            'opd_email' => $opdData->opd->email,
+                            'opd_name' => $opdData->opd->name ?? 'N/A',
+                            'kategori_aspirasi_id' => $request->kategori_aspirasi_id
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to queue OPD notification email', [
+                            'aspirasi_id' => $aspirasi->id,
+                            'opd_email' => $opdData->opd->email ?? 'N/A',
+                            'opd_name' => $opdData->opd->name ?? 'N/A',
+                            'kategori_aspirasi_id' => $request->kategori_aspirasi_id,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                    }
+                } else {
+                    Log::warning('OPD email not available or invalid for usulan', [
+                        'aspirasi_id' => $aspirasi->id,
+                        'kategori_aspirasi_id' => $request->kategori_aspirasi_id,
+                        'opd_found' => ($opdData && $opdData->opd) ? 'yes' : 'no',
+                        'opd_email' => ($opdData && $opdData->opd) ? ($opdData->opd->email ?? 'empty') : 'N/A'
+                    ]);
                 }
-            } elseif ($request->jenis_aspirasi === 'usulan') {
-                Log::warning('OPD data not found or OPD email is empty for kategori_aspirasi_id: ' . $request->kategori_aspirasi_id);
             }
 
-            // Log successful creation
-            Log::info('Aspirasi created successfully', [
-                'id' => $aspirasi->id,
-                'jenis' => $data['jenis_aspirasi'],
-                'pengirim' => $data['nama_pengirim']
+            // Log keberhasilan pembuatan aspirasi dengan status email
+            Log::info('Aspirasi created successfully with email status', [
+                'aspirasi_id' => $aspirasi->id,
+                'jenis_aspirasi' => $data['jenis_aspirasi'],
+                'nama_pengirim' => $data['nama_pengirim'],
+                'email_status' => $emailStatus
             ]);
+
+            // Response message berdasarkan status pengiriman email
+            $responseMessage = 'Aspirasi Anda telah berhasil dikirim.';
+            if ($emailStatus['user_email']) {
+                $responseMessage .= ' Email konfirmasi telah dikirim ke alamat email Anda.';
+            } else {
+                $responseMessage .= ' Namun, terjadi kendala dalam pengiriman email konfirmasi.';
+            }
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Aspirasi Anda telah berhasil dikirim. Email konfirmasi telah dikirim ke alamat email Anda.',
+                'message' => $responseMessage,
                 'data' => [
                     'id' => $aspirasi->id,
-                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s')
+                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
+                    'email_sent' => $emailStatus['user_email']
                 ]
             ], 201);
         } catch (\Exception $e) {
@@ -853,6 +923,7 @@ class FrontendController extends Controller
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'request_data' => $request->except(['lampiran', 'h-captcha-response']), // Exclude sensitive data
                 'trace' => $e->getTraceAsString()
             ]);
 
@@ -862,7 +933,6 @@ class FrontendController extends Controller
             ], 500);
         }
     }
-
     /**
      * Handle lampiran upload
      */
