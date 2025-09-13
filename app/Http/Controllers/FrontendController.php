@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AspirasiMail;
 use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\Category;
@@ -742,12 +743,12 @@ class FrontendController extends Controller
 
             $adminData = User::where('role_id', 1)->first();
             $opdData = KategoriAspirasi::with('opd')->find($request->kategori_aspirasi_id);
-            
+
 
             // Handle data berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
                 $data['admin_id'] = $opdData->opd ? $opdData->opd->id : null;
-                
+
                 // Untuk Usulan Pembangunan: wajib ada kategori dan koordinat
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
@@ -773,13 +774,13 @@ class FrontendController extends Controller
                         $randomString = Str::random(13);
                         $extension = $file->getClientOriginalExtension();
                         $filename = $timestamp . '_' . $randomString . '.' . $extension;
-    
+
                         // Store file
                         $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
-    
+
                         if ($path) {
                             $data['lampiran'] = $filename; // Store as string, not array
-    
+
                             Log::info('Lampiran uploaded', [
                                 'original' => $file->getClientOriginalName(),
                                 'saved' => $filename,
@@ -799,25 +800,39 @@ class FrontendController extends Controller
             $aspirasi = Aspirasi::create($data);
 
             // Prepare data for notifications
-            $userData = [
-                'nama_pengirim' => $data['nama_pengirim'],
-                'email' => $data['email'],
-                'jenis_aspirasi' => $data['jenis_aspirasi'],
-                'judul_aspirasi' => $data['judul_aspirasi'],
-                'isi_aspirasi' => $data['isi_aspirasi'],
-                'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
-                'id_aspirasi' => $aspirasi->id
-            ];
+            // $userData = [
+            //     'nama_pengirim' => $data['nama_pengirim'],
+            //     'email' => $data['email'],
+            //     'jenis_aspirasi' => $data['jenis_aspirasi'],
+            //     'judul_aspirasi' => $data['judul_aspirasi'],
+            //     'isi_aspirasi' => $data['isi_aspirasi'],
+            //     'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
+            //     'id_aspirasi' => $aspirasi->id
+            // ];
+
+            $userData = $data;
+            $userData['tanggal'] = $aspirasi->created_at->format('d-m-Y H:i:s');
+            $userData['id_aspirasi'] = $aspirasi->id;
 
             // Kirim email konfirmasi ke user (masyarakat)
             if ($request->filled('email')) {
                 try {
-                    Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
+                    Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
                     Log::info('Confirmation email queued for user: ' . $request->email);
                 } catch (\Exception $e) {
                     Log::error('Failed to queue user email: ' . $e->getMessage());
                     // Proses tetap lanjut walaupun email gagal dikirim.
                 }
+            }
+
+            try {
+                Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
+                Log::info('Confirmation email queued for admin: ' . $adminData->email);
+                Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'admin'));
+                Log::info('Confirmation email queued for opd: ' . $opdData->opd->email);
+            } catch (\Exception $e) {
+                Log::error('Failed to queue Admin / OPD email: ' . $e->getMessage());
+                // Proses tetap lanjut walaupun email gagal dikirim.
             }
 
             // Log successful creation
@@ -835,7 +850,6 @@ class FrontendController extends Controller
                     'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s')
                 ]
             ], 201);
-
         } catch (\Exception $e) {
             Log::error('Error storing aspirasi', [
                 'message' => $e->getMessage(),
