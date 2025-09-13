@@ -800,21 +800,11 @@ class FrontendController extends Controller
             $aspirasi = Aspirasi::create($data);
 
             // Prepare data for notifications
-            // $userData = [
-            //     'nama_pengirim' => $data['nama_pengirim'],
-            //     'email' => $data['email'],
-            //     'jenis_aspirasi' => $data['jenis_aspirasi'],
-            //     'judul_aspirasi' => $data['judul_aspirasi'],
-            //     'isi_aspirasi' => $data['isi_aspirasi'],
-            //     'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
-            //     'id_aspirasi' => $aspirasi->id
-            // ];
-
             $userData = $data;
             $userData['tanggal'] = $aspirasi->created_at->format('d-m-Y H:i:s');
             $userData['id_aspirasi'] = $aspirasi->id;
 
-            // Kirim email konfirmasi ke user (masyarakat)
+            // 1. Kirim email konfirmasi ke user (masyarakat)
             if ($request->filled('email')) {
                 try {
                     Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
@@ -825,14 +815,28 @@ class FrontendController extends Controller
                 }
             }
 
-            try {
-                Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
-                Log::info('Confirmation email queued for admin: ' . $adminData->email);
-                Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'admin'));
-                Log::info('Confirmation email queued for opd: ' . $opdData->opd->email);
-            } catch (\Exception $e) {
-                Log::error('Failed to queue Admin / OPD email: ' . $e->getMessage());
-                // Proses tetap lanjut walaupun email gagal dikirim.
+            // 2. Kirim email notifikasi ke admin sistem
+            if ($adminData && !empty($adminData->email)) {
+                try {
+                    Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
+                    Log::info('Admin notification email queued for: ' . $adminData->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue admin email: ' . $e->getMessage());
+                }
+            } else {
+                Log::warning('Admin data not found or admin email is empty');
+            }
+
+            // 3. Kirim email notifikasi ke OPD terkait (hanya untuk usulan)
+            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && !empty($opdData->opd->email)) {
+                try {
+                    Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
+                    Log::info('OPD notification email queued for: ' . $opdData->opd->email . ' (OPD: ' . $opdData->opd->name . ')');
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue OPD email: ' . $e->getMessage());
+                }
+            } elseif ($request->jenis_aspirasi === 'usulan') {
+                Log::warning('OPD data not found or OPD email is empty for kategori_aspirasi_id: ' . $request->kategori_aspirasi_id);
             }
 
             // Log successful creation

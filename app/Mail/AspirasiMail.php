@@ -36,6 +36,9 @@ class AspirasiMail extends Mailable
             case 'admin':
                 $subject = '[Notifikasi Admin Marimoi] Aspirasi Baru Diterima';
                 break;
+            case 'opd':
+                $subject = '[Notifikasi OPD Marimoi] Aspirasi Baru untuk Ditindaklanjuti';
+                break;
             default:
                 $subject = 'Notifikasi Aspirasi - Marimoi';
                 break;

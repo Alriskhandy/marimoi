@@ -91,6 +91,44 @@
             <div class="footer">
                 <p><strong>Sistem Notifikasi Marimoi</strong></p>
             </div>
+        @elseif($type === 'opd')
+            <h2>Halo Tim OPD,</h2>
+            <p>Ada aspirasi baru yang perlu ditindaklanjuti oleh OPD Anda melalui <strong>Marimoi</strong>:</p>
+
+            <div class="admin-details">
+                <ul>
+                    <li><strong>Nama Pengirim:</strong> {{ $data->nama_pengirim ?? $data['nama_pengirim'] }}</li>
+                    <li><strong>Email:</strong> {{ $data->email ?? $data['email'] }}</li>
+                    <li><strong>No. Telepon:</strong> {{ $data->phone ?? $data['phone'] }}</li>
+                    <li><strong>Alamat:</strong> {{ $data->alamat ?? $data['alamat'] }}</li>
+                    <li><strong>Jenis Aspirasi:</strong>
+                        {{ $data->jenis_aspirasi ?? ($data['jenis_aspirasi'] ?? '-') }}
+                    </li>
+                    <li><strong>Judul:</strong> {{ $data->judul_aspirasi ?? ($data['judul_aspirasi'] ?? '-') }}</li>
+                    <li><strong>Isi Aspirasi:</strong><br>
+                        <em>"{{ $data->isi_aspirasi ?? ($data['isi_aspirasi'] ?? '-') }}"</em>
+                    </li>
+                    @if ($data->jenis_aspirasi != 'kritik & saran')
+                        <li><strong>Kategori ID:</strong> {{ $data->kategori_aspirasi_id }}</li>
+                    @endif
+                    @if (!empty($data->latitude) && !empty($data->longitude))
+                        <li><strong>Koordinat:</strong> {{ $data->latitude }}, {{ $data->longitude }}</li>
+                    @endif
+                    @if (!empty($data->lampiran))
+                        <li><strong>Lampiran:</strong>
+                            {{ is_string($data->lampiran) ? $data->lampiran : (is_array($data->lampiran) ? implode(', ', $data->lampiran) : '-') }}
+                        </li>
+                    @endif
+                    @if (!empty($data->tanggal))
+                        <li><strong>Tanggal Diterima:</strong> {{ $data->tanggal }}</li>
+                    @endif
+                </ul>
+            </div>
+
+            <p>Silakan login ke sistem untuk memberikan tanggapan atau tindak lanjut yang diperlukan.</p>
+            <div class="footer">
+                <p>Terima kasih atas perhatian dan kerjasamanya.<br><strong>Sistem Notifikasi Marimoi</strong></p>
+            </div>
         @endif
     </div>
 </body>
