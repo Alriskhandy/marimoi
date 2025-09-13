@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AspirasiMail;
 use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\Category;
@@ -534,7 +535,7 @@ class FrontendController extends Controller
             'laporan_gambar.file' => 'Lampiran harus berupa file',
             'laporan_gambar.mimes' => 'Format file harus jpeg, png, jpg, gif, pdf, doc, atau docx',
             'laporan_gambar.max' => 'Ukuran file maksimal 5MB',
-            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
+            'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -651,56 +652,76 @@ class FrontendController extends Controller
 
     public function aspirasiStore(Request $request)
     {
-        // Rules untuk validasi inputan user
+        // Base rules yang berlaku untuk semua jenis aspirasi
         $rules = [
-            'nama_pengirim' => 'required|string|max:255',
+            'nama_pengirim' => 'required|string|min:3|max:100',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'alamat' => 'required|string|max:255',
+            'alamat' => 'required|string|min:5|max:200',
             'jenis_aspirasi' => 'required|in:usulan,kritik & saran',
-            'judul_aspirasi' => 'required|string|max:255',
-            'isi_aspirasi' => 'required|string',
-            // 'h-captcha-response' => ['required', new ValidHCaptcha()],
+            'judul_aspirasi' => 'required|string|min:5|max:150',
+            'isi_aspirasi' => 'required|string|min:10|max:1000',
+            'agreement' => 'required|accepted',
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
 
-        // Cek Jenis Aspirasi, jika usulan maka wajib ada kategori dan koordinat
+        // Validasi berdasarkan jenis aspirasi
         if ($request->jenis_aspirasi === 'usulan') {
             $rules['kategori_aspirasi_id'] = 'required|exists:kategori_aspirasi,id';
-            $rules['latitude'] = 'required|numeric';
-            $rules['longitude'] = 'required|numeric';
+            $rules['latitude'] = 'required|numeric|between:-90,90';
+            $rules['longitude'] = 'required|numeric|between:-180,180';
+            $rules['lampiran'] = 'required|file|mimes:jpeg,png,jpg,doc,docx,pdf,|max:5120';
+        } elseif ($request->jenis_aspirasi === 'kritik & saran') {
+            // Untuk Kritik & Saran: semua field wajib diisi kecuali lampiran (tidak wajib)
+            $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,doc,docx,pdf,|max:5120';
+            $rules['latitude'] = 'nullable|numeric|between:-90,90';
+            $rules['longitude'] = 'nullable|numeric|between:-180,180';
         }
 
-        // Lampiran tidak wajib, tapi jika ada harus berupa file
-        $rules['lampiran'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,dwg,dxf|max:5120';
-
+        // Custom messages untuk validasi
         $messages = [
             'nama_pengirim.required' => 'Nama lengkap wajib diisi',
+            'nama_pengirim.min' => 'Nama lengkap minimal 3 karakter',
+            'nama_pengirim.max' => 'Nama lengkap maksimal 100 karakter',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
             'phone.required' => 'Nomor WhatsApp wajib diisi',
+            'phone.regex' => 'Format nomor WhatsApp tidak valid (contoh: 08xxxxxxxxxx)',
             'alamat.required' => 'Alamat wajib diisi',
+            'alamat.min' => 'Alamat minimal 5 karakter',
+            'alamat.max' => 'Alamat maksimal 200 karakter',
             'jenis_aspirasi.required' => 'Jenis aspirasi wajib dipilih',
             'jenis_aspirasi.in' => 'Jenis aspirasi tidak valid',
             'judul_aspirasi.required' => 'Judul aspirasi wajib diisi',
+            'judul_aspirasi.min' => 'Judul aspirasi minimal 5 karakter',
+            'judul_aspirasi.max' => 'Judul aspirasi maksimal 150 karakter',
             'isi_aspirasi.required' => 'Isi aspirasi wajib diisi',
-            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih',
+            'isi_aspirasi.min' => 'Isi aspirasi minimal 10 karakter',
+            'isi_aspirasi.max' => 'Isi aspirasi maksimal 1000 karakter',
+            'kategori_aspirasi_id.required' => 'Kategori usulan wajib dipilih untuk usulan pembangunan',
             'kategori_aspirasi_id.exists' => 'Kategori usulan tidak valid',
-            'latitude.required' => 'Koordinat latitude wajib diisi',
-            'longitude.required' => 'Koordinat longitude wajib diisi',
+            'latitude.required' => 'Lokasi wajib diisi untuk usulan pembangunan',
+            'longitude.required' => 'Lokasi wajib diisi untuk usulan pembangunan',
             'latitude.numeric' => 'Koordinat latitude harus berupa angka',
+            'latitude.between' => 'Koordinat latitude tidak valid',
             'longitude.numeric' => 'Koordinat longitude harus berupa angka',
+            'longitude.between' => 'Koordinat longitude tidak valid',
+            'lampiran.required' => 'Lampiran wajib disertakan untuk usulan pembangunan.',
             'lampiran.file' => 'Lampiran harus berupa file',
-            'lampiran.mimes' => 'Format lampiran harus jpeg, png, jpg, gif, pdf, dwg, atau dxf',
+            'lampiran.mimes' => 'Format lampiran: JPG, PNG, JPEG, DOC, DOCX, atau PDF.',
             'lampiran.max' => 'Ukuran lampiran maksimal 5MB',
-            // 'h-captcha-response.required' => 'CAPTCHA tidak valid.',
+            'agreement.required' => 'Anda harus menyetujui syarat dan ketentuan',
+            'agreement.accepted' => 'Anda harus menyetujui syarat dan ketentuan',
+            'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
 
+        // Jika validasi gagal, kembalikan response dengan error
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Validasi gagal',
+                'message' => 'Validasi gagal. Periksa kembali data Anda.',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -717,55 +738,133 @@ class FrontendController extends Controller
                 'isi_aspirasi'
             ]);
 
-            // Tambahkan kategori dan koordinat jika jenis aspirasi adalah usulan
+            // Set default status ke pending;
+            $data['status'] = 'pending';
+
+            $adminData = User::where('role_id', 1)->first();
+            $opdData = KategoriAspirasi::with('opd')->find($request->kategori_aspirasi_id);
+
+
+            // Handle data berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
+                $data['admin_id'] = $opdData->opd ? $opdData->opd->id : null;
+
+                // Untuk Usulan Pembangunan: wajib ada kategori dan koordinat
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
             } else {
-                $data['kategori_aspirasi_id'] = 1;
+                $data['admin_id'] = $adminData ? $adminData->id : null;
+                // Untuk Kritik & Saran: tidak memerlukan kategori dan koordinat
+                // Tapi tetap berikan kategori default untuk compatibility database
+                $data['kategori_aspirasi_id'] = 1; // ID kategori default untuk kritik & saran
+                $data['latitude'] = $request->latitude ?? null; // Optional coordinate dari geolocation
+                $data['longitude'] = $request->longitude ?? null; // Optional coordinate dari geolocation
             }
 
-            // Tambahkan data status = pending (default);
-            $data['status'] = 'pending';
-
-            // Handle single file upload langsung
+            // Handle file(lampiran) upload
             if ($request->hasFile('lampiran')) {
                 $file = $request->file('lampiran');
 
                 if ($file->isValid()) {
-                    // Generate unique filename
-                    $timestamp = now()->timestamp;
-                    $randomString = Str::random(13);
-                    $extension = $file->getClientOriginalExtension();
-                    $filename = $timestamp . '_' . $randomString . '.' . $extension;
 
-                    // Store file
-                    $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
+                    try {
+                        // Generate unique filename
+                        $timestamp = now()->timestamp;
+                        $randomString = Str::random(13);
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = $timestamp . '_' . $randomString . '.' . $extension;
 
-                    if ($path) {
-                        $data['lampiran'] = $filename; // Store as string, not array
+                        // Store file
+                        $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
 
-                        Log::info('Lampiran uploaded', [
-                            'original' => $file->getClientOriginalName(),
-                            'saved' => $filename,
-                            'size' => $file->getSize()
-                        ]);
+                        if ($path) {
+                            $data['lampiran'] = $filename; // Store as string, not array
+
+                            Log::info('Lampiran uploaded', [
+                                'original' => $file->getClientOriginalName(),
+                                'saved' => $filename,
+                                'size' => $file->getSize()
+                            ]);
+                        } else {
+                            Log::error('Failed to store file');
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('File upload error: ' . $e->getMessage());
+                        // Proses tetap di lanjutkan tanpa file lampiran
                     }
                 }
             }
 
-            Aspirasi::create($data);
+            // Create aspirasi record
+            $aspirasi = Aspirasi::create($data);
+
+            // Prepare data for notifications
+            $userData = $data;
+            $userData['tanggal'] = $aspirasi->created_at->format('d-m-Y H:i:s');
+            $userData['id_aspirasi'] = $aspirasi->id;
+
+            // 1. Kirim email konfirmasi ke user (masyarakat)
+            if ($request->filled('email')) {
+                try {
+                    Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
+                    Log::info('Confirmation email queued for user: ' . $request->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue user email: ' . $e->getMessage());
+                    // Proses tetap lanjut walaupun email gagal dikirim.
+                }
+            }
+
+            // 2. Kirim email notifikasi ke admin sistem
+            if ($adminData && !empty($adminData->email)) {
+                try {
+                    Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
+                    Log::info('Admin notification email queued for: ' . $adminData->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue admin email: ' . $e->getMessage());
+                }
+            } else {
+                Log::warning('Admin data not found or admin email is empty');
+            }
+
+            // 3. Kirim email notifikasi ke OPD terkait (hanya untuk usulan)
+            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && !empty($opdData->opd->email)) {
+                try {
+                    Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
+                    Log::info('OPD notification email queued for: ' . $opdData->opd->email . ' (OPD: ' . $opdData->opd->name . ')');
+                } catch (\Exception $e) {
+                    Log::error('Failed to queue OPD email: ' . $e->getMessage());
+                }
+            } elseif ($request->jenis_aspirasi === 'usulan') {
+                Log::warning('OPD data not found or OPD email is empty for kategori_aspirasi_id: ' . $request->kategori_aspirasi_id);
+            }
+
+            // Log successful creation
+            Log::info('Aspirasi created successfully', [
+                'id' => $aspirasi->id,
+                'jenis' => $data['jenis_aspirasi'],
+                'pengirim' => $data['nama_pengirim']
+            ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Aspirasi berhasil dikirim.',
-            ]);
+                'message' => 'Aspirasi Anda telah berhasil dikirim. Email konfirmasi telah dikirim ke alamat email Anda.',
+                'data' => [
+                    'id' => $aspirasi->id,
+                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s')
+                ]
+            ], 201);
         } catch (\Exception $e) {
-            Log::error('Error storing aspirasi: ' . $e->getMessage());
+            Log::error('Error storing aspirasi', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat menyimpan data.'
+                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi admin jika masalah berlanjut.'
             ], 500);
         }
     }
@@ -852,5 +951,100 @@ class FrontendController extends Controller
         }
 
         return 'all'; // Default to show all
+    }
+
+    /**
+     * Show last lines of laravel.log with simple search and pagination
+     */
+    public function showLogs(Request $request)
+    {
+        $logPath = storage_path('logs/laravel.log');
+
+        // Parameters
+        $query = $request->get('q', null);
+
+        $parsedLogs = [];
+        $sizeHuman = '0 B';
+        $linesShown = 0;
+
+        if (!file_exists($logPath)) {
+            return view('frontend.logs.log', compact('parsedLogs', 'linesShown', 'sizeHuman'))->with('logFile', $logPath);
+        }
+
+        try {
+            $size = filesize($logPath);
+            $sizeHuman = $this->humanFileSize($size);
+
+            // Read the whole file into lines (trim newlines)
+            $allLines = file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+            // Filter out stack-trace lines and unwanted content
+            $filtered = array_values(array_filter($allLines, function ($l) {
+                $trimmed = ltrim($l);
+                // Filter out lines that start with #0, #1, etc. (stack traces)
+                if (strlen($trimmed) > 0 && $trimmed[0] === '#' && preg_match('/^#\d+/', $trimmed)) {
+                    return false;
+                }
+                // Filter out [stacktrace] lines
+                if (stripos($trimmed, '[stacktrace]') !== false) {
+                    return false;
+                }
+                // Filter out lines that are just closing braces or empty
+                if (trim($l) === '}' || trim($l) === '') {
+                    return false;
+                }
+                return true;
+            }));
+
+            // Apply search if provided
+            if ($query) {
+                $q = trim($query);
+                $filtered = array_values(array_filter($filtered, function ($l) use ($q) {
+                    return stripos($l, $q) !== false;
+                }));
+            }
+
+            // Parse each line into date, time, and content
+            foreach ($filtered as $line) {
+                $date = null;
+                $time = null;
+                $content = $line;
+
+                // Example log line: [2025-09-13 14:02:54] local.INFO: Visitor tracked {..}
+                if (preg_match('/^\[(?<dt>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+(?<rest>.*)$/', $line, $m)) {
+                    $datetime = $m['dt'];
+                    $after = $m['rest'];
+                    // split datetime to date/time
+                    [$date, $time] = explode(' ', $datetime);
+                    // strip channel and level e.g. "local.INFO: " prefix
+                    if (preg_match('/^[^:]+:\s*(?<msg>.*)$/', $after, $m2)) {
+                        $content = $m2['msg'];
+                    } else {
+                        $content = $after;
+                    }
+                }
+
+                $parsedLogs[] = [
+                    'date' => $date,
+                    'time' => $time,
+                    'content' => $content,
+                ];
+            }
+
+            $linesShown = count($parsedLogs);
+
+            return view('frontend.logs.log', compact('parsedLogs', 'linesShown', 'sizeHuman'))->with('logFile', $logPath);
+        } catch (\Exception $e) {
+            Log::error('Error reading log file: ' . $e->getMessage());
+            return view('frontend.logs.log', compact('parsedLogs', 'linesShown', 'sizeHuman'))->with('logFile', $logPath);
+        }
+    }
+
+    private function humanFileSize($bytes, $decimals = 2)
+    {
+        $size = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        $factor = floor((strlen($bytes) - 1) / 3);
+        if ($factor == 0) return $bytes . ' ' . $size[0];
+        return sprintf("%.{$decimals}f %s", $bytes / pow(1024, $factor), $size[$factor]);
     }
 }

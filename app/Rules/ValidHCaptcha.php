@@ -32,7 +32,7 @@ class ValidHCaptcha implements ValidationRule
         $result = $response->json();
 
         if (!($result['success'] ?? false)) {
-            $fail('CAPTCHA tidak valid. Yang bukan manusia ga diajak :p.');
+            $fail('CAPTCHA tidak valid.');
         }
     }
 }
