@@ -52,19 +52,23 @@
             <button
                 class="nav-dot w-2 h-2 rounded-full bg-blue-400 ring-2 ring-white shadow-lg transition-all duration-300 hover:scale-110 active"
                 aria-label="Slide 1" data-title="Indeks Pengembangan Wilayah"
-                data-description="<p>MARIMOI meningkatkan Indeks Pengembangan Wilayah melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Penyediaan data spasial dan sektoral untuk mengukur keterjangkauan layanan dasar.</li><li>Akselerasi pembangunan infrastruktur di wilayah hinterland dan kawasan tertinggal.</li><li>Integrasi lintas wilayah dalam perencanaan berbasis konektivitas (antarpulau, antarkawasan).</li></ul>"></button>
+                data-description="<p><strong>MARIMOI</strong> meningkatkan <strong>Indeks Pengembangan Wilayah></strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Penyediaan data spasial dan sektoral untuk mengukur keterjangkauan layanan dasar.</li><li>Akselerasi pembangunan infrastruktur di wilayah hinterland dan kawasan tertinggal.</li><li>Integrasi lintas wilayah dalam perencanaan berbasis konektivitas (antarpulau, antarkawasan).</li></ul><p><strong>Hasil:</strong> Distribusi pembangunan menjadi lebih merata, mempersempit disparitas wilayah.<p/>"></button>
             <button
                 class="nav-dot w-2 h-2 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 2" data-title="Indeks Kualitas Lingkungan Hidup"
-                data-description="<p>MARIMOI meningkatkan kualitas lingkungan hidup melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Monitoring kualitas air dan udara secara real-time.</li><li>Pengelolaan sampah dan limbah berkelanjutan.</li><li>Konservasi ekosistem laut dan darat.</li></ul>"></button>
+                aria-label="Slide 2" data-title="Indeks SPBE (Sistem Pemerintahan Berbasis Elektronik)"
+                data-description="<p><strong>MARIMOI</strong> mendorong pencapaian <strong>SPBE</strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Digitalisasi proses perencanaan, monitoring, dan pelaporan infrastruktur.</li><li>Interopabilitas data antar instansi (BAPPEDA, OPD Teknis, DPRD).</li><li>Fitur Dashboard publik sebagai bentuk pelayanan digital transparan.</li></ul><p><strong>Hasil:</strong> Meningkatkan Domain Perencanaan Pembangunan dan Pelayanan Publik Berbasis Elektronik dalam penilaian SPBE.<p/>"></button>
             <button
                 class="nav-dot w-2 h-2 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 3" data-title="Indeks Pembangunan Ekonomi"
-                data-description="<p>MARIMOI mendorong pertumbuhan ekonomi melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Pengembangan sektor pariwisata dan perikanan.</li><li>Peningkatan akses pasar dan investasi.</li><li>Pemberdayaan UMKM dan koperasi lokal.</li></ul>"></button>
+                aria-label="Slide 3" data-title="Indeks Pelayanan Publik"
+                data-description="<p><strong>MARIMOI</strong> memberi dampak pada <strong>Indeks Pelayanan Publik</strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur (jalan rusak, PSU, jembatan, dll).</li><li>Penyediaan data real-time kepada unit pelayanan teknis untuk respon cepat.</li><li>Penguatan kualitas layanan berbasis kebutuhan wilayah, bukan hanya standar sektoral.</li></ul><p><strong>Hasil:</strong> Pelayanan publik lebih responsif, adil, dan terukur.<p/>"></button>
             <button
                 class="nav-dot w-2 h-2 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 4" data-title="Indeks Kualitas Sumber Daya Manusia"
-                data-description="<p>MARIMOI meningkatkan kualitas SDM melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Program pendidikan dan pelatihan vokasi.</li><li>Peningkatan akses layanan kesehatan.</li><li>Pengembangan kapasitas aparatur dan masyarakat.</li></ul>"></button>
+                aria-label="Slide 4" data-title="Indeks Kualitas Layanan Infrastruktur"
+                data-description="<p>Melalui <strong>MARIMOI:</strong></p><ul class='list-disc pl-5 space-y-2'><li>Pemerintah dapat memantau kondisi infrastruktur secara spasial dan waktu nyata.</li><li>Sistem mendukung evaluasi kinerja infrastruktur berdasarkan output dan outcome.</li></ul><p><strong>Hasil:</strong> Layanan infrastruktur menjadi lebih merata, berkualitas, dan efisien.<p/>"></button>
+            <button
+                class="nav-dot w-2 h-2 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
+                aria-label="Slide 5" data-title="Indeks Desa Membangun (IDM)"
+                data-description="<p>Kontribusi <strong>MARIMOI</strong> terhadap <strong>IDM</strong> meliputi:</p><ul class='list-disc pl-5 space-y-2'><li>Mengitegrasikan kebutuhan dan aspirasi desa dalam sistem perencanaan wilayah.</li><li>Menyediakan data dukung untuk pembangunan infrastruktur dasar di desa (jalan, air, listrik).</li><li>Meningkatkan status desa dari <strong>Tertinggal -> Berkembang -> Mandiri</strong> secara terstruktur.</li></ul><p><strong>Hasil:</strong> Intervensi infrastruktur ke desa lebih tepat sasaran dan berdampak langsung terhadap indikator IDM.<p/>"></button>
         </div>
     </div>
 
@@ -85,19 +89,23 @@
             <button
                 class="nav-dot w-3 h-3 rounded-full bg-blue-400 ring-2 ring-white shadow-lg transition-all duration-300 hover:scale-110 active"
                 aria-label="Slide 1" data-title="Indeks Pengembangan Wilayah"
-                data-description="<p>MARIMOI meningkatkan Indeks Pengembangan Wilayah melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Penyediaan data spasial dan sektoral untuk mengukur keterjangkauan layanan dasar.</li><li>Akselerasi pembangunan infrastruktur di wilayah hinterland dan kawasan tertinggal.</li><li>Integrasi lintas wilayah dalam perencanaan berbasis konektivitas (antarpulau, antarkawasan).</li></ul>"></button>
+                data-description="<p><strong>MARIMOI</strong> meningkatkan <strong>Indeks Pengembangan Wilayah></strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Penyediaan data spasial dan sektoral untuk mengukur keterjangkauan layanan dasar.</li><li>Akselerasi pembangunan infrastruktur di wilayah hinterland dan kawasan tertinggal.</li><li>Integrasi lintas wilayah dalam perencanaan berbasis konektivitas (antarpulau, antarkawasan).</li></ul><p><strong>Hasil:</strong> Distribusi pembangunan menjadi lebih merata, mempersempit disparitas wilayah.<p/>"></button>
             <button
                 class="nav-dot w-3 h-3 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 2" data-title="Indeks Kualitas Lingkungan Hidup"
-                data-description="<p>MARIMOI meningkatkan kualitas lingkungan hidup melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Monitoring kualitas air dan udara secara real-time.</li><li>Pengelolaan sampah dan limbah berkelanjutan.</li><li>Konservasi ekosistem laut dan darat.</li></ul>"></button>
+                aria-label="Slide 2" data-title="Indeks SPBE (Sistem Pemerintahan Berbasis Elektronik)"
+                data-description="<p><strong>MARIMOI</strong> mendorong pencapaian <strong>SPBE</strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Digitalisasi proses perencanaan, monitoring, dan pelaporan infrastruktur.</li><li>Interopabilitas data antar instansi (BAPPEDA, OPD Teknis, DPRD).</li><li>Fitur Dashboard publik sebagai bentuk pelayanan digital transparan.</li></ul><p><strong>Hasil:</strong> Meningkatkan Domain Perencanaan Pembangunan dan Pelayanan Publik Berbasis Elektronik dalam penilaian SPBE.<p/>"></button>
             <button
                 class="nav-dot w-3 h-3 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 3" data-title="Indeks Pembangunan Ekonomi"
-                data-description="<p>MARIMOI mendorong pertumbuhan ekonomi melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Pengembangan sektor pariwisata dan perikanan.</li><li>Peningkatan akses pasar dan investasi.</li><li>Pemberdayaan UMKM dan koperasi lokal.</li></ul>"></button>
+                aria-label="Slide 3" data-title="Indeks Pelayanan Publik"
+                data-description="<p><strong>MARIMOI</strong> memberi dampak pada <strong>Indeks Pelayanan Publik</strong> melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur (jalan rusak, PSU, jembatan, dll).</li><li>Penyediaan data real-time kepada unit pelayanan teknis untuk respon cepat.</li><li>Penguatan kualitas layanan berbasis kebutuhan wilayah, bukan hanya standar sektoral.</li></ul><p><strong>Hasil:</strong> Pelayanan publik lebih responsif, adil, dan terukur.<p/>"></button>
             <button
                 class="nav-dot w-3 h-3 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="Slide 4" data-title="Indeks Kualitas Sumber Daya Manusia"
-                data-description="<p>MARIMOI meningkatkan kualitas SDM melalui:</p><ul class='list-disc pl-5 space-y-2'><li>Program pendidikan dan pelatihan vokasi.</li><li>Peningkatan akses layanan kesehatan.</li><li>Pengembangan kapasitas aparatur dan masyarakat.</li></ul>"></button>
+                aria-label="Slide 4" data-title="Indeks Kualitas Layanan Infrastruktur"
+                data-description="<p>Melalui <strong>MARIMOI:</strong></p><ul class='list-disc pl-5 space-y-2'><li>Pemerintah dapat memantau kondisi infrastruktur secara spasial dan waktu nyata.</li><li>Sistem mendukung evaluasi kinerja infrastruktur berdasarkan output dan outcome.</li></ul><p><strong>Hasil:</strong> Layanan infrastruktur menjadi lebih merata, berkualitas, dan efisien.<p/>"></button>
+            <button
+                class="nav-dot w-3 h-3 rounded-full bg-white/60 hover:bg-blue-400 ring-2 ring-white/80 shadow-lg transition-all duration-300 hover:scale-110"
+                aria-label="Slide 5" data-title="Indeks Desa Membangun (IDM)"
+                data-description="<p>Kontribusi <strong>MARIMOI</strong> terhadap <strong>IDM</strong> meliputi:</p><ul class='list-disc pl-5 space-y-2'><li>Mengitegrasikan kebutuhan dan aspirasi desa dalam sistem perencanaan wilayah.</li><li>Menyediakan data dukung untuk pembangunan infrastruktur dasar di desa (jalan, air, listrik).</li><li>Meningkatkan status desa dari <strong>Tertinggal -> Berkembang -> Mandiri</strong> secara terstruktur.</li></ul><p><strong>Hasil:</strong> Intervensi infrastruktur ke desa lebih tepat sasaran dan berdampak langsung terhadap indikator IDM.<p/>"></button>
         </div>
 
         <!-- Tombol Next -->

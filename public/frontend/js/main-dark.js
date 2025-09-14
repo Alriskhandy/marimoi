@@ -451,7 +451,7 @@ const IndikatorModule = {
 
             let currentIndex = 0;
             let isScrolling = false;
-            const totalSlides = 4; // We know there are 4 slides
+            const totalSlides = 5; // We know there are 4 slides
 
             // Detect device type
             const isDesktop = window.innerWidth > 1024;
