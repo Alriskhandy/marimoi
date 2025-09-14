@@ -1,41 +1,3 @@
-{{-- @push('styles')
-    <link rel="stylesheet" href="{{ asset('frontend/css/section/about.css') }}">
-@endpush
-
-<section class="section about-section" id="about">
-    <div class="container">
-        <!-- Content Layout: Left (Quotes), Right (Person's Photo) -->
-        <div class="about-content-layout">
-            <!-- Left Side: Quotes -->
-            <div class="about-left-section">
-                <div class="quotes-container">
-                    <blockquote class="testimonial-quote">
-                        <p class="quote-text">
-                            "MARIMOI adalah platform inovatif yang menghubungkan pemerintah dan masyarakat dalam
-                            perencanaan pembangunan infrastruktur. Dengan teknologi pemetaan digital dan sistem
-                            aspirasi terintegrasi, kami memastikan pembangunan yang tepat sasaran dan
-                            berkelanjutan."
-                        </p>
-                        <p class="quote-additional">
-                            Kepala Bappeda Prov. Maluku Utara,
-                            Periode 2023 - Sekarang <br>
-                            - Dr. Muhammad Sarmin S. Adam, S.STP, M.Si
-                        </p>
-                    </blockquote>
-                </div>
-            </div>
-
-            <!-- Right Side: Person's Photo -->
-            <div class="about-right-section">
-                <div class="person-photo">
-                    <img src="{{ asset('frontend/img/foto-2x3.png') }}" alt="Foto Dr. Muhammad Sarmin S. Adam, S.STP, M.Si"
-                        loading="lazy">
-                </div>
-            </div>
-        </div>
-    </div>
-</section> --}}
-
 <style>
     /* Custom mask untuk radial spotlight - tidak tersedia di Tailwind */
     .spotlight-mask::before {
@@ -130,10 +92,7 @@
                     <blockquote class="m-0 p-0 border-none">
                         <p
                             class="text-[0.9rem] md:text-base lg:text-[1.2rem] leading-[1.4] md:leading-[1.5] lg:leading-[1.6] text-white mb-4 md:mb-5 relative text-left font-[Inter,sans-serif] [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
-                            "MARIMOI adalah platform inovatif yang menghubungkan pemerintah dan masyarakat dalam
-                            perencanaan pembangunan infrastruktur. Dengan teknologi pemetaan digital dan sistem
-                            aspirasi terintegrasi, kami memastikan pembangunan yang tepat sasaran dan
-                            berkelanjutan."
+                            "MARIMOI bukan hanya sistem. Ia adalah panggilan budaya untuk bersatu membangun negeri. Ia menyatukan data, menyatukan wilayah, menyatukan kepentingan, dan menyatukan tekad untuk membangun Maluku Utara dari pulau ke pulau."
                         </p>
                         <p
                             class="text-[0.75rem] md:text-[0.8rem] lg:text-base italic leading-[1.3] md:leading-normal lg:leading-normal text-[#b7b7b7] m-0 font-semibold text-left [text-shadow:1px_1px_2px_rgba(0,0,0,0.6)]">
