@@ -115,15 +115,8 @@ class FrontendController extends Controller
 
     public function lihatTematik($id)
     {
-        // $category = Category::findOrFail($id);
-        // $documents = Dokumen::all();
-        // return redirect()->route('tampil.tematik')
-        //     ->with('selectedCategory', $category->nama)
-        //     ->with('documents', $documents);
-
         try {
             $category = Category::findOrFail($id);
-            $documents = Dokumen::all();
 
             // Store selected category in session
             session(['selectedCategory' => $category->nama]);
@@ -533,7 +526,7 @@ class FrontendController extends Controller
             'nama_proyek' => 'required|string|max:255',
             'kabupaten_kota' => 'required|string|max:255',
             'kecamatan' => 'nullable|string|max:255',
-            'jenis_tanggapan' => 'required|in:pengaduan,saran,apresiasi,pertanyaan',
+            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
             'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -541,7 +534,7 @@ class FrontendController extends Controller
         ];
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada file
-        if ($request->jenis_tanggapan === 'pengaduan') {
+        if ($request->jenis_tanggapan === 'keluhan') {
             $rules['laporan_gambar'] = 'required|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
         } else {
             $rules['laporan_gambar'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
@@ -642,8 +635,8 @@ class FrontendController extends Controller
 
             // Data untuk admin
             $adminData = [
-                'nama'      =>  $user->name,
-                'email'     =>  $user->email,
+                'nama'      =>  $request->nama_pemberi_aspirasi,
+                'email'     =>  $request->email,
                 'tanggapan' => $request->tanggapan,
                 'tanggal'   => now()->format('d-m-Y H:i'),
                 'nama_proyek' => $request->nama_proyek,

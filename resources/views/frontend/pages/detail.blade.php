@@ -5,7 +5,7 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <!-- Tailwind CSS via Vite -->
     @vite(['resources/css/app.css'])
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
     <style>
         /* Typography Fonts */
         h1,
@@ -86,10 +86,45 @@
                 display: block;
             }
         }
+
+        /* Form Validation */
+        .is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        }
+
+        .is-valid {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        }
+
+        .invalid-feedback:not(.hidden) {
+            display: block;
+        }
     </style>
 @endpush
 
 @section('main')
+    <!-- Modal Overlay -->
+    <div id="modalOverlay"
+        class="fixed inset-0 bg-black/60 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-300 ease-out backdrop-blur-sm">
+        <div
+            class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] scale-90 translate-y-5 transition-transform duration-300 ease-out">
+            <div id="modalIcon"
+                class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl bg-blue-100 text-blue-600">
+                <div class="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <h3 id="modalTitle" class="text-xl font-semibold text-gray-800 mb-2">Memproses...</h3>
+            <p id="modalMessage" class="text-gray-600 mb-4">Mohon tunggu sebentar</p>
+            <div id="modalActions" class="hidden">
+                <button id="modalCloseBtn"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Detail Section -->
     <section class="min-h-auto mt-[76px] pt-8 pb-12 bg-slate-50">
         <!-- Section Title -->
@@ -228,8 +263,8 @@
                                             <div class="relative">
                                                 <div
                                                     class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                        stroke="currentColor">
+                                                    <svg class="h-5 w-5 text-slate-400" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2"
                                                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -418,11 +453,6 @@
                                     </div>
 
                                 </form>
-
-                                <!-- Alert container -->
-                                <div id="alertContainer" style="display: none;" class="mt-6">
-                                    <div id="alertMessage" class="p-4 rounded-lg" role="alert"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -485,7 +515,7 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Form feedback functionality
+            // Initialize form elements
             const form = document.getElementById('feedbackForm');
             const jenisTanggapan = document.getElementById('jenis_tanggapan');
             const imageRequired = document.getElementById('image_required');
@@ -500,48 +530,78 @@
             const lat = document.getElementById('latitude');
             const long = document.getElementById('longitude');
 
-            // Handle image preview
+            // Modal elements
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalActions = document.getElementById('modalActions');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+            // Initialize validation system
+            setupValidation();
+
+            // Modal handling
+            modalCloseBtn.addEventListener('click', () => hideModal());
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) hideModal();
+            });
+
+            // File upload validation
             laporanGambar.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
                     // Check file size (2MB = 2 * 1024 * 1024 bytes)
                     if (file.size > 2 * 1024 * 1024) {
-                        alert('Ukuran file terlalu besar. Maksimal 2MB.');
                         this.value = '';
+                        validateField(this, false, 'Ukuran file maksimal 2MB');
+                        resetCaptcha();
                         return;
                     }
 
                     // Check file type
                     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
                     if (!allowedTypes.includes(file.type)) {
-                        alert('Format file tidak didukung. Gunakan JPG, JPEG, PNG, atau GIF.');
                         this.value = '';
+                        validateField(this, false, 'Format file tidak didukung');
+                        resetCaptcha();
                         return;
                     }
 
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const mobilePreview = document.getElementById('mobileImagePreview');
-                        const mobilePreviewImage = document.getElementById('mobilePreviewImage');
+                    validateField(this, true);
+                    handleImagePreview(file);
 
-                        // Check if mobile view
-                        if (window.innerWidth <= 767) {
-                            // Mobile: Show mobile preview only, hide desktop preview
-                            mobilePreviewImage.src = e.target.result;
-                            mobilePreview.classList.add('show');
-                            imagePreviewContainer.style.display = 'none';
-                            imagePlaceholder.style.display = 'none';
-                        } else {
-                            // Desktop: Show desktop preview only, hide mobile preview
-                            imagePreview.src = e.target.result;
-                            imagePreviewContainer.style.display = 'block';
-                            imagePlaceholder.style.display = 'none';
-                            mobilePreview.classList.remove('show');
-                        }
-                    };
-                    reader.readAsDataURL(file);
+                    // Clear any previous validation errors for keluhan
+                    if (jenisTanggapan.value === 'keluhan') {
+                        validateField(this, true, '');
+                    }
                 }
             });
+
+            // Handle image preview
+            function handleImagePreview(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const mobilePreview = document.getElementById('mobileImagePreview');
+                    const mobilePreviewImage = document.getElementById('mobilePreviewImage');
+
+                    // Check if mobile view
+                    if (window.innerWidth <= 767) {
+                        // Mobile: Show mobile preview only, hide desktop preview
+                        mobilePreviewImage.src = e.target.result;
+                        mobilePreview.classList.add('show');
+                        imagePreviewContainer.style.display = 'none';
+                        imagePlaceholder.style.display = 'none';
+                    } else {
+                        // Desktop: Show desktop preview only, hide mobile preview
+                        imagePreview.src = e.target.result;
+                        imagePreviewContainer.style.display = 'block';
+                        imagePlaceholder.style.display = 'none';
+                        mobilePreview.classList.remove('show');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
 
             // Handle remove image
             removeImageBtn.addEventListener('click', function() {
@@ -555,6 +615,12 @@
                 const mobilePreviewImage = document.getElementById('mobilePreviewImage');
                 mobilePreviewImage.src = '';
                 mobilePreview.classList.remove('show');
+
+                // Reset validation state and revalidate if keluhan
+                laporanGambar.classList.remove('is-valid', 'is-invalid');
+                if (jenisTanggapan.value === 'keluhan') {
+                    validateField(laporanGambar, false, 'Gambar wajib untuk pengaduan');
+                }
             });
 
             // Handle jenis tanggapan change
@@ -563,18 +629,40 @@
                     laporanGambar.setAttribute('required', 'required');
                     imageRequired.style.display = 'inline';
                     imageNote.textContent = 'Wajib untuk pengaduan.';
-                    imageNote.className = 'text-danger fw-bold';
+                    imageNote.className = 'text-red-600 font-medium';
+
+                    // Validate if image is present
+                    if (!laporanGambar.files[0]) {
+                        validateField(laporanGambar, false, 'Gambar wajib untuk pengaduan');
+                    }
                 } else {
                     laporanGambar.removeAttribute('required');
                     imageRequired.style.display = 'none';
                     imageNote.textContent = 'Opsional.';
-                    imageNote.className = 'text-muted';
+                    imageNote.className = 'text-slate-500';
+
+                    // Clear any validation errors when not keluhan
+                    laporanGambar.classList.remove('is-invalid');
+                    const feedbackDiv = laporanGambar.closest('.space-y-2')?.querySelector(
+                        '.invalid-feedback');
+                    if (feedbackDiv) {
+                        feedbackDiv.classList.add('hidden');
+                    }
                 }
+                validateField(this, !!this.value, 'Pilih jenis tanggapan');
             });
 
             // Form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                if (!validateForm()) {
+                    showModal('error', 'Data tidak lengkap',
+                        'Mohon periksa kembali data yang Anda masukkan.');
+                    return;
+                }
+
+                showModal('loading', 'Mengirim Tanggapan', 'Mohon tunggu sebentar...');
 
                 // Get user's current location
                 if (navigator.geolocation) {
@@ -599,7 +687,163 @@
                 }
             });
 
-            // Fungsi submit form
+            // Setup real-time validation
+            function setupValidation() {
+                const validationRules = {
+                    nama_pemberi_aspirasi: {
+                        test: (value) => value.length >= 3 && value.length <= 100,
+                        message: 'Nama harus 3-100 karakter'
+                    },
+                    email: {
+                        test: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+                        message: 'Format email tidak valid'
+                    },
+                    phone: {
+                        test: (value) => /^(\+628|08)[0-9]{8,12}$/.test(value.replace(/\s/g, '')),
+                        message: 'Format: 08xxxxxxxxxx atau +628xxxxxxxxxx'
+                    },
+                    tanggapan: {
+                        test: (value) => value.length >= 10 && value.length <= 1000,
+                        message: 'Tanggapan harus 10-1000 karakter'
+                    },
+                    jenis_tanggapan: {
+                        test: (value) => value && ['saran', 'keluhan', 'apresiasi', 'pertanyaan'].includes(
+                            value),
+                        message: 'Pilih jenis tanggapan yang valid'
+                    }
+                };
+
+                Object.keys(validationRules).forEach(fieldName => {
+                    const field = document.getElementById(fieldName);
+                    if (field) {
+                        field.addEventListener('blur', () => {
+                            const rule = validationRules[fieldName];
+                            validateField(field, rule.test(field.value), rule.message);
+                        });
+
+                        field.addEventListener('input', () => {
+                            if (field.classList.contains('is-invalid')) {
+                                const rule = validationRules[fieldName];
+                                if (rule.test(field.value)) {
+                                    validateField(field, true);
+                                }
+                            }
+                        });
+
+                        // For select fields, also listen to change event
+                        if (field.tagName === 'SELECT') {
+                            field.addEventListener('change', () => {
+                                const rule = validationRules[fieldName];
+                                validateField(field, rule.test(field.value), rule.message);
+                            });
+                        }
+                    }
+                });
+
+                // Additional specific validation for jenis tanggapan
+                jenisTanggapan.addEventListener('change', () => {
+                    const validValues = ['saran', 'keluhan', 'apresiasi', 'pertanyaan'];
+                    validateField(jenisTanggapan, validValues.includes(jenisTanggapan.value),
+                        'Pilih jenis tanggapan yang valid');
+                });
+            }
+
+            // Validate individual field
+            function validateField(field, isValid, message = '') {
+                const fieldContainer = field.closest('.space-y-2') || field.parentElement;
+                let feedbackDiv = fieldContainer.querySelector('.invalid-feedback');
+
+                if (!feedbackDiv) {
+                    feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'invalid-feedback text-red-600 text-sm mt-1 hidden';
+                    fieldContainer.appendChild(feedbackDiv);
+                }
+
+                if (isValid) {
+                    field.classList.remove('is-invalid');
+                    field.classList.add('is-valid');
+                    feedbackDiv.classList.add('hidden');
+                    feedbackDiv.textContent = '';
+                } else {
+                    field.classList.remove('is-valid');
+                    field.classList.add('is-invalid');
+                    feedbackDiv.classList.remove('hidden');
+                    feedbackDiv.textContent = message;
+                }
+                return isValid;
+            }
+
+            // Validate entire form
+            function validateForm() {
+                let isValid = true;
+
+                // Define validation rules (same as in setupValidation)
+                const validationRules = {
+                    nama_pemberi_aspirasi: {
+                        test: (value) => value.length >= 3 && value.length <= 100,
+                        message: 'Nama harus 3-100 karakter'
+                    },
+                    email: {
+                        test: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+                        message: 'Format email tidak valid'
+                    },
+                    phone: {
+                        test: (value) => /^(\+628|08)[0-9]{8,12}$/.test(value.replace(/\s/g, '')),
+                        message: 'Format: 08xxxxxxxxxx atau +628xxxxxxxxxx'
+                    },
+                    tanggapan: {
+                        test: (value) => value.length >= 10 && value.length <= 1000,
+                        message: 'Tanggapan harus 10-1000 karakter'
+                    },
+                    jenis_tanggapan: {
+                        test: (value) => value && ['saran', 'keluhan', 'apresiasi', 'pertanyaan'].includes(
+                            value),
+                        message: 'Pilih jenis tanggapan yang valid'
+                    }
+                };
+
+                // Validate required fields using specific rules
+                Object.keys(validationRules).forEach(fieldName => {
+                    const field = document.getElementById(fieldName);
+                    if (field && field.hasAttribute('required')) {
+                        const rule = validationRules[fieldName];
+                        if (!validateField(field, rule.test(field.value), rule.message)) {
+                            isValid = false;
+                        }
+                    }
+                });
+
+                // Check other required fields that don't have specific rules
+                const requiredFields = form.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    const fieldName = field.name || field.id;
+                    if (!validationRules[fieldName]) {
+                        if (field.type === 'checkbox') {
+                            if (!field.checked) {
+                                validateField(field, false, 'Field ini wajib dicentang');
+                                isValid = false;
+                            }
+                        } else if (!field.value.trim()) {
+                            validateField(field, false, 'Field ini wajib diisi');
+                            isValid = false;
+                        }
+                    }
+                });
+
+                // Special validation for image requirement when jenis_tanggapan is 'keluhan'
+                const jenisValue = jenisTanggapan.value;
+                if (jenisValue === 'keluhan') {
+                    const imageFile = laporanGambar.files[0];
+                    if (!imageFile) {
+                        validateField(laporanGambar, false, 'Gambar wajib untuk pengaduan');
+                        isValid = false;
+                    }
+                }
+
+                return isValid;
+            }
+
+            // Submit form function
             function submitForm() {
                 submitBtn.disabled = true;
                 submitText.textContent = 'Mengirim...';
@@ -607,10 +851,13 @@
                 const formData = new FormData(form);
 
                 // Ensure hCaptcha response is included in form data
-                // Use hCaptcha API to get the response value
-                const hcaptchaResponse = hcaptcha.getResponse();
-                if (hcaptchaResponse) {
-                    formData.set('h-captcha-response', hcaptchaResponse);
+                try {
+                    const hcaptchaResponse = hcaptcha.getResponse();
+                    if (hcaptchaResponse) {
+                        formData.set('h-captcha-response', hcaptchaResponse);
+                    }
+                } catch (error) {
+                    console.error('hCaptcha error:', error);
                 }
 
                 fetch(form.action, {
@@ -623,46 +870,17 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'success') {
-                            showAlert('success', data.message);
-                            form.reset();
-                            // Reset image requirement
-                            imageRequired.style.display = 'none';
-                            imageNote.textContent = 'Wajib untuk pengaduan.';
-                            imageNote.className = 'text-muted';
-                            // Reset image preview
-                            imagePreview.src = '';
-                            imagePreviewContainer.style.display = 'none';
-                            imagePlaceholder.style.display = 'flex';
-
-                            // Reset mobile preview
-                            const mobilePreview = document.getElementById('mobileImagePreview');
-                            const mobilePreviewImage = document.getElementById('mobilePreviewImage');
-                            mobilePreviewImage.src = '';
-                            mobilePreview.classList.remove('show');
-
-                            // Reset hCaptcha
-                            if (typeof hcaptcha !== 'undefined') {
-                                hcaptcha.reset();
-                            }
+                            showModal('success', 'Tanggapan Berhasil Dikirim', data.message);
+                            resetForm();
                         } else {
-                            if (data.errors) {
-                                if (data.errors['h-captcha-response']) {
-                                    showAlert('error', data.errors['h-captcha-response'][0]);
-                                    // Reset hCaptcha on error
-                                    if (typeof hcaptcha !== 'undefined') {
-                                        hcaptcha.reset();
-                                    }
-                                } else {
-                                    showAlert('error', data.message);
-                                }
-                            } else {
-                                showAlert('error', data.message);
-                            }
+                            handleSubmitError(data);
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showAlert('error', 'Terjadi kesalahan saat mengirim data.');
+                        showModal('error', 'Koneksi Bermasalah',
+                            'Terjadi kesalahan koneksi. Silakan coba lagi.');
+                        resetCaptcha();
                     })
                     .finally(() => {
                         submitBtn.disabled = false;
@@ -670,19 +888,129 @@
                     });
             }
 
-            // Fungsi tampil alert
-            function showAlert(type, message) {
-                const alertContainer = document.getElementById('alertContainer');
-                const alertMessage = document.getElementById('alertMessage');
+            // Handle submit errors
+            function handleSubmitError(data) {
+                // Always reset captcha when there are any validation errors
+                // This prevents users from thinking captcha is valid when other fields fail
+                if (data.errors) {
+                    resetCaptcha();
 
-                alertMessage.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
-                alertMessage.textContent = message;
-                alertContainer.style.display = 'block';
+                    if (data.errors['h-captcha-response']) {
+                        showModal('error', 'Verifikasi Captcha Gagal', data.errors['h-captcha-response'][0]);
+                    } else {
+                        const firstError = Object.values(data.errors)[0];
+                        showModal('error', 'Validasi Gagal', Array.isArray(firstError) ? firstError[0] :
+                            firstError);
+                    }
+                } else {
+                    showModal('error', 'Terjadi Kesalahan', data.message || 'Silakan coba lagi.');
+                }
+            }
 
-                // Auto hide after 5 seconds
-                setTimeout(() => {
-                    alertContainer.style.display = 'none';
-                }, 5000);
+            // Reset form
+            function resetForm() {
+                form.reset();
+
+                // Clear validation states
+                form.querySelectorAll('.form-control, input, select, textarea').forEach(field => {
+                    field.classList.remove('is-valid', 'is-invalid');
+                });
+
+                // Reset image requirement
+                imageRequired.style.display = 'none';
+                imageNote.textContent = 'Opsional.';
+                imageNote.className = 'text-slate-500';
+
+                // Reset image preview
+                imagePreview.src = '';
+                imagePreviewContainer.style.display = 'none';
+                imagePlaceholder.style.display = 'flex';
+
+                // Reset mobile preview
+                const mobilePreview = document.getElementById('mobileImagePreview');
+                const mobilePreviewImage = document.getElementById('mobilePreviewImage');
+                if (mobilePreview && mobilePreviewImage) {
+                    mobilePreviewImage.src = '';
+                    mobilePreview.classList.remove('show');
+                }
+
+                resetCaptcha();
+            }
+
+            // Reset captcha
+            function resetCaptcha() {
+                try {
+                    if (typeof hcaptcha !== 'undefined') {
+                        hcaptcha.reset();
+                    }
+                } catch (error) {
+                    console.error('Captcha reset error:', error);
+                }
+            }
+
+            // Modal functions
+            function showModal(type, title, message, autoHide = false) {
+                const iconMap = {
+                    loading: {
+                        icon: '<div class="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>',
+                        bgClass: 'bg-blue-100',
+                        textClass: 'text-blue-600'
+                    },
+                    success: {
+                        icon: '<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+                        bgClass: 'bg-green-100',
+                        textClass: 'text-green-600'
+                    },
+                    error: {
+                        icon: '<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+                        bgClass: 'bg-red-100',
+                        textClass: 'text-red-600'
+                    },
+                    warning: {
+                        icon: '<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.268 14.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>',
+                        bgClass: 'bg-yellow-100',
+                        textClass: 'text-yellow-600'
+                    }
+                };
+
+                const config = iconMap[type] || iconMap.loading;
+
+                // Reset icon classes and apply new ones
+                modalIcon.className =
+                    `w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl ${config.bgClass} ${config.textClass}`;
+                modalIcon.innerHTML = config.icon;
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+
+                if (type === 'loading') {
+                    modalActions.classList.add('hidden');
+                } else {
+                    modalActions.classList.remove('hidden');
+                }
+
+                // Show modal with Tailwind classes
+                modalOverlay.classList.remove('opacity-0', 'invisible');
+                modalOverlay.classList.add('opacity-100', 'visible');
+
+                // Animate modal content
+                const modalContent = modalOverlay.querySelector('div:first-child');
+                modalContent.classList.remove('scale-90', 'translate-y-5');
+                modalContent.classList.add('scale-100', 'translate-y-0');
+
+                if (autoHide) {
+                    setTimeout(() => hideModal(), 3000);
+                }
+            }
+
+            function hideModal() {
+                // Hide modal with Tailwind classes
+                modalOverlay.classList.remove('opacity-100', 'visible');
+                modalOverlay.classList.add('opacity-0', 'invisible');
+
+                // Animate modal content back
+                const modalContent = modalOverlay.querySelector('div:first-child');
+                modalContent.classList.remove('scale-100', 'translate-y-0');
+                modalContent.classList.add('scale-90', 'translate-y-5');
             }
 
             // Map functionality
