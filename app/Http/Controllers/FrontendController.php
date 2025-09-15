@@ -520,7 +520,7 @@ class FrontendController extends Controller
         // Rules untuk validasi inputan user
         $rules = [
             'data_spatial_id' => 'required',
-            'nama_pemberi_aspirasi' => 'required|string|max:255',
+            'nama_pemberi_aspirasi' => 'required|string|min:3|max:100',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'nama_proyek' => 'required|string|max:255',
@@ -535,22 +535,24 @@ class FrontendController extends Controller
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada file
         if ($request->jenis_tanggapan === 'keluhan') {
-            $rules['laporan_gambar'] = 'required|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
+            $rules['laporan_gambar'] = 'required|file|mimes:jpeg,png,jpg|max:5120';
         } else {
-            $rules['laporan_gambar'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
+            $rules['laporan_gambar'] = 'nullable|file|mimes:jpeg,png,jpg|max:5120';
         }
 
         $messages = [
             'data_spatial_id.required' => 'Id Kegiatan tidak ada',
-            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
+            'nama_pemberi_aspirasi.required' => 'Nama wajib diisi',
+            'nama_pemberi_aspirasi.min' => 'Nama minimal 3 karakter',
+            'nama_pemberi_aspirasi.max' => 'Nama maksimal 100 karakter',
             'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
             'jenis_tanggapan.in' => 'Jenis tanggapan tidak valid',
             'tanggapan.required' => 'Tanggapan wajib diisi',
             'email.email' => 'Format email tidak valid',
             'phone.max' => 'Nomor telepon terlalu panjang',
-            'laporan_gambar.required' => 'Lampiran file wajib untuk pengaduan',
-            'laporan_gambar.file' => 'Lampiran harus berupa file',
-            'laporan_gambar.mimes' => 'Format file harus jpeg, png, jpg, gif, pdf, doc, atau docx',
+            'laporan_gambar.required' => 'Lampiran gambar wajib untuk pengaduan',
+            'laporan_gambar.file' => 'Lampiran harus berupa gambar dengan format yang benar',
+            'laporan_gambar.mimes' => 'Format Lampiran harus jpeg, png, atau jpg',
             'laporan_gambar.max' => 'Ukuran file maksimal 5MB',
             'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];

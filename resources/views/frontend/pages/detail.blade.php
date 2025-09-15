@@ -389,7 +389,7 @@
                                                         accept="image/jpeg,image/png,image/jpg,image/gif">
                                                 </div>
                                                 <p class="text-xs text-slate-500">
-                                                    Maksimal 2MB. Format: JPG, JPEG, PNG.
+                                                    Maksimal 5MB. Format: JPG, JPEG, PNG.
                                                     <span id="image_note" class="text-slate-500">Wajib untuk
                                                         pengaduan.</span>
                                                 </p>
