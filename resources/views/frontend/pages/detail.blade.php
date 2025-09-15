@@ -664,13 +664,25 @@
 
                 showModal('loading', 'Mengirim Tanggapan', 'Mohon tunggu sebentar...');
 
-                // Get user's current location
+                // Get user's current location with improved accuracy
                 if (navigator.geolocation) {
+                    const options = {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    };
+
                     navigator.geolocation.getCurrentPosition(
                         function(position) {
                             // Set coordinates in hidden fields
                             lat.value = position.coords.latitude;
                             long.value = position.coords.longitude;
+
+                            console.log('Location acquired:', {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude,
+                                accuracy: position.coords.accuracy
+                            });
 
                             // Submit form
                             submitForm();
@@ -679,7 +691,8 @@
                             console.error('Error getting location:', error);
                             // Submit form without coordinates if location is not available
                             submitForm();
-                        }
+                        },
+                        options
                     );
                 } else {
                     // Submit form without coordinates if geolocation is not supported

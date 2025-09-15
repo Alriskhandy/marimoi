@@ -86,7 +86,7 @@ class FrontendController extends Controller
 
     public function aspirasi()
     {
-        $aspirasi = KategoriAspirasi::all();
+        $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
 
