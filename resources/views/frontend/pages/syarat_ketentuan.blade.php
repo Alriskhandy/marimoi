@@ -127,7 +127,7 @@
     </section>
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark')
+    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')
