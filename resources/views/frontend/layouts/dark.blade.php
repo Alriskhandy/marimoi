@@ -13,7 +13,7 @@
     <meta name="description"
         content="MARIMOI adalah sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung perencanaan lintas sektor secara kolaboratif dan transparan.">
     <meta name="keywords"
-        content="MARIMOI, sistem informasi infrastruktur, akselerasi infrastruktur maluku utara, manajemen proyek digital, monitoring infrastruktur, peta proyek, pemerintahan digital, sistem infrastruktur, pembangunan daerah, WebGIS, koordinasi pembangunan, perencanaan infrastruktur, transformasi digital, data real-time infrastruktur, maluku utara">
+        content="MARIMOI,marimoi,bappeda malut, sistem informasi infrastruktur, akselerasi infrastruktur maluku utara, manajemen proyek digital, monitoring infrastruktur, peta proyek, pemerintahan digital, sistem infrastruktur, pembangunan daerah, WebGIS, koordinasi pembangunan, perencanaan infrastruktur, transformasi digital, data real-time infrastruktur, maluku utara">
     <meta name="author" content="Pemerintah Provinsi Maluku Utara">
     <meta name="robots" content="index, follow">
     <meta name="language" content="Indonesian">
