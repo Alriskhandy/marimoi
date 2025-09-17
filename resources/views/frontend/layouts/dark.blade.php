@@ -7,10 +7,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $title ?? 'MARIMOI - Sistem Informasi Manajemen Akselerasi Infrastruktur' }}</title>
 
+    <!-- Primary Meta Tags -->
+    <meta name="title"
+        content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara | Monitoring & Perencanaan Terintegrasi">
     <meta name="description"
-        content="MARIMOI adalah sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung perencanaan lintas sektor secara kolaboratif dan transparan. Platform ini mempercepat perencanaan, mendorong partisipasi publik, dan meningkatkan akuntabilitas, menjadi bagian dari transformasi digital berbasis data dan kebutuhan lokal.">
+        content="MARIMOI adalah sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung perencanaan lintas sektor secara kolaboratif dan transparan.">
     <meta name="keywords"
-        content="Sistem Informasi, Akselerasi Infrastruktur, Manajemen Proyek, Monitoring Infrastruktur, Peta Proyek, Pemerintahan Digital, MARIMOI, Sistem Infrastruktur, Pembangunan Daerah, WebGIS">
+        content="MARIMOI, sistem informasi infrastruktur, akselerasi infrastruktur maluku utara, manajemen proyek digital, monitoring infrastruktur, peta proyek, pemerintahan digital, sistem infrastruktur, pembangunan daerah, WebGIS, koordinasi pembangunan, perencanaan infrastruktur, transformasi digital, data real-time infrastruktur, maluku utara">
+    <meta name="author" content="Pemerintah Provinsi Maluku Utara">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="Indonesian">
+    <meta name="revisit-after" content="1 days">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MARIMOI - BAPPEDA Maluku Utara">
+    <meta property="og:title"
+        content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara | Monitoring & Perencanaan Terintegrasi">
+    <meta property="og:description"
+        content="Sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Platform berbasis data real-time dengan pendekatan spasial untuk perencanaan lintas sektor yang kolaboratif dan transparan.">
+    <meta property="og:image" content="{{ asset('frontend/img/kantor-gubernur-malut.jpg') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:locale" content="id_ID">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@MalukuUtaraProv">
+    <meta name="twitter:creator" content="@MalukuUtaraProv">
+    <meta name="twitter:title" content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara">
+    <meta name="twitter:description"
+        content="Sistem digital terpadu untuk koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara dengan data real-time dan pendekatan spasial.">
+    <meta name="twitter:image" content="{{ asset('frontend/img/kantor-gubernur-malut.jpg') }}">
+    <meta name="twitter:image:alt" content="MARIMOI - Sistem Digital Infrastruktur">
+
+    <!-- Geographic Meta Tags -->
+    <meta name="geo.region" content="ID-MU">
+    <meta name="geo.placename" content="Maluku Utara">
+    <meta name="geo.position" content="1.5709;127.8084">
+    <meta name="ICBM" content="1.5709, 127.8084">
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="msapplication-TileColor" content="#2563eb">
+    <meta name="application-name" content="MARIMOI">
+    <meta name="apple-mobile-web-app-title" content="MARIMOI">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Structured Data for Government Organization -->
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "GovernmentOrganization",
+  "name": "MARIMOI",
+  "alternateName": "Sistem Informasi Manajemen Akselerasi Infrastruktur",
+  "description": "Sistem digital terpadu BAPPEDA Provinsi Maluku Utara untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur",
+  "url": "{{ url()->current() }}",
+  "logo": "{{ asset('frontend/img/logo/logo-dark.png') }}",
+  "parentOrganization": {
+    "@type": "GovernmentOrganization",
+    "name": "BAPPEDA Provinsi Maluku Utara",
+    "alternateName": "Badan Perencanaan Pembangunan Daerah Provinsi Maluku Utara"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Ternate",
+    "addressRegion": "Maluku Utara",
+    "addressCountry": "Indonesia"
+  },
+  "areaServed": {
+    "@type": "State",
+    "name": "Maluku Utara"
+  },
+  "serviceType": [
+    "Sistem Informasi Infrastruktur",
+    "Monitoring Pembangunan",
+    "Perencanaan Digital",
+    "WebGIS",
+    "Perencanaan Pembangunan Daerah"
+  ]
+}
+</script>
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ url()->current() }}">
+
+
 
     <!-- Favicons -->
     <link href="{{ asset('frontend/favicon_io/favicon.ico') }}" rel="icon" type="image/webp">
