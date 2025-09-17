@@ -92,7 +92,9 @@
                     <blockquote class="m-0 p-0 border-none">
                         <p
                             class="text-[0.9rem] md:text-base lg:text-[1.2rem] leading-[1.4] md:leading-[1.5] lg:leading-[1.6] text-white mb-4 md:mb-5 relative text-left font-[Inter,sans-serif] [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
-                            "MARIMOI bukan hanya sistem. Ia adalah panggilan budaya untuk bersatu membangun negeri. Ia menyatukan data, menyatukan wilayah, menyatukan kepentingan, dan menyatukan tekad untuk membangun Maluku Utara dari pulau ke pulau."
+                            "Dengan MARIMOI, kita tidak hanya menguatkan koordinasi lintas sektor, tetapi juga membuka
+                            ruang partisipasi masyarakat secara luas, sehingga pembangunan Maluku Utara dapat lebih
+                            terarah, transparan, dan sesuai dengan kebutuhan masyarakat"
                         </p>
                         <p
                             class="text-[0.75rem] md:text-[0.8rem] lg:text-base italic leading-[1.3] md:leading-normal lg:leading-normal text-[#b7b7b7] m-0 font-semibold text-left [text-shadow:1px_1px_2px_rgba(0,0,0,0.6)]">
