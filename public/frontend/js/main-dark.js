@@ -44,10 +44,6 @@ const Utils = {
     },
 };
 
-
-
-
-
 // Carousel Module
 const Carousel = {
     features: {
@@ -84,8 +80,6 @@ const Carousel = {
             carousel.addEventListener("mouseleave", () => {
                 this.startAutoAdvance();
             });
-
-            console.log("✓ Features carousel initialized");
         },
 
         next: function () {
@@ -150,104 +144,9 @@ const CounterModule = {
         );
 
         observer.observe(counterSection);
-        console.log("✓ Counter module initialized");
     },
 };
 
-// Swiper Module
-// const SwiperModule = {
-//     init: function () {
-//         const swipers = [];
-
-//         // Peta Tematik Swiper
-//         if (document.querySelector(".peta-tematik .swiper")) {
-//             const petaTematikSwiper = new Swiper(".peta-tematik .swiper", {
-//                 effect: "slide", // Changed from coverflow to slide
-//                 grabCursor: true,
-//                 centeredSlides: true,
-//                 slidesPerView: "auto",
-//                 loop: true,
-//                 spaceBetween: 30,
-//                 autoplay: {
-//                     delay: 4000,
-//                     disableOnInteraction: false,
-//                 },
-//                 pagination: {
-//                     el: ".peta-tematik .swiper-pagination",
-//                     clickable: true,
-//                     dynamicBullets: true,
-//                 },
-//                 breakpoints: {
-//                     640: {
-//                         slidesPerView: 1,
-//                         spaceBetween: 20,
-//                         centeredSlides: true,
-//                     },
-//                     768: {
-//                         slidesPerView: 2,
-//                         spaceBetween: 25,
-//                         centeredSlides: true,
-//                     },
-//                     1024: {
-//                         slidesPerView: 3,
-//                         spaceBetween: 30,
-//                         centeredSlides: true,
-//                     },
-//                 },
-//             });
-//             swipers.push(petaTematikSwiper);
-//             console.log("✓ Peta Tematik Swiper initialized");
-//         }
-
-//         // Main Swiper (for other sections)
-//         if (document.querySelector(".main-swiper")) {
-//             const mainSwiper = new Swiper(".main-swiper", {
-//                 effect: "coverflow",
-//                 grabCursor: true,
-//                 centeredSlides: true,
-//                 slidesPerView: "auto",
-//                 loop: true,
-//                 spaceBetween: 30,
-//                 autoplay: {
-//                     delay: 3000,
-//                     disableOnInteraction: false,
-//                 },
-//                 coverflowEffect: {
-//                     rotate: 50,
-//                     stretch: 0,
-//                     depth: 100,
-//                     modifier: 1,
-//                     slideShadows: true,
-//                 },
-//                 pagination: {
-//                     el: ".swiper-pagination",
-//                     clickable: true,
-//                 },
-//                 navigation: {
-//                     nextEl: ".swiper-button-next",
-//                     prevEl: ".swiper-button-prev",
-//                 },
-//                 breakpoints: {
-//                     640: {
-//                         slidesPerView: 1,
-//                         spaceBetween: 20,
-//                     },
-//                     768: {
-//                         slidesPerView: 2,
-//                         spaceBetween: 30,
-//                     },
-//                     1024: {
-//                         slidesPerView: 3,
-//                         spaceBetween: 40,
-//                     },
-//                 },
-//             });
-//             swipers.push(mainSwiper);
-//         }
-
-//         return swipers;
-//     },
-// };
 const SwiperModule = {
     init: function () {
         const swipers = [];
@@ -278,38 +177,36 @@ const SwiperModule = {
                 },
                 breakpoints: {
                     480: {
-                        slidesPerView: 'auto',
+                        slidesPerView: "auto",
                         spaceBetween: 20,
                         centeredSlides: true,
                         coverflowEffect: {
                             modifier: 2,
                             depth: 80,
-                        }
+                        },
                     },
                     768: {
-                        slidesPerView: 'auto',
+                        slidesPerView: "auto",
                         spaceBetween: 25,
                         centeredSlides: true,
                         coverflowEffect: {
                             modifier: 2.2,
                             depth: 90,
-                        }
+                        },
                     },
                     1024: {
-                        slidesPerView: 'auto',
+                        slidesPerView: "auto",
                         spaceBetween: 30,
                         centeredSlides: true,
                         coverflowEffect: {
                             modifier: 2.5,
                             depth: 100,
-                        }
+                        },
                     },
                 },
                 on: {
-                    init: function() {
-                        console.log("✓ Peta Tematik Swiper initialized with Tailwind");
-                    }
-                }
+                    init: function () {},
+                },
             });
             swipers.push(petaTematikSwiper);
         }
@@ -364,98 +261,6 @@ const SwiperModule = {
     },
 };
 
-
-// Spotlight Effect Module
-// const SpotlightEffect = {
-//     init: function () {
-//         try {
-//             const aboutSection = document.getElementById("about-section");
-//             if (!aboutSection) {
-//                 console.log(
-//                     "⚠ Spotlight: About section not found, skipping initialization"
-//                 );
-//                 return;
-//             }
-
-//             let targetX = 75; // Default position (foto)
-//             let targetY = 50;
-//             let currentX = 75;
-//             let currentY = 50;
-//             let animationId = null;
-
-//             const lerp = (start, end, factor) => {
-//                 return start + (end - start) * factor;
-//             };
-
-//             const updateSpotlight = () => {
-//                 const speed = 0.05; // Kecepatan animasi
-
-//                 currentX = lerp(currentX, targetX, speed);
-//                 currentY = lerp(currentY, targetY, speed);
-
-//                 aboutSection.style.setProperty("--mask-x", `${currentX}%`);
-//                 aboutSection.style.setProperty("--mask-y", `${currentY}%`);
-
-//                 const distance = Math.sqrt(
-//                     Math.pow(targetX - currentX, 2) +
-//                         Math.pow(targetY - currentY, 2)
-//                 );
-
-//                 if (distance > 0.1) {
-//                     animationId = requestAnimationFrame(updateSpotlight);
-//                 } else {
-//                     animationId = null;
-//                 }
-//             };
-
-//             const handleMouseMove = (e) => {
-//                 const rect = aboutSection.getBoundingClientRect();
-//                 targetX = ((e.clientX - rect.left) / rect.width) * 100;
-//                 targetY = ((e.clientY - rect.top) / rect.height) * 100;
-
-//                 // Clamp values to prevent going outside bounds
-//                 targetX = Math.max(0, Math.min(100, targetX));
-//                 targetY = Math.max(0, Math.min(100, targetY));
-
-//                 // Ubah opacity background saat mouse move
-//                 aboutSection.style.setProperty("--bg-opacity", "1");
-
-//                 if (!animationId) {
-//                     animationId = requestAnimationFrame(updateSpotlight);
-//                 }
-//             };
-
-//             const handleMouseLeave = () => {
-//                 // Kembali ke posisi foto saat mouse leave
-//                 targetX = 75; // Kembali ke posisi foto
-//                 targetY = 50;
-
-//                 // Kembali ke opacity default
-//                 aboutSection.style.setProperty("--bg-opacity", "1");
-
-//                 if (!animationId) {
-//                     animationId = requestAnimationFrame(updateSpotlight);
-//                 }
-//             };
-
-//             // Add event listeners
-//             aboutSection.addEventListener("mousemove", handleMouseMove);
-//             aboutSection.addEventListener("mouseleave", handleMouseLeave);
-
-//             // Initialize CSS custom properties
-//             aboutSection.style.setProperty("--mask-x", "75%"); // Posisi foto
-//             aboutSection.style.setProperty("--mask-y", "50%");
-//             aboutSection.style.setProperty("--bg-opacity", "1"); // Default tampil dengan opacity 0.7
-
-//             // Initialize spotlight at center
-//             updateSpotlight();
-
-//             console.log("✓ Spotlight effect initialized");
-//         } catch (error) {
-//             console.error("⚠ Spotlight effect initialization failed:", error);
-//         }
-//     },
-// };
 // Spotlight Effect Module
 const SpotlightEffect = {
     init: function () {
@@ -463,9 +268,6 @@ const SpotlightEffect = {
             // Update ID sesuai dengan section about yang baru
             const aboutSection = document.getElementById("about-section");
             if (!aboutSection) {
-                console.log(
-                    "⚠ Spotlight: About section not found, skipping initialization"
-                );
                 return;
             }
 
@@ -604,8 +406,12 @@ const SpotlightEffect = {
                 aboutSection.addEventListener("mouseleave", handleMouseLeave);
             } else {
                 // Touch events untuk mobile
-                aboutSection.addEventListener("touchmove", handleTouchMove, { passive: true });
-                aboutSection.addEventListener("touchend", handleTouchEnd, { passive: true });
+                aboutSection.addEventListener("touchmove", handleTouchMove, {
+                    passive: true,
+                });
+                aboutSection.addEventListener("touchend", handleTouchEnd, {
+                    passive: true,
+                });
             }
 
             // Resize listener
@@ -618,14 +424,11 @@ const SpotlightEffect = {
 
             // Initialize spotlight
             updateSpotlight();
-
-            console.log(`✓ Spotlight effect initialized (${isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop'} mode)`);
         } catch (error) {
-            console.error("⚠ Spotlight effect initialization failed:", error);
+            // Spotlight effect initialization failed - silently handle in production
         }
     },
 };
-
 
 // Indikator Module (Updated for Tailwind HTML with Mobile + Desktop Navigation)
 const IndikatorModule = {
@@ -648,24 +451,13 @@ const IndikatorModule = {
 
             let currentIndex = 0;
             let isScrolling = false;
-            const totalSlides = 4; // We know there are 4 slides
+            const totalSlides = 5; // We know there are 4 slides
 
             // Detect device type
             const isDesktop = window.innerWidth > 1024;
             const isTablet =
                 window.innerWidth <= 1024 && window.innerWidth > 768;
             const isMobile = window.innerWidth <= 768;
-
-            if (allNavDots.length === 0) {
-                console.log(
-                    "⚠ Indikator: No nav dots found, skipping initialization"
-                );
-                return;
-            }
-
-            console.log(
-                `Found ${allNavDots.length} total nav dots (${mobileNavDots.length} mobile, ${desktopNavDots.length} desktop)`
-            );
 
             // Setup navigation buttons
             this.setupNavigationButtons();
@@ -917,12 +709,8 @@ const IndikatorModule = {
 
             // Initialize first slide
             updateContent(0);
-
-            console.log(
-                "✓ Indikator Module initialized (Fixed Dual Navigation)"
-            );
         } catch (error) {
-            console.error("⚠ Indikator Module initialization failed:", error);
+            // Indikator Module initialization failed - silently handle in production
         }
     },
 
@@ -938,18 +726,12 @@ const IndikatorModule = {
             nextBtn.addEventListener("click", () => {
                 if (this.nextSlide) this.nextSlide();
             });
-
-            console.log("✓ Navigation buttons setup complete");
         }
     },
 
-    stylizeNavDots: function (navDots) {
-        console.log("✓ Navigation dots styling applied via CSS");
-    },
+    stylizeNavDots: function (navDots) {},
 
-    injectNavDotStyles: function () {
-        console.log("✓ Navigation dot styles handled via CSS");
-    },
+    injectNavDotStyles: function () {},
 
     updateNavigationButtons: function (currentIndex, totalSlides) {
         const prevBtn = document.querySelector(".nav-btn-prev");
@@ -977,7 +759,6 @@ const IndikatorModule = {
 
     showNavigateButton: function (section, isDesktop) {
         // Legacy function - kept for compatibility
-        console.log("✓ Navigation handled by setupNavigationButtons");
     },
 };
 
@@ -1013,9 +794,8 @@ const WavifyModule = {
         if (whiteWave && typeof wavify === "function") {
             try {
                 wavify(whiteWave, this.config.white);
-                console.log("✓ White wave initialized");
             } catch (error) {
-                console.log("⚠ White wave initialization failed:", error);
+                // White wave initialization failed - silently handle in production
             }
         }
 
@@ -1024,9 +804,8 @@ const WavifyModule = {
         if (blueWave1 && typeof wavify === "function") {
             try {
                 wavify(blueWave1, this.config.transparent);
-                console.log("✓ Blue wave 1 initialized");
             } catch (error) {
-                console.log("⚠ Blue wave 1 initialization failed:", error);
+                // Blue wave 1 initialization failed - silently handle in production
             }
         }
 
@@ -1035,9 +814,8 @@ const WavifyModule = {
         if (blueWave2 && typeof wavify === "function") {
             try {
                 wavify(blueWave2, this.config.gradient);
-                console.log("✓ Blue wave 2 initialized");
             } catch (error) {
-                console.log("⚠ Blue wave 2 initialization failed:", error);
+                // Blue wave 2 initialization failed - silently handle in production
             }
         }
     },
@@ -1053,18 +831,9 @@ window.openAspirationForm = () => {
     );
 };
 
-// Peta Tematik Functions
-window.viewMap = (mapId) => {
-    console.log(`Viewing map: ${mapId}`);
-    alert(`Fitur Peta ${mapId} akan segera tersedia!`);
-};
-
-
 // Application Initialization
 document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
-        console.log("🚀 Initializing MARIMOI Application...");
-
         Carousel.features.init();
         CounterModule.init();
         SpotlightEffect.init();
@@ -1078,11 +847,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const swipers = SwiperModule.init();
-        if (swipers && swipers.length > 0) {
-            console.log(`✓ ${swipers.length} Swiper(s) initialized`);
-        }
-
-        console.log("✓ MARIMOI Application ready");
     }, MARIMOI_APP_CONFIG.ANIMATION_DELAY);
 });
 

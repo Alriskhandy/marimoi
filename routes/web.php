@@ -16,6 +16,7 @@ Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->nam
 
 // Log monitoring (careful: restrict in production)
 Route::get('/logs', [FrontendController::class, 'showLogs'])->name('logs.view');
+Route::post('/peta-tematik/load/{id}', [FrontendController::class, 'lihatTematik'])->name('post.tematik');
 
 // HALAMAN DETAIL //
 Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psd');

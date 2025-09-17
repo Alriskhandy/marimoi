@@ -86,7 +86,7 @@ class FrontendController extends Controller
 
     public function aspirasi()
     {
-        $aspirasi = KategoriAspirasi::all();
+        $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
 
@@ -106,7 +106,31 @@ class FrontendController extends Controller
     public function tematik()
     {
         $documents = Dokumen::all();
-        return view('frontend.pages.peta', compact('documents'));
+
+        // Get selected category from session if exists
+        $selectedCategory = session('selectedCategory');
+
+        return view('frontend.pages.peta', compact('documents', 'selectedCategory'));
+    }
+
+    public function lihatTematik($id)
+    {
+        try {
+            $category = Category::findOrFail($id);
+
+            // Store selected category in session
+            session(['selectedCategory' => $category->nama]);
+
+            // Flash message for user feedback
+            session()->flash('info', "Memuat peta {$category->nama}...");
+
+            return redirect()->route('tampil.tematik');
+        } catch (\Exception $e) {
+            Log::error('Error in lihatTematik: ' . $e->getMessage());
+
+            return redirect()->route('tampil.tematik')
+                ->with('error', 'Kategori peta tidak ditemukan.');
+        }
     }
 
     public function pokir()
@@ -496,13 +520,13 @@ class FrontendController extends Controller
         // Rules untuk validasi inputan user
         $rules = [
             'data_spatial_id' => 'required',
-            'nama_pemberi_aspirasi' => 'required|string|max:255',
+            'nama_pemberi_aspirasi' => 'required|string|min:3|max:100',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'nama_proyek' => 'required|string|max:255',
             'kabupaten_kota' => 'required|string|max:255',
             'kecamatan' => 'nullable|string|max:255',
-            'jenis_tanggapan' => 'required|in:pengaduan,saran,apresiasi,pertanyaan',
+            'jenis_tanggapan' => 'required|in:keluhan,saran,apresiasi,pertanyaan',
             'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -510,23 +534,25 @@ class FrontendController extends Controller
         ];
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada file
-        if ($request->jenis_tanggapan === 'pengaduan') {
-            $rules['laporan_gambar'] = 'required|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
+        if ($request->jenis_tanggapan === 'keluhan') {
+            $rules['laporan_gambar'] = 'required|file|mimes:jpeg,png,jpg|max:5120';
         } else {
-            $rules['laporan_gambar'] = 'nullable|file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:5120';
+            $rules['laporan_gambar'] = 'nullable|file|mimes:jpeg,png,jpg|max:5120';
         }
 
         $messages = [
             'data_spatial_id.required' => 'Id Kegiatan tidak ada',
-            'nama_pemberi_aspirasi.required' => 'Nama pemberi aspirasi wajib diisi',
+            'nama_pemberi_aspirasi.required' => 'Nama wajib diisi',
+            'nama_pemberi_aspirasi.min' => 'Nama minimal 3 karakter',
+            'nama_pemberi_aspirasi.max' => 'Nama maksimal 100 karakter',
             'jenis_tanggapan.required' => 'Jenis tanggapan wajib dipilih',
             'jenis_tanggapan.in' => 'Jenis tanggapan tidak valid',
             'tanggapan.required' => 'Tanggapan wajib diisi',
             'email.email' => 'Format email tidak valid',
             'phone.max' => 'Nomor telepon terlalu panjang',
-            'laporan_gambar.required' => 'Lampiran file wajib untuk pengaduan',
-            'laporan_gambar.file' => 'Lampiran harus berupa file',
-            'laporan_gambar.mimes' => 'Format file harus jpeg, png, jpg, gif, pdf, doc, atau docx',
+            'laporan_gambar.required' => 'Lampiran gambar wajib untuk pengaduan',
+            'laporan_gambar.file' => 'Lampiran harus berupa gambar dengan format yang benar',
+            'laporan_gambar.mimes' => 'Format Lampiran harus jpeg, png, atau jpg',
             'laporan_gambar.max' => 'Ukuran file maksimal 5MB',
             'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
@@ -611,8 +637,8 @@ class FrontendController extends Controller
 
             // Data untuk admin
             $adminData = [
-                'nama'      =>  $user->name,
-                'email'     =>  $user->email,
+                'nama'      =>  $request->nama_pemberi_aspirasi,
+                'email'     =>  $request->email,
                 'tanggapan' => $request->tanggapan,
                 'tanggal'   => now()->format('d-m-Y H:i'),
                 'nama_proyek' => $request->nama_proyek,

@@ -3,7 +3,6 @@
  * map-app.js - Enhanced version with comprehensive loading effects
  * Entry point utama aplikasi peta frontend dengan loading data yang efisien dan visual loading indicators.
  */
-console.log("map-app.js loaded - enhanced version with loading effects");
 
 /**
  * Konfigurasi utama peta, termasuk daftar basemap, center, zoom, dan style default.
@@ -296,7 +295,7 @@ function updateCheckboxLoadingState(categoryName, isLoading) {
 }
 
 function showAlert(message, type = "info", persistent = false) {
-    console.log(`${type}: ${message}`);
+    // Debug logging disabled for production
     const toastContainer = document.getElementById("toast-container");
     if (!toastContainer) return;
 
@@ -500,7 +499,8 @@ function generateLegend() {
             if (!activeLayers.has(sub) || added.has(sub)) return;
 
             let icon = iconMap[sub] || null;
-            let color = kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
+            let color =
+                kategoriWarnaMap[sub] || kategoriWarnaMap[kategori] || "#ccc";
 
             if (icon) {
                 legendContainer.innerHTML += `
@@ -779,8 +779,6 @@ async function loadCategoriesMetadata() {
         if (subType) queryString += `&sub_type=${subType}`;
         if (year) queryString += `&year=${year}`;
 
-        console.log("Requesting metadata:", `/geojson${queryString}`);
-
         const response = await fetch(`/geojson${queryString}`);
 
         if (!response.ok) {
@@ -911,7 +909,6 @@ async function loadCategoryData(categoryName) {
         }
 
         if (!targetLayer) {
-            console.warn(`No target layer found for category: ${categoryName}`);
             return;
         }
 
@@ -944,8 +941,6 @@ async function loadCategoryData(categoryName) {
 
                 queryString += `&limit=${currentChunkSize}&offset=${offset}`;
 
-                console.log(`Loading Layer: ${queryString}`);
-
                 // Update loading progress
                 updateLoadingProgress(
                     totalLoaded,
@@ -969,7 +964,9 @@ async function loadCategoryData(categoryName) {
                         ) {
                             errorDetails += ` (${errorData.details})`;
                         }
-                        console.error("Server error response:", errorData);
+                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                            console.error("Server error response:", errorData);
+                        }
                     } catch (e) {
                         try {
                             const errorText = await response.text();
@@ -979,9 +976,13 @@ async function loadCategoryData(categoryName) {
                                     200
                                 )}${errorText.length > 200 ? "..." : ""}`;
                             }
-                            console.error("Server error text:", errorText);
+                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                                console.error("Server error text:", errorText);
+                            }
                         } catch (e2) {
-                            console.error("Could not parse error response");
+                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                                console.error("Could not parse error response");
+                            }
                         }
                     }
                     throw new Error(errorDetails);
@@ -991,7 +992,6 @@ async function loadCategoryData(categoryName) {
 
                 // Check if we got any features
                 if (!geoJsonData?.features?.length) {
-                    console.log("No more features to load");
                     break;
                 }
 
@@ -1028,7 +1028,6 @@ async function loadCategoryData(categoryName) {
                     try {
                         // Validate feature structure
                         if (!feature || !feature.geometry) {
-                            console.warn("Skipping invalid feature:", feature);
                             return;
                         }
 
@@ -1042,10 +1041,7 @@ async function loadCategoryData(categoryName) {
                                 try {
                                     bindPopupContent(f, l, urlPath);
                                 } catch (popupError) {
-                                    console.error(
-                                        "Error binding popup:",
-                                        popupError
-                                    );
+                                    // Silently handle popup binding errors
                                 }
                             },
                         }).addTo(targetLayer);
@@ -1063,11 +1059,7 @@ async function loadCategoryData(categoryName) {
                             );
                         }
                     } catch (featureError) {
-                        console.error(
-                            `Error adding feature to map:`,
-                            featureError,
-                            feature
-                        );
+                        // Silently handle individual feature errors
                     }
                 });
 
@@ -1095,10 +1087,13 @@ async function loadCategoryData(categoryName) {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             } catch (chunkError) {
-                console.error(
-                    `Error loading layer at offset ${offset}:`,
-                    chunkError
-                );
+                // Log error in development only
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.error(
+                        `Error loading layer at offset ${offset}:`,
+                        chunkError
+                    );
+                }
 
                 // If this is the first chunk, re-throw the error
                 if (offset === 0) {
@@ -1145,10 +1140,7 @@ async function loadCategoryData(categoryName) {
 
         showAlert(finalMessage, "success");
 
-        // Log performance info
-        console.log(
-            `Loaded ${totalLoaded} features for category "${categoryName}"`
-        );
+        // Completed loading
     } catch (error) {
         console.error(
             `Error loading data for category ${categoryName}:`,
@@ -1179,13 +1171,15 @@ async function loadCategoryData(categoryName) {
             errorMessage += `: ${error.message}`;
         }
 
-        // Log full error stack for debugging
-        console.error("Full error details:", {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-            categoryName: categoryName,
-        });
+        // Log full error stack for debugging in development only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.error("Full error details:", {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                categoryName: categoryName,
+            });
+        }
 
         showAlert(errorMessage, "danger");
 
@@ -1573,29 +1567,201 @@ function setupUI() {
 }
 
 /**
- * Entry point aplikasi frontend peta dengan optimized loading.
+ * Get selected category from session/server
  */
+function getSelectedCategoryFromSession() {
+    // Check if there's a global variable set by server
+    if (typeof window.MARIMOI_SELECTED_CATEGORY !== "undefined") {
+        return window.MARIMOI_SELECTED_CATEGORY;
+    }
+    return null;
+}
+
+/**
+ * Auto-click checkbox untuk kategori yang dipilih dari session
+ */
+async function autoClickCategoryFromSession() {
+    const selectedCategory = getSelectedCategoryFromSession();
+
+    if (!selectedCategory) {
+        return;
+    }
+
+    // Auto-click category from session
+
+    // Tunggu hingga UI benar-benar siap
+    let attempts = 0;
+    const maxAttempts = 30; // 15 detik maksimal
+
+    const waitForUI = async () => {
+        // Cek apakah layer list sudah ada dan tidak kosong
+        const layerList = document.getElementById("layer-list");
+        const checkboxes = layerList?.querySelectorAll(
+            'input[type="checkbox"]'
+        );
+
+        if (!layerList || !checkboxes || checkboxes.length === 0) {
+            if (attempts < maxAttempts) {
+                attempts++;
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                return waitForUI();
+            }
+            return false;
+        }
+        return true;
+    };
+
+    const uiReady = await waitForUI();
+
+    if (!uiReady) {
+        showAlert(
+            `UI tidak siap untuk memuat kategori ${selectedCategory}`,
+            "warning"
+        );
+        return;
+    }
+
+    // Cari checkbox yang sesuai dengan kategori
+    const targetCheckbox = findCheckboxForCategory(selectedCategory);
+
+    if (!targetCheckbox) {
+        showAlert(
+            `Kategori "${selectedCategory}" tidak ditemukan di daftar layer`,
+            "warning"
+        );
+        return;
+    }
+
+    try {
+        // Show info message
+        showAlert(`Memuat peta ${selectedCategory}...`, "info", true);
+
+        // Expand parent group jika diperlukan (untuk sub-kategori)
+        await expandParentGroupIfNeeded(targetCheckbox);
+
+        // Simulasi klik checkbox - ini akan trigger event handler yang sudah ada
+        targetCheckbox.checked = true;
+
+        // Trigger change event untuk mengaktifkan fungsi loadCategoryData yang sudah ada
+        const changeEvent = new Event("change", { bubbles: true });
+        targetCheckbox.dispatchEvent(changeEvent);
+
+    } catch (error) {
+        // Log error in development only
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.error("Error during auto-click:", error);
+        }
+        showAlert(
+            `Gagal memuat kategori "${selectedCategory}": ${error.message}`,
+            "danger"
+        );
+    }
+}
+
+/**
+ * Cari checkbox yang sesuai dengan nama kategori
+ */
+function findCheckboxForCategory(categoryName) {
+    const allCheckboxes = document.querySelectorAll(
+        '#layer-list input[type="checkbox"]'
+    );
+
+    // Cari berdasarkan label text
+    for (const checkbox of allCheckboxes) {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        if (label && label.textContent.trim() === categoryName) {
+            return checkbox;
+        }
+    }
+
+    // Cari berdasarkan ID pattern sebagai fallback
+    const possibleIds = [
+        `root-${categoryName}`.replace(/\s+/g, "-"),
+        `sub-${categoryName}`.replace(/\s+/g, "-"),
+    ];
+
+    for (const id of possibleIds) {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            return checkbox;
+        }
+    }
+
+    // Cari dengan pattern yang lebih fleksibel
+    for (const checkbox of allCheckboxes) {
+        const checkboxId = checkbox.id.toLowerCase();
+        const categoryLower = categoryName.toLowerCase().replace(/\s+/g, "-");
+
+        if (checkboxId.includes(categoryLower)) {
+            return checkbox;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Expand parent group jika checkbox adalah sub-kategori
+ */
+async function expandParentGroupIfNeeded(checkbox) {
+    const groupElement = checkbox.closest(".mb-3");
+
+    if (!groupElement) {
+        return;
+    }
+
+    // Cari sub-layer list (container yang mungkin hidden)
+    const subLayerList = groupElement.querySelector(".border-l");
+
+    if (subLayerList && subLayerList.classList.contains("hidden")) {
+        // Cari header untuk diklik
+        const header = groupElement.querySelector(
+            ".flex.items-center.justify-between"
+        );
+
+        if (header) {
+            // Simulasi klik header untuk expand
+            header.click();
+
+            // Tunggu animasi expand selesai
+            await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+    }
+}
+
+// Update existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
     // Init map
     changeBaseMap("esri-world-imagery");
     setupUI();
 
-    // Show loading spinner
+    // Show loading spinner for layer list
     const layerListContainer = document.getElementById("layer-list");
     if (layerListContainer) {
         layerListContainer.innerHTML = `
             <div id="layer-loading" class="flex items-center justify-center h-[120px]">
                 <div class="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span class="ml-2 text-sm">Memuat daftar kategori...</span>
             </div>`;
     }
 
-    // Load metadata
-    await loadCategoriesMetadata();
+    try {
+        // Load categories metadata - ini akan build layerGroups dan UI
+        await loadCategoriesMetadata();
 
-    // Remove spinner
-    document.getElementById("layer-loading")?.remove();
+        // Remove spinner
+        document.getElementById("layer-loading")?.remove();
 
-    console.log("Map app initialized ✅");
+        // Tunggu sebentar agar UI benar-benar selesai di-render
+        setTimeout(async () => {
+            // Auto-click checkbox untuk kategori yang dipilih dari session
+            await autoClickCategoryFromSession();
+        }, 1000); // 1 detik delay untuk memastikan UI siap
+
+    } catch (error) {
+        console.error("Error during map initialization:", error);
+        showAlert("Terjadi kesalahan saat memuat aplikasi peta", "danger");
+    }
 
     // Sidebar elements
     const sidebarElements = {

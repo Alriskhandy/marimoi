@@ -173,68 +173,68 @@
                 'icon' => 'info-circle',
                 'title' => 'Jenis Aspirasi',
                 'content' => '
-                                        <p class="mb-2">Ada 2 jenis aspirasi yang dapat disampaikan:</p>
-                                        <ul class="list-disc list-inside space-y-1 pl-4">
-                                            <li><strong>Usulan Pembangunan</strong> - Untuk mengusulkan proyek pembangunan baru dengan lokasi spesifik</li>
-                                            <li><strong>Kritik & Saran</strong> - Untuk memberikan masukan umum tanpa perlu menentukan lokasi</li>
-                                        </ul>
-                                    ',
+                                            <p class="mb-2">Ada 2 jenis aspirasi yang dapat disampaikan:</p>
+                                            <ul class="list-disc list-inside space-y-1 pl-4">
+                                                <li><strong>Usulan Pembangunan</strong> - Untuk mengusulkan proyek pembangunan baru dengan lokasi spesifik</li>
+                                                <li><strong>Kritik & Saran</strong> - Untuk memberikan masukan umum tanpa perlu menentukan lokasi</li>
+                                            </ul>
+                                        ',
             ],
             [
                 'id' => 'acc2',
                 'icon' => 'list-ol',
                 'title' => 'Langkah Pengisian',
                 'content' => '
-                                        <ol class="list-decimal list-inside space-y-1 pl-4">
-                                            <li>Isi data diri Anda (nama, alamat, email, dan nomor WhatsApp)</li>
-                                            <li>Pilih jenis aspirasi (Usulan atau Kritik & Saran)</li>
-                                            <li>Untuk Usulan: pilih kategori dan tentukan lokasi pada peta</li>
-                                            <li>Isi judul dan pesan aspirasi secara jelas</li>
-                                            <li>Lampirkan file pendukung jika diperlukan</li>
-                                            <li>Centang persetujuan dan selesaikan captcha</li>
-                                            <li>Klik tombol "Kirim Aspirasi"</li>
-                                        </ol>
-                                    ',
+                                            <ol class="list-decimal list-inside space-y-1 pl-4">
+                                                <li>Isi data diri Anda (nama, alamat, email, dan nomor WhatsApp)</li>
+                                                <li>Pilih jenis aspirasi (Usulan atau Kritik & Saran)</li>
+                                                <li>Untuk Usulan: pilih kategori dan tentukan lokasi pada peta</li>
+                                                <li>Isi judul dan pesan aspirasi secara jelas</li>
+                                                <li>Lampirkan file pendukung jika diperlukan</li>
+                                                <li>Centang persetujuan dan selesaikan captcha</li>
+                                                <li>Klik tombol "Kirim Aspirasi"</li>
+                                            </ol>
+                                        ',
             ],
             [
                 'id' => 'acc3',
                 'icon' => 'geo-alt',
                 'title' => 'Lokasi Usulan',
                 'content' => '
-                                        <p class="mb-2">Untuk jenis aspirasi "Usulan Pembangunan", Anda perlu menentukan lokasi:</p>
-                                        <ul class="list-disc list-inside space-y-1 pl-4">
-                                            <li>Klik tombol "Gunakan Lokasi Saat Ini" untuk menggunakan lokasi Anda sekarang</li>
-                                            <li>Atau klik langsung pada peta untuk memilih lokasi yang diinginkan</li>
-                                            <li>Lokasi yang dipilih akan ditandai dengan pin pada peta</li>
-                                        </ul>
-                                    ',
+                                            <p class="mb-2">Untuk jenis aspirasi "Usulan Pembangunan", Anda perlu menentukan lokasi:</p>
+                                            <ul class="list-disc list-inside space-y-1 pl-4">
+                                                <li>Klik tombol "Gunakan Lokasi Saat Ini" untuk menggunakan lokasi Anda sekarang</li>
+                                                <li>Atau klik langsung pada peta untuk memilih lokasi yang diinginkan</li>
+                                                <li>Lokasi yang dipilih akan ditandai dengan pin pada peta</li>
+                                            </ul>
+                                        ',
             ],
             [
                 'id' => 'acc4',
                 'icon' => 'paperclip',
                 'title' => 'Lampiran',
                 'content' => '
-                                        <p class="mb-2">Anda dapat melampirkan file pendukung:</p>
-                                        <ul class="list-disc list-inside space-y-1 pl-4">
-                                            <li>Format yang didukung: gambar (JPG, PNG, GIF), PDF, DWG, DXF</li>
-                                            <li>Ukuran maksimal file: 5MB</li>
-                                            <li>Lampiran dapat berupa foto lokasi, sketsa, atau dokumen pendukung lainnya</li>
-                                        </ul>
-                                    ',
+                                            <p class="mb-2">Anda dapat melampirkan file pendukung:</p>
+                                            <ul class="list-disc list-inside space-y-1 pl-4">
+                                                <li>Format yang didukung: gambar (JPG, PNG, GIF), PDF, DWG, DXF</li>
+                                                <li>Ukuran maksimal file: 5MB</li>
+                                                <li>Lampiran dapat berupa foto lokasi, sketsa, atau dokumen pendukung lainnya</li>
+                                            </ul>
+                                        ',
             ],
             [
                 'id' => 'acc5',
                 'icon' => 'shield-lock',
                 'title' => 'Privasi Data',
                 'content' => '
-                                        <p class="mb-2">Data yang Anda berikan akan digunakan untuk:</p>
-                                        <ul class="list-disc list-inside space-y-1 pl-4">
-                                            <li>Memproses aspirasi yang Anda sampaikan</li>
-                                            <li>Menghubungi Anda terkait tindak lanjut aspirasi</li>
-                                            <li>Data Anda tidak akan dibagikan kepada pihak ketiga tanpa persetujuan</li>
-                                            <li>Aspirasi yang disampaikan akan ditinjau oleh tim terkait</li>
-                                        </ul>
-                                    ',
+                                            <p class="mb-2">Data yang Anda berikan akan digunakan untuk:</p>
+                                            <ul class="list-disc list-inside space-y-1 pl-4">
+                                                <li>Memproses aspirasi yang Anda sampaikan</li>
+                                                <li>Menghubungi Anda terkait tindak lanjut aspirasi</li>
+                                                <li>Data Anda tidak akan dibagikan kepada pihak ketiga tanpa persetujuan</li>
+                                                <li>Aspirasi yang disampaikan akan ditinjau oleh tim terkait</li>
+                                            </ul>
+                                        ',
             ],
         ] as $accordion)
                                 <div
@@ -472,6 +472,28 @@
                                             Hapus Lokasi
                                         </button>
                                     </div>
+
+                                    <!-- Location Status -->
+                                    <div id="locationStatus"
+                                        class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div class="flex items-center text-sm text-blue-700">
+                                            <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                    stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor"
+                                                    d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                </path>
+                                            </svg>
+                                            <span id="locationStatusText">Mencari lokasi dengan akurasi tinggi...</span>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="w-full bg-blue-200 rounded-full h-2">
+                                                <div id="locationProgress"
+                                                    class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                    style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="map" class="w-full h-80 rounded-lg border border-slate-300 shadow-sm">
                                     </div>
                                     <p class="text-xs text-slate-500 flex items-center">
@@ -587,6 +609,7 @@
             constructor() {
                 this.map = null;
                 this.currentLocationMarker = null;
+                this.accuracyCircle = null;
                 this.isSubmitting = false;
 
                 this.initElements();
@@ -619,7 +642,10 @@
                     fileInfo: document.getElementById('fileInfo'),
                     fileInfoText: document.getElementById('fileInfoText'),
                     locationInfo: document.getElementById('locationInfo'),
-                    coordText: document.getElementById('coordText')
+                    coordText: document.getElementById('coordText'),
+                    locationStatus: document.getElementById('locationStatus'),
+                    locationStatusText: document.getElementById('locationStatusText'),
+                    locationProgress: document.getElementById('locationProgress')
                 };
             }
 
@@ -788,7 +814,9 @@
                 }
 
                 const maxSize = 5 * 1024 * 1024; // 5MB
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/doc', 'application/docx'];
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/doc',
+                    'application/docx'
+                ];
                 const fileName = file.name.toLowerCase();
                 const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
 
@@ -880,9 +908,32 @@
                     this.map.removeLayer(this.currentLocationMarker);
                     this.currentLocationMarker = null;
                 }
+                if (this.accuracyCircle && this.map) {
+                    this.map.removeLayer(this.accuracyCircle);
+                    this.accuracyCircle = null;
+                }
                 this.elements.latitude.value = '';
                 this.elements.longitude.value = '';
                 this.elements.locationInfo.classList.add('hidden');
+                this.hideLocationStatus();
+            }
+
+            showLocationStatus(message, progress = 0) {
+                this.elements.locationStatusText.textContent = message;
+                this.elements.locationProgress.style.width = progress + '%';
+                this.elements.locationStatus.classList.remove('hidden');
+            }
+
+            hideLocationStatus() {
+                this.elements.locationStatus.classList.add('hidden');
+                this.elements.locationProgress.style.width = '0%';
+            }
+
+            updateLocationProgress(progress, message = null) {
+                this.elements.locationProgress.style.width = progress + '%';
+                if (message) {
+                    this.elements.locationStatusText.textContent = message;
+                }
             }
 
             getCurrentLocation() {
@@ -895,58 +946,227 @@
                 this.elements.getLocationBtn.innerHTML =
                     '<i class="bi bi-hourglass-split animate-spin mr-1"></i> Mencari Lokasi...';
 
-                const options = {
+                // Show initial status
+                this.showLocationStatus('Memulai pencarian lokasi...', 10);
+
+                // First attempt with high accuracy
+                const highAccuracyOptions = {
                     enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 60000
+                    timeout: 20000,
+                    maximumAge: 30000 // Reduce cache age for more recent location
                 };
 
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const {
-                            latitude,
-                            longitude,
-                            accuracy
-                        } = position.coords;
+                // Fallback options if high accuracy fails
+                const fallbackOptions = {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 120000
+                };
 
-                        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-                            this.showModal('error', 'Lokasi tidak valid', 'Koordinat yang diterima tidak valid.');
-                            return;
-                        }
+                let attemptCount = 0;
+                const maxAttempts = 2;
+                let bestPosition = null;
 
-                        const latlng = L.latLng(latitude, longitude);
-                        this.setMarker(latlng);
+                const tryGetLocation = (options, isRetry = false) => {
+                    attemptCount++;
 
-                        if (this.map) {
-                            this.map.setView(latlng, 15);
-                        }
+                    if (isRetry) {
+                        this.elements.getLocationBtn.innerHTML =
+                            '<i class="bi bi-hourglass-split animate-spin mr-1"></i> Mencoba lagi...';
+                        this.updateLocationProgress(40, 'Mencoba dengan pengaturan alternatif...');
+                    } else {
+                        this.updateLocationProgress(25, 'Mengakses GPS dengan akurasi tinggi...');
+                    }
 
-                        const message = accuracy > 100 ?
-                            `Lokasi ditemukan dengan akurasi ~${Math.round(accuracy)} meter` :
-                            'Lokasi berhasil ditemukan';
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const {
+                                latitude,
+                                longitude,
+                                accuracy,
+                                altitude,
+                                altitudeAccuracy,
+                                heading,
+                                speed
+                            } = position.coords;
 
-                        this.showModal('success', 'Lokasi Ditemukan', message, true);
-                    },
-                    (error) => {
-                        console.error('Geolocation error:', error);
+                            this.updateLocationProgress(70, 'Memproses data lokasi...');
 
-                        const messages = {
-                            [error.PERMISSION_DENIED]: 'Akses lokasi ditolak. Aktifkan izin lokasi di browser.',
-                            [error.POSITION_UNAVAILABLE]: 'Informasi lokasi tidak tersedia.',
-                            [error.TIMEOUT]: 'Pencarian lokasi timeout. Coba lagi.'
-                        };
+                            // Validate coordinates
+                            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                                console.error('Invalid coordinates received:', latitude, longitude);
+                                this.handleLocationError('Koordinat tidak valid',
+                                    'Koordinat yang diterima berada di luar rentang yang valid.');
+                                return;
+                            }
 
-                        const message = messages[error.code] || 'Gagal mendapatkan lokasi';
-                        this.showModal('error', 'Gagal Mendapatkan Lokasi', message);
-                    },
-                    options
-                );
+                            // Check if this position is better than the previous one
+                            const isFirstPosition = !bestPosition;
+                            const isBetterAccuracy = bestPosition && accuracy < bestPosition.coords.accuracy;
+                            const isGoodEnoughAccuracy = accuracy <=
+                            50; // Consider 50 meters or less as good accuracy
 
+                            if (isFirstPosition || isBetterAccuracy || isGoodEnoughAccuracy) {
+                                bestPosition = position;
+                            }
+
+                            this.updateLocationProgress(90, 'Menyelesaikan pencarian lokasi...');
+
+                            // If accuracy is good enough or we've reached max attempts, use the best position
+                            if (isGoodEnoughAccuracy || attemptCount >= maxAttempts) {
+                                this.usePosition(bestPosition);
+                            } else if (attemptCount < maxAttempts && !isRetry) {
+                                // Try again with fallback options for better accuracy
+                                console.log('First attempt accuracy:', accuracy, 'meters. Trying fallback...');
+                                setTimeout(() => tryGetLocation(fallbackOptions, true), 1000);
+                            } else {
+                                // Use the best position we got
+                                this.usePosition(bestPosition);
+                            }
+                        },
+                        (error) => {
+                            console.error('Geolocation error (attempt', attemptCount + '):', error);
+
+                            // If high accuracy failed and we haven't tried fallback, try it
+                            if (!isRetry && attemptCount < maxAttempts) {
+                                console.log('High accuracy failed, trying fallback options...');
+                                this.updateLocationProgress(50, 'Mencoba dengan pengaturan alternatif...');
+                                setTimeout(() => tryGetLocation(fallbackOptions, true), 1000);
+                                return;
+                            }
+
+                            // Final error handling
+                            const messages = {
+                                [error.PERMISSION_DENIED]: {
+                                    title: 'Akses Lokasi Ditolak',
+                                    message: 'Aktifkan izin lokasi di browser dan refresh halaman untuk menggunakan fitur ini.'
+                                },
+                                [error.POSITION_UNAVAILABLE]: {
+                                    title: 'Lokasi Tidak Tersedia',
+                                    message: 'Pastikan GPS aktif dan Anda berada di area dengan sinyal yang baik.'
+                                },
+                                [error.TIMEOUT]: {
+                                    title: 'Pencarian Lokasi Timeout',
+                                    message: 'Pencarian lokasi memakan waktu terlalu lama. Pastikan GPS aktif dan coba lagi.'
+                                }
+                            };
+
+                            const errorInfo = messages[error.code] || {
+                                title: 'Gagal Mendapatkan Lokasi',
+                                message: 'Terjadi kesalahan tidak dikenal. Silakan coba lagi.'
+                            };
+
+                            this.handleLocationError(errorInfo.title, errorInfo.message);
+                        },
+                        options
+                    );
+                };
+
+                // Start the location acquisition process
+                tryGetLocation(highAccuracyOptions);
+
+                // Reset button after maximum time
                 setTimeout(() => {
-                    this.elements.getLocationBtn.disabled = false;
-                    this.elements.getLocationBtn.innerHTML =
-                        '<i class="bi bi-geo-alt mr-1"></i> Gunakan Lokasi Saat Ini';
-                }, 15000);
+                    this.resetLocationButton();
+                }, 25000);
+            }
+
+            usePosition(position) {
+                this.updateLocationProgress(95, 'Menyimpan lokasi...');
+
+                const {
+                    latitude,
+                    longitude,
+                    accuracy,
+                    altitude,
+                    altitudeAccuracy
+                } = position.coords;
+
+                console.log('Using position:', {
+                    latitude,
+                    longitude,
+                    accuracy,
+                    altitude,
+                    altitudeAccuracy,
+                    timestamp: new Date(position.timestamp)
+                });
+
+                const latlng = L.latLng(latitude, longitude);
+                this.setMarker(latlng);
+
+                if (this.map) {
+                    // Zoom level based on accuracy
+                    let zoomLevel = 15;
+                    if (accuracy <= 10) zoomLevel = 18; // Very accurate
+                    else if (accuracy <= 50) zoomLevel = 16; // Good accuracy
+                    else if (accuracy <= 100) zoomLevel = 15; // Moderate accuracy
+                    else zoomLevel = 14; // Lower accuracy
+
+                    this.map.setView(latlng, zoomLevel);
+
+                    // Add accuracy circle if accuracy is available
+                    if (this.accuracyCircle) {
+                        this.map.removeLayer(this.accuracyCircle);
+                    }
+
+                    this.accuracyCircle = L.circle(latlng, {
+                        radius: accuracy,
+                        color: '#2563eb',
+                        fillColor: '#3b82f6',
+                        fillOpacity: 0.1,
+                        weight: 2,
+                        dashArray: '5, 10'
+                    }).addTo(this.map);
+
+                    // Add popup to accuracy circle
+                    this.accuracyCircle.bindPopup(`
+                        <div class="text-sm">
+                            <strong>Area Akurasi Lokasi</strong><br>
+                            Radius: ±${Math.round(accuracy)} meter<br>
+                            ${altitude ? `Ketinggian: ${Math.round(altitude)} meter<br>` : ''}
+                            Waktu: ${new Date(position.timestamp).toLocaleTimeString('id-ID')}
+                        </div>
+                    `);
+                }
+
+                this.updateLocationProgress(100, 'Lokasi berhasil ditemukan!');
+
+                // Create detailed success message
+                let message = `Lokasi berhasil ditemukan dengan akurasi ±${Math.round(accuracy)} meter.`;
+
+                if (accuracy <= 10) {
+                    message += ' (Sangat akurat)';
+                } else if (accuracy <= 50) {
+                    message += ' (Akurat)';
+                } else if (accuracy <= 100) {
+                    message += ' (Cukup akurat)';
+                } else {
+                    message += ' (Akurasi rendah - pertimbangkan untuk memilih lokasi manual)';
+                }
+
+                if (altitude && altitudeAccuracy) {
+                    message += ` Ketinggian: ${Math.round(altitude)}±${Math.round(altitudeAccuracy)}m.`;
+                }
+
+                // Hide status after showing success
+                setTimeout(() => {
+                    this.hideLocationStatus();
+                }, 3000);
+
+                this.showModal('success', 'Lokasi Ditemukan', message, true);
+                this.resetLocationButton();
+            }
+
+            handleLocationError(title, message) {
+                this.hideLocationStatus();
+                this.showModal('error', title, message);
+                this.resetLocationButton();
+            }
+
+            resetLocationButton() {
+                this.elements.getLocationBtn.disabled = false;
+                this.elements.getLocationBtn.innerHTML =
+                    '<i class="bi bi-geo-alt mr-1"></i> Gunakan Lokasi Saat Ini';
             }
 
             validateForm() {
@@ -1081,7 +1301,7 @@
                 // This prevents users from thinking captcha is valid when other fields fail
                 if (data.errors) {
                     this.resetCaptcha();
-                    
+
                     if (data.errors['h-captcha-response']) {
                         this.showModal('error', 'Verifikasi Captcha Gagal', data.errors['h-captcha-response'][0]);
                     } else {
