@@ -322,11 +322,11 @@
                                                     data-id="{{ $item->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
+                                                {{-- <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
                                                     data-id="{{ $item->id }}"
                                                     onclick="deleteAspirasi({{ $item->id }})" title="Hapus">
                                                     <i class="mdi mdi-delete"></i>
-                                                </button>
+                                                </button> --}}
                                             </div>
                                         </td>
                                     </tr>
@@ -1592,16 +1592,16 @@
                 </div>
                 <div class="btn-group ms-2">
                     ${canPreview ? `
-                                <button type="button" class="btn btn-outline-info btn-sm btn-preview-single" 
-                                        data-preview-url="${previewUrl}"
-                                        data-direct-url="${downloadUrl}"
-                                        data-filename="${originalName}"
-                                        data-ext="${fileExt}"
-                                        title="Preview ${originalName}">
-                                    <i class="mdi mdi-eye"></i>
-                                    <span class="d-none d-md-inline ms-1">Preview</span>
-                                </button>
-                            ` : ''}
+                                    <button type="button" class="btn btn-outline-info btn-sm btn-preview-single" 
+                                            data-preview-url="${previewUrl}"
+                                            data-direct-url="${downloadUrl}"
+                                            data-filename="${originalName}"
+                                            data-ext="${fileExt}"
+                                            title="Preview ${originalName}">
+                                        <i class="mdi mdi-eye"></i>
+                                        <span class="d-none d-md-inline ms-1">Preview</span>
+                                    </button>
+                                ` : ''}
                     <button type="button" class="btn btn-outline-primary btn-sm btn-download-single" 
                             data-download-url="${directDownloadUrl}"
                             data-direct-url="${downloadUrl}"
