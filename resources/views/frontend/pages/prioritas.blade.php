@@ -6,499 +6,388 @@
     <style>
         /* Custom styles yang tidak bisa di-handle Tailwind */
         body {
-            background: linear-gradient(to bottom, #ddf1ff, #f2faff);
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            /* Prevent body scroll on desktop */
+            overflow: auto;
+            /* allow normal scrolling but prevent horizontal overflow via layout */
         }
 
-        /* Container wrapper untuk zoom */
-        .zoom-container {
+         /* Reformer section white gradient overlay */
+        .section {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: linear-gradient(to bottom,
+                    rgba(241, 245, 249, 0.90) 0%,
+                    rgba(241, 245, 249, 1) 30%,
+                    rgba(241, 245, 249, 1) 70%,
+                    rgba(241, 245, 249, 0.90) 100%);
+        }
+
+        /* Ensure content appears above the overlay */
+        .section .z-above-overlay {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Carousel styles */
+        .carousel {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            margin: 0 auto;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 300ms ease;
+            will-change: transform;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .carousel-slide img {
             width: 100%;
             height: 100%;
-            overflow: auto;
-            position: relative;
+            object-fit: contain;
+            display: block;
         }
 
-        /* Content yang akan di-zoom */
-        .zoomable-content {
-            transform-origin: 0 0;
-            transition: transform 0.2s ease;
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
             display: flex;
-            flex-direction: row;
-            width: max-content;
+            justify-content: space-between;
+            transform: translateY(-50%);
+            pointer-events: none;
         }
 
-        /* Override untuk full height di desktop */
-        @media (min-width: 768px) {
-            .horizontal-scroll-section {
-                height: 100vh !important;
-                margin-top: 0 !important;
-                padding-top: 65px;
-                /* Space for navbar */
-                overflow: hidden;
-                /* Container tidak scroll, zoom-container yang scroll */
+        .carousel-btn {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            border: none;
+            padding: .6rem .9rem;
+            border-radius: 9999px;
+            font-size: 1.6rem;
+            margin: 0 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 150ms ease;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: .5rem;
+        }
+
+        .carousel-indicators button {
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            border: none;
+            background: rgba(255, 255, 255, 0.6);
+            transition: background 150ms ease, transform 150ms ease;
+        }
+
+        .carousel-indicators button.active {
+            background: #fff;
+            transform: scale(1.1);
+        }
+
+
+        /* Mobile sizes */
+        @media (max-width: 767px) {
+            .carousel {
+                width: 100%;
+                max-width: none;
             }
 
-            .zoomable-content {
-                height: calc(100vh - 65px);
-            }
-
-            .horizontal-scroll-section img {
-                height: calc(100vh - 65px) !important;
+            .carousel-slide {
+                min-width: 100%;
             }
         }
 
-        /* Mobile tetap menggunakan calculated height */
+        /* Mobile tweaks */
         @media (max-width: 767px) {
             body {
                 overflow: auto;
-                /* Allow scroll on mobile */
             }
 
-            .zoom-container {
-                /* Enable both horizontal and vertical scroll on mobile */
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
-                /* Smooth scrolling on iOS */
-                position: relative;
+            .carousel {
+                aspect-ratio: 16 / 9;
             }
-
-            .zoomable-content {
-                flex-direction: column;
-                width: 100%;
-                height: auto;
-                min-height: 100%;
-                /* Ensure content is properly centered when zoomed */
-                margin: 0 auto;
-            }
-
-            .horizontal-scroll-section img {
-                width: 100%;
-                height: auto;
-                display: block;
-                margin-bottom: 0;
-                /* Ensure images don't have extra spacing */
-                vertical-align: top;
-            }
-
-            /* When zoomed on mobile, ensure proper overflow handling */
-            .zoomable-content[style*="scale"] {
-                transform-origin: center top;
-            }
-        }
-
-        /* Custom scrollbar untuk zoom container */
-        .zoom-container::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        .zoom-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .zoom-container::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        .zoom-container::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        /* Pan cursor */
-        .panning {
-            cursor: grabbing !important;
-        }
-
-        .pannable {
-            cursor: grab !important;
         }
     </style>
 @endpush
 
 @section('main')
     <!-- Document Section -->
-    <section
-        class="horizontal-scroll-section 
-                    w-full 
-                    shadow-md
-                    /* Desktop: min-width 768px */
-                    md:h-screen
-                    md:pt-[65px]
-                    md:p-0
-                    /* Mobile: max-width 767px */
-                    h-[calc(100vh-60px)]
-                    mt-[60px]
-                    p-0
-                    mx-auto
-                    max-w-[767px]:mx-auto">
+    <section class="section min-h-auto mt-[76px] pt-6 pb-8 bg-slate-100" style="background: url('{{ asset('frontend/img/cv/bg.svg') }}') repeat;">
 
-        <!-- Zoom Container -->
-        <div class="zoom-container" id="zoomContainer">
-            <!-- Zoomable Content -->
-            <div class="zoomable-content" id="zoomableContent">
-                <img src="{{ asset('frontend/img/prioritas/prioritas-1.jpg') }}" alt="Prioritas Daerah 2025-2029 Halaman 1"
-                    class="priority-image
-                            /* Desktop */
-                            md:h-[calc(100vh-70px)] 
-                            md:w-auto 
-                            md:object-contain
-                            md:flex-shrink-0
-                            /* Mobile */
-                            w-full
-                            h-auto"
-                    data-index="0">
+        <!-- Carousel Container -->
+        <div class="carousel mt-5 rounded-lg shadow-lg" id="prioritasCarousel">
+            <div class="carousel-track" id="carouselTrack">
+                <div class="carousel-slide">
+                    <img src="{{ asset('frontend/img/prioritas/visi-1.png') }}" alt="Prioritas Daerah 2025-2029 Halaman 1">
+                </div>
+                <div class="carousel-slide">
+                    <img src="{{ asset('frontend/img/prioritas/visi-2.png') }}" alt="Prioritas Daerah 2025-2029 Halaman 2">
+                </div>
+            </div>
 
-                <img src="{{ asset('frontend/img/prioritas/prioritas-2.jpg') }}" alt="Prioritas Daerah 2025-2029 Halaman 2"
-                    class="priority-image
-                            /* Desktop */
-                            md:h-[calc(100vh-70px)] 
-                            md:w-auto 
-                            md:object-contain
-                            md:flex-shrink-0
-                            /* Mobile */
-                            w-full
-                            h-auto"
-                    data-index="1">
+            <div class="carousel-controls">
+                <div style="display:flex; align-items:center;">
+                    <button id="prevBtn" class="carousel-btn" aria-label="Previous">‹</button>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <button id="nextBtn" class="carousel-btn" aria-label="Next">›</button>
+                </div>
+            </div>
 
-                <img src="{{ asset('frontend/img/prioritas/prioritas-3.jpg') }}" alt="Prioritas Daerah 2025-2029 Halaman 3"
-                    class="priority-image
-                            /* Desktop */
-                            md:h-[calc(100vh-70px)] 
-                            md:w-auto 
-                            md:object-contain
-                            md:flex-shrink-0
-                            /* Mobile */
-                            w-full
-                            h-auto"
-                    data-index="2">
+            <div class="carousel-indicators" id="carouselIndicators">
+                <button data-slide-to="0" class="active" aria-label="Slide 1"></button>
+                <button data-slide-to="1" aria-label="Slide 2"></button>
+            </div>
+        </div>
 
-                <img src="{{ asset('frontend/img/prioritas/prioritas-4.jpg') }}" alt="Prioritas Daerah 2025-2029 Halaman 4"
-                    class="priority-image
-                            /* Desktop */
-                            md:h-[calc(100vh-70px)] 
-                            md:w-auto 
-                            md:object-contain
-                            md:flex-shrink-0
-                            /* Mobile */
-                            w-full
-                            h-auto"
-                    data-index="3">
+        <!-- Fullscreen modal for images -->
+        <div id="imageModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90">
+            <button id="modalClose" aria-label="Close" class="absolute top-20 right-6 text-white text-4xl">&times;</button>
+            <button id="modalPrev" aria-label="Previous"
+                class="absolute left-4 text-white text-4xl p-3 rounded-full bg-black/50">‹</button>
+            <button id="modalNext" aria-label="Next"
+                class="absolute right-4 text-white text-4xl p-3 rounded-full bg-black/50">›</button>
+            <div id="modalContent" class="w-full h-full flex items-center justify-center">
+                <!-- modal image injected here -->
             </div>
         </div>
     </section><!-- /Document Section -->
+
+    <!-- Footer Section -->
+    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const scrollContainer = document.querySelector('.horizontal-scroll-section');
-            const zoomContainer = document.getElementById('zoomContainer');
-            const zoomableContent = document.getElementById('zoomableContent');
-            const images = document.querySelectorAll('.priority-image');
+            const track = document.getElementById('carouselTrack');
+            const slides = Array.from(track.querySelectorAll('.carousel-slide'));
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const indicators = Array.from(document.querySelectorAll('#carouselIndicators button'));
 
-            // State management
-            let currentZoom = 1;
-            let isDesktop = window.innerWidth >= 768;
-            let minZoom = 1;
-            let maxZoom = 3;
-
-            // Pan state
-            let isPanning = false;
+            let current = 0;
+            let isDragging = false;
             let startX = 0;
-            let startY = 0;
-            let initialScrollLeft = 0;
-            let initialScrollTop = 0;
+            let currentTranslate = 0;
+            let prevTranslate = 0;
+            let animationID = 0;
+            let carouselWidth = track.clientWidth;
 
-            // Touch state
-            let lastTouchX = 0;
-            let lastTouchY = 0;
-            let lastPinchDistance = null;
-            let lastTapTime = 0;
-
-            // Initialize
-            function init() {
-                isDesktop = window.innerWidth >= 768;
-                setContainerHeight();
-                setupEventListeners();
+            function setPosition() {
+                carouselWidth = track.clientWidth;
+                const x = -current * carouselWidth;
+                track.style.transform = `translateX(${x}px)`;
+                indicators.forEach((btn, idx) => btn.classList.toggle('active', idx === current));
+                prevTranslate = -current * carouselWidth;
             }
 
-            function setContainerHeight() {
-                if (isDesktop) {
-                    scrollContainer.style.height = '100vh';
-                    scrollContainer.style.marginTop = '0';
-                    scrollContainer.style.paddingTop = '70px';
-                } else {
-                    scrollContainer.style.height = 'calc(100vh - 70px)';
-                    scrollContainer.style.marginTop = '70px';
-                    scrollContainer.style.paddingTop = '0';
-                }
+            function prev() {
+                current = (current - 1 + slides.length) % slides.length;
+                setPosition();
             }
 
-            function setupEventListeners() {
-                // Wheel event for zoom
-                zoomContainer.addEventListener('wheel', handleWheel, {
+            function next() {
+                current = (current + 1) % slides.length;
+                setPosition();
+            }
+
+            prevBtn.addEventListener('click', prev);
+            nextBtn.addEventListener('click', next);
+
+            // Indicators
+            indicators.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const i = parseInt(btn.dataset.slideTo, 10);
+                    if (!Number.isNaN(i)) {
+                        current = i;
+                        setPosition();
+                    }
+                });
+            });
+
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') prev();
+                if (e.key === 'ArrowRight') next();
+            });
+
+            // Touch / drag support
+            slides.forEach((slide, index) => {
+                // Touch events
+                slide.addEventListener('touchstart', touchStart(index), {
+                    passive: true
+                });
+                slide.addEventListener('touchend', touchEnd);
+                slide.addEventListener('touchmove', touchMove, {
                     passive: false
                 });
 
-                // Mouse events for pan
-                zoomContainer.addEventListener('mousedown', handleMouseDown);
-                zoomContainer.addEventListener('mousemove', handleMouseMove);
-                zoomContainer.addEventListener('mouseup', handleMouseUp);
-                zoomContainer.addEventListener('mouseleave', handleMouseUp);
+                // Mouse events for desktop dragging
+                slide.addEventListener('mousedown', touchStart(index));
+                slide.addEventListener('mouseup', touchEnd);
+                slide.addEventListener('mouseleave', touchEnd);
+                slide.addEventListener('mousemove', touchMove);
+            });
 
-                // Touch events
-                zoomContainer.addEventListener('touchstart', handleTouchStart, {
-                    passive: true // Allow passive for better performance
-                });
-                zoomContainer.addEventListener('touchmove', handleTouchMove, {
-                    passive: false // Need to prevent default for pinch zoom
-                });
-                zoomContainer.addEventListener('touchend', handleTouchEnd, {
-                    passive: true
-                });
-
-                // Keyboard shortcuts
-                document.addEventListener('keydown', handleKeyDown);
-
-                // Window resize
-                window.addEventListener('resize', handleResize);
-
-                // Double click/tap to reset zoom
-                zoomContainer.addEventListener('dblclick', resetZoom);
-            }
-
-            function handleWheel(e) {
-                e.preventDefault();
-
-                if (e.ctrlKey || e.metaKey) {
-                    // Zoom functionality with Ctrl+Wheel
-                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-                    zoom(zoomFactor, e.clientX, e.clientY);
-                } else {
-                    // Pan when zoomed or scroll when not zoomed
-                    if (currentZoom > 1) {
-                        // Pan in both directions when zoomed
-                        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-                            zoomContainer.scrollLeft += e.deltaX;
-                        } else {
-                            zoomContainer.scrollTop += e.deltaY;
-                        }
-                    } else {
-                        // Normal scroll behavior when not zoomed
-                        if (isDesktop) {
-                            zoomContainer.scrollLeft += e.deltaY;
-                        } else {
-                            zoomContainer.scrollTop += e.deltaY;
-                        }
-                    }
+            function touchStart(index) {
+                return function(event) {
+                    isDragging = true;
+                    current = index;
+                    startX = getPositionX(event);
+                    animationID = requestAnimationFrame(animation);
+                    track.classList.add('grabbing');
                 }
             }
 
-            function handleMouseDown(e) {
-                isPanning = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                initialScrollLeft = zoomContainer.scrollLeft;
-                initialScrollTop = zoomContainer.scrollTop;
-
-                zoomContainer.classList.add('panning');
-                e.preventDefault();
+            function touchMove(event) {
+                if (!isDragging) return;
+                const currentPosition = getPositionX(event);
+                currentTranslate = prevTranslate + currentPosition - startX;
             }
 
-            function handleMouseMove(e) {
-                if (!isPanning) return;
+            function touchEnd() {
+                cancelAnimationFrame(animationID);
+                isDragging = false;
+                const movedBy = currentTranslate - prevTranslate;
 
-                const deltaX = e.clientX - startX;
-                const deltaY = e.clientY - startY;
+                const threshold = Math.max(50, carouselWidth * 0.12);
 
-                zoomContainer.scrollLeft = initialScrollLeft - deltaX;
-                zoomContainer.scrollTop = initialScrollTop - deltaY;
+                if (movedBy < -threshold) next();
+                else if (movedBy > threshold) prev();
+                else setPosition();
+
+                prevTranslate = -current * carouselWidth;
+                track.classList.remove('grabbing');
             }
 
-            function handleMouseUp() {
-                isPanning = false;
-                zoomContainer.classList.remove('panning');
-                updateCursor();
+            function getPositionX(event) {
+                return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
             }
 
-            function handleTouchStart(e) {
-                if (e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    lastTouchX = touch.clientX;
-                    lastTouchY = touch.clientY;
+            function animation() {
+                setTranslate(currentTranslate);
+                if (isDragging) requestAnimationFrame(animation);
+            }
 
-                    // Only set up panning if zoomed in
-                    if (currentZoom > 1) {
-                        startX = touch.clientX;
-                        startY = touch.clientY;
-                        initialScrollLeft = zoomContainer.scrollLeft;
-                        initialScrollTop = zoomContainer.scrollTop;
-                    }
-                } else if (e.touches.length === 2) {
-                    // Initialize pinch
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    lastPinchDistance = Math.sqrt(
-                        Math.pow(touch2.clientX - touch1.clientX, 2) +
-                        Math.pow(touch2.clientY - touch1.clientY, 2)
-                    );
+            function setTranslate(xPos) {
+                track.style.transform = `translateX(${xPos}px)`;
+            }
+
+            // Responsive: keep position on resize
+            window.addEventListener('resize', () => {
+                carouselWidth = track.clientWidth;
+                setPosition();
+            });
+
+            // Initial render
+            setPosition();
+            // Modal functionality
+            const modal = document.getElementById('imageModal');
+            const modalContent = document.getElementById('modalContent');
+            const modalClose = document.getElementById('modalClose');
+            const modalPrev = document.getElementById('modalPrev');
+            const modalNext = document.getElementById('modalNext');
+
+            function openModal(index) {
+                const img = slides[index].querySelector('img');
+                if (!img) return;
+                modalContent.innerHTML = '';
+                const mimg = document.createElement('img');
+                mimg.src = img.src;
+                mimg.alt = img.alt || '';
+                mimg.style.maxWidth = '95%';
+                mimg.style.maxHeight = '95%';
+                mimg.style.objectFit = 'contain';
+                modalContent.appendChild(mimg);
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                modal.dataset.current = index;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modalContent.innerHTML = '';
+                document.body.style.overflow = '';
+            }
+
+            function modalPrevFn() {
+                let idx = parseInt(modal.dataset.current || '0', 10);
+                idx = (idx - 1 + slides.length) % slides.length;
+                openModal(idx);
+            }
+
+            function modalNextFn() {
+                let idx = parseInt(modal.dataset.current || '0', 10);
+                idx = (idx + 1) % slides.length;
+                openModal(idx);
+            }
+
+            // Open modal on image click
+            slides.forEach((s, i) => {
+                const img = s.querySelector('img');
+                if (img) img.style.cursor = 'zoom-in';
+                s.addEventListener('click', () => openModal(i));
+            });
+
+            modalClose.addEventListener('click', closeModal);
+            modalPrev.addEventListener('click', modalPrevFn);
+            modalNext.addEventListener('click', modalNextFn);
+
+            // Keyboard for modal
+            document.addEventListener('keydown', (e) => {
+                if (!modal.classList.contains('hidden')) {
+                    if (e.key === 'Escape') closeModal();
+                    if (e.key === 'ArrowLeft') modalPrevFn();
+                    if (e.key === 'ArrowRight') modalNextFn();
                 }
-            }
+            });
 
-            function handleTouchMove(e) {
-                if (e.touches.length === 1) {
-                    // Single touch - only prevent default and pan if zoomed in
-                    if (currentZoom > 1) {
-                        e.preventDefault();
-                        const touch = e.touches[0];
-                        const deltaX = touch.clientX - startX;
-                        const deltaY = touch.clientY - startY;
-
-                        zoomContainer.scrollLeft = initialScrollLeft - deltaX;
-                        zoomContainer.scrollTop = initialScrollTop - deltaY;
-                    }
-                    // If not zoomed, let browser handle natural scrolling
-
-                } else if (e.touches.length === 2) {
-                    // Pinch to zoom - always prevent default
-                    e.preventDefault();
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    const distance = Math.sqrt(
-                        Math.pow(touch2.clientX - touch1.clientX, 2) +
-                        Math.pow(touch2.clientY - touch1.clientY, 2)
-                    );
-
-                    if (lastPinchDistance) {
-                        const zoomFactor = distance / lastPinchDistance;
-                        const centerX = (touch1.clientX + touch2.clientX) / 2;
-                        const centerY = (touch1.clientY + touch2.clientY) / 2;
-                        zoom(zoomFactor, centerX, centerY);
-                    }
-                    lastPinchDistance = distance;
-                }
-            }
-
-            function handleTouchEnd(e) {
-                if (e.touches.length === 0) {
-                    lastPinchDistance = null;
-
-                    // Double tap to toggle zoom
-                    const now = Date.now();
-                    if (lastTapTime && now - lastTapTime < 300) {
-                        if (currentZoom === 1) {
-                            zoom(2, lastTouchX, lastTouchY);
-                        } else {
-                            resetZoom();
-                        }
-                    }
-                    lastTapTime = now;
-                }
-            }
-
-            function handleKeyDown(e) {
-                switch (e.key) {
-                    case '0':
-                        if (e.ctrlKey || e.metaKey) {
-                            resetZoom();
-                            e.preventDefault();
-                        }
-                        break;
-                    case '=':
-                    case '+':
-                        if (e.ctrlKey || e.metaKey) {
-                            zoom(1.2);
-                            e.preventDefault();
-                        }
-                        break;
-                    case '-':
-                        if (e.ctrlKey || e.metaKey) {
-                            zoom(0.8);
-                            e.preventDefault();
-                        }
-                        break;
-                }
-            }
-
-            function zoom(factor, centerX = null, centerY = null) {
-                // Adjust zoom limits based on device type
-                const mobileMaxZoom = 4; // Higher max zoom for mobile
-                const effectiveMaxZoom = isDesktop ? maxZoom : mobileMaxZoom;
-
-                const newZoom = Math.min(Math.max(currentZoom * factor, minZoom), effectiveMaxZoom);
-
-                if (newZoom !== currentZoom) {
-                    // Calculate zoom center
-                    const rect = zoomContainer.getBoundingClientRect();
-                    let x, y;
-
-                    if (!isDesktop) {
-                        // On mobile, prefer center-top origin for better UX
-                        x = centerX !== null ? centerX - rect.left : rect.width / 2;
-                        y = centerY !== null ? centerY - rect.top : 0; // Top origin
-                    } else {
-                        x = centerX !== null ? centerX - rect.left : rect.width / 2;
-                        y = centerY !== null ? centerY - rect.top : rect.height / 2;
-                    }
-
-                    // Adjust scroll position to maintain zoom center
-                    const zoomRatio = newZoom / currentZoom;
-                    const newScrollLeft = (zoomContainer.scrollLeft + x) * zoomRatio - x;
-                    const newScrollTop = (zoomContainer.scrollTop + y) * zoomRatio - y;
-
-                    // Apply zoom to content
-                    currentZoom = newZoom;
-
-                    // Set appropriate transform-origin for mobile vs desktop
-                    if (!isDesktop) {
-                        zoomableContent.style.transformOrigin = 'center top';
-                    } else {
-                        zoomableContent.style.transformOrigin = '0 0';
-                    }
-
-                    zoomableContent.style.transform = `scale(${currentZoom})`;
-
-                    // Set new scroll position
-                    zoomContainer.scrollLeft = newScrollLeft;
-                    zoomContainer.scrollTop = newScrollTop;
-
-                    updateCursor();
-                }
-            }
-
-            function resetZoom() {
-                currentZoom = 1;
-                zoomableContent.style.transform = 'scale(1)';
-                zoomContainer.scrollLeft = 0;
-                zoomContainer.scrollTop = 0;
-                updateCursor();
-            }
-
-            function updateCursor() {
-                if (currentZoom > 1) {
-                    zoomContainer.classList.add('pannable');
-                } else {
-                    zoomContainer.classList.remove('pannable');
-                }
-            }
-
-            function handleResize() {
-                const wasDesktop = isDesktop;
-                isDesktop = window.innerWidth >= 768;
-
-                if (wasDesktop !== isDesktop) {
-                    setContainerHeight();
-                    resetZoom();
-                }
-            }
-
-            // Initialize on load
-            init();
+            // Close modal by clicking backdrop
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
         });
     </script>
 @endpush
