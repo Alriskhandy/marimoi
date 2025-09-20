@@ -150,7 +150,8 @@
         /* Tighter on small screens: reduce horizontal padding and slightly smaller text */
         @media (max-width: 640px) {
             .faq-section .tab {
-                padding-left: .5rem; /* reduce horizontal padding on mobile */
+                padding-left: .5rem;
+                /* reduce horizontal padding on mobile */
                 padding-right: .5rem;
             }
 
@@ -160,14 +161,16 @@
             }
 
             .faq-section .tab label h3 {
-                font-size: .95rem; /* slightly smaller heading on mobile */
+                font-size: .95rem;
+                /* slightly smaller heading on mobile */
                 display: flex;
                 align-items: center;
                 gap: .4rem;
             }
 
             .faq-section .tab label i {
-                font-size: 1rem; /* slightly smaller icon on mobile */
+                font-size: 1rem;
+                /* slightly smaller icon on mobile */
             }
         }
 
@@ -257,7 +260,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Tematik?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Tematik?
+                    </h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -291,7 +295,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-building me-2"></i> Apa perbedaan Proyek Strategis Daerah dan Nasional?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-building me-2"></i> Apa perbedaan Proyek Strategis Daerah
+                        dan Nasional?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -335,7 +340,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-bullseye me-2"></i> Apa itu Prioritas Daerah 2025-2029?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-bullseye me-2"></i> Apa itu Prioritas Daerah 2025-2029?
+                    </h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -375,7 +381,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-people me-2"></i> Apa itu Musrenbang dan bagaimana melihat usulannya?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-people me-2"></i> Apa itu Musrenbang dan bagaimana melihat
+                        usulannya?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -417,7 +424,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-award me-2"></i> Apa itu Pokir DPRD dan bagaimana melihat datanya?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-award me-2"></i> Apa itu Pokir DPRD dan bagaimana melihat
+                        datanya?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -459,7 +467,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-chat-dots me-2"></i> Bagaimana cara menyampaikan Usulan Aspirasi?</h3>
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-chat-dots me-2"></i> Bagaimana cara menyampaikan Usulan
+                        Aspirasi?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -512,7 +521,8 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-question-circle me-2"></i> Bagaimana jika saya membutuhkan bantuan lebih
+                    <h3 class="pr-4 md:pr-0"><i class="bi bi-question-circle me-2"></i> Bagaimana jika saya
+                        membutuhkan bantuan lebih
                         lanjut?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
