@@ -58,11 +58,9 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
 // Public routes - Publications
-Route::prefix('publications')->name('publications.')->group(function () {
-    Route::get('/', [PublicationController::class, 'index'])->name('index');
-    Route::get('/{publication}', [PublicationController::class, 'show'])->name('show');
-    Route::get('/{publication}/download', [PublicationDownloadController::class, 'showSurveyForm'])->name('download.survey');
-    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.process');
+Route::prefix('dokumen-publikasi')->group(function () {
+    Route::get('/', [PublicationController::class, 'index'])->name('tampil.publikasi');
+    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.publikasi');
 });
 
 // Public routes - Survey (untuk guest)

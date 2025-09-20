@@ -14,7 +14,7 @@ class SurveyController extends Controller
     // Menampilkan form survey umum
     public function showGeneralSurveyForm()
     {
-        return view('surveys.general-form');
+        return view('frontend.pages.general-form');
     }
 
     // Proses survey umum

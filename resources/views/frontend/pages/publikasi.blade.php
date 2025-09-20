@@ -193,10 +193,10 @@
                     <button id="downloadModalClose" class="text-slate-500 hover:text-slate-700">×</button>
                 </div>
 
-                <form id="downloadForm" method="post" action="/publikasi/download" class="mt-4 text-gray-800">
+                <form id="downloadForm" method="post" action="{{ route('download.publikasi', $doc['id']) }}" class="mt-4 text-gray-800">
                     @csrf
-                    <input type="hidden" name="doc_id" id="docIdInput">
-                    <input type="hidden" name="doc_path" id="docPathInput">
+                    <input type="hidden" name="doc_id" id="docIdInput" value="{{ $doc['id'] }}">
+                    <input type="hidden" name="doc_path" id="docPathInput" value="{{ $doc['id'] }}">
 
                     <div class="mb-2">
                         <h4 class="text-lg font-semibold">Data Pemohon</h4>
@@ -217,18 +217,27 @@
                             <input required name="email" type="email"
                                 class="form-control mt-1 block w-full rounded-md border-gray-200" />
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-people me-2"></i>
-                                Kategori Pengguna</label>
-                            <select required name="user_category"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200">
-                                <option value="">Pilih kategori</option>
-                                <option value="mahasiswa">Mahasiswa</option>
-                                <option value="peneliti">Peneliti</option>
-                                <option value="pemerintah">Pemerintah</option>
-                                <option value="umum">Umum</option>
-                            </select>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-phone me-2"></i>
+                                Nomor Telepon</label>
+                            <input name="phone" type="tel" placeholder="08xxxxxxxxxx"
+                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-building me-2"></i>
+                                Organisasi/Instansi</label>
+                            <input name="organization" type="text"
+                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-briefcase me-2"></i>
+                                Posisi/Jabatan</label>
+                            <input name="position" type="text"
+                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                        </div>
+
+                        <input type="hidden" name="additional_data" id="additionalDataInput" value="" />
+
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-700"><i class="bi bi-clipboard me-2"></i>
                                 Tujuan Penggunaan</label>
@@ -356,6 +365,16 @@
             downloadForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
+                // populate additional_data with small client context
+                const additionalDataInput = document.getElementById('additionalDataInput');
+                if (additionalDataInput) {
+                    const ctx = {
+                        user_agent: navigator.userAgent || '',
+                        doc_id: docIdInput ? docIdInput.value : ''
+                    };
+                    additionalDataInput.value = JSON.stringify(ctx);
+                }
+
                 const formData = new FormData(downloadForm);
 
                 // Include hcaptcha response if available
@@ -364,10 +383,10 @@
                     formData.append('h-captcha-response', token);
                 }
 
-                // Basic client-side check
-                if (!formData.get('name') || !formData.get('email') || !formData.get('user_category') ||
-                    !formData.get('purpose')) {
-                    setFormAlert('Lengkapi semua field yang diperlukan.', 'error');
+                // Basic client-side check (name, email, purpose are required server-side)
+                if (!formData.get('name') || !formData.get('email') || !formData.get('purpose')) {
+                    setFormAlert('Lengkapi semua field yang diperlukan (Nama, Email, Tujuan).',
+                    'error');
                     return;
                 }
 
@@ -393,6 +412,10 @@
                         setTimeout(() => {
                             window.location.href = data.download_url;
                         }, 250);
+                    } else if (res.ok && data.success) {
+                        // If server returns success without download_url, show message and close
+                        setFormAlert(data.message || 'Permintaan diproses.', 'success');
+                        setTimeout(() => closeModal(), 1200);
                     } else {
                         setFormAlert(data.message || 'Gagal memproses permintaan.', 'error');
                         submitBtn.disabled = false;
