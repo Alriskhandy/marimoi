@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'FAQ - Pertanyaan Umum'])
+@extends('frontend.layouts.dark', ['title' => 'Profil REFORMER - MARIMOI'])
 
 @push('styles')
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
@@ -119,6 +119,44 @@
             max-width: 1200px;
         }
 
+        /* Tab icon styling: consistent size, spacing and states */
+        .tab label h3 {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .tab label i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 8px;
+            background: transparent;
+            color: #2563eb;
+            /* primary blue */
+            font-size: 18px;
+            margin-right: 0.5rem;
+            /* space between icon and text */
+            transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        /* Hover state for icons */
+        .tab label:hover i {
+            background: rgba(37, 99, 235, 0.08);
+            color: #1e40af;
+            transform: translateY(-2px);
+        }
+
+        /* Active (checked) state — keep icons visible on colored background */
+        .tab input[type="radio"]:checked~label i {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff !important;
+            transform: none;
+        }
+
         /* Reformer section white gradient overlay */
         .reformer-section {
             position: relative;
@@ -176,7 +214,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-info-circle me-2"></i> Data Pribadi, Keluarga & Riwayat Pendidikan</h3>
+                        <h3><i class="bi bi-person-vcard me-2"></i> Data Pribadi, Keluarga & Riwayat Pendidikan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -195,7 +233,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-map me-2"></i> Riwayat Kepangkatan</h3>
+                        <h3><i class="bi bi-bar-chart-steps me-2"></i> Riwayat Kepangkatan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -214,7 +252,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-building me-2"></i> Riwayat Jabatan</h3>
+                        <h3><i class="bi bi-briefcase me-2"></i> Riwayat Jabatan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -223,7 +261,7 @@
                     </div>
                 </div>
 
-                <!-- FAQ Item 4: Riwayat Kinerja, Diklat, & Penghargaan -->
+                <!-- Item 4: Riwayat Kinerja, Diklat, & Penghargaan -->
                 <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                     <input type="radio" name="faq" id="faq4" class="hidden peer">
@@ -233,7 +271,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-bullseye me-2"></i> Riwayat Kinerja, Diklat, & Penghargaan</h3>
+                        <h3><i class="bi bi-award  me-2"></i> Riwayat Kinerja, Diklat, & Penghargaan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -310,7 +348,7 @@
             }
         });
     </script>
-    
+
     <script>
         (function() {
             // Build a list of images from the page (all img inside .wrapper)
