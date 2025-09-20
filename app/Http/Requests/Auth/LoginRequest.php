@@ -27,11 +27,17 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
+
+        // Hanya tambahkan CAPTCHA jika tidak di environment local
+        if (!app()->environment('local')) {
+            $rules['h-captcha-response'] = ['required', new ValidHCaptcha()];
+        }
+
+        return $rules;
     }
 
     /**
@@ -94,6 +100,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

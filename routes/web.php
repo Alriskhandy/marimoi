@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\FrontendController;
+use App\Http\Controllers\PublicationController;
+use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +54,21 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
+
+// Public routes - Publications
+Route::prefix('publications')->name('publications.')->group(function () {
+    Route::get('/', [PublicationController::class, 'index'])->name('index');
+    Route::get('/{publication}', [PublicationController::class, 'show'])->name('show');
+    Route::get('/{publication}/download', [PublicationDownloadController::class, 'showSurveyForm'])->name('download.survey');
+    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.process');
+});
+
+// Public routes - Survey (untuk guest)
+Route::prefix('survey')->name('survey.')->group(function () {
+    Route::get('/', [SurveyController::class, 'showGeneralSurveyForm'])->name('form');
+    Route::post('/', [SurveyController::class, 'submitGeneralSurvey'])->name('submit');
+    Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
+});
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/backend.php';
