@@ -123,8 +123,7 @@
 <div id="surveyModal" class="survey-modal fixed inset-0 z-[99999] items-center justify-center bg-black/50"
     role="dialog" aria-modal="true" aria-labelledby="surveyModalTitle" aria-describedby="surveyModalDesc"
     tabindex="-1">
-    <div class="bg-slate-50 rounded-2xl shadow-xl w-full max-w-2xl p-6 mx-4 text-gray-800 text-justify"
-        role="document">
+    <div class="bg-slate-50 rounded-2xl shadow-xl w-full max-w-2xl p-6 mx-4 text-gray-800 text-justify" role="document">
         <div class="flex items-start justify-between mb-3">
             <h3 id="surveyModalTitle" class="text-lg font-semibold">Survey Kepuasan Pengguna</h3>
             <button id="surveyClose" type="button" aria-label="Tutup survei"
@@ -299,6 +298,18 @@
             }
 
             onReady(function() {
+                // Do not show the modal when the user is on the survey page itself.
+                try {
+                    const path = (window.location && window.location.pathname) ? window.location.pathname
+                        .replace(/\/+$?/, '') : '';
+                    // normalize trailing slash and compare
+                    if (path === '/survey' || path === '/survey') {
+                        return; // do not attach handlers or show modal
+                    }
+                } catch (e) {
+                    // ignore location errors and continue
+                }
+
                 attachHandlers();
 
                 // Decide whether to show the modal for first-time visitors.
@@ -318,11 +329,11 @@
                         // still snoozed - do nothing
                     } else {
                         // Not snoozed (first visit or expired) => show after 10s
-                        setTimeout(showModal, 3000);
+                        setTimeout(showModal, 5000)
                     }
                 } catch (err) {
                     // If localStorage is blocked, still attempt to show once after 10s
-                    setTimeout(showModal, 3000);
+                    setTimeout(showModal, 5000);
                 }
             });
         })();
