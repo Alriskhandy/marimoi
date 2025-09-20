@@ -135,6 +135,8 @@
                 <ul class="menu-list">
                     <li><a href="{{ route('beranda') }}"
                             class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
+                    <li><a href="{{ route('tampil.reformer') }}"
+                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a></li>
                     <li><a href="{{ route('tampil.tematik') }}"
                             class="{{ request()->routeIs('tampil.tematik') ? 'active' : '' }}">Peta
                             Tematik</a></li>
@@ -164,6 +166,8 @@
                     <li><a href="{{ route('tampil.pokir') }}"
                             class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir
                             DPRD</a></li>
+                    <li><a href="{{ route('tampil.aspirasi') }}"
+                            class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}"
                             class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a></li>
                 </ul>

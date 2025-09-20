@@ -84,6 +84,11 @@ class FrontendController extends Controller
         ));
     }
 
+    public function reformer()
+    {
+        return view('frontend.pages.reformer');
+    }
+
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();
