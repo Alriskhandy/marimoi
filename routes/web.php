@@ -13,6 +13,7 @@ Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name(
 Route::get('/peta-tematik', [FrontendController::class, 'tematik'])->name('tampil.tematik');
 Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
+Route::get('/dokumen-publikasi', [FrontendController::class, 'publikasi'])->name('tampil.publikasi');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
 // Log monitoring (careful: restrict in production)

@@ -89,6 +89,11 @@ class FrontendController extends Controller
         return view('frontend.pages.reformer');
     }
 
+    public function publikasi()
+    {
+        return view('frontend.pages.publikasi');
+    }
+
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();

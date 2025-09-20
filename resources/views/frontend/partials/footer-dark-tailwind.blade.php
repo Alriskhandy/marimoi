@@ -118,6 +118,42 @@
     </div>
 </footer>
 
+
+<!-- Survey Modal (shown to first-time visitors after 10s) -->
+<div id="surveyModal" class="survey-modal fixed inset-0 z-[99999] items-center justify-center bg-black/50"
+    role="dialog" aria-modal="true" aria-labelledby="surveyModalTitle" aria-describedby="surveyModalDesc"
+    tabindex="-1">
+    <div class="bg-slate-50 rounded-2xl shadow-xl w-full max-w-2xl p-6 mx-4 text-gray-800 text-justify"
+        role="document">
+        <div class="flex items-start justify-between mb-3">
+            <h3 id="surveyModalTitle" class="text-lg font-semibold">Survey Kepuasan Pengguna</h3>
+            <button id="surveyClose" type="button" aria-label="Tutup survei"
+                class="text-slate-500 hover:text-slate-700 text-lg">×</button>
+        </div>
+        <p id="surveyModalDesc" class="text-sm text-slate-600">Kami ingin tahu pengalaman Anda saat
+            menggunakan situs ini. Mohon luangkan beberapa waktu anda untuk mengisi survei kepuasan pengguna
+            demi peningkatan sistem kedepannya.</p>
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-[56px_1fr] gap-3 items-start">
+            <div class="flex items-center justify-center md:justify-start">
+                <img src="{{ asset('frontend/img/survey.svg') }}" alt="" class="h-10 md:h-12 w-auto"
+                    aria-hidden="true">
+            </div>
+            <div>
+                <p class="text-sm text-slate-600 leading-relaxed">Anda dapat mengisi survey kepuasan pengguna kapan
+                    saja dengan menekan tombol survey di bagian kanan bawah layar anda.</p>
+            </div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button id="surveyLater" type="button"
+                class="ml-3 px-4 py-2 mr-3 rounded-lg border border-slate-200">Isi
+                Nanti</button>
+            <a href="/survey" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg">Mulai
+                Survei</a>
+        </div>
+    </div>
+</div>
+
 <!-- Floating Action Buttons -->
 <div
     class="floating-buttons fixed bottom-5 right-5 flex flex-col gap-3 z-[1000] opacity-0 invisible translate-y-5 transition-all duration-300">
@@ -131,9 +167,25 @@
         </svg>
     </button>
 
+    <!-- Survey Button -->
+    <a href="/survey"
+        class="float-btn w-12 h-12 rounded-full border-0 cursor-pointer flex items-center justify-center shadow-[0_3px_10px_rgba(0,0,0,0.15)] transition-all duration-300 text-[0] relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(0,0,0,0.25)] active:translate-y-0 active:transition-transform active:duration-100"
+        title="Survey - Isi Kuesioner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+            class="transition-transform duration-300 hover:scale-110">
+            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1
+                 0-2 .9-2 2v14c0 1.1.9 2 2
+                 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM12
+                 3c.55 0 1 .45 1 1s-.45 1-1
+                 1-1-.45-1-1 .45-1 1-1zm5
+                 16H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V9h10v2z" />
+        </svg>
+    </a>
+
+
     <!-- FAQ Button -->
     <a href="/faq"
-        class="float-btn w-12 h-12 rounded-full border-0 cursor-pointer flex items-center justify-center shadow-[0_3px_10px_rgba(0,0,0,0.15)] transition-all duration-300 text-[0] relative overflow-hidden bg-gradient-to-br from-[var(--bg-primary)] to-[var(--bg-secondary)] text-white hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(0,0,0,0.25)] active:translate-y-0 active:transition-transform active:duration-100"
+        class="float-btn w-12 h-12 rounded-full border-0 cursor-pointer flex items-center justify-center shadow-[0_3px_10px_rgba(0,0,0,0.15)] transition-all duration-300 text-[0] relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(0,0,0,0.25)] active:translate-y-0 active:transition-transform active:duration-100"
         title="FAQ - Pertanyaan yang Sering Diajukan">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"
             class="transition-transform duration-300 hover:scale-110">
@@ -171,6 +223,109 @@
             const floatingButtons = document.querySelector('.floating-buttons');
             floatingButtons.classList.add('opacity-0', 'invisible', 'translate-y-5');
         });
+    </script>
+
+    <script>
+        // Survey modal: show 10s after first meaningful paint for first-time visitors.
+        // This script only changes behavior/timing and does not modify markup or styles.
+        (function() {
+            const SURVEY_KEY = 'marimoi_survey_shown_v2';
+            const modal = () => document.getElementById('surveyModal');
+            const surveyClose = () => document.getElementById('surveyClose');
+            const surveyLater = () => document.getElementById('surveyLater');
+            // floating actions live in the footer as .floating-buttons
+            const floating = () => document.querySelector('.floating-buttons');
+
+            function showModal() {
+                const m = modal();
+                if (!m) return;
+                m.classList.add('show');
+                m.style.display = 'flex';
+            }
+
+            function hideModal() {
+                const m = modal();
+                if (!m) return;
+                m.classList.remove('show');
+                m.style.display = 'none';
+            }
+
+            // Attach handlers after DOM is ready
+            function attachHandlers() {
+                const closeBtn = surveyClose();
+                const laterBtn = surveyLater();
+                const floatEl = floating();
+
+                if (closeBtn) closeBtn.addEventListener('click', function() {
+                    // Snooze for 5 minutes
+                    try {
+                        const until = Date.now() + 5 * 60 * 1000; // 5 minutes
+                        localStorage.setItem(SURVEY_KEY, JSON.stringify({
+                            until
+                        }));
+                    } catch (e) {
+                        // ignore storage failures
+                    }
+                    hideModal();
+                });
+
+                if (laterBtn) laterBtn.addEventListener('click', function() {
+                    // Snooze for 1 day
+                    try {
+                        const until = Date.now() + 24 * 60 * 60 * 1000; // 1 day
+                        localStorage.setItem(SURVEY_KEY, JSON.stringify({
+                            until
+                        }));
+                    } catch (e) {
+                        // ignore storage failures
+                    }
+
+                    hideModal();
+                    // highlight floating actions by adding a temporary class
+                    if (floatEl) {
+                        floatEl.classList.add('show-arrow');
+                        setTimeout(() => floatEl.classList.remove('show-arrow'), 8000);
+                    }
+                });
+            }
+
+            // Use DOMContentLoaded to ensure elements exist; if already loaded, run immediately
+            function onReady(cb) {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', cb);
+                } else {
+                    cb();
+                }
+            }
+
+            onReady(function() {
+                attachHandlers();
+
+                // Decide whether to show the modal for first-time visitors.
+                try {
+                    const raw = localStorage.getItem(SURVEY_KEY);
+                    let snoozedUntil = 0;
+                    if (raw) {
+                        try {
+                            const obj = JSON.parse(raw);
+                            if (obj && obj.until) snoozedUntil = Number(obj.until) || 0;
+                        } catch (e) {
+                            // invalid JSON - ignore
+                        }
+                    }
+
+                    if (Date.now() < snoozedUntil) {
+                        // still snoozed - do nothing
+                    } else {
+                        // Not snoozed (first visit or expired) => show after 10s
+                        setTimeout(showModal, 3000);
+                    }
+                } catch (err) {
+                    // If localStorage is blocked, still attempt to show once after 10s
+                    setTimeout(showModal, 3000);
+                }
+            });
+        })();
     </script>
 @endpush
 @push('styles')
@@ -261,6 +416,15 @@
                 width: 15px;
                 height: 15px;
             }
+        }
+
+        /* Survey modal & floating action styles */
+        .survey-modal {
+            display: none;
+        }
+
+        .survey-modal.show {
+            display: flex;
         }
     </style>
 @endpush
