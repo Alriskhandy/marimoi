@@ -44,9 +44,7 @@
     <!-- Fitur Utama -->
     @include('frontend.pages.index-section.fitur-utama')
 
-    <!-- Indikator Pembangunan Strategis -->
-    {{-- @include('frontend.pages.index-section.indikator-pembangunan') --}}
-    @include('frontend.pages.index-section.indikator-tailwind')
+    @include('frontend.pages.index-section.indikator-pembangunan')
 
     <!-- Aspirasi -->
     @include('frontend.pages.index-section.aspirasi')
@@ -58,7 +56,6 @@
     @include('frontend.pages.index-section.logo-section')
 
     <!-- Footer -->
-    {{-- @include('frontend.partials.footer-dark') --}}
     @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
