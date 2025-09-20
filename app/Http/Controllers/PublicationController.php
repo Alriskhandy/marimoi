@@ -38,7 +38,7 @@ class PublicationController extends Controller
             ->distinct()
             ->pluck('category');
 
-        return view('publications.index', compact('publications', 'categories'));
+        return view('frontend.pages.publikasi', compact('publications', 'categories'));
     }
 
     public function show(Publication $publication)
