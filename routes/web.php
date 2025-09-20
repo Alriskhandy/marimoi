@@ -32,9 +32,9 @@ Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name(
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
 // FAQ //
-Route::get('/faq', function () {
-    return view('frontend.pages.faq');
-})->name('faq');
+// Route::get('/faq', function () {
+//     return view('frontend.pages.faq');
+// })->name('faq');
 
 Route::get('/syarat-ketentuan', function () {
     return view('frontend.pages.syarat_ketentuan');

@@ -54,6 +54,9 @@
 
     <!-- Logo Section -->
     @include('frontend.pages.index-section.logo-section')
+    
+    <!-- Logo Section -->
+    @include('frontend.pages.index-section.faq')    
 
     <!-- Footer -->
     @include('frontend.partials.footer-dark-tailwind')
