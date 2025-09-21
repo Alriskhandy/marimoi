@@ -16,6 +16,7 @@ Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name(
 Route::get('/peta-tematik', [FrontendController::class, 'tematik'])->name('tampil.tematik');
 Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
+Route::get('/dokumen-publikasi', [FrontendController::class, 'publikasi'])->name('tampil.publikasi');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
 // Log monitoring (careful: restrict in production)
@@ -31,9 +32,9 @@ Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name(
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
 
 // FAQ //
-Route::get('/faq', function () {
-    return view('frontend.pages.faq');
-})->name('faq');
+// Route::get('/faq', function () {
+//     return view('frontend.pages.faq');
+// })->name('faq');
 
 Route::get('/syarat-ketentuan', function () {
     return view('frontend.pages.syarat_ketentuan');
@@ -57,11 +58,9 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
 // Public routes - Publications
-Route::prefix('publications')->name('publications.')->group(function () {
-    Route::get('/', [PublicationController::class, 'index'])->name('index');
-    Route::get('/{publication}', [PublicationController::class, 'show'])->name('show');
-    Route::get('/{publication}/download', [PublicationDownloadController::class, 'showSurveyForm'])->name('download.survey');
-    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.process');
+Route::prefix('dokumen-publikasi')->group(function () {
+    Route::get('/', [PublicationController::class, 'index'])->name('tampil.publikasi');
+    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.publikasi');
 });
 
 // Public routes - Survey (untuk guest)

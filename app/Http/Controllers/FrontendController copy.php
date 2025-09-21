@@ -70,6 +70,11 @@ class FrontendController extends Controller
         $aspirasi = KategoriAspirasi::all();
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
+
+    public function publikasi()
+    {
+        return view('frontend.pages.publikasi');
+    }
     
     // TAMPILAN PETA //
     public function psd()

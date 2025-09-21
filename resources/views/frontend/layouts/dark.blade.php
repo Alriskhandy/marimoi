@@ -166,8 +166,8 @@
                     <li><a href="{{ route('tampil.pokir') }}"
                             class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir
                             DPRD</a></li>
-                    <li><a href="{{ route('tampil.aspirasi') }}"
-                            class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Publikasi</a></li>
+                    <li><a href="{{ route('tampil.publikasi') }}"
+                            class="{{ request()->routeIs('tampil.publikasi') ? 'active' : '' }}">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}"
                             class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a></li>
                 </ul>
