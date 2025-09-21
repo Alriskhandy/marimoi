@@ -119,7 +119,7 @@
 
     <!-- endinject -->
 
-    <script src="{{ asset('backend/sweetalert/sweetalert2.all.min.js') }}"></script>
+    <script src="{{ asset('/assets/js/sweetalert/sweetalert2.all.min.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const deleteForms = document.querySelectorAll('form[data-confirm="delete"]');
