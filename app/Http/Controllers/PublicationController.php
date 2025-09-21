@@ -25,8 +25,8 @@ class PublicationController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('author', 'like', "%{$search}%");
             });
         }
 
@@ -58,7 +58,7 @@ class PublicationController extends Controller
     // Admin Methods
     public function create()
     {
-        return view('admin.publications.create');
+        return view('backend.pages.publikasi.create');
     }
 
     public function store(PublicationRequest $request)
@@ -84,7 +84,7 @@ class PublicationController extends Controller
 
     public function edit(Publication $publication)
     {
-        return view('admin.publications.edit', compact('publication'));
+        return view('backend.pages.publikasi.edit', compact('publication'));
     }
 
     public function update(PublicationRequest $request, Publication $publication)
@@ -144,12 +144,12 @@ class PublicationController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%");
+                    ->orWhere('author', 'like', "%{$search}%");
             });
         }
 
         $publications = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        return view('admin.publications.index', compact('publications'));
+        return view('backend.pages.publikasi.index', compact('publications'));
     }
 }

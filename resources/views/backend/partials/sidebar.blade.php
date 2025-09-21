@@ -593,7 +593,6 @@
                 </span>
             </li>
 
-
             @php
                 $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
             @endphp
@@ -619,8 +618,46 @@
                             </a>
                         </li>
                         {{-- <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('settings.index') }}">
-                                <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
+                    <a class="nav-link" href="{{ route('settings.index') }}">
+                        <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
+                    </a>
+                </li> --}}
+                    </ul>
+                </div>
+            </li>
+
+            @php
+                $isPublicationActive = request()->routeIs('publications.*');
+            @endphp
+            <!-- Manajemen Publikasi -->
+            <li class="nav-item {{ $isPublicationActive ? 'active' : '' }}">
+                <a class="nav-link" data-bs-toggle="collapse" href="#publicationMenu"
+                    aria-expanded="{{ $isPublicationActive ? 'true' : 'false' }}" aria-controls="publicationMenu">
+                    <span class="menu-title">Manajemen Publikasi</span>
+                    <i class="menu-arrow"></i>
+                    <i class="mdi mdi-book-open-page-variant menu-icon"></i>
+                </a>
+
+                <div class="collapse {{ $isPublicationActive ? 'show' : '' }}" id="publicationMenu">
+                    <ul class="nav flex-column sub-menu">
+                        <li class="nav-item {{ request()->routeIs('publications.index') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('publications.index') }}">
+                                <i class="mdi mdi-format-list-bulleted me-2"></i>Daftar Publikasi
+                            </a>
+                        </li>
+                        {{-- <li class="nav-item {{ request()->routeIs('publications.create') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('publications.create') }}">
+                                <i class="mdi mdi-plus-circle me-2"></i>Tambah Publikasi
+                            </a>
+                        </li> --}}
+                        {{-- <li class="nav-item {{ request()->routeIs('publications.categories') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('publications.categories') }}">
+                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Publikasi
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('publications.statistics') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('publications.statistics') }}">
+                                <i class="mdi mdi-chart-bar me-2"></i>Statistik Download
                             </a>
                         </li> --}}
                     </ul>

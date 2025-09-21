@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VisitorsController;
@@ -344,6 +345,39 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
                 'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan'
             ]);
         })->name('data-spatial.details');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | publications Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('publications')->name('publications.')->group(function () {
+        // List all publications for admin
+        Route::get('/', [PublicationController::class, 'adminIndex'])->name('index');
+        
+        // Create new publication
+        Route::get('/create', [PublicationController::class, 'create'])->name('create');
+        Route::post('/', [PublicationController::class, 'store'])->name('store');
+        
+        // Edit publication
+        Route::get('/{publication}/edit', [PublicationController::class, 'edit'])->name('edit');
+        Route::put('/{publication}', [PublicationController::class, 'update'])->name('update');
+        
+        // Delete publication
+        Route::delete('/{publication}', [PublicationController::class, 'destroy'])->name('destroy');
+        
+        // Admin download (no increment counter)
+        Route::get('/{publication}/download', [PublicationController::class, 'adminDownload'])->name('download');
+        
+        // Toggle publication status
+        Route::patch('/{publication}/toggle-status', [PublicationController::class, 'toggleStatus'])->name('toggle-status');
+        
+        // Bulk actions
+        Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status');
     });
 
     /*
