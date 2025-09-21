@@ -86,9 +86,8 @@
 
                     @foreach ($visitorItems as $item)
                         <div
-                            class="tab mb-4 px-5 py-1 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                            <label for="faq-{{ $item['key'] }}"
-                                class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md"
+                            class="visitor mb-4 px-5 py-1 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
+                            <label class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md"
                                 tabindex="0">
                                 <h3 class="pr-4 md:pr-0 flex items-center">
                                     <i class="bi bi-{{ $item['icon'] }} me-2"></i>

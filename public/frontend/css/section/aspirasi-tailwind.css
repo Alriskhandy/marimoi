@@ -128,3 +128,37 @@
         display: none;
     }
 }
+
+.visitor input[type="radio"]:checked ~ .answer {
+    padding-top: 1rem;
+}   
+
+.visitor label::after {
+    transition: transform 0.3s ease-in-out;
+}
+
+.visitor input[type="radio"]:checked ~ label::after {
+    transform: rotate(45deg);
+}
+
+/* Default label styling */
+.visitor label {
+    color: #374151 !important;
+    background-color: transparent;
+}
+
+.visitor label h3 {
+    color: #374151 !important;
+    margin: 0;
+    font-weight: 600;
+}
+
+.visitor label i {
+    color: #374151 !important;
+}
+
+/* Smooth hover effects */
+.visitor:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
