@@ -11,6 +11,7 @@ use App\Models\Dokumen;
 use App\Models\KategoriAspirasi;
 use App\Models\ProjectFeedback;
 use App\Models\User;
+use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,10 +78,20 @@ class FrontendController extends Controller
         $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
         $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
 
+        // Real visitor counts using Visitor model scopes
+        $visitorsToday = Visitor::today()->count();
+        $visitorsWeek = Visitor::thisWeek()->count();
+        $visitorsMonth = Visitor::thisMonth()->count();
+        $visitorsTotal = Visitor::count();
+
         return view('frontend.pages.index-dark', compact(
             'petaTematik',
             'totalKritik',
             'totalUsulan',
+            'visitorsToday',
+            'visitorsWeek',
+            'visitorsMonth',
+            'visitorsTotal'
         ));
     }
 

@@ -89,63 +89,22 @@
         <div class="container mx-auto px-4 z-above-overlay">
             <!-- Publications Grid: 3 columns desktop, 2 columns tablet, 1 column mobile -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="publikasiList">
-                @php
-                    // Example dataset - replace with dynamic data from controller
-                    $docs = [
-                        [
-                            'id' => 1,
-                            'title' => 'Panduan Pembangunan Berkelanjutan',
-                            'year' => 2024,
-                            'icon' => 'file-earmark-pdf',
-                            'thumbnail' => asset('frontend/img/2x3.jpg'),
-                            'path' => asset('frontend/docs/doc1.pdf'),
-                            'downloads' => 124,
-                        ],
-                        [
-                            'id' => 2,
-                            'title' => 'Laporan Kinerja Daerah',
-                            'year' => 2023,
-                            'icon' => 'file-earmark-word',
-                            'thumbnail' => asset('frontend/img/docs/doc2.jpg'),
-                            'path' => asset('frontend/docs/doc2.pdf'),
-                            'downloads' => 87,
-                        ],
-                        [
-                            'id' => 3,
-                            'title' => 'Rencana Strategis 2025-2029',
-                            'year' => 2025,
-                            'icon' => 'file-earmark-pdf',
-                            'thumbnail' => asset('frontend/img/docs/doc3.jpg'),
-                            'path' => asset('frontend/docs/doc3.pdf'),
-                            'downloads' => 203,
-                        ],
-                        [
-                            'id' => 4,
-                            'title' => 'Data Statistik Regional',
-                            'year' => 2022,
-                            'icon' => 'file-earmark-excel',
-                            'thumbnail' => asset('frontend/img/docs/doc4.jpg'),
-                            'path' => asset('frontend/docs/doc4.pdf'),
-                            'downloads' => 56,
-                        ],
-                    ];
-                @endphp
 
-                @foreach ($docs as $doc)
+                @foreach ($publications as $doc)
                     <article class="bg-white rounded-2xl shadow-md p-4 flex items-center gap-4">
                         <!-- Left: thumbnail (fixed width) -->
                         <div class="w-1/3 lg:w-1/3 flex-shrink-0">
                             <button type="button" class="open-download-modal w-full p-0 block text-left ratio-156-220"
                                 data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                 data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                data-thumbnail="{{ $doc['thumbnail'] }}">
-                                <img src="{{ $doc['thumbnail'] }}" alt="{{ $doc['title'] }}" class="rounded-lg">
+                                data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">
+                                <img src="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}" alt="{{ $doc['title'] }}" class="rounded-lg border">
                             </button>
                         </div>
-
+                        
                         <!-- Right: details -->
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-slate-800">
+                            <h3 class="text-md font-semibold text-slate-800">
                                 <button type="button"
                                     class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
                                     data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
@@ -153,13 +112,13 @@
                                     data-thumbnail="{{ $doc['thumbnail'] }}">{{ $doc['title'] }}</button>
                             </h3>
                             <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
-                                <div class="flex items-center gap-2">
-                                    <i class="bi bi-{{ $doc['icon'] }} text-lg text-slate-700"></i>
-                                    <span class="text-slate-600">{{ $doc['year'] }}</span>
-                                </div>
-                                <div class="flex items-center gap-1 text-slate-500">
-                                    <i class="bi bi-download text-lg"></i>
-                                    <span class="text-slate-600 font-medium">{{ $doc['downloads'] ?? 0 }}</span>
+                                {{-- <div class="flex items-center gap-2">
+                                    <i class="bi bi-file-earmark-arrow-down text-lg text-slate-700"></i>
+                                    <span class="text-slate-600 font-medium">{{ $doc->created_at }}</span>
+                                </div> --}}
+                                <div class="flex items-center gap-1 text-slate-600">
+                                    <i class="bi bi-download text-lg text-slate-700"></i>
+                                    <span class="text-slate-600 font-medium">{{ $doc->download_count ?? 0 }}</span>
                                 </div>
                             </div>
 
@@ -193,7 +152,7 @@
                     <button id="downloadModalClose" class="text-slate-500 hover:text-slate-700">×</button>
                 </div>
 
-                <form id="downloadForm" method="post" action="{{ route('download.publikasi', $doc['id']) }}" class="mt-4 text-gray-800">
+                <form id="downloadForm" method="post" action="{{ route('download.publikasi', $doc['id']) }}" class="mt-4 text-gray-800 text-sm">
                     @csrf
                     <input type="hidden" name="doc_id" id="docIdInput" value="{{ $doc['id'] }}">
                     <input type="hidden" name="doc_path" id="docPathInput" value="{{ $doc['id'] }}">

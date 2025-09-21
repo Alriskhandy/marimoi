@@ -81,7 +81,7 @@
             <div class="order-1 lg:order-2 flex flex-col justify-center text-center lg:text-right lg:pl-8">
                 <!-- 3D Map Container -->
                 <div
-                    class="relative w-full h-full flex items-center justify-center z-[2] bg-slate-100 shadow-lg border rounded-xl justify-self-end md:justify-self-end sm:justify-self-center md:order-2 sm:order-1 sm:h-[300px] md:h-full">
+                    class="relative w-full h-full flex items-center justify-center z-[2] justify-self-end md:justify-self-end sm:justify-self-center md:order-2 sm:order-1 sm:h-[300px] md:h-full">
                     <div class="w-full h-[500px] lg:h-[450px] md:h-[350px] sm:h-[280px] xs:h-[220px]">
                         <model-viewer src="{{ asset('frontend/models/peta-sofifi.glb') }}"
                             alt="3D Model Kantor Gubernur Maluku Utara" camera-controls auto-rotate
