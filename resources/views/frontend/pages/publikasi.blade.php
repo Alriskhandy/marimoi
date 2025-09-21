@@ -109,13 +109,9 @@
                                     class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
                                     data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                     data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc['thumbnail'] }}">{{ $doc['title'] }}</button>
+                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">{{ $doc['title'] }}</button>
                             </h3>
                             <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
-                                {{-- <div class="flex items-center gap-2">
-                                    <i class="bi bi-file-earmark-arrow-down text-lg text-slate-700"></i>
-                                    <span class="text-slate-600 font-medium">{{ $doc->created_at }}</span>
-                                </div> --}}
                                 <div class="flex items-center gap-1 text-slate-600">
                                     <i class="bi bi-download text-lg text-slate-700"></i>
                                     <span class="text-slate-600 font-medium">{{ $doc->download_count ?? 0 }}</span>
@@ -125,7 +121,7 @@
                             <div class="mt-4">
                                 <button data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                     data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc['thumbnail'] }}"
+                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}"
                                     class="open-download-modal inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
                                     <i class="bi bi-download"></i> Unduh Dokumen
                                 </button>
