@@ -79,10 +79,10 @@ class FrontendController extends Controller
         $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
 
         // Real visitor counts using Visitor model scopes
-        $visitorsToday = Visitor::today()->distinct('ip')->count();
-        $visitorsWeek = Visitor::thisWeek()->distinct('ip')->count();
-        $visitorsMonth = Visitor::thisMonth()->distinct('ip')->count();
-        $visitorsTotal = Visitor::distinct('ip')->count();
+        $visitorsToday = Visitor::today()->count();
+        $visitorsWeek = Visitor::thisWeek()->count();
+        $visitorsMonth = Visitor::thisMonth()->count();
+        $visitorsTotal = Visitor::count();
 
         return view('frontend.pages.index-dark', compact(
             'petaTematik',
