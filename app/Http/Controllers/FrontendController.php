@@ -77,10 +77,19 @@ class FrontendController extends Controller
         $totalKritik = Aspirasi::where('jenis_aspirasi', 'kritik & saran')->count();
         $totalUsulan = Aspirasi::where('jenis_aspirasi', 'usulan')->count();
 
+        $visitorsToday = 10;
+        $visitorsWeek = 80;
+        $visitorsMonth = 991;
+        $visitorsTotal = 1523;
+
         return view('frontend.pages.index-dark', compact(
             'petaTematik',
             'totalKritik',
             'totalUsulan',
+            'visitorsToday',
+            'visitorsWeek',
+            'visitorsMonth',
+            'visitorsTotal'
         ));
     }
 

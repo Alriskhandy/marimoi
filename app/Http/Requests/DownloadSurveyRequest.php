@@ -4,6 +4,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\ValidHCaptcha;
 
 class DownloadSurveyRequest extends FormRequest
 {
@@ -21,10 +22,7 @@ class DownloadSurveyRequest extends FormRequest
             'organization' => ['nullable', 'string', 'max:255'],
             'position' => ['nullable', 'string', 'max:255'],
             'purpose' => ['nullable', 'string', 'max:255'],
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'feedback' => ['nullable', 'string', 'max:1000'],
-            'suggestions' => ['nullable', 'string', 'max:1000'],
-            'additional_data' => ['nullable', 'array'],
+            'h-captcha-response' => ['required', new ValidHCaptcha()],
         ];
     }
 
@@ -40,12 +38,7 @@ class DownloadSurveyRequest extends FormRequest
             'organization.max' => 'Nama organisasi maksimal 255 karakter.',
             'position.max' => 'Posisi maksimal 255 karakter.',
             'purpose.max' => 'Tujuan download maksimal 255 karakter.',
-            'rating.required' => 'Rating wajib diberikan.',
-            'rating.integer' => 'Rating harus berupa angka.',
-            'rating.min' => 'Rating minimal 1.',
-            'rating.max' => 'Rating maksimal 5.',
-            'feedback.max' => 'Feedback maksimal 1000 karakter.',
-            'suggestions.max' => 'Saran maksimal 1000 karakter.',
+            'h-captcha-response.required' => 'Verifikasi CAPTCHA wajib diselesaikan',
         ];
     }
 }

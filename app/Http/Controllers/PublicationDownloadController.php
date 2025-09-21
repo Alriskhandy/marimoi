@@ -10,6 +10,7 @@ use App\Models\Survey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PublicationDownloadController extends Controller
 {
@@ -29,38 +30,28 @@ class PublicationDownloadController extends Controller
         }
 
         try {
+            // Pastikan file ada sebelum lanjut
+            if (!Storage::disk('public')->exists($publication->file_path)) {
+                Log::error('File not found for publication', [
+                    'publication_id' => $publication->id,
+                    'file_path' => $publication->file_path
+                ]);
+                abort(404, 'File not found');
+            }
+
             DB::beginTransaction();
 
-            // Create download record
-            $download = PublicationDownload::create([
+            PublicationDownload::create([
                 'publication_id' => $publication->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'organization' => $request->organization,
-                'position' => $request->position,
-                'purpose' => $request->purpose,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'downloaded_at' => now(),
-            ]);
-
-            // Create survey record
-            Survey::create([
-                'publication_id' => $publication->id,
-                'publication_download_id' => $download->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'organization' => $request->organization,
-                'position' => $request->position,
-                'survey_type' => 'download',
-                'rating' => $request->rating,
-                'feedback' => $request->feedback,
-                'suggestions' => $request->suggestions,
-                'additional_data' => $request->additional_data,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
+                'name'           => $request->name,
+                'email'          => $request->email,
+                'phone'          => $request->phone,
+                'organization'   => $request->organization,
+                'position'       => $request->position,
+                'purpose'        => $request->purpose,
+                'ip_address'     => $request->ip(),
+                'user_agent'     => $request->userAgent(),
+                'downloaded_at'  => now(),
             ]);
 
             // Increment download count
@@ -68,21 +59,34 @@ class PublicationDownloadController extends Controller
 
             DB::commit();
 
+            Log::info('Download recorded successfully', [
+                'publication_id' => $publication->id,
+                'user_email'     => $request->email,
+            ]);
+
             // Return file download
-            if (!Storage::disk('public')->exists($publication->file_path)) {
-                abort(404, 'File not found');
-            }
 
-            return Storage::disk('public')->download(
-                $publication->file_path, 
-                $publication->file_name
-            );
-
+            $docPath = '/storage/dokumen_files/cJ2DAAPg0o0I9KAxyw5JOBeatgv93B7cPa1G0yih.pdf';
+            return redirect()->to(asset($docPath));
+            Log::info('Redirecting to file', ['url' => asset($docPath)]);
+            // return Storage::disk('public')->download(
+            //     $publication->file_path,
+            //     $publication->file_name
+            // );
         } catch (\Exception $e) {
-            DB::rollback();
-            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan saat memproses download. Silakan coba lagi.']);
+            DB::rollBack();
+
+            Log::error('Error processing survey & download', [
+                'error'          => $e->getMessage(),
+                'publication_id' => $publication->id ?? null,
+            ]);
+
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan saat memproses download. Silakan coba lagi.']);
         }
     }
+
 
     // Admin Methods
     public function index(Request $request)
@@ -108,8 +112,8 @@ class PublicationDownloadController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('organization', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('organization', 'like', "%{$search}%");
             });
         }
 
@@ -149,19 +153,28 @@ class PublicationDownloadController extends Controller
 
         // Return sebagai CSV
         $filename = 'downloads_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ];
 
-        $callback = function() use ($downloads) {
+        $callback = function () use ($downloads) {
             $file = fopen('php://output', 'w');
-            
+
             // Header CSV
             fputcsv($file, [
-                'ID', 'Publikasi', 'Nama', 'Email', 'Telepon', 'Organisasi', 
-                'Posisi', 'Tujuan', 'Rating', 'IP Address', 'Tanggal Download'
+                'ID',
+                'Publikasi',
+                'Nama',
+                'Email',
+                'Telepon',
+                'Organisasi',
+                'Posisi',
+                'Tujuan',
+                'Rating',
+                'IP Address',
+                'Tanggal Download'
             ]);
 
             // Data

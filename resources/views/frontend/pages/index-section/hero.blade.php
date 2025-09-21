@@ -1,6 +1,6 @@
 <section
     class="gap-2 md:gap-2 lg:gap-6 items-center relative bg-gradient-to-br from-[var(--bg-primary)] to-[var(--bg-secondary)] px-[5%] overflow-visible"
-    id="beranda">
+    id="beranda" style="background: url({{ asset('frontend/img/hero/drone-2.gif') }}) no-repeat center center / cover;">
 
     <!-- Hero Content -->
     <div class="text-center max-w-full z-[20] relative justify-center pt-20 md:pt-28 lg:pt-28 mt-6 md:mt-10 lg:mt-0">
@@ -10,7 +10,7 @@
             MARIMOI
         </h1>
         <p
-            class="text-base md:text-lg mb-8 md:mb-6 sm:mb-6 opacity-90 text-[var(--text-secondary)] leading-[1.6] font-normal">
+            class="text-base md:text-lg mb-8 md:mb-6 sm:mb-6 opacity-90 text-white leading-[1.6] font-normal">
             Sistem Informasi Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi Wilayah
         </p>
 
@@ -22,10 +22,10 @@
     </div>
 
     <!-- Mockup placed below the hero text (stacked) -->
-    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10">
+    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
         <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
-                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tablet.png') }}"
+                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-min.png') }}"
                     alt="Desktop & Smartphone Mockup"
                     class="mockup-img h-[640px] xl:h-[620px] lg:h-[520px] md:h-[420px] sm:h-[320px] xs:h-[220px] w-auto max-w-[95vw] lg:max-w-[1100px] object-contain pointer-events-none"
                     loading="lazy">
@@ -36,6 +36,15 @@
 
 @push('styles')
     <style>
+        #beranda::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: rgba(11, 17, 32, 0.8);
+        }
+
         /* Mockup tilt styles */
         .mockup-wrapper {
             display: inline-block;
@@ -45,8 +54,8 @@
         .mockup-img {
             /* pivot lower and subtle translate so the image sits below the text */
             transform-origin: 50% 82%;
-            transform: rotateX(14deg) translateY(0px) scale(0.98) rotateZ(-6deg);
-            transition: transform 700ms cubic-bezier(.22, .9, .2, 1), filter 600ms ease;
+            transform: rotateX(45deg) translateY(0px) scale(0.98) rotateZ(0deg);
+            transition: transform 500ms cubic-bezier(.22, .9, .2, 1), filter 600ms ease;
             will-change: transform;
             filter: drop-shadow(0 36px 80px rgba(0, 0, 0, 0.48));
             display: block;
@@ -74,11 +83,11 @@
 
         @media (max-width: 768px) {
             .mockup-img {
-                transform: rotateX(12deg) translateY(0px) scale(0.98) rotateZ(-3deg);
+                transform: rotateX(45deg) translateY(0px) scale(0.98) rotateZ(0deg);
             }
 
             .mockup-wrapper.upright .mockup-img {
-                transform: rotateX(0deg) translateY(0px) scale(1) rotateZ(0deg);
+                transform: rotateX(0deg) translateY(0px) scale(0.98) rotateZ(0deg);
             }
         }
     </style>
