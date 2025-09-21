@@ -1,6 +1,6 @@
 <section
     class="gap-2 md:gap-2 lg:gap-6 items-center relative bg-gradient-to-br from-[var(--bg-primary)] to-[var(--bg-secondary)] px-[5%] overflow-visible"
-    id="beranda" style="background: url({{ asset('frontend/img/hero/drone-2.gif') }}) no-repeat center center / cover;">
+    id="beranda" style="background: url({{ asset('frontend/img/hero/drone.gif') }}) no-repeat center center / cover;">
 
     <!-- Hero Content -->
     <div class="text-center max-w-full z-[20] relative justify-center pt-20 md:pt-28 lg:pt-28 mt-6 md:mt-10 lg:mt-0">
