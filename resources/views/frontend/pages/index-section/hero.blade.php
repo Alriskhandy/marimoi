@@ -25,7 +25,7 @@
     <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
         <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
-                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-min.png') }}"
+                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
                     alt="Desktop & Smartphone Mockup"
                     class="mockup-img h-[640px] xl:h-[620px] lg:h-[520px] md:h-[420px] sm:h-[320px] xs:h-[220px] w-auto max-w-[95vw] lg:max-w-[1100px] object-contain pointer-events-none"
                     loading="lazy">
