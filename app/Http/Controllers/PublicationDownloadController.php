@@ -41,6 +41,7 @@ class PublicationDownloadController extends Controller
 
             DB::beginTransaction();
 
+            // Simpan data survey download
             PublicationDownload::create([
                 'publication_id' => $publication->id,
                 'name'           => $request->name,
@@ -64,26 +65,43 @@ class PublicationDownloadController extends Controller
                 'user_email'     => $request->email,
             ]);
 
-            // Return file download
+            // Get file info
+            $filePath = Storage::disk('public')->path($publication->file_path);
+            $fileName = $publication->file_name ?? basename($publication->file_path);
 
-            $docPath = '/storage/dokumen_files/cJ2DAAPg0o0I9KAxyw5JOBeatgv93B7cPa1G0yih.pdf';
-            return redirect()->to(asset($docPath));
-            Log::info('Redirecting to file', ['url' => asset($docPath)]);
-            // return Storage::disk('public')->download(
-            //     $publication->file_path,
-            //     $publication->file_name
-            // );
+            Log::info('Processing file download', [
+                'file_path' => $filePath,
+                'file_name' => $fileName,
+                'exists' => file_exists($filePath)
+            ]);
+
+            // Pastikan file benar-benar ada di filesystem
+            if (!file_exists($filePath)) {
+                Log::error('Physical file not found', ['file_path' => $filePath]);
+                throw new \Exception('File tidak ditemukan di server');
+            }
+
+            // Return download response dengan header yang tepat
+            return Storage::disk('public')->download(
+                $publication->file_path,
+                $fileName,
+                [
+                    'Content-Type' => Storage::disk('public')->mimeType($publication->file_path)
+                ]
+            );
         } catch (\Exception $e) {
             DB::rollBack();
 
             Log::error('Error processing survey & download', [
                 'error'          => $e->getMessage(),
+                'trace'          => $e->getTraceAsString(),
                 'publication_id' => $publication->id ?? null,
+                'file_path'      => $publication->file_path ?? null,
             ]);
 
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Terjadi kesalahan saat memproses download. Silakan coba lagi.']);
+                ->withErrors(['error' => 'Terjadi kesalahan saat memproses download: ' . $e->getMessage()]);
         }
     }
 
