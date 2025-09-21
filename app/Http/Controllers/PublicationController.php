@@ -78,7 +78,7 @@ class PublicationController extends Controller
 
         Publication::create($data);
 
-        return redirect()->route('admin.publications.index')
+        return redirect()->route('publications.index')
             ->with('success', 'Publikasi berhasil dibuat.');
     }
 
@@ -109,7 +109,7 @@ class PublicationController extends Controller
 
         $publication->update($data);
 
-        return redirect()->route('admin.publications.index')
+        return redirect()->route('publications.index')
             ->with('success', 'Publikasi berhasil diupdate.');
     }
 
@@ -121,7 +121,7 @@ class PublicationController extends Controller
 
         $publication->delete();
 
-        return redirect()->route('admin.publications.index')
+        return redirect()->route('publications.index')
             ->with('success', 'Publikasi berhasil dihapus.');
     }
 
