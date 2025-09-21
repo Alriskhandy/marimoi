@@ -119,7 +119,8 @@
 
     <!-- endinject -->
 
-    <script src="{{ asset('/assets/js/sweetalert/sweetalert2.all.min.js') }}"></script>
+    {{-- <script src="{{ asset('/assets/js/sweetalert/sweetalert2.all.min.js') }}"></script> --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const deleteForms = document.querySelectorAll('form[data-confirm="delete"]');
