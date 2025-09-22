@@ -135,8 +135,6 @@
             }
 
             .faq-section .tab label h3 {
-                font-size: .95rem;
-                /* slightly smaller heading on mobile */
                 display: flex;
                 align-items: center;
                 gap: .4rem;
@@ -156,8 +154,6 @@
         }
 
         .faq-section .tab label h3 {
-            font-size: 1rem;
-            /* smaller heading in label */
             display: flex;
             align-items: center;
             gap: .5rem;
@@ -203,7 +199,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-info-circle me-2"></i> Apa itu MARIMOI?</h3>
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-info-circle me-2"></i> Apa itu MARIMOI?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
@@ -234,7 +230,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Tematik?
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Tematik?
                     </h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -269,7 +265,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-building me-2"></i> Apa perbedaan Proyek Strategis Daerah
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-building me-2"></i> Apa perbedaan Proyek Strategis Daerah
                         dan Nasional?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -314,7 +310,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-bullseye me-2"></i> Apa itu Prioritas Daerah 2025-2029?
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-bullseye me-2"></i> Apa itu Prioritas Daerah 2025-2029?
                     </h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -355,7 +351,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-people me-2"></i> Apa itu Musrenbang dan bagaimana melihat
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-people me-2"></i> Apa itu Musrenbang dan bagaimana melihat
                         usulannya?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -398,7 +394,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-award me-2"></i> Apa itu Pokir DPRD dan bagaimana melihat
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-award me-2"></i> Apa itu Pokir DPRD dan bagaimana melihat
                         datanya?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -441,7 +437,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-chat-dots me-2"></i> Bagaimana cara menyampaikan Usulan
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-chat-dots me-2"></i> Bagaimana cara menyampaikan Usulan
                         Aspirasi?</h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
@@ -495,7 +491,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0"><i class="bi bi-question-circle me-2"></i> Bagaimana jika saya
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-question-circle me-2"></i> Bagaimana jika saya
                         membutuhkan bantuan lebih
                         lanjut?</h3>
                 </label>

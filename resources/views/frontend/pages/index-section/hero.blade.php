@@ -21,7 +21,7 @@
         </button>
     </div>
 
-    <!-- Mockup placed below the hero text (stacked) -->
+    {{-- <!-- Mockup placed below the hero text (stacked) -->
     <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
         <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
@@ -29,6 +29,18 @@
                     alt="Desktop & Smartphone Mockup"
                     class="mockup-img h-[640px] xl:h-[620px] lg:h-[520px] md:h-[420px] sm:h-[320px] xs:h-[220px] w-auto max-w-[95vw] lg:max-w-[1100px] object-contain pointer-events-none"
                     loading="lazy">
+            </div>
+        </div>
+    </div> --}}
+    <!-- Mockup placed below the hero text (stacked) -->
+    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
+        <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
+            <div id="mockupWrapper" class="mockup-wrapper mx-auto">
+                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
+                    alt="Desktop & Smartphone Mockup"
+                    class="mockup-img h-[560px] xl:h-[540px] lg:h-[460px] md:h-[360px] sm:h-[260px] xs:h-[180px] w-auto max-w-[92vw] lg:max-w-[1000px] object-contain pointer-events-none"
+                    loading="lazy" decoding="async" sizes="(max-width: 640px) 90vw, (max-width:1024px) 70vw, 1000px"
+                    srcset="{{ asset('frontend/img/mockup/tab-mockup.png') }} 1100w">
             </div>
         </div>
     </div>
@@ -45,27 +57,39 @@
             background: rgba(11, 17, 32, 0.8);
         }
 
-        /* Mockup tilt styles */
+        /* Mockup tilt styles - optimized for performance */
         .mockup-wrapper {
             display: inline-block;
-            perspective: 1200px;
+            /* lower perspective to reduce heavy 3D math on mobile */
+            perspective: 800px;
+            will-change: transform;
         }
 
         .mockup-img {
-            /* pivot lower and subtle translate so the image sits below the text */
+            /* use gentler 3D tilt on large screens; avoid large rotateX on mobile */
             transform-origin: 50% 82%;
-            transform: rotateX(45deg) translateY(0px) scale(0.98) rotateZ(0deg);
-            transition: transform 500ms cubic-bezier(.22, .9, .2, 1), filter 600ms ease;
+            transform: rotateX(20deg) translateY(0) scale(0.98);
+            transition: transform 420ms cubic-bezier(.22,.9,.2,1), filter 420ms ease;
             will-change: transform;
-            filter: drop-shadow(0 36px 80px rgba(0, 0, 0, 0.48));
+            /* reduce heavy shadows that cause costly paints */
+            filter: drop-shadow(0 18px 40px rgba(0,0,0,0.32));
             display: block;
             margin: 0 auto;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* lift the mockup slightly above the section end on large screens while keeping it below the text */
+        /* Upright state (less dramatic) */
+        .mockup-wrapper.upright .mockup-img {
+            transform: rotateX(0deg) translateY(-2vh) scale(1);
+            transition: transform 520ms cubic-bezier(.22,.9,.2,1), filter 420ms ease;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.22));
+        }
+
         .mockup-position {
             transform: translateY(0);
-            transition: transform 400ms ease;
+            transition: transform 360ms ease;
+            will-change: transform;
         }
 
         @media (min-width: 1024px) {
@@ -74,20 +98,32 @@
             }
         }
 
-        .mockup-wrapper.upright .mockup-img {
-            transform: rotateX(0deg) translateY(0px) scale(1) rotateZ(0deg);
-            transition: transform 700ms cubic-bezier(.22, .9, .2, 1), filter 600ms ease;
-            filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.28));
-        }
-
-
+        /* MOBILE: remove expensive 3D rotation and heavy filters */
         @media (max-width: 768px) {
+            .mockup-wrapper {
+                perspective: 600px;
+            }
+
             .mockup-img {
-                transform: rotateX(45deg) translateY(0px) scale(0.98) rotateZ(0deg);
+                transform: translateY(0) scale(0.98);
+                transition: transform 320ms ease;
+                filter: drop-shadow(0 8px 20px rgba(0,0,0,0.18));
             }
 
             .mockup-wrapper.upright .mockup-img {
-                transform: rotateX(0deg) translateY(0px) scale(0.98) rotateZ(0deg);
+                transform: translateY(-1.5vh) scale(0.99);
+                transition: transform 360ms ease;
+                filter: drop-shadow(0 6px 16px rgba(0,0,0,0.14));
+            }
+        }
+
+        /* Respect user reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            .mockup-img,
+            .mockup-position,
+            .mockup-wrapper.upright .mockup-img {
+                transition: none !important;
+                transform: none !important;
             }
         }
     </style>
@@ -98,34 +134,52 @@
         (function() {
             const wrapper = document.getElementById('mockupWrapper');
             const img = document.getElementById('mockupImg');
+            const position = document.getElementById('mockupPosition');
 
-            if (!wrapper || !img) return;
+            if (!wrapper || !img || !position) return;
 
-            let ticking = false;
+            // Use IntersectionObserver instead of scroll events for better performance on mobile
+            const options = {
+                root: null,
+                // trigger earlier when element enters viewport
+                rootMargin: '0px 0px -60% 0px',
+                threshold: [0, 0.05, 0.2]
+            };
 
-            function onScroll() {
-                if (!ticking) {
-                    window.requestAnimationFrame(() => {
-                        const scrollY = window.scrollY || window.pageYOffset;
-                        const trigger = Math.max(window.innerHeight * 0.08, 40);
+            let observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.intersectionRatio > 0.05) {
+                        wrapper.classList.add('upright');
+                    } else {
+                        wrapper.classList.remove('upright');
+                    }
+                });
+            }, options);
 
-                        if (scrollY > trigger) {
-                            wrapper.classList.add('upright');
-                        } else {
-                            wrapper.classList.remove('upright');
-                        }
+            observer.observe(position);
 
-                        ticking = false;
-                    });
-                    ticking = true;
+            // Fallback: small RAF-based check only if IntersectionObserver not supported
+            if (!('IntersectionObserver' in window)) {
+                let ticking = false;
+                function onScroll() {
+                    if (!ticking) {
+                        window.requestAnimationFrame(() => {
+                            const scrollY = window.scrollY || window.pageYOffset;
+                            const trigger = Math.max(window.innerHeight * 0.08, 40);
+                            if (scrollY > trigger) wrapper.classList.add('upright');
+                            else wrapper.classList.remove('upright');
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
                 }
+                onScroll();
+                window.addEventListener('scroll', onScroll, { passive: true });
             }
 
-            // initial check (in case user starts mid-page)
-            onScroll();
-
-            window.addEventListener('scroll', onScroll, {
-                passive: true
+            // Optional: release observer on page unload to avoid retained observers
+            window.addEventListener('beforeunload', () => {
+                try { observer.disconnect(); } catch(e){}
             });
         })();
     </script>
