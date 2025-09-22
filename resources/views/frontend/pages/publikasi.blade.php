@@ -331,6 +331,22 @@
                     'mb-4 text-sm text-green-600';
             }
 
+            function resetFormOnError() {
+                try {
+                    if (downloadForm) downloadForm.reset();
+                    if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
+                        try {
+                            hcaptcha.reset(hcaptchaWidgetId);
+                        } catch (e) {}
+                    }
+                    // clear hidden inputs explicitly to avoid stale doc id/path
+                    if (docIdInput) docIdInput.value = '';
+                    if (docPathInput) docPathInput.value = '';
+                } catch (err) {
+                    console.warn('Reset form failed', err);
+                }
+            }
+
             function openModal(docId, docPath, title = '', thumbnail = '') {
                 // Set hidden inputs
                 docIdInput.value = docId || '';
@@ -411,6 +427,7 @@
                 if (!formData.get('name')?.trim() || !formData.get('email')?.trim() || !formData.get(
                         'purpose')?.trim()) {
                     setFormAlert('Nama, Email, dan Tujuan wajib diisi.', 'error');
+                    resetFormOnError();
                     return;
                 }
 
@@ -418,6 +435,7 @@
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.get('email'))) {
                     setFormAlert('Format email tidak valid.', 'error');
+                    resetFormOnError();
                     return;
                 }
 
@@ -426,6 +444,7 @@
                     const token = hcaptcha.getResponse(hcaptchaWidgetId);
                     if (!token) {
                         setFormAlert('Silakan selesaikan verifikasi captcha.', 'error');
+                        resetFormOnError();
                         return;
                     }
                     formData.append('h-captcha-response', token);
@@ -472,13 +491,15 @@
                                 setTimeout(closeModal, 1500);
                             }
                         } else {
-                            // Handle validation errors
+                            // Handle validation errors or other JSON errors
                             if (data.errors) {
                                 const errorMessages = Object.values(data.errors).flat();
                                 setFormAlert(errorMessages.join(' '), 'error');
                             } else {
                                 setFormAlert(data.message || 'Gagal memproses permintaan.', 'error');
                             }
+                            // reset form on any server-side error
+                            resetFormOnError();
                         }
                         return;
                     }
@@ -517,13 +538,15 @@
                         return;
                     }
 
-                    // Handle error responses
+                    // Handle error responses (non-JSON)
                     const errorText = await response.text();
                     setFormAlert(errorText || `Error: ${response.status}`, 'error');
+                    resetFormOnError();
 
                 } catch (error) {
                     console.error('Download error:', error);
                     setFormAlert('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
+                    resetFormOnError();
                 } finally {
                     // Re-enable submit button
                     submitBtn.disabled = false;
