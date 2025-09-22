@@ -20,6 +20,7 @@ class Publication extends Model
         'file_type',
         'file_size',
         'category',
+        'cover',
         'published_date',
         'download_count',
     ];

@@ -76,6 +76,55 @@
                                 <input type="text" class="form-control border-start-0" id="searchInput"
                                     placeholder="Cari publikasi...">
                             </div>
+
+                            {{-- <!-- Cover Preview Modal -->
+                            @if ($publication->cover)
+                                <div class="modal fade" id="coverPreviewModal{{ $publication->id }}" tabindex="-1"
+                                    aria-labelledby="coverPreviewModalLabel{{ $publication->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title" id="coverPreviewModalLabel{{ $publication->id }}">
+                                                    <i class="mdi mdi-image me-2"></i>Preview Cover:
+                                                    {{ $publication->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center p-4">
+                                                <div class="cover-preview-container">
+                                                    <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                        alt="Cover {{ $publication->title }}"
+                                                        class="img-fluid rounded shadow-lg"
+                                                        style="max-height: 500px; max-width: 100%; cursor: zoom-in;"
+                                                        onclick="toggleImageZoom(this)">
+
+                                                    <div class="mt-3">
+                                                        <h6 class="fw-semibold">{{ $publication->title }}</h6>
+                                                        <small class="text-muted">
+                                                            Cover: {{ basename($publication->cover) }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="mdi mdi-close me-1"></i>Tutup
+                                                </button>
+                                                <a href="{{ asset('storage/' . $publication->cover) }}" target="_blank"
+                                                    class="btn btn-success">
+                                                    <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab Baru
+                                                </a>
+                                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#viewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-information me-1"></i>Detail Publikasi
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif --}}
                         </div>
                     </div>
                 </div>
@@ -100,23 +149,34 @@
                                 <td class="text-center fw-bold text-primary">{{ $no++ }}</td>
                                 <td>
                                     <div class="d-flex align-items-start">
+                                        <!-- Cover or File Icon -->
                                         <div class="file-icon me-3">
-                                            @if (pathinfo($publication->file_name, PATHINFO_EXTENSION) === 'pdf')
-                                                <i class="mdi mdi-file-pdf-box text-danger" style="font-size: 2rem;"></i>
-                                            @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['doc', 'docx']))
-                                                <i class="mdi mdi-file-word-box text-primary" style="font-size: 2rem;"></i>
-                                            @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['xls', 'xlsx']))
-                                                <i class="mdi mdi-file-excel-box text-success" style="font-size: 2rem;"></i>
-                                            @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['ppt', 'pptx']))
-                                                <i class="mdi mdi-file-powerpoint-box text-warning"
-                                                    style="font-size: 2rem;"></i>
+                                            @if ($publication->cover)
+                                                <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                    alt="Cover {{ $publication->title }}"
+                                                    style="width: 48px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
                                             @else
-                                                <i class="mdi mdi-file-document-box text-secondary"
-                                                    style="font-size: 2rem;"></i>
+                                                @if (pathinfo($publication->file_name, PATHINFO_EXTENSION) === 'pdf')
+                                                    <i class="mdi mdi-file-pdf-box text-danger"
+                                                        style="font-size: 2rem;"></i>
+                                                @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['doc', 'docx']))
+                                                    <i class="mdi mdi-file-word-box text-primary"
+                                                        style="font-size: 2rem;"></i>
+                                                @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['xls', 'xlsx']))
+                                                    <i class="mdi mdi-file-excel-box text-success"
+                                                        style="font-size: 2rem;"></i>
+                                                @elseif(in_array(pathinfo($publication->file_name, PATHINFO_EXTENSION), ['ppt', 'pptx']))
+                                                    <i class="mdi mdi-file-powerpoint-box text-warning"
+                                                        style="font-size: 2rem;"></i>
+                                                @else
+                                                    <i class="mdi mdi-file-document-box text-secondary"
+                                                        style="font-size: 2rem;"></i>
+                                                @endif
                                             @endif
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1 fw-semibold">{{ $publication->title }}</h6>
+
                                             @if ($publication->description)
                                                 <p class="text-muted small mb-1">
                                                     {{ Str::limit($publication->description, 60) }}</p>
@@ -128,6 +188,11 @@
                                                 <span class="badge bg-light text-dark small">
                                                     {{ strtoupper(pathinfo($publication->file_name, PATHINFO_EXTENSION)) }}
                                                 </span>
+                                                @if ($publication->cover)
+                                                    <span class="badge bg-success bg-gradient small">
+                                                        <i class="mdi mdi-image me-1"></i>Cover
+                                                    </span>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -158,6 +223,17 @@
                                             <i class="mdi mdi-file-eye"></i>
                                         </button>
 
+                                        @if ($publication->cover)
+                                            <button type="button" class="btn btn-sm btn-outline-success"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#coverPreviewModal{{ $publication->id }}"
+                                                title="Lihat Cover">
+                                                <i class="mdi mdi-image"></i>
+                                            </button>
+                                        @endif
+
+
+
                                         <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
                                             data-bs-target="#viewModal{{ $publication->id }}" title="Detail">
                                             <i class="mdi mdi-information"></i>
@@ -176,7 +252,6 @@
                                         </button>
                                     </div>
                                 </td>
-
                             </tr>
 
                             <!-- Preview Modal -->
@@ -294,7 +369,7 @@
                                 </div>
                             </div>
 
-                            <!-- View Detail Modal -->
+                            <!-- View Detail Modal dengan Cover -->
                             <div class="modal fade" id="viewModal{{ $publication->id }}" tabindex="-1"
                                 aria-labelledby="viewModalLabel{{ $publication->id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-lg">
@@ -308,8 +383,24 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="row g-3">
-                                                <div class="col-md-12">
-                                                    <div class="card border-0 bg-light">
+                                                <!-- Cover Image Section -->
+                                                @if ($publication->cover)
+                                                    <div class="col-md-4">
+                                                        <div class="card border-0 bg-light h-100">
+                                                            <div class="card-body text-center p-3">
+                                                                <h6 class="card-title mb-3">Cover Publikasi</h6>
+                                                                <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                                    alt="Cover {{ $publication->title }}"
+                                                                    class="img-fluid rounded shadow-sm"
+                                                                    style="max-height: 200px; width: auto;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                <!-- Publication Info -->
+                                                <div class="col-md-{{ $publication->cover ? '8' : '12' }}">
+                                                    <div class="card border-0 bg-light h-100">
                                                         <div class="card-body">
                                                             <h6 class="card-title">Informasi Publikasi</h6>
                                                             <div class="row">
@@ -335,7 +426,22 @@
                                                                     <label class="form-label small text-muted">Tanggal
                                                                         Publikasi</label>
                                                                     <p class="mb-0">
-                                                                        {{ $publication->created_at->format('d F Y') }}
+                                                                        {{ $publication->created_at->format('d F Y') }}</p>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label class="form-label small text-muted">Status
+                                                                        Cover</label>
+                                                                    <p class="mb-0">
+                                                                        @if ($publication->cover)
+                                                                            <span class="badge bg-success">
+                                                                                <i class="mdi mdi-check me-1"></i>Ada Cover
+                                                                            </span>
+                                                                        @else
+                                                                            <span class="badge bg-secondary">
+                                                                                <i class="mdi mdi-close me-1"></i>Tanpa
+                                                                                Cover
+                                                                            </span>
+                                                                        @endif
                                                                     </p>
                                                                 </div>
                                                                 <div class="col-md-12 mb-3">
@@ -349,31 +455,45 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                <!-- File Info -->
                                                 <div class="col-md-12">
                                                     <div class="card border-0 bg-light">
                                                         <div class="card-body">
                                                             <h6 class="card-title">Informasi File</h6>
                                                             <div class="row">
-                                                                <div class="col-md-4 mb-2">
+                                                                <div class="col-md-3 mb-2">
                                                                     <label class="form-label small text-muted">Ukuran
                                                                         File</label>
                                                                     <p class="mb-0">
                                                                         {{ number_format($publication->file_size / 1024 / 1024, 2) }}
                                                                         MB</p>
                                                                 </div>
-                                                                <div class="col-md-4 mb-2">
+                                                                <div class="col-md-3 mb-2">
                                                                     <label class="form-label small text-muted">Tipe
                                                                         File</label>
                                                                     <p class="mb-0">
                                                                         {{ strtoupper($publication->file_type) }}</p>
                                                                 </div>
-                                                                <div class="col-md-4 mb-2">
+                                                                <div class="col-md-3 mb-2">
                                                                     <label class="form-label small text-muted">Total
                                                                         Download</label>
                                                                     <p class="mb-0">
                                                                         <span
                                                                             class="badge bg-primary">{{ $publication->download_count }}
                                                                             kali</span>
+                                                                    </p>
+                                                                </div>
+                                                                <div class="col-md-3 mb-2">
+                                                                    <label
+                                                                        class="form-label small text-muted">Status</label>
+                                                                    <p class="mb-0">
+                                                                        @if ($publication->is_active)
+                                                                            <span class="badge bg-success">Aktif</span>
+                                                                        @else
+                                                                            <span class="badge bg-danger">Tidak
+                                                                                Aktif</span>
+                                                                        @endif
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -386,17 +506,28 @@
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                                 <i class="mdi mdi-close me-1"></i>Tutup
                                             </button>
+                                            @if ($publication->cover)
+                                                <button type="button" class="btn btn-success" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#coverPreviewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-image me-1"></i>Lihat Cover
+                                                </button>
+                                            @endif
                                             <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#previewModal{{ $publication->id }}">
                                                 <i class="mdi mdi-file-eye me-1"></i>Lihat File
                                             </button>
+                                            <a href="{{ route('publications.download', $publication->id) }}"
+                                                class="btn btn-info">
+                                                <i class="mdi mdi-download me-1"></i>Download
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Edit Modal -->
+                            <!-- Edit Modal dengan Cover Input -->
                             <div class="modal fade" id="editModal{{ $publication->id }}" tabindex="-1"
                                 aria-labelledby="editModalLabel{{ $publication->id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-lg">
@@ -423,7 +554,7 @@
                                                             id="edit_title_{{ $publication->id }}" name="title"
                                                             value="{{ $publication->title }}" required>
                                                     </div>
-                                                    <div class="col-md-6 mb-3">
+                                                    <div class="col-md-12 mb-3">
                                                         <label for="edit_category_{{ $publication->id }}"
                                                             class="form-label">Kategori</label>
                                                         <select class="form-select"
@@ -446,19 +577,77 @@
                                                                 Policy Brief</option>
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Tanggal Publikasi</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{{ $publication->created_at->format('d F Y') }}"
-                                                            readonly>
-                                                        <small class="text-muted">Tanggal otomatis dari waktu
-                                                            upload</small>
-                                                    </div>
                                                     <div class="col-md-12 mb-3">
                                                         <label for="edit_description_{{ $publication->id }}"
                                                             class="form-label">Deskripsi</label>
                                                         <textarea class="form-control" id="edit_description_{{ $publication->id }}" name="description" rows="3">{{ $publication->description }}</textarea>
                                                     </div>
+
+                                                    <!-- Current Cover Display & New Cover Input -->
+                                                    <div class="col-md-12 mb-3">
+                                                        <label class="form-label">Cover Gambar</label>
+
+                                                        <!-- Current Cover -->
+                                                        @if ($publication->cover)
+                                                            <div class="current-cover mb-2">
+                                                                <div class="card border-light">
+                                                                    <div class="card-body p-2">
+                                                                        <div class="d-flex align-items-center">
+                                                                            <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                                                alt="Current Cover"
+                                                                                style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                                            <div class="ms-3 flex-grow-1">
+                                                                                <small class="text-muted">Cover Saat
+                                                                                    Ini</small>
+                                                                                <div class="fw-semibold">
+                                                                                    {{ basename($publication->cover) }}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @endif
+
+                                                        <!-- New Cover Input -->
+                                                        <input type="file" class="form-control"
+                                                            id="edit_cover_{{ $publication->id }}" name="cover"
+                                                            accept="image/jpeg,image/jpg,image/png,image/gif">
+                                                        <small class="text-muted">
+                                                            Maksimal 5MB (JPEG, JPG, PNG, GIF). Kosongkan jika tidak ingin
+                                                            mengubah cover.
+                                                        </small>
+
+                                                        <!-- Preview New Cover -->
+                                                        <div class="mt-2"
+                                                            id="edit_cover_preview_{{ $publication->id }}"
+                                                            style="display: none;">
+                                                            <div class="card border-primary">
+                                                                <div class="card-body p-2">
+                                                                    <div class="d-flex align-items-center">
+                                                                        <img id="edit_cover_img_{{ $publication->id }}"
+                                                                            src="" alt="Preview Cover"
+                                                                            style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                                        <div class="ms-3 flex-grow-1">
+                                                                            <small class="text-primary">Cover Baru
+                                                                                (Preview)
+                                                                            </small>
+                                                                            <div id="edit_cover_name_{{ $publication->id }}"
+                                                                                class="fw-semibold"></div>
+                                                                            <div id="edit_cover_size_{{ $publication->id }}"
+                                                                                class="text-muted small"></div>
+                                                                        </div>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-outline-danger"
+                                                                            onclick="removeCoverPreview('edit_{{ $publication->id }}')">
+                                                                            <i class="mdi mdi-close"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div class="col-md-12 mb-3">
                                                         <label for="edit_file_{{ $publication->id }}"
                                                             class="form-label">File Publikasi</label>
@@ -488,6 +677,128 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Cover Preview Modal -->
+                            @if ($publication->cover)
+                                <div class="modal fade" id="coverPreviewModal{{ $publication->id }}" tabindex="-1"
+                                    aria-labelledby="coverPreviewModalLabel{{ $publication->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title"
+                                                    id="coverPreviewModalLabel{{ $publication->id }}">
+                                                    <i class="mdi mdi-image me-2"></i>Preview Cover:
+                                                    {{ $publication->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center p-4">
+                                                <div class="cover-preview-container">
+                                                    <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                        alt="Cover {{ $publication->title }}"
+                                                        class="img-fluid rounded shadow-lg"
+                                                        style="max-height: 500px; max-width: 100%; cursor: zoom-in;"
+                                                        onclick="toggleImageZoom(this)">
+
+                                                    <div class="mt-3">
+                                                        <h6 class="fw-semibold">{{ $publication->title }}</h6>
+                                                        <small class="text-muted">
+                                                            Cover: {{ basename($publication->cover) }}
+                                                        </small>
+                                                        @if ($publication->category)
+                                                            <div class="mt-2">
+                                                                <span
+                                                                    class="badge bg-info bg-gradient">{{ $publication->category }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="mdi mdi-close me-1"></i>Tutup
+                                                </button>
+                                                <a href="{{ asset('storage/' . $publication->cover) }}" target="_blank"
+                                                    class="btn btn-success">
+                                                    <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab Baru
+                                                </a>
+                                                <button type="button" class="btn btn-info" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#viewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-information me-1"></i>Detail Publikasi
+                                                </button>
+                                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#previewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-file-eye me-1"></i>Lihat File
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Cover Preview Modal -->
+                            @if ($publication->cover)
+                                <div class="modal fade" id="coverPreviewModal{{ $publication->id }}" tabindex="-1"
+                                    aria-labelledby="coverPreviewModalLabel{{ $publication->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title"
+                                                    id="coverPreviewModalLabel{{ $publication->id }}">
+                                                    <i class="mdi mdi-image me-2"></i>Preview Cover:
+                                                    {{ $publication->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center p-4">
+                                                <div class="cover-preview-container">
+                                                    <img src="{{ asset('storage/' . $publication->cover) }}"
+                                                        alt="Cover {{ $publication->title }}"
+                                                        class="img-fluid rounded shadow-lg"
+                                                        style="max-height: 500px; max-width: 100%; cursor: zoom-in;"
+                                                        onclick="toggleImageZoom(this)">
+
+                                                    <div class="mt-3">
+                                                        <h6 class="fw-semibold">{{ $publication->title }}</h6>
+                                                        <small class="text-muted">
+                                                            Cover: {{ basename($publication->cover) }}
+                                                        </small>
+                                                        @if ($publication->category)
+                                                            <div class="mt-2">
+                                                                <span
+                                                                    class="badge bg-info bg-gradient">{{ $publication->category }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="mdi mdi-close me-1"></i>Tutup
+                                                </button>
+                                                <a href="{{ asset('storage/' . $publication->cover) }}" target="_blank"
+                                                    class="btn btn-success">
+                                                    <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab Baru
+                                                </a>
+                                                <button type="button" class="btn btn-info" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#viewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-information me-1"></i>Detail Publikasi
+                                                </button>
+                                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#previewModal{{ $publication->id }}">
+                                                    <i class="mdi mdi-file-eye me-1"></i>Lihat File
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center py-5">
@@ -517,7 +828,7 @@
         </div>
     </div>
 
-    <!-- Add Modal -->
+    <!-- Add Modal dengan Cover Input -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -538,7 +849,7 @@
                                         class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="add_title" name="title" required>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label for="add_category" class="form-label">Kategori</label>
                                 <select class="form-select" id="add_category" name="category">
                                     <option value="">Pilih Kategori</option>
@@ -549,16 +860,40 @@
                                     <option value="Policy Brief">Policy Brief</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Tanggal Publikasi</label>
-                                <input type="text" class="form-control"
-                                    value="Otomatis ({{ now()->format('d F Y') }})" readonly>
-                                <small class="text-muted">Tanggal akan diset otomatis saat upload</small>
-                            </div>
                             <div class="col-md-12 mb-3">
                                 <label for="add_description" class="form-label">Deskripsi</label>
                                 <textarea class="form-control" id="add_description" name="description" rows="3"></textarea>
                             </div>
+
+                            <!-- Cover Image Input -->
+                            <div class="col-md-12 mb-3">
+                                <label for="add_cover" class="form-label">Cover Gambar</label>
+                                <input type="file" class="form-control" id="add_cover" name="cover"
+                                    accept="image/jpeg,image/jpg,image/png,image/gif">
+                                <small class="text-muted">Maksimal 5MB (JPEG, JPG, PNG, GIF). Opsional</small>
+
+                                <!-- Preview Cover -->
+                                <div class="mt-2" id="add_cover_preview" style="display: none;">
+                                    <div class="card border-light">
+                                        <div class="card-body p-2">
+                                            <div class="d-flex align-items-center">
+                                                <img id="add_cover_img" src="" alt="Preview Cover"
+                                                    style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                <div class="ms-3 flex-grow-1">
+                                                    <small class="text-muted">Preview Cover</small>
+                                                    <div id="add_cover_name" class="fw-semibold"></div>
+                                                    <div id="add_cover_size" class="text-muted small"></div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="removeCoverPreview('add')">
+                                                    <i class="mdi mdi-close"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="col-md-12 mb-3">
                                 <label for="add_file" class="form-label">File Publikasi <span
                                         class="text-danger">*</span></label>
@@ -651,6 +986,17 @@
             transform: scale(1.1);
         }
 
+        /* Cover image hover effect */
+        .file-icon img[onclick] {
+            transition: all 0.3s ease;
+        }
+
+        .file-icon img[onclick]:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: #0d6efd !important;
+        }
+
         .modal-content {
             border: none;
             border-radius: 15px;
@@ -700,11 +1046,164 @@
             justify-content: center;
             border-radius: 12px;
         }
+
+        /* Cover Preview Styles */
+        .cover-preview-container img {
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cover-preview-container img.zoomed {
+            transform: scale(1.8);
+            cursor: zoom-out;
+            z-index: 1000;
+            position: relative;
+        }
+
+        .cover-preview-container img:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-dialog-centered {
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - 1rem);
+        }
+
+        /* Enhanced modal styling */
+        .modal-content {
+            overflow: hidden;
+        }
+
+        .modal-body {
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Responsive modal untuk mobile */
+        @media (max-width: 768px) {
+            .cover-preview-container img {
+                max-height: 300px !important;
+            }
+
+            .cover-preview-container img.zoomed {
+                transform: scale(1.3);
+            }
+        }
+
+        /* Loading animation for cover */
+        .cover-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        /* Cover Preview Styles */
+        .cover-preview-container img {
+            transition: transform 0.3s ease;
+        }
+
+        .cover-preview-container img.zoomed {
+            transform: scale(1.5);
+            cursor: zoom-out;
+        }
+
+        .modal-dialog-centered {
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - 1rem);
+        }
+
+        /* Responsive modal untuk mobile */
+        @media (max-width: 768px) {
+            .cover-preview-container img {
+                max-height: 300px !important;
+            }
+        }
     </style>
 @endpush
 
 @push('scripts')
     <script>
+        // Cover Preview Functions
+        function previewCover(input, type) {
+            const file = input.files[0];
+            const previewDiv = document.getElementById(`${type}_cover_preview`);
+            const previewImg = document.getElementById(`${type}_cover_img`);
+            const previewName = document.getElementById(`${type}_cover_name`);
+            const previewSize = document.getElementById(`${type}_cover_size`);
+
+            if (file) {
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    Swal.fire({
+                        title: 'File Terlalu Besar!',
+                        text: 'Ukuran cover maksimal adalah 5MB',
+                        icon: 'error'
+                    });
+                    input.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire({
+                        title: 'Format File Tidak Valid!',
+                        text: 'Cover harus berformat JPEG, JPG, PNG, atau GIF',
+                        icon: 'error'
+                    });
+                    input.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewName.textContent = file.name;
+                    previewSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                    previewDiv.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeCoverPreview(type) {
+            const input = document.getElementById(`${type}_cover`);
+            const previewDiv = document.getElementById(`${type}_cover_preview`);
+
+            input.value = '';
+            previewDiv.style.display = 'none';
+        }
+
+        // Image zoom toggle function
+        function toggleImageZoom(img) {
+            if (img.classList.contains('zoomed')) {
+                img.classList.remove('zoomed');
+                img.style.cursor = 'zoom-in';
+            } else {
+                img.classList.add('zoomed');
+                img.style.cursor = 'zoom-out';
+            }
+        }
+
+        // Open cover modal when cover image is clicked
+        function openCoverModal(publicationId) {
+            const modalId = `#coverPreviewModal${publicationId}`;
+            const modal = new bootstrap.Modal(document.querySelector(modalId));
+            modal.show();
+        }
+
+        // Reset zoom when modal is closed
+        function resetImageZoom() {
+            document.querySelectorAll('.cover-preview-container img').forEach(img => {
+                img.classList.remove('zoomed');
+                img.style.cursor = 'zoom-in';
+            });
+        }
+
         // Preview handling functions
         function hideLoading(publicationId) {
             const loading = document.querySelector(`#previewModal${publicationId} .preview-loading`);
@@ -724,6 +1223,22 @@
         }
 
         $(document).ready(function() {
+            // Event Listeners for Cover Previews
+            const addCoverInput = document.getElementById('add_cover');
+            if (addCoverInput) {
+                addCoverInput.addEventListener('change', function() {
+                    previewCover(this, 'add');
+                });
+            }
+
+            // Edit form cover previews
+            document.querySelectorAll('[id^="edit_cover_"]').forEach(input => {
+                input.addEventListener('change', function() {
+                    const publicationId = this.id.replace('edit_cover_', '');
+                    previewCover(this, `edit_${publicationId}`);
+                });
+            });
+
             // Initialize DataTable
             $('#publicationsTable').DataTable({
                 "pageLength": 10,
@@ -803,10 +1318,11 @@
             // Form validation
             $('#addForm, form[action*="update"]').on('submit', function(e) {
                 const form = $(this);
-                const fileInput = form.find('input[type="file"]');
-                const file = fileInput[0].files[0];
+                const fileInput = form.find('input[name="file"]');
+                const coverInput = form.find('input[name="cover"]');
 
-                if (file && file.size > 50 * 1024 * 1024) {
+                // Validate main file
+                if (fileInput[0].files[0] && fileInput[0].files[0].size > 50 * 1024 * 1024) {
                     e.preventDefault();
                     Swal.fire({
                         title: 'File Terlalu Besar!',
@@ -815,6 +1331,22 @@
                     });
                     return false;
                 }
+
+                // Validate cover file
+                if (coverInput[0].files[0] && coverInput[0].files[0].size > 5 * 1024 * 1024) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Cover Terlalu Besar!',
+                        text: 'Ukuran cover maksimal adalah 5MB',
+                        icon: 'error'
+                    });
+                    return false;
+                }
+            });
+
+            // Cover preview modal handling - reset zoom when closed
+            $('[id^="coverPreviewModal"]').on('hidden.bs.modal', function() {
+                resetImageZoom();
             });
 
             // Auto-hide alerts
