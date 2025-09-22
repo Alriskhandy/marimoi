@@ -198,7 +198,7 @@
             <div class="wrapper w-full max-w-4xl mx-auto">
                 <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <img src="{{ asset('frontend/img/cv/1.jpg') }}" alt="CV 1">
+                    <img src="{{ asset('frontend/img/cv/1-min.png') }}" alt="CV 1">
                 </div>
 
                 <!-- Item 1: Data Pribadi & Riwayat Pendidikan -->
