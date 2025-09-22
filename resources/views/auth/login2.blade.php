@@ -32,7 +32,7 @@
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
     <link href="{{ asset('frontend/vendor/aos/aos.css') }}" rel="stylesheet">
 
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
 
     <!-- Main CSS File -->
     <link href="{{ asset('frontend/css/main.css') }}" rel="stylesheet">

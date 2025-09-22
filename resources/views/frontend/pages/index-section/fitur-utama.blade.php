@@ -1,7 +1,7 @@
 <!-- Fitur Utama Section - Tailwind Version -->
 <section class="relative w-full py-16 lg:py-20 bg-slate-50">
     <div class="container max-w-7xl mx-auto px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[600px]">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center md:min-h-[600px]">
 
             <!-- Menu List on LEFT side (Desktop) / BOTTOM (Mobile) -->
             <div class="order-2 lg:order-1 flex flex-col justify-center">
@@ -82,7 +82,7 @@
                 <!-- 3D Map Container -->
                 <div
                     class="relative w-full h-full flex items-center justify-center z-[2] justify-self-end md:justify-self-end sm:justify-self-center md:order-2 sm:order-1 sm:h-[300px] md:h-full">
-                    <div class="w-full h-[500px] lg:h-[450px] md:h-[350px] sm:h-[280px] xs:h-[220px]">
+                    <div class="w-full h-[280px] sm:h-[300px] md:h-[320px] lg:h-[450px]">
                         <model-viewer src="{{ asset('frontend/models/peta-sofifi.glb') }}"
                             alt="3D Model Kantor Gubernur Maluku Utara" camera-controls auto-rotate
                             auto-rotate-delay="1500" rotation-per-second="20deg" shadow-intensity="2"
@@ -185,12 +185,14 @@
         }
 
         /* Custom styles untuk model-viewer dan animations yang tidak tersedia di Tailwind */
+        /* let container control height (use percentages) */
         model-viewer {
             width: 100%;
-            height: 400px;
+            height: 100%;
             background: transparent;
             --poster-color: transparent;
             --progress-bar-color: transparent;
+            will-change: transform, opacity;
         }
 
         model-viewer[loading] {
@@ -212,16 +214,16 @@
             }
         }
 
-        /* Responsive model-viewer */
+        /* container classes (above) set the height per breakpoint; keep fallback safety */
         @media (max-width: 768px) {
             model-viewer {
-                height: 280px;
+                height: 100%;
             }
         }
 
         @media (max-width: 480px) {
             model-viewer {
-                height: 220px;
+                height: 100%;
             }
         }
     </style>

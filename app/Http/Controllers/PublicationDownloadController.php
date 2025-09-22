@@ -2,14 +2,101 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DownloadSurveyRequest;
 use App\Models\Publication;
 use App\Models\PublicationDownload;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PublicationDownloadController extends Controller
 {
+
+    public function processSurveyAndDownload(DownloadSurveyRequest $request, Publication $publication)
+    {
+        if (!$publication->is_active) {
+            abort(404);
+        }
+
+        try {
+            // Pastikan file ada sebelum lanjut
+            if (!Storage::disk('public')->exists($publication->file_path)) {
+                Log::error('File not found for publication', [
+                    'publication_id' => $publication->id,
+                    'file_path' => $publication->file_path
+                ]);
+                abort(404, 'File not found');
+            }
+
+            DB::beginTransaction();
+
+            // Simpan data survey download
+            PublicationDownload::create([
+                'publication_id' => $publication->id,
+                'name'           => $request->name,
+                'email'          => $request->email,
+                'phone'          => $request->phone,
+                'organization'   => $request->organization,
+                'position'       => $request->position,
+                'purpose'        => $request->purpose,
+                'ip_address'     => $request->ip(),
+                'user_agent'     => $request->userAgent(),
+                'downloaded_at'  => now(),
+            ]);
+
+            // Increment download count
+            $publication->incrementDownloadCount();
+
+            DB::commit();
+
+            Log::info('Download recorded successfully', [
+                'publication_id' => $publication->id,
+                'user_email'     => $request->email,
+            ]);
+
+            // Get file info
+            $filePath = Storage::disk('public')->path($publication->file_path);
+            $fileName = $publication->file_name ?? basename($publication->file_path);
+
+            Log::info('Processing file download', [
+                'file_path' => $filePath,
+                'file_name' => $fileName,
+                'exists' => file_exists($filePath)
+            ]);
+
+            // Pastikan file benar-benar ada di filesystem
+            if (!file_exists($filePath)) {
+                Log::error('Physical file not found', ['file_path' => $filePath]);
+                throw new \Exception('File tidak ditemukan di server');
+            }
+
+            // Return download response dengan header yang tepat
+            return Storage::disk('public')->download(
+                $publication->file_path,
+                $fileName,
+                [
+                    'Content-Type' => Storage::disk('public')->mimeType($publication->file_path)
+                ]
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error processing survey & download', [
+                'error'          => $e->getMessage(),
+                'trace'          => $e->getTraceAsString(),
+                'publication_id' => $publication->id ?? null,
+                'file_path'      => $publication->file_path ?? null,
+            ]);
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan saat memproses download: ' . $e->getMessage()]);
+        }
+    }
+
+
     /**
      * Display a listing of all publication downloads
      */
