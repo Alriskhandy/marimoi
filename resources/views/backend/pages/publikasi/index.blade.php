@@ -484,18 +484,7 @@
                                                                             kali</span>
                                                                     </p>
                                                                 </div>
-                                                                <div class="col-md-3 mb-2">
-                                                                    <label
-                                                                        class="form-label small text-muted">Status</label>
-                                                                    <p class="mb-0">
-                                                                        @if ($publication->is_active)
-                                                                            <span class="badge bg-success">Aktif</span>
-                                                                        @else
-                                                                            <span class="badge bg-danger">Tidak
-                                                                                Aktif</span>
-                                                                        @endif
-                                                                    </p>
-                                                                </div>
+
                                                             </div>
                                                         </div>
                                                     </div>
