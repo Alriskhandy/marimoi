@@ -98,10 +98,11 @@
                                 data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                 data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
                                 data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">
-                                <img src="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}" alt="{{ $doc['title'] }}" class="rounded-lg border">
+                                <img src="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}"
+                                    alt="{{ $doc['title'] }}" class="rounded-lg border">
                             </button>
                         </div>
-                        
+
                         <!-- Right: details -->
                         <div class="flex-1">
                             <h3 class="text-md font-semibold text-slate-800">
@@ -109,23 +110,28 @@
                                     class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
                                     data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                     data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc['thumbnail'] }}">{{ $doc['title'] }}</button>
+                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">{{ $doc['title'] }}</button>
                             </h3>
                             <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
-                                {{-- <div class="flex items-center gap-2">
-                                    <i class="bi bi-file-earmark-arrow-down text-lg text-slate-700"></i>
-                                    <span class="text-slate-600 font-medium">{{ $doc->created_at }}</span>
-                                </div> --}}
                                 <div class="flex items-center gap-1 text-slate-600">
                                     <i class="bi bi-download text-lg text-slate-700"></i>
                                     <span class="text-slate-600 font-medium">{{ $doc->download_count ?? 0 }}</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-600">
+                                    <i class="bi bi-file-earmark-binary text-lg text-slate-700"></i>
+                                    <span
+                                        class="text-slate-600 font-medium">{{ number_format($doc->file_size / 1024 / 1024, 2) . ' MB' ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-600">
+                                    <i class="bi bi-file-earmark-pdf text-lg text-slate-700"></i>
+                                    <span class="text-slate-600 font-medium">{{ $doc->file_type ?? 'N/A' }}</span>
                                 </div>
                             </div>
 
                             <div class="mt-4">
                                 <button data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
                                     data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc['thumbnail'] }}"
+                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}"
                                     class="open-download-modal inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
                                     <i class="bi bi-download"></i> Unduh Dokumen
                                 </button>
@@ -140,86 +146,101 @@
 
     <!-- Download Modal (improved) -->
     <div id="downloadModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50 px-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        <div
+            class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto grid grid-cols-1 lg:grid-cols-2">
             <!-- Left: preview -->
-            <div id="previewThumb" class="p-4 bg-slate-50 border-r hidden lg:block text-gray-800">
+            <div id="previewThumb" class="p-6 bg-slate-50 border-r hidden lg:flex items-center justify-center">
+                <div class="text-gray-400 text-center">
+                    <i class="bi bi-file-earmark-pdf text-6xl mb-2"></i>
+                    <p>Preview dokumen</p>
+                </div>
             </div>
 
             <!-- Right: form -->
             <div class="p-6">
-                <div class="flex items-start justify-between text-gray-800">
-                    <h3 class="text-lg font-semibold">Form Unduh Dokumen</h3>
-                    <button id="downloadModalClose" class="text-slate-500 hover:text-slate-700">×</button>
+                <div class="flex items-start justify-between text-gray-800 mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold">Form Unduh Dokumen</h3>
+                        <p class="text-sm text-slate-500 mt-1">Lengkapi data untuk mengunduh dokumen</p>
+                    </div>
+                    <button id="downloadModalClose"
+                        class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
                 </div>
 
-                <form id="downloadForm" method="post" action="{{ route('download.publikasi', $doc['id']) }}" class="mt-4 text-gray-800 text-sm">
+                <form id="downloadForm" method="post" action="#" class="space-y-4 text-gray-800 text-sm">
                     @csrf
-                    <input type="hidden" name="doc_id" id="docIdInput" value="{{ $doc['id'] }}">
-                    <input type="hidden" name="doc_path" id="docPathInput" value="{{ $doc['id'] }}">
+                    <input type="hidden" name="doc_id" id="docIdInput">
+                    <input type="hidden" name="doc_path" id="docPathInput">
 
-                    <div class="mb-2">
-                        <h4 class="text-lg font-semibold">Data Pemohon</h4>
-                        <p class="text-sm text-slate-500">Isi data Anda untuk proses unduhan</p>
-                    </div>
-                    <div id="formAlert" class="hidden mb-4 text-sm"></div>
+                    <div id="formAlert" class="hidden"></div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-person me-2"></i>
-                                Nama</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-person me-2"></i>Nama Lengkap <span class="text-red-500">*</span>
+                            </label>
                             <input required name="name" type="text"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Masukkan nama lengkap" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-envelope me-2"></i>
-                                Email</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-envelope me-2"></i>Email <span class="text-red-500">*</span>
+                            </label>
                             <input required name="email" type="email"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="contoh@email.com" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-phone me-2"></i>
-                                Nomor Telepon</label>
-                            <input name="phone" type="tel" placeholder="08xxxxxxxxxx"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-phone me-2"></i>Nomor Telepon
+                            </label>
+                            <input name="phone" type="tel"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="08xxxxxxxxxx" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-building me-2"></i>
-                                Organisasi/Instansi</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-building me-2"></i>Organisasi/Instansi
+                            </label>
                             <input name="organization" type="text"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Nama organisasi/instansi" />
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-briefcase me-2"></i>
-                                Posisi/Jabatan</label>
-                            <input name="position" type="text"
-                                class="form-control mt-1 block w-full rounded-md border-gray-200" />
-                        </div>
-
-                        <input type="hidden" name="additional_data" id="additionalDataInput" value="" />
-
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700"><i class="bi bi-clipboard me-2"></i>
-                                Tujuan Penggunaan</label>
-                            <textarea required name="purpose" rows="3" class="form-control mt-1 block w-full rounded-md border-gray-200"></textarea>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-briefcase me-2"></i>Posisi/Jabatan
+                            </label>
+                            <input name="position" type="text"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Jabatan atau posisi Anda" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                <i class="bi bi-clipboard me-2"></i>Tujuan Penggunaan <span class="text-red-500">*</span>
+                            </label>
+                            <textarea required name="purpose" rows="3"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Jelaskan tujuan penggunaan dokumen ini..."></textarea>
                         </div>
                     </div>
 
-                    <div class="mt-4">
-                        <!-- hCaptcha widget placeholder -->
-                        <div id="hcaptchaContainer"></div>
-                    </div>
+                    <!-- hCaptcha container -->
+                    <div id="hcaptchaContainer" class="flex justify-center"></div>
 
-                    <div class="mt-6 flex items-center justify-center gap-3">
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t">
                         <button type="button" id="downloadCancel"
-                            class="px-4 py-2 rounded-lg border border-slate-200">Batal</button>
+                            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition">
+                            Batal
+                        </button>
                         <button type="submit" id="downloadSubmit"
-                            class="px-4 py-2 rounded-lg bg-blue-600 text-white">Kirim &
-                            Unduh</button>
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50">
+                            <i class="bi bi-download me-2"></i>Kirim & Unduh
+                        </button>
                     </div>
+                </form>
             </div>
-            </form>
         </div>
-    </div>
     </div>
 
     <!-- Footer Section -->
@@ -242,16 +263,16 @@
             const downloadButtons = document.querySelectorAll('.open-download-modal');
             const downloadForm = document.getElementById('downloadForm');
 
-            // hCaptcha render - attempt to render when modal is opened
+            // hCaptcha render
             let hcaptchaWidgetId = null;
 
             function renderHCaptcha() {
                 if (typeof hcaptcha === 'undefined') return;
-                if (hcaptchaWidgetId !== null) return; // already rendered
+                if (hcaptchaWidgetId !== null) return;
 
                 try {
                     hcaptchaWidgetId = hcaptcha.render('hcaptchaContainer', {
-                        sitekey: '{{ config('services.hcaptcha.sitekey') ?? (env('HCAPTCHA_SITEKEY') ?? '') }}'
+                        sitekey: '{{ config('services.hcaptcha.sitekey') ?? env('HCAPTCHA_SITEKEY', '') }}'
                     });
                 } catch (err) {
                     console.warn('hCaptcha render failed', err);
@@ -259,8 +280,6 @@
             }
 
             const previewThumb = document.getElementById('previewThumb');
-            const previewTitle = document.getElementById('previewTitle');
-            const previewMeta = document.getElementById('previewMeta');
             const formAlert = document.getElementById('formAlert');
 
             function setFormAlert(message = '', type = 'error') {
@@ -268,47 +287,65 @@
                 if (!message) {
                     formAlert.classList.add('hidden');
                     formAlert.textContent = '';
-                    formAlert.className = 'hidden mb-4 text-sm';
                     return;
                 }
                 formAlert.classList.remove('hidden');
                 formAlert.textContent = message;
-                if (type === 'error') {
-                    formAlert.className = 'mb-4 text-sm text-red-600';
-                } else {
-                    formAlert.className = 'mb-4 text-sm text-green-600';
-                }
+                formAlert.className = type === 'error' ?
+                    'mb-4 text-sm text-red-600' :
+                    'mb-4 text-sm text-green-600';
             }
 
             function openModal(docId, docPath, title = '', thumbnail = '') {
-                docIdInput.value = docId;
-                docPathInput.value = docPath;
+                // Set hidden inputs
+                docIdInput.value = docId || '';
+                docPathInput.value = docPath || '';
 
-                // set preview
-                if (previewThumb && thumbnail) {
-                    previewThumb.innerHTML =
-                        `<img src="${thumbnail}" alt="${title}" class="rounded-lg" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-                } else if (previewThumb) {
-                    previewThumb.innerHTML = '';
+                // Set form action - perbaikan: gunakan route yang benar
+                if (downloadForm && docId) {
+                    downloadForm.action = `{{ url('dokumen-publikasi') }}/${encodeURIComponent(docId)}/download`;
                 }
 
-                if (previewTitle) previewTitle.textContent = title || '-';
-                if (previewMeta) previewMeta.textContent = docPath ? 'Dokumen siap diunduh' : '';
+                // Set preview
+                if (previewThumb && thumbnail) {
+                    previewThumb.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full">
+                    <img src="${thumbnail}" alt="${title}" class="rounded-lg max-w-full max-h-48 object-cover mb-4">
+                    <h4 class="text-sm font-medium text-center">${title}</h4>
+                </div>
+            `;
+                }
 
-                setFormAlert();
-
+                setFormAlert(); // Clear alerts
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
-                renderHCaptcha();
+
+                // Render hCaptcha setelah modal terbuka
+                setTimeout(renderHCaptcha, 100);
             }
 
             function closeModal() {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
+
+                // Reset form
+                downloadForm.reset();
+                setFormAlert();
+
+                // Reset hCaptcha
+                if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
+                    try {
+                        hcaptcha.reset(hcaptchaWidgetId);
+                    } catch (err) {
+                        console.warn('hCaptcha reset failed', err);
+                    }
+                }
             }
 
+            // Event listeners
             downloadButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     const id = btn.getAttribute('data-id');
                     const path = btn.getAttribute('data-path');
                     const title = btn.getAttribute('data-title') || '';
@@ -320,71 +357,140 @@
             closeBtn.addEventListener('click', closeModal);
             cancelBtn.addEventListener('click', closeModal);
 
-            // Submit handler: send via fetch to server which should validate and then respond with the download URL
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // Submit handler - PERBAIKAN UTAMA
             downloadForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                // populate additional_data with small client context
-                const additionalDataInput = document.getElementById('additionalDataInput');
-                if (additionalDataInput) {
-                    const ctx = {
-                        user_agent: navigator.userAgent || '',
-                        doc_id: docIdInput ? docIdInput.value : ''
-                    };
-                    additionalDataInput.value = JSON.stringify(ctx);
-                }
+                const submitBtn = document.getElementById('downloadSubmit');
+                const originalText = submitBtn.textContent;
 
+                // Validasi client-side
                 const formData = new FormData(downloadForm);
-
-                // Include hcaptcha response if available
-                if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
-                    const token = hcaptcha.getResponse(hcaptchaWidgetId);
-                    formData.append('h-captcha-response', token);
-                }
-
-                // Basic client-side check (name, email, purpose are required server-side)
-                if (!formData.get('name') || !formData.get('email') || !formData.get('purpose')) {
-                    setFormAlert('Lengkapi semua field yang diperlukan (Nama, Email, Tujuan).',
-                    'error');
+                if (!formData.get('name')?.trim() || !formData.get('email')?.trim() || !formData.get(
+                        'purpose')?.trim()) {
+                    setFormAlert('Nama, Email, dan Tujuan wajib diisi.', 'error');
                     return;
                 }
 
-                const submitBtn = document.getElementById('downloadSubmit');
+                // Validasi email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.get('email'))) {
+                    setFormAlert('Format email tidak valid.', 'error');
+                    return;
+                }
+
+                // Include hCaptcha response
+                if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
+                    const token = hcaptcha.getResponse(hcaptchaWidgetId);
+                    if (!token) {
+                        setFormAlert('Silakan selesaikan verifikasi captcha.', 'error');
+                        return;
+                    }
+                    formData.append('h-captcha-response', token);
+                }
+
+                // Additional data
+                const additionalData = {
+                    user_agent: navigator.userAgent || '',
+                    doc_id: docIdInput.value || '',
+                    timestamp: new Date().toISOString()
+                };
+                formData.append('additional_data', JSON.stringify(additionalData));
+
+                // Disable submit button
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Mengirim...';
+                submitBtn.textContent = 'Memproses...';
+                setFormAlert();
 
                 try {
-                    const res = await fetch(downloadForm.action, {
+                    const response = await fetch(downloadForm.action, {
                         method: 'POST',
                         headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json, application/octet-stream, */*'
                         },
                         body: formData
                     });
 
-                    const data = await res.json();
+                    const contentType = response.headers.get('content-type') || '';
 
-                    if (res.ok && data.download_url) {
-                        // close modal then redirect to download URL
-                        closeModal();
-                        // small delay so modal hides smoothly
-                        setTimeout(() => {
-                            window.location.href = data.download_url;
-                        }, 250);
-                    } else if (res.ok && data.success) {
-                        // If server returns success without download_url, show message and close
-                        setFormAlert(data.message || 'Permintaan diproses.', 'success');
-                        setTimeout(() => closeModal(), 1200);
-                    } else {
-                        setFormAlert(data.message || 'Gagal memproses permintaan.', 'error');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Kirim & Unduh';
+                    // Handle JSON response (errors atau redirect)
+                    if (contentType.includes('application/json')) {
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            if (data.download_url) {
+                                setFormAlert('Download akan dimulai...', 'success');
+                                setTimeout(() => {
+                                    window.open(data.download_url, '_blank');
+                                    closeModal();
+                                }, 1000);
+                            } else if (data.success) {
+                                setFormAlert(data.message || 'Berhasil diproses.', 'success');
+                                setTimeout(closeModal, 1500);
+                            }
+                        } else {
+                            // Handle validation errors
+                            if (data.errors) {
+                                const errorMessages = Object.values(data.errors).flat();
+                                setFormAlert(errorMessages.join(' '), 'error');
+                            } else {
+                                setFormAlert(data.message || 'Gagal memproses permintaan.', 'error');
+                            }
+                        }
+                        return;
                     }
-                } catch (err) {
-                    console.error(err);
-                    setFormAlert('Terjadi kesalahan, coba lagi.', 'error');
+
+                    // Handle file download response
+                    if (response.ok) {
+                        const blob = await response.blob();
+
+                        // Extract filename from Content-Disposition header
+                        let filename = 'dokumen.pdf';
+                        const disposition = response.headers.get('content-disposition');
+                        if (disposition) {
+                            const filenameMatch = disposition.match(
+                                /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                            if (filenameMatch && filenameMatch[1]) {
+                                filename = filenameMatch[1].replace(/['"]/g, '');
+                            }
+                        }
+
+                        // Create download link
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename;
+
+                        document.body.appendChild(a);
+                        a.click();
+
+                        // Cleanup
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        setFormAlert('Download berhasil!', 'success');
+                        setTimeout(closeModal, 1500);
+                        return;
+                    }
+
+                    // Handle error responses
+                    const errorText = await response.text();
+                    setFormAlert(errorText || `Error: ${response.status}`, 'error');
+
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setFormAlert('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
+                } finally {
+                    // Re-enable submit button
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Kirim & Unduh';
+                    submitBtn.textContent = originalText;
                 }
             });
         });

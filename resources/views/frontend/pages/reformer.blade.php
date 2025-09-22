@@ -24,55 +24,52 @@
 
         /* Custom animations and transitions */
         .answer {
-            max-height: 0;
+            /* remove heavy max-height transition */
+            max-height: none;
             overflow: hidden;
-            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
             padding-top: 0;
         }
 
-        .tab input[type="radio"]:checked~.answer {
+        /* inner wrapper that will be GPU-animated */
+        .answer>.collapsible {
+            transform-origin: top;
+            transform: scaleY(0);
+            opacity: 0;
+            transition: transform 280ms cubic-bezier(.2, .8, .2, 1), opacity 200ms ease;
+            will-change: transform, opacity;
+            /* keep layout stable */
+            display: block;
+        }
+
+        /* when radio checked, expand via scale */
+        .tab input[type="radio"]:checked~.answer>.collapsible {
+            transform: scaleY(1);
+            opacity: 1;
             padding-top: 1rem;
+            /* if you need the extra spacing */
         }
 
-        /* Specific max-heights for each FAQ item for smooth animations */
-        #faq1:checked~.answer {
-            max-height: 600px;
-        }
-
-        #faq2:checked~.answer {
-            max-height: 700px;
-        }
-
-        #faq3:checked~.answer {
-            max-height: 800px;
-        }
-
-        #faq4:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq5:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq6:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq7:checked~.answer {
-            max-height: 1000px;
-        }
-
+        /* remove heavy per-faq max-height rules */
+        #faq1:checked~.answer,
+        #faq2:checked~.answer,
+        #faq3:checked~.answer,
+        #faq4:checked~.answer,
+        #faq5:checked~.answer,
+        #faq6:checked~.answer,
+        #faq7:checked~.answer,
         #faq8:checked~.answer {
-            max-height: 600px;
+            /* no-op kept for selector compatibility */
         }
 
-        .tab label::after {
-            transition: transform 0.3s ease-in-out;
+        /* optionally limit expensive shadows on many elements */
+        .tab {
+            transition: transform 180ms ease;
         }
 
-        .tab input[type="radio"]:checked~label::after {
-            transform: rotate(45deg);
+        .tab:hover {
+            transform: translateY(-1px);
+            /* lighter shadow to reduce overdraw */
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
         }
 
         /* Style for checked/active accordion labels */
@@ -217,8 +214,9 @@
                         <h3><i class="bi bi-person-vcard me-2"></i> Data Pribadi, Keluarga & Riwayat Pendidikan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/2.jpg') }}" alt="CV 2" class="borde rounded-lg">
+                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
+                            <img src="{{ asset('frontend/img/cv/2.jpg') }}" alt="CV 2" class="border rounded-lg"
+                                loading="lazy" decoding="async">
                         </div>
                     </div>
                 </div>
@@ -236,7 +234,7 @@
                         <h3><i class="bi bi-bar-chart-steps me-2"></i> Riwayat Kepangkatan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="text-gray-700 text-sm md:text-md leading-relaxed">
+                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
                             <img src="{{ asset('frontend/img/cv/3.jpg') }}" alt="CV 3" class="border rounded-lg">
                         </div>
                     </div>
@@ -255,7 +253,7 @@
                         <h3><i class="bi bi-briefcase me-2"></i> Riwayat Jabatan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="text-gray-700 text-sm md:text-md leading-relaxed">
+                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
                             <img src="{{ asset('frontend/img/cv/4.jpg') }}" alt="CV 4" class="border rounded-lg">
                         </div>
                     </div>
@@ -274,7 +272,7 @@
                         <h3><i class="bi bi-award  me-2"></i> Riwayat Kinerja, Diklat, & Penghargaan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="text-gray-700 text-sm md:text-md leading-relaxed">
+                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
                             <img src="{{ asset('frontend/img/cv/5.jpg') }}" alt="CV 5" class="border rounded-lg">
                         </div>
                     </div>
@@ -326,26 +324,79 @@
                 });
             });
 
+            // NEW: helper to open/close with measured max-height for reliable layout
+            function setCollapseState(tabIndex, open) {
+                const tab = labels[tabIndex].closest('.tab');
+                if (!tab) return;
+                const collapsible = tab.querySelector('.collapsible');
+                if (!collapsible) return;
+
+                // Ensure we have a transition for max-height + opacity
+                collapsible.style.overflow = 'hidden';
+                collapsible.style.transition = 'max-height 300ms cubic-bezier(.2,.8,.2,1), opacity 200ms ease';
+
+                if (open) {
+                    // measure then expand
+                    collapsible.style.maxHeight = '0px';
+                    // allow DOM to apply before measuring
+                    requestAnimationFrame(() => {
+                        const h = collapsible.scrollHeight;
+                        collapsible.style.maxHeight = h + 'px';
+                        collapsible.style.opacity = '1';
+                    });
+                } else {
+                    // collapse
+                    collapsible.style.maxHeight = '0px';
+                    collapsible.style.opacity = '0';
+                }
+            }
+
             function toggleAccordion(index) {
                 const radio = radioButtons[index];
 
                 // If the clicked accordion is already open, close it
                 if (radio.checked) {
                     radio.checked = false;
-                    // Trigger change event manually for CSS transitions
                     radio.dispatchEvent(new Event('change'));
+                    setCollapseState(index, false);
                 } else {
                     // Close all other accordions and open the clicked one
                     radioButtons.forEach((otherRadio, otherIndex) => {
                         if (otherIndex !== index) {
                             otherRadio.checked = false;
                             otherRadio.dispatchEvent(new Event('change'));
+                            setCollapseState(otherIndex, false);
                         }
                     });
+
                     radio.checked = true;
                     radio.dispatchEvent(new Event('change'));
+                    setCollapseState(index, true);
+
+                    // Optionally lazy-load images inside the opened panel immediately
+                    const tab = labels[index].closest('.tab');
+                    if (tab) {
+                        const imgs = tab.querySelectorAll('img[loading="lazy"]');
+                        imgs.forEach(img => {
+                            // trigger eager decode by removing loading attr so browser loads now
+                            img.loading = 'eager';
+                            // try decode to avoid flicker
+                            if (img.decode) img.decode().catch(() => {});
+                        });
+                    }
                 }
             }
+
+            // Initialize collapsed states (ensure maxHeight 0 and opacity 0)
+            radioButtons.forEach((rb, idx) => {
+                const tab = labels[idx].closest('.tab');
+                if (!tab) return;
+                const collapsible = tab.querySelector('.collapsible');
+                if (!collapsible) return;
+                collapsible.style.maxHeight = rb.checked ? collapsible.scrollHeight + 'px' : '0px';
+                collapsible.style.opacity = rb.checked ? '1' : '0';
+                collapsible.style.overflow = 'hidden';
+            });
         });
     </script>
 
