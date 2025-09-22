@@ -645,21 +645,11 @@
                                 <i class="mdi mdi-format-list-bulleted me-2"></i>Daftar Publikasi
                             </a>
                         </li>
-                        {{-- <li class="nav-item {{ request()->routeIs('publications.create') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('publications.create') }}">
-                                <i class="mdi mdi-plus-circle me-2"></i>Tambah Publikasi
-                            </a>
-                        </li> --}}
-                        {{-- <li class="nav-item {{ request()->routeIs('publications.categories') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('publications.categories') }}">
-                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Publikasi
+                        <li class="nav-item {{ request()->routeIs('publications.downloads.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('publications.downloads.index') }}">
+                                <i class="mdi mdi-account-group me-2"></i>Data Download
                             </a>
                         </li>
-                        <li class="nav-item {{ request()->routeIs('publications.statistics') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('publications.statistics') }}">
-                                <i class="mdi mdi-chart-bar me-2"></i>Statistik Download
-                            </a>
-                        </li> --}}
                     </ul>
                 </div>
             </li>

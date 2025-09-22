@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Publication extends Model
 {
@@ -19,18 +20,45 @@ class Publication extends Model
         'file_type',
         'file_size',
         'category',
-        'author',
         'published_date',
-        'is_active',
         'download_count',
     ];
 
     protected $casts = [
         'published_date' => 'date',
-        'is_active' => 'boolean',
         'file_size' => 'integer',
         'download_count' => 'integer',
     ];
+
+    // Fixed: File URL untuk dokumen_files
+    public function getFileUrlAttribute()
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->file_path);
+    }
+
+    // Asset URL untuk dokumen_files
+    public function getAssetUrlAttribute()
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->file_path);
+    }
+
+    // Check if file exists
+    public function fileExists(): bool
+    {
+        if (!$this->file_path) {
+            return false;
+        }
+
+        return Storage::disk('public')->exists($this->file_path);
+    }
 
     public function downloads(): HasMany
     {
