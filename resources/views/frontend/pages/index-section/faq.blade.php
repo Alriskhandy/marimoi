@@ -19,49 +19,23 @@
         }
 
         /* Custom animations and transitions */
+        /* ensure padding included in height calculations to avoid cut-off */
         .answer {
+            box-sizing: border-box;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
             padding-top: 0;
+            opacity: 0;
+            transition: max-height 300ms cubic-bezier(.2, .8, .2, 1), opacity 220ms ease, padding 220ms ease;
         }
 
+        /* keep label padding when checked */
         .tab input[type="radio"]:checked~.answer {
             padding-top: 1rem;
         }
 
-        /* Specific max-heights for each FAQ item for smooth animations */
-        #faq1:checked~.answer {
-            max-height: 600px;
-        }
-
-        #faq2:checked~.answer {
-            max-height: 700px;
-        }
-
-        #faq3:checked~.answer {
-            max-height: 800px;
-        }
-
-        #faq4:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq5:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq6:checked~.answer {
-            max-height: 900px;
-        }
-
-        #faq7:checked~.answer {
-            max-height: 1000px;
-        }
-
-        #faq8:checked~.answer {
-            max-height: 600px;
-        }
+        /* Remove the previous per-item fixed max-height rules */
+        /* (the #faq1:checked~.answer ... blocks removed) */
 
         .tab label::after {
             transition: transform 0.3s ease-in-out;
@@ -559,12 +533,11 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Add keyboard support for accordion
             const labels = document.querySelectorAll('.tab label');
             const radioButtons = document.querySelectorAll('input[name="faq"]');
 
             labels.forEach((label, index) => {
-                // Handle keyboard events
+                // keyboard support
                 label.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -572,33 +545,133 @@
                     }
                 });
 
-                // Handle click events
+                // click opens/closes
                 label.addEventListener('click', function(e) {
                     e.preventDefault();
                     toggleAccordion(index);
                 });
             });
 
+            // helper to attach transitionend that releases max-height when open
+            function ensureTransitionEnd(answer) {
+                if (answer._hasTransitionEnd) return;
+                answer._hasTransitionEnd = true;
+                answer.addEventListener('transitionend', function(ev) {
+                    if (ev.propertyName !== 'max-height') return;
+                    // if open, allow natural height
+                    if (answer.dataset.open === 'true') {
+                        answer.style.transition = 'none'; // avoid flicker when switching to none
+                        answer.style.maxHeight = 'none';
+                        answer.style.overflow = ''; // allow normal overflow
+                        // force reflow then restore transition
+                        void answer.offsetHeight;
+                        answer.style.transition =
+                            'max-height 300ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease, padding 220ms ease';
+                    }
+                });
+            }
+
+            function setCollapseState(tabIndex, open) {
+                const tab = labels[tabIndex].closest('.tab');
+                if (!tab) return;
+                const answer = tab.querySelector('.answer');
+                if (!answer) return;
+
+                ensureTransitionEnd(answer);
+                answer.style.overflow = 'hidden';
+                answer.style.transition =
+                    'max-height 300ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease, padding 220ms ease';
+
+                if (open) {
+                    answer.dataset.open = 'true';
+                    // Reset to zero then measure after two RAFs (allow CSS peer-checked padding to apply)
+                    answer.style.maxHeight = '0px';
+                    answer.style.opacity = '0';
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            const h = answer.scrollHeight || 0;
+                            const buffer = 8; // small buffer to avoid subpixel clipping
+                            answer.style.maxHeight = (h + buffer) + 'px';
+                            answer.style.opacity = '1';
+                        });
+                    });
+                } else {
+                    answer.dataset.open = 'false';
+                    // snapshot current height so transition has a start value
+                    const curH = answer.scrollHeight || 0;
+                    answer.style.maxHeight = curH + 'px';
+                    answer.style.opacity = '1';
+                    requestAnimationFrame(() => {
+                        answer.style.maxHeight = '0px';
+                        answer.style.opacity = '0';
+                    });
+                }
+            }
+
             function toggleAccordion(index) {
                 const radio = radioButtons[index];
+                if (!radio) return;
 
-                // If the clicked accordion is already open, close it
                 if (radio.checked) {
+                    // already open -> close
                     radio.checked = false;
-                    // Trigger change event manually for CSS transitions
                     radio.dispatchEvent(new Event('change'));
+                    setCollapseState(index, false);
                 } else {
-                    // Close all other accordions and open the clicked one
+                    // close others
                     radioButtons.forEach((otherRadio, otherIndex) => {
                         if (otherIndex !== index) {
                             otherRadio.checked = false;
                             otherRadio.dispatchEvent(new Event('change'));
+                            setCollapseState(otherIndex, false);
                         }
                     });
+
+                    // open selected
                     radio.checked = true;
                     radio.dispatchEvent(new Event('change'));
+                    setCollapseState(index, true);
+
+                    // eager-load lazy images inside opened tab to avoid paint delay
+                    const tab = labels[index].closest('.tab');
+                    if (tab) {
+                        const imgs = tab.querySelectorAll('img[loading="lazy"]');
+                        imgs.forEach(img => {
+                            img.loading = 'eager';
+                            if (img.decode) img.decode().catch(() => {});
+                        });
+                    }
                 }
             }
+
+            // Initialize states based on checked radios
+            radioButtons.forEach((rb, idx) => {
+                const tab = labels[idx].closest('.tab');
+                if (!tab) return;
+                const answer = tab.querySelector('.answer');
+                if (!answer) return;
+
+                ensureTransitionEnd(answer);
+
+                if (rb.checked) {
+                    // show fully: let it size naturally
+                    answer.dataset.open = 'true';
+                    answer.style.transition = 'none';
+                    answer.style.maxHeight = 'none';
+                    answer.style.opacity = '1';
+                    answer.style.overflow = '';
+                    // restore transition after forcing layout
+                    void answer.offsetHeight;
+                    answer.style.transition =
+                        'max-height 300ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease, padding 220ms ease';
+                } else {
+                    answer.dataset.open = 'false';
+                    answer.style.maxHeight = '0px';
+                    answer.style.opacity = '0';
+                    answer.style.overflow = 'hidden';
+                }
+            });
+
         });
     </script>
 @endpush
