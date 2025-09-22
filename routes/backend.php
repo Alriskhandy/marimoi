@@ -10,6 +10,7 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicationController;
+use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VisitorsController;
@@ -353,31 +354,42 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | publications Routes
     |--------------------------------------------------------------------------
     */
+    // routes/web.php
 
     Route::prefix('publications')->name('publications.')->group(function () {
         // List all publications for admin
         Route::get('/', [PublicationController::class, 'adminIndex'])->name('index');
-        
+
         // Create new publication
         Route::get('/create', [PublicationController::class, 'create'])->name('create');
         Route::post('/', [PublicationController::class, 'store'])->name('store');
-        
+
         // Edit publication
         Route::get('/{publication}/edit', [PublicationController::class, 'edit'])->name('edit');
         Route::put('/{publication}', [PublicationController::class, 'update'])->name('update');
-        
+
         // Delete publication
         Route::delete('/{publication}', [PublicationController::class, 'destroy'])->name('destroy');
-        
-        // Admin download (no increment counter)
-        Route::get('/{publication}/download', [PublicationController::class, 'adminDownload'])->name('download');
-        
+
+        // Download and Preview - FIXED
+        Route::get('/{publication}/download', [PublicationController::class, 'download'])->name('download');
+        Route::get('/{publication}/preview', [PublicationController::class, 'preview'])->name('preview');
+
         // Toggle publication status
         Route::patch('/{publication}/toggle-status', [PublicationController::class, 'toggleStatus'])->name('toggle-status');
-        
+
         // Bulk actions
         Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete');
         Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status');
+
+          Route::prefix('downloads')->name('downloads.')->group(function () {
+        Route::get('/', [PublicationDownloadController::class, 'index'])->name('index');
+        Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show');
+        Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics');
+        Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export');
+        Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
+        Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
+    });
     });
 
     /*
