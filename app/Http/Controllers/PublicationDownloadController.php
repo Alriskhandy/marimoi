@@ -17,68 +17,80 @@ class PublicationDownloadController extends Controller
 
     public function processSurveyAndDownload(DownloadSurveyRequest $request, Publication $publication)
     {
-        if (!$publication->is_active) {
-            abort(404);
-        }
+        // if (!$publication->is_active) {
+        //     if ($request->ajax()) {
+        //         return response()->json(['success' => false, 'message' => 'Publikasi tidak aktif'], 404);
+        //     }
+        //     abort(404);
+        // }
 
         try {
-            // Pastikan file ada sebelum lanjut
-            if (!Storage::disk('public')->exists($publication->file_path)) {
-                Log::error('File not found for publication', [
+            // Validasi file dengan lebih detail
+            $fileValidation = $this->validateFileForDownload($publication);
+
+            if (!$fileValidation['valid']) {
+                Log::error('File validation failed', [
                     'publication_id' => $publication->id,
-                    'file_path' => $publication->file_path
+                    'file_path' => $publication->file_path,
+                    'error' => $fileValidation['message']
                 ]);
-                abort(404, 'File not found');
+
+                return $this->handleError($request, $fileValidation['message']);
             }
 
             DB::beginTransaction();
 
-            // Simpan data survey download
-            PublicationDownload::create([
-                'publication_id' => $publication->id,
-                'name'           => $request->name,
-                'email'          => $request->email,
-                'phone'          => $request->phone,
-                'organization'   => $request->organization,
-                'position'       => $request->position,
-                'purpose'        => $request->purpose,
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
-                'downloaded_at'  => now(),
-            ]);
+            try {
+                // Simpan data survey download
+                PublicationDownload::create([
+                    'publication_id' => $publication->id,
+                    'name'           => $request->name,
+                    'email'          => $request->email,
+                    'phone'          => $request->phone,
+                    'organization'   => $request->organization,
+                    'position'       => $request->position,
+                    'purpose'        => $request->purpose,
+                    'ip_address'     => $request->ip(),
+                    'user_agent'     => $request->userAgent(),
+                    'downloaded_at'  => now(),
+                ]);
 
-            // Increment download count
-            $publication->incrementDownloadCount();
+                // Increment download count
+                $publication->increment('download_count');
 
-            DB::commit();
+                DB::commit();
 
-            Log::info('Download recorded successfully', [
-                'publication_id' => $publication->id,
-                'user_email'     => $request->email,
-            ]);
-
-            // Get file info
-            $filePath = Storage::disk('public')->path($publication->file_path);
-            $fileName = $publication->file_name ?? basename($publication->file_path);
-
-            Log::info('Processing file download', [
-                'file_path' => $filePath,
-                'file_name' => $fileName,
-                'exists' => file_exists($filePath)
-            ]);
-
-            // Pastikan file benar-benar ada di filesystem
-            if (!file_exists($filePath)) {
-                Log::error('Physical file not found', ['file_path' => $filePath]);
-                throw new \Exception('File tidak ditemukan di server');
+                Log::info('Download recorded successfully', [
+                    'publication_id' => $publication->id,
+                    'user_email'     => $request->email,
+                    'file_size'      => $fileValidation['size'] ?? 'unknown'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
 
-            // Return download response dengan header yang tepat
-            return Storage::disk('public')->download(
-                $publication->file_path,
-                $fileName,
+            // Siapkan file untuk download
+            $downloadFileName = $this->prepareDownloadFilename($publication);
+
+            Log::info('Starting file download', [
+                'publication_id' => $publication->id,
+                'file_path' => $fileValidation['path'],
+                'download_name' => $downloadFileName,
+                'file_size' => $fileValidation['size']
+            ]);
+
+            // Return download response
+            return response()->download(
+                $fileValidation['path'],
+                $downloadFileName,
                 [
-                    'Content-Type' => Storage::disk('public')->mimeType($publication->file_path)
+                    'Content-Type' => $this->getMimeType($publication->file_path),
+                    'Content-Length' => $fileValidation['size'],
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0',
+                    'Content-Disposition' => 'attachment; filename="' . $downloadFileName . '"'
                 ]
             );
         } catch (\Exception $e) {
@@ -89,13 +101,154 @@ class PublicationDownloadController extends Controller
                 'trace'          => $e->getTraceAsString(),
                 'publication_id' => $publication->id ?? null,
                 'file_path'      => $publication->file_path ?? null,
+                'line'           => $e->getLine(),
+                'file'           => $e->getFile()
             ]);
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Terjadi kesalahan saat memproses download: ' . $e->getMessage()]);
+
+            return $this->handleError($request, 'Terjadi kesalahan saat memproses download. Silakan coba lagi.');
         }
     }
 
+    /**
+     * Validasi file sebelum download
+     */
+    private function validateFileForDownload(Publication $publication): array
+    {
+        $result = ['valid' => false, 'message' => '', 'path' => '', 'size' => 0];
+
+        // Cek apakah file_path ada
+        if (empty($publication->file_path)) {
+            $result['message'] = 'Path file tidak ditemukan di database';
+            return $result;
+        }
+
+        // Cek apakah file ada di storage
+        if (!Storage::disk('public')->exists($publication->file_path)) {
+            $result['message'] = 'File tidak ditemukan dalam storage';
+            Log::error('File not found in storage', [
+                'file_path' => $publication->file_path,
+                'storage_path' => Storage::disk('public')->path($publication->file_path)
+            ]);
+            return $result;
+        }
+
+        // Get full filesystem path
+        $fullPath = Storage::disk('public')->path($publication->file_path);
+
+        // Cek apakah file fisik ada
+        if (!file_exists($fullPath)) {
+            $result['message'] = 'File tidak ditemukan pada filesystem';
+            Log::error('Physical file not found', [
+                'full_path' => $fullPath,
+                'storage_exists' => Storage::disk('public')->exists($publication->file_path)
+            ]);
+            return $result;
+        }
+
+        // Cek apakah file bisa dibaca
+        if (!is_readable($fullPath)) {
+            $result['message'] = 'File tidak dapat dibaca';
+            Log::error('File not readable', [
+                'full_path' => $fullPath,
+                'permissions' => fileperms($fullPath)
+            ]);
+            return $result;
+        }
+
+        // Cek ukuran file
+        $fileSize = filesize($fullPath);
+        if ($fileSize === false || $fileSize == 0) {
+            $result['message'] = 'File kosong atau corrupt';
+            Log::error('File empty or corrupt', [
+                'full_path' => $fullPath,
+                'file_size' => $fileSize
+            ]);
+            return $result;
+        }
+
+        $result['valid'] = true;
+        $result['path'] = $fullPath;
+        $result['size'] = $fileSize;
+
+        return $result;
+    }
+
+    /**
+     * Siapkan nama file untuk download
+     */
+    private function prepareDownloadFilename(Publication $publication): string
+    {
+        // Gunakan file_name dari database atau fallback ke title
+        $downloadFileName = $publication->file_name ?? $publication->title ?? basename($publication->file_path);
+
+        // Bersihkan nama file dari karakter yang tidak diinginkan
+        $downloadFileName = preg_replace('/[^a-zA-Z0-9\-_\.\s]/', '', $downloadFileName);
+        $downloadFileName = trim($downloadFileName);
+
+        // Pastikan nama file memiliki ekstensi
+        $hasExtension = pathinfo($downloadFileName, PATHINFO_EXTENSION);
+        if (!$hasExtension) {
+            $extension = pathinfo($publication->file_path, PATHINFO_EXTENSION);
+            if ($extension) {
+                $downloadFileName .= '.' . $extension;
+            } else {
+                $downloadFileName .= '.pdf'; // default extension
+            }
+        }
+
+        return $downloadFileName;
+    }
+
+    /**
+     * Get MIME type for file
+     */
+    private function getMimeType(string $filePath): string
+    {
+        try {
+            $mimeType = Storage::disk('public')->mimeType($filePath);
+            if ($mimeType) {
+                return $mimeType;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Could not determine MIME type', ['file_path' => $filePath, 'error' => $e->getMessage()]);
+        }
+
+        // Fallback berdasarkan ekstensi
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'txt' => 'text/plain',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif'
+        ];
+
+        return $mimeTypes[$extension] ?? 'application/octet-stream';
+    }
+
+    /**
+     * Handle error response berdasarkan tipe request
+     */
+    private function handleError(Request $request, string $message)
+    {
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 422);
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors(['error' => $message]);
+    }
 
     /**
      * Display a listing of all publication downloads
