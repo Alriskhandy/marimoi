@@ -136,8 +136,8 @@
                             <button type="button" class="open-download-modal w-full p-0 block text-left ratio-156-220"
                                 data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
                                 data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                data-thumbnail="{{ $doc->cover ?? $thumbFallback }}">
-                                <img src="{{ $doc->cover ?? $thumbFallback }}"
+                                data-thumbnail="{{ asset('/storage' . $doc->cover) ?? $thumbFallback }}">
+                                <img src="{{ asset('/storage' . $doc->cover) ?? $thumbFallback }}"
                                     alt="{{ $doc->title }}" class="rounded-lg border">
                             </button>
                         </div>
@@ -149,7 +149,7 @@
                                     class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
                                     data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
                                     data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc->cover ?? $thumbFallback }}">{{ $doc->title }}</button>
+                                    data-thumbnail="{{ asset('/storage' . $doc->cover) ?? $thumbFallback }}">{{ $doc->title }}</button>
                             </h3>
                             <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
                                 <div class="flex items-center gap-1 text-slate-600">
@@ -170,7 +170,7 @@
                             <div class="mt-4">
                                 <button data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
                                     data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                    data-thumbnail="{{ $doc->cover ?? $thumbFallback }}"
+                                    data-thumbnail="{{ asset('/storage' . $doc->cover) ?? $thumbFallback }}"
                                     class="open-download-modal inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
                                     <i class="bi bi-download"></i> Unduh Dokumen
                                 </button>

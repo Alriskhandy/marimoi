@@ -21,19 +21,8 @@
         </button>
     </div>
 
-    {{-- <!-- Mockup placed below the hero text (stacked) -->
-    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
-        <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
-            <div id="mockupWrapper" class="mockup-wrapper mx-auto">
-                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
-                    alt="Desktop & Smartphone Mockup"
-                    class="mockup-img h-[640px] xl:h-[620px] lg:h-[520px] md:h-[420px] sm:h-[320px] xs:h-[220px] w-auto max-w-[95vw] lg:max-w-[1100px] object-contain pointer-events-none"
-                    loading="lazy">
-            </div>
-        </div>
-    </div> --}}
     <!-- Mockup placed below the hero text (stacked) -->
-    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-5">
+    <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-10">
         <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
                 <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
@@ -68,7 +57,7 @@
         .mockup-img {
             /* use gentler 3D tilt on large screens; avoid large rotateX on mobile */
             transform-origin: 50% 82%;
-            transform: rotateX(20deg) translateY(0) scale(0.98);
+            transform: rotateX(30deg) translateY(0) scale(0.98);
             transition: transform 420ms cubic-bezier(.22,.9,.2,1), filter 420ms ease;
             will-change: transform;
             /* reduce heavy shadows that cause costly paints */
@@ -124,6 +113,52 @@
             .mockup-wrapper.upright .mockup-img {
                 transition: none !important;
                 transform: none !important;
+            }
+        }
+
+        /* Mobile spacing / size overrides to make hero more compact */
+        @media (max-width: 640px) {
+            /* reduce top padding of the hero text block */
+            #beranda .text-center {
+                padding-top: 3.5rem !important; /* was large pt-20 */
+                margin-top: 4rem !important;
+            }
+
+            /* smaller main heading and tighter tracking */
+            #beranda h1 {
+                line-height: 1.05;
+                margin-bottom: 0.7rem;
+                padding-bottom: 0;
+            }
+
+            /* tighter subtitle */
+            #beranda p {
+                margin-bottom: 1.2rem;
+            }
+
+            /* compact primary button */
+            #beranda button {
+                padding: 0.7rem 1.2rem !important;
+                font-size: 0.95rem !important;
+                min-width: 140px !important;
+                box-shadow: 0 8px 20px rgba(0,127,255,0.18) !important;
+            }
+
+            /* reduce mockup image height on small screens */
+            .mockup-img {
+                height: 270px !important;
+                max-width: 92vw;
+            }
+
+            /* reduce vertical gap between text and mockup */
+            .w-full > .mockup-position {
+                margin-top: 2rem;
+                transform: translateY(0);
+            }
+
+            /* reduce overlay darkness to keep contrast but lighter on small screens */
+            #beranda::before {
+                background: rgba(11, 17, 32, 0.6);
             }
         }
     </style>
