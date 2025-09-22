@@ -6,7 +6,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $title ?? 'MARIMOI - Sistem Informasi Manajemen Akselerasi Infrastruktur' }}</title>
-
+    <meta name="google-site-verification" content="6RZF3ryk7c1bQytWoY25iwHocGbgi7eHi5j9-Y0u0E8" />
     <!-- Primary Meta Tags -->
     <meta name="title"
         content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara | Monitoring & Perencanaan Terintegrasi">
@@ -136,7 +136,8 @@
                     <li><a href="{{ route('beranda') }}"
                             class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
                     <li><a href="{{ route('tampil.reformer') }}"
-                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a></li>
+                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a>
+                    </li>
                     <li><a href="{{ route('tampil.tematik') }}"
                             class="{{ request()->routeIs('tampil.tematik') ? 'active' : '' }}">Peta
                             Tematik</a></li>
