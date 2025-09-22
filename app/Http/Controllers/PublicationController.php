@@ -96,6 +96,7 @@ class PublicationController extends Controller
     {
         $data = $request->validated();
 
+        // Handle main file upload
         if ($request->hasFile('file')) {
             $file = $request->file('file');
 
@@ -112,6 +113,19 @@ class PublicationController extends Controller
             $data['file_path'] = $path;
             $data['file_type'] = $extension;
             $data['file_size'] = $file->getSize();
+        }
+
+        // Handle cover image upload
+        if ($request->hasFile('cover')) {
+            $coverFile = $request->file('cover');
+            $coverOriginalName = $coverFile->getClientOriginalName();
+            $coverCleanName = Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME));
+            $coverExtension = $coverFile->getClientOriginalExtension();
+            $coverFilename = time() . '_cover_' . $coverCleanName . '.' . $coverExtension;
+
+            // Store cover in dokumen_covers folder
+            $coverPath = $coverFile->storeAs('dokumen_covers', $coverFilename, 'public');
+            $data['cover'] = $coverPath;
         }
 
         Publication::create($data);
@@ -135,6 +149,7 @@ class PublicationController extends Controller
     {
         $data = $request->validated();
 
+        // Handle main file upload if new file is provided
         if ($request->hasFile('file')) {
             // Delete old file
             if ($publication->file_path && Storage::disk('public')->exists($publication->file_path)) {
@@ -142,14 +157,11 @@ class PublicationController extends Controller
             }
 
             $file = $request->file('file');
-
-            // Generate unique filename with clean name
             $originalName = $file->getClientOriginalName();
             $cleanName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
             $extension = $file->getClientOriginalExtension();
             $filename = time() . '_' . $cleanName . '.' . $extension;
 
-            // Store file in dokumen_files folder
             $path = $file->storeAs('dokumen_files', $filename, 'public');
 
             $data['file_name'] = $originalName;
@@ -158,10 +170,27 @@ class PublicationController extends Controller
             $data['file_size'] = $file->getSize();
         }
 
+        // Handle cover upload if new cover is provided
+        if ($request->hasFile('cover')) {
+            // Delete old cover
+            if ($publication->cover && Storage::disk('public')->exists($publication->cover)) {
+                Storage::disk('public')->delete($publication->cover);
+            }
+
+            $coverFile = $request->file('cover');
+            $coverOriginalName = $coverFile->getClientOriginalName();
+            $coverCleanName = Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME));
+            $coverExtension = $coverFile->getClientOriginalExtension();
+            $coverFilename = time() . '_cover_' . $coverCleanName . '.' . $coverExtension;
+
+            $coverPath = $coverFile->storeAs('dokumen_covers', $coverFilename, 'public');
+            $data['cover'] = $coverPath;
+        }
+
         $publication->update($data);
 
         return redirect()->route('publications.index')
-            ->with('success', 'Publikasi berhasil diupdate.');
+            ->with('success', 'Publikasi berhasil diperbarui.');
     }
 
     /**
@@ -169,9 +198,14 @@ class PublicationController extends Controller
      */
     public function destroy(Publication $publication)
     {
-        // Delete file if exists
+        // Delete main file if exists
         if ($publication->file_path && Storage::disk('public')->exists($publication->file_path)) {
             Storage::disk('public')->delete($publication->file_path);
+        }
+
+        // Delete cover file if exists
+        if ($publication->cover && Storage::disk('public')->exists($publication->cover)) {
+            Storage::disk('public')->delete($publication->cover);
         }
 
         $publication->delete();
@@ -225,9 +259,14 @@ class PublicationController extends Controller
         $publications = Publication::whereIn('id', $request->publication_ids)->get();
 
         foreach ($publications as $publication) {
-            // Delete file if exists
+            // Delete main file if exists
             if ($publication->file_path && Storage::disk('public')->exists($publication->file_path)) {
                 Storage::disk('public')->delete($publication->file_path);
+            }
+
+            // Delete cover file if exists
+            if ($publication->cover && Storage::disk('public')->exists($publication->cover)) {
+                Storage::disk('public')->delete($publication->cover);
             }
 
             $publication->delete();
@@ -250,7 +289,9 @@ class PublicationController extends Controller
             'by_category' => Publication::selectRaw('category, COUNT(*) as count')
                 ->whereNotNull('category')
                 ->groupBy('category')
-                ->get()
+                ->get(),
+            'with_cover' => Publication::whereNotNull('cover')->count(),
+            'without_cover' => Publication::whereNull('cover')->count(),
         ];
     }
 
@@ -309,6 +350,7 @@ class PublicationController extends Controller
                 'file_path' => $publication->file_path,
                 'file_type' => $publication->file_type,
                 'file_size' => $publication->file_size,
+                'cover' => $publication->cover,
             ],
             'storage_info' => [
                 'storage_disk_path' => Storage::disk('public')->path(''),
@@ -317,23 +359,24 @@ class PublicationController extends Controller
                 'symlink_target' => is_link(public_path('storage')) ? readlink(public_path('storage')) : 'Not a symlink'
             ],
             'file_checks' => [
-                'exists_in_storage' => Storage::disk('public')->exists($publication->file_path),
-                'full_path' => Storage::disk('public')->path($publication->file_path),
-                'file_exists' => file_exists(Storage::disk('public')->path($publication->file_path)),
-                'is_readable' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
+                'main_file_exists' => Storage::disk('public')->exists($publication->file_path),
+                'cover_exists' => $publication->cover ? Storage::disk('public')->exists($publication->cover) : false,
+                'main_file_path' => Storage::disk('public')->path($publication->file_path),
+                'cover_file_path' => $publication->cover ? Storage::disk('public')->path($publication->cover) : null,
+                'main_file_readable' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
                     is_readable(Storage::disk('public')->path($publication->file_path)) : false,
-                'file_size' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
+                'main_file_size' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
                     filesize(Storage::disk('public')->path($publication->file_path)) : 'N/A'
             ],
             'urls' => [
-                'asset_url' => asset('storage/' . $publication->file_path),
+                'main_file_asset_url' => asset('storage/' . $publication->file_path),
+                'cover_asset_url' => $publication->cover ? asset('storage/' . $publication->cover) : null,
                 'preview_url' => route('publications.preview', $publication->id),
                 'download_url' => route('publications.download', $publication->id)
             ],
             'model_methods' => [
-                'file_exists' => $publication->fileExists(),
-                'asset_url' => $publication->asset_url,
-                'file_url' => $publication->file_url,
+                'file_exists' => method_exists($publication, 'fileExists') ? $publication->fileExists() : 'Method not exists',
+                'cover_image_url' => method_exists($publication, 'getCoverImageUrlAttribute') ? $publication->cover_image_url : 'Method not exists',
             ]
         ];
 
