@@ -71,6 +71,45 @@
             object-fit: cover;
             display: block;
         }
+
+        /* Reduce input size and padding in download modal for more compact form */
+        #downloadModal .p-6 input[type="text"],
+        #downloadModal .p-6 input[type="email"],
+        #downloadModal .p-6 input[type="tel"],
+        #downloadModal .p-6 textarea,
+        #downloadModal .p-6 select {
+            font-size: 0.875rem;
+            /* 14px */
+            line-height: 1.25;
+            padding: 0.5rem 0.625rem;
+            /* 8px 10px */
+            border-radius: 0.375rem;
+        }
+
+        /* Slightly smaller labels/icons to match compact inputs */
+        #downloadModal .p-6 label {
+            font-size: 0.875rem;
+        }
+
+        #downloadModal .p-6 .bi {
+            font-size: 0.95rem;
+            margin-right: 0.35rem;
+        }
+
+        /* Mobile: make inputs a bit tighter */
+        @media (max-width: 640px) {
+            #downloadModal .p-6 {
+                padding: 0.75rem;
+            }
+
+            #downloadModal .p-6 input[type="text"],
+            #downloadModal .p-6 input[type="email"],
+            #downloadModal .p-6 input[type="tel"],
+            #downloadModal .p-6 textarea {
+                font-size: 0.825rem;
+                padding: 0.45rem 0.5rem;
+            }
+        }
     </style>
 @endpush
 
@@ -95,11 +134,11 @@
                         <!-- Left: thumbnail (fixed width) -->
                         <div class="w-1/3 lg:w-1/3 flex-shrink-0">
                             <button type="button" class="open-download-modal w-full p-0 block text-left ratio-156-220"
-                                data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
-                                data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">
-                                <img src="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}"
-                                    alt="{{ $doc['title'] }}" class="rounded-lg border">
+                                data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
+                                data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
+                                data-thumbnail="{{ $doc->cover ?? $thumbFallback }}">
+                                <img src="{{ $doc->cover ?? $thumbFallback }}"
+                                    alt="{{ $doc->title }}" class="rounded-lg border">
                             </button>
                         </div>
 
@@ -108,9 +147,9 @@
                             <h3 class="text-md font-semibold text-slate-800">
                                 <button type="button"
                                     class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
-                                    data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
-                                    data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}">{{ $doc['title'] }}</button>
+                                    data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
+                                    data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
+                                    data-thumbnail="{{ $doc->cover ?? $thumbFallback }}">{{ $doc->title }}</button>
                             </h3>
                             <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
                                 <div class="flex items-center gap-1 text-slate-600">
@@ -129,9 +168,9 @@
                             </div>
 
                             <div class="mt-4">
-                                <button data-id="{{ $doc['id'] }}" data-path="{{ $doc['path'] }}"
-                                    data-title="{{ htmlspecialchars($doc['title'], ENT_QUOTES) }}"
-                                    data-thumbnail="{{ asset('frontend/img/publikasi/cover-publikasi-min.jpg') }}"
+                                <button data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
+                                    data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
+                                    data-thumbnail="{{ $doc->cover ?? $thumbFallback }}"
                                     class="open-download-modal inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
                                     <i class="bi bi-download"></i> Unduh Dokumen
                                 </button>
@@ -150,10 +189,6 @@
             class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto grid grid-cols-1 lg:grid-cols-2">
             <!-- Left: preview -->
             <div id="previewThumb" class="p-6 bg-slate-50 border-r hidden lg:flex items-center justify-center">
-                <div class="text-gray-400 text-center">
-                    <i class="bi bi-file-earmark-pdf text-6xl mb-2"></i>
-                    <p>Preview dokumen</p>
-                </div>
             </div>
 
             <!-- Right: form -->
@@ -309,11 +344,13 @@
                 // Set preview
                 if (previewThumb && thumbnail) {
                     previewThumb.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full">
-                    <img src="${thumbnail}" alt="${title}" class="rounded-lg max-w-full max-h-48 object-cover mb-4">
-                    <h4 class="text-sm font-medium text-center">${title}</h4>
-                </div>
-            `;
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <div class="w-full">
+                            <img src="${thumbnail}" alt="${title}" class="rounded-lg border object-cover w-full h-full"
+                                loading="lazy" decoding="async">
+                        </div>
+                    </div>
+                    `;
                 }
 
                 setFormAlert(); // Clear alerts
