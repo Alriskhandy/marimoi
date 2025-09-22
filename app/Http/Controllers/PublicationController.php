@@ -38,7 +38,9 @@ class PublicationController extends Controller
             ->distinct()
             ->pluck('category');
 
-        return view('frontend.pages.publikasi', compact('publications', 'categories'));
+        $thumbFallback = asset('frontend/img/publikasi/cover-publikasi-min.jpg');
+
+        return view('frontend.pages.publikasi', compact('publications', 'categories', 'thumbFallback'));
     }
 
     /**
