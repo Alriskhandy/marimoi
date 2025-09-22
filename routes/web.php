@@ -64,11 +64,11 @@ Route::prefix('dokumen-publikasi')->group(function () {
 });
 
 // Public routes - Survey (untuk guest)
-Route::prefix('survey')->name('survey.')->group(function () {
-    Route::get('/', [SurveyController::class, 'showGeneralSurveyForm'])->name('form');
-    Route::post('/', [SurveyController::class, 'submitGeneralSurvey'])->name('submit');
-    Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
-});
+// Route::prefix('survey')->name('survey.')->group(function () {
+//     Route::get('/', [SurveyController::class, 'showGeneralSurveyForm'])->name('form');
+//     Route::post('/', [SurveyController::class, 'submitGeneralSurvey'])->name('submit');
+//     Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
+// });
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/backend.php';

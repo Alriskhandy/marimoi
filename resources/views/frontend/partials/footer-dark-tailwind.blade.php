@@ -167,7 +167,7 @@
     </button>
 
     <!-- Survey Button -->
-    <a href="/survey"
+    <a href="/aspirasi-masyarakat"
         class="float-btn w-12 h-12 rounded-full border-0 cursor-pointer flex items-center justify-center shadow-[0_3px_10px_rgba(0,0,0,0.15)] transition-all duration-300 text-[0] relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(0,0,0,0.25)] active:translate-y-0 active:transition-transform active:duration-100"
         title="Survey - Isi Kuesioner">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
