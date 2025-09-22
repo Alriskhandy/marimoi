@@ -333,17 +333,23 @@
 
             function resetFormOnError() {
                 try {
-                    if (downloadForm) downloadForm.reset();
+                    // Do NOT reset the whole form so user's inputs are preserved.
+                    // Only reset hCaptcha widget (so user can retry) and focus first invalid field.
                     if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
                         try {
                             hcaptcha.reset(hcaptchaWidgetId);
                         } catch (e) {}
                     }
-                    // clear hidden inputs explicitly to avoid stale doc id/path
-                    if (docIdInput) docIdInput.value = '';
-                    if (docPathInput) docPathInput.value = '';
+
+                    // focus first invalid input for better UX
+                    if (downloadForm) {
+                        const firstInvalid = downloadForm.querySelector(':invalid');
+                        if (firstInvalid && typeof firstInvalid.focus === 'function') {
+                            firstInvalid.focus();
+                        }
+                    }
                 } catch (err) {
-                    console.warn('Reset form failed', err);
+                    console.warn('Reset form on error handler failed', err);
                 }
             }
 
