@@ -201,7 +201,7 @@
                     <img src="{{ asset('frontend/img/cv/1-min.png') }}" alt="CV 1">
                 </div>
 
-                <!-- Item 1: Data Pribadi & Riwayat Pendidikan -->
+                <!-- Item 1: Informasi Kontak & Riwayat Pendidikan -->
                 <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                     <input type="radio" name="faq" id="faq1" class="hidden peer">
@@ -211,7 +211,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-person-vcard me-2"></i> Data Pribadi, Keluarga & Riwayat Pendidikan</h3>
+                        <h3><i class="bi bi-person-vcard me-2"></i> Riwayat Pendidikan</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
@@ -222,7 +222,7 @@
                 </div>
 
                 <!-- Item 2: Riwayat Kepangkatan -->
-                <div
+                {{-- <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                     <input type="radio" name="faq" id="faq2" class="hidden peer">
                     <label for="faq2"
@@ -238,9 +238,9 @@
                             <img src="{{ asset('frontend/img/cv/3.jpg') }}" alt="CV 3" class="border rounded-lg">
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
-                <!-- Item 3: Riwayat Jabatan -->
+                <!-- Item 3: Pengalaman Kerja -->
                 <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                     <input type="radio" name="faq" id="faq3" class="hidden peer">
@@ -250,7 +250,7 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                         tabindex="0">
-                        <h3><i class="bi bi-briefcase me-2"></i> Riwayat Jabatan</h3>
+                        <h3><i class="bi bi-briefcase me-2"></i> Pengalaman Kerja</h3>
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
@@ -260,7 +260,7 @@
                 </div>
 
                 <!-- Item 4: Riwayat Kinerja, Diklat, & Penghargaan -->
-                <div
+                {{-- <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                     <input type="radio" name="faq" id="faq4" class="hidden peer">
                     <label for="faq4"
@@ -276,7 +276,7 @@
                             <img src="{{ asset('frontend/img/cv/5.jpg') }}" alt="CV 5" class="border rounded-lg">
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
             </div>
         </div>

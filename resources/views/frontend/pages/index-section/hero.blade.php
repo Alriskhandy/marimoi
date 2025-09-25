@@ -1,9 +1,21 @@
 <section
     class="gap-2 md:gap-2 lg:gap-6 items-center relative bg-gradient-to-br from-[var(--bg-primary)] to-[var(--bg-secondary)] px-[5%] overflow-visible"
-    id="beranda" style="background: url({{ asset('frontend/img/hero/drone.gif') }}) no-repeat center center / cover;">
+    id="beranda">
+
+    <!-- Background Video -->
+    <video
+        class="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+        autoplay
+        muted
+        loop
+        playsinline loading="lazy">
+        <source src="{{ asset('frontend/img/hero/drone.webm') }}" type="video/webm">
+        <!-- Fallback untuk browser yang tidak mendukung WebM -->
+        <source src="{{ asset('frontend/img/hero/drone.gif') }}" type="video/gif">
+    </video>
 
     <!-- Hero Content -->
-    <div class="text-center max-w-full z-[20] relative justify-center pt-20 md:pt-28 lg:pt-28 mt-6 md:mt-10 lg:mt-0">
+    <div class="text-center max-w-full z-[2] relative justify-center pt-20 md:pt-28 lg:pt-28 mt-6 md:mt-10 lg:mt-0">
 
         <h1
             class="text-[48px] md:text-[64px] lg:text-[85px] font-[Poppins,sans-serif] font-bold tracking-[8px] lg:tracking-[6px] md:tracking-[4px] sm:tracking-[2px] uppercase text-white relative">
@@ -23,7 +35,7 @@
 
     <!-- Mockup placed below the hero text (stacked) -->
     <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-10">
-        <div id="mockupPosition" class="mockup-position pointer-events-none z-0">
+        <div id="mockupPosition" class="mockup-position pointer-events-none z-[2]">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
                 <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
                     alt="Desktop & Smartphone Mockup"
@@ -44,6 +56,16 @@
             pointer-events: none;
             z-index: 0;
             background: rgba(11, 17, 32, 0.8);
+        }
+
+        /* Blue overlay untuk video background */
+        #beranda::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: rgba(11, 17, 32, 0.7); /* Biru tua 50% transparent */
         }
 
         /* Mockup tilt styles - optimized for performance */
