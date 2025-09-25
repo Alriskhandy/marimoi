@@ -198,7 +198,7 @@
             <div class="wrapper w-full max-w-4xl mx-auto">
                 <div
                     class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <img src="{{ asset('frontend/img/cv/1-min.png') }}" alt="CV 1">
+                    <img src="{{ asset('frontend/img/cv/1.png') }}" alt="CV 1">
                 </div>
 
                 <!-- Item 1: Informasi Kontak & Riwayat Pendidikan -->
@@ -215,7 +215,7 @@
                     </label>
                     <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                         <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/2.jpg') }}" alt="CV 2" class="border rounded-lg"
+                            <img src="{{ asset('frontend/img/cv/2.png') }}" alt="CV 2" class="border rounded-lg"
                                 loading="lazy" decoding="async">
                         </div>
                     </div>
