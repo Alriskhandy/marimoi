@@ -3,10 +3,10 @@
 
         <!-- Video Section -->
         <div class="footer-video-section">
-            <iframe src="https://www.youtube-nocookie.com/embed/EQbw-E1ecB8" title="YouTube video player"
+            <iframe src="https://www.youtube-nocookie.com/embed/rxI6vk7dFGw" title="YouTube video player"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"
-                class="w-full h-full aspect-[2/1] border border-black/10 rounded-[5%]">
+                class="w-full h-full aspect-[2/1] border border-black/10">
             </iframe>
         </div>
 
