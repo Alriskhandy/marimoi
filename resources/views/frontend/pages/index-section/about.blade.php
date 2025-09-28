@@ -98,10 +98,9 @@
                         </p>
                         <p
                             class="text-[0.75rem] md:text-[0.8rem] lg:text-base italic leading-[1.3] md:leading-normal lg:leading-normal text-[#b7b7b7] m-0 font-semibold text-left [text-shadow:1px_1px_2px_rgba(0,0,0,0.6)]">
-                            Kepala Bappeda Prov. Maluku Utara,<br>
-                            Periode 2023 - Sekarang<br>
-                            - Dr. Muhammad Sarmin S. Adam, S.STP, M.Si
-                        </p>
+                            - Sherly Tjoanda Laos, <br>
+                            Gubernur Provinsi Maluku Utara
+                        </p> <br>
                     </blockquote>
                 </div>
             </div>
@@ -114,6 +113,12 @@
                         alt="Foto Dr. Muhammad Sarmin S. Adam, S.STP, M.Si"
                         class="w-full h-full object-cover object-center transition-transform duration-300 ease-in-out group-hover:scale-105"
                         loading="lazy">
+                    <p
+                        class="absolute bottom-0 left-0 w-full z-10 bg-[#0a0f1e] bg-opacity-45 backdrop-blur-sm text-white m-0 font-semibold text-center text-[0.7rem] md:text-[0.8rem] lg:text-[0.95rem] italic leading-[1.15] md:leading-[1.25] px-2 py-2 md:px-3 md:py-3 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)] rounded-t-sm md:rounded-t-none">
+                        <span class="block -mt-0.5">Dr. Muhammad Sarmin S. Adam, S.STP, M.Si</span>
+                        <span class="block text-[0.85em] text-[#e6e6e6] md:text-sm">Kepala Bappeda Provinsi Maluku
+                            Utara</span>
+                    </p>
                 </div>
             </div>
         </div>
