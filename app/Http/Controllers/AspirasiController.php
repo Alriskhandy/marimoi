@@ -478,11 +478,18 @@ class AspirasiController extends Controller
             // Hapus lampiran files jika ada
             foreach ($aspirasiToDelete as $aspirasi) {
                 if ($aspirasi->lampiran) {
-                    $lampiranData = json_decode($aspirasi->lampiran, true);
+                    // Fix: Check if lampiran is already an array or needs to be decoded
+                    if (is_string($aspirasi->lampiran)) {
+                        $lampiranData = json_decode($aspirasi->lampiran, true);
+                    } else {
+                        // Already an array (due to model casting or JSON column type)
+                        $lampiranData = $aspirasi->lampiran;
+                    }
 
+                    // Additional safety check
                     if (is_array($lampiranData)) {
                         foreach ($lampiranData as $file) {
-                            if (isset($file['path'])) {
+                            if (isset($file['path']) && !empty($file['path'])) {
                                 Storage::disk('public')->delete($file['path']);
                             }
                         }
@@ -493,23 +500,17 @@ class AspirasiController extends Controller
             // Hapus data dari database
             $deletedCount = Aspirasi::whereIn('id', $ids)->delete();
 
-
             return redirect()->back()->with('success', "Berhasil menghapus {$deletedCount} aspirasi");
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->errors())
                 ->with('error', 'Terjadi kesalahan validasi data');
         } catch (\Illuminate\Database\QueryException $e) {
-
-
             return redirect()->back()->with('error', 'Terjadi kesalahan database. Silakan coba lagi.');
         } catch (\Exception $e) {
-
-
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
-
     public function export(Request $request) // No $id parameter
     {
         try {
