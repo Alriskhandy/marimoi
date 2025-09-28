@@ -1,3 +1,4 @@
+@push('styles')
 <style>
     /* Custom mask untuk radial spotlight - tidak tersedia di Tailwind */
     .spotlight-mask::before {
@@ -78,6 +79,7 @@
         }
     }
 </style>
+@endpush
 
 <section
     class="text-white pt-8 pb-0 md:pt-10 md:pb-0 lg:pt-10 lg:pb-0 min-h-[50vh] relative overflow-hidden flex items-center w-full bg-[var(--bg-primary)] pointer-events-auto spotlight-mask"
@@ -89,6 +91,14 @@
             <!-- Left Side: Quotes - Mobile First -->
             <div class="flex justify-start items-start relative z-[3]">
                 <div class="w-full">
+                    <!-- Video Section -->
+                    <iframe id="aboutPlayer"
+                        src="https://www.youtube-nocookie.com/embed/cWA8hBj4PcE?enablejsapi=1&rel=0&playsinline=1"
+                        title="YouTube video player"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; autoplay"
+                        allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"
+                        class="w-full h-full aspect-[2/1] border border-black/10 md:pr-10 mb-8">
+                    </iframe>
                     <blockquote class="m-0 p-0 border-none">
                         <p
                             class="text-[0.9rem] md:text-base lg:text-[1.2rem] leading-[1.4] md:leading-[1.5] lg:leading-[1.6] text-white mb-4 md:mb-5 relative text-left font-[Inter,sans-serif] [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
@@ -124,3 +134,70 @@
         </div>
     </div>
 </section>
+
+@push('scripts')    
+<script>
+    // Ganti ID video sesuai kebutuhan
+    const aboutVideoIds = [
+        'cWA8hBj4PcE"', // video 1 (dipakai awal)
+        'fcbyr-_O8VM', // ganti dengan ID video ke-2
+        'SlncXrLMJrM' // ganti dengan ID video ke-3
+    ];
+
+    let aboutPlayer;
+    let aboutIndex = 0;
+
+    // Muat API YouTube secara dinamis
+    (function loadYouTubeAPI() {
+        if (window.YT && window.YT.Player) {
+            initAboutPlayer();
+            return;
+        }
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+    })();
+
+    // Dipanggil oleh API YouTube setelah script dimuat
+    function onYouTubeIframeAPIReady() {
+        initAboutPlayer();
+    }
+
+    function initAboutPlayer() {
+        aboutPlayer = new YT.Player('aboutPlayer', {
+            playerVars: {
+                autoplay: 0, // autoplay dikendalikan via API
+                controls: 1,
+                rel: 0,
+                modestbranding: 1,
+                playsinline: 1
+            },
+            events: {
+                onReady: function(event) {
+                    // mute supaya autoplay bekerja di sebagian besar browser
+                    // event.target.mute();
+                    // mainkan video pertama
+                    event.target.playVideo();
+                },
+                onStateChange: function(event) {
+                    // 0 = ended
+                    if (event.data === YT.PlayerState.ENDED) {
+                        aboutIndex = (aboutIndex + 1) % aboutVideoIds.length;
+                        // load next video dan langsung mainkan
+                        aboutPlayer.loadVideoById({
+                            videoId: aboutVideoIds[aboutIndex],
+                            startSeconds: 0
+                        });
+                        // pastikan diputar (beberapa browser butuh playVideo setelah load)
+                        setTimeout(() => {
+                            try {
+                                aboutPlayer.playVideo();
+                            } catch (e) {}
+                        }, 200);
+                    }
+                }
+            }
+        });
+    }
+</script>
+@endpush
