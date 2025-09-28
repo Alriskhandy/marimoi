@@ -162,8 +162,32 @@
                     <li><a href="{{ route('tampil.prioritas') }}"
                             class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah
                             2025-2029</a></li>
-                    <li><a href="{{ route('tampil.musrenbang') }}"
-                            class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a></li>
+                    <li class="dropdown">
+                        @php
+                            $isDropdownActive =
+                                request()->routeIs('tampil.musrenbang') || request()->routeIs('coming_soon');
+                        @endphp
+                        <a href="#" class="dropdown-trigger {{ $isDropdownActive ? 'active' : '' }}"
+                            aria-haspopup="true" aria-expanded="false" role="button">
+                            Musrenbang
+                            <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu" aria-label="Musrenbang Menu">
+                            <li role="none">
+                                <a href="{{ route('tampil.musrenbang') }}" role="menuitem"
+                                    class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">
+                                    Peta Musrenbang
+                                </a>
+                            </li>
+                            <li role="none">
+                                <a href="{{ route('coming_soon_public') }}" role="menuitem"
+                                    class="{{ request()->routeIs('coming_soon_public') ? 'active' : '' }}">
+                                    Musrenbang Digital
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     <li><a href="{{ route('tampil.pokir') }}"
                             class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir
                             DPRD</a></li>

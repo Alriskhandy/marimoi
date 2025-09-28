@@ -580,7 +580,13 @@
             </div>
         </li>
 
-
+        <!-- Coming Soon -->
+        <li class="nav-item {{ request()->routeIs('coming_soon') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('coming_soon') }}">
+                <span class="menu-title">Musrenbang Digital</span>
+                <i class="mdi mdi-laptop menu-icon"></i>
+            </a>
+        </li>
 
 
         @if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'super-admin')

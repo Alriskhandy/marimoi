@@ -382,14 +382,14 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete');
         Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status');
 
-          Route::prefix('downloads')->name('downloads.')->group(function () {
-        Route::get('/', [PublicationDownloadController::class, 'index'])->name('index');
-        Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show');
-        Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics');
-        Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export');
-        Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
-        Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
-    });
+        Route::prefix('downloads')->name('downloads.')->group(function () {
+            Route::get('/', [PublicationDownloadController::class, 'index'])->name('index');
+            Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show');
+            Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics');
+            Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export');
+            Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
+            Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
+        });
     });
 
     /*
@@ -400,5 +400,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::get('/coming-soon', function () {
         return view('backend.cooming_soon');
-    })->name('cooming_soon');
+    })->name('coming_soon');
 });
+Route::get('/coming-soon', function () {
+    return view('coming_soon');
+})->name('coming_soon_public');
