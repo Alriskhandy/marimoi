@@ -175,7 +175,7 @@
                         </div>
                     </div>
 
-                    <!-- Implementation Timeline -->
+                    {{-- <!-- Implementation Timeline -->
                     <div class="timeline-section mb-5">
                         <h5 class="mb-4 text-primary">Tahapan Implementasi</h5>
                         <div class="timeline">
@@ -215,7 +215,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Action Buttons -->
                     <div class="action-buttons">
