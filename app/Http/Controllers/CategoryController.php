@@ -21,14 +21,13 @@ class CategoryController extends Controller
 
         // Cek jika type ada dan tidak valid
         if ($type && !in_array($type, $validTypes)) {
-            return redirect()->back(); // langsung stop jika tidak sesuai
+            return redirect()->back();
         }
 
-        // Ambil semua kategori untuk dropdown parent
-        $allCategories = Category::orderBy('nama', 'asc')->get();
+        // Query utama dengan nested loading
+        $query = Category::withCount('dataSpatial')
+            ->with(['children.children']); // Load up to 3 levels
 
-        // Query utama
-        $query = Category::withCount('dataSpatial');
         if ($type) {
             $query->where('type', $type);
         }
@@ -50,11 +49,58 @@ class CategoryController extends Controller
 
         return view('backend.pages.categories.index', compact(
             'categories',
-            'allCategories',
             'type',
             'typeLabel'
         ));
     }
+
+    /**
+     * Get category depth level (0 = root, 1 = child, 2 = grandchild)
+     */
+    private function getCategoryDepth($category)
+    {
+        $depth = 0;
+        $current = $category;
+
+        while ($current->parent_id !== null) {
+            $depth++;
+            $current = Category::find($current->parent_id);
+            if (!$current || $depth > 3) break; // Prevent infinite loop
+        }
+
+        return $depth;
+    }
+
+    /**
+     * Validasi parent untuk hirarki 3 level
+     */
+    private function validateParentHierarchy($parentId, $currentCategoryId = null)
+    {
+        if (!$parentId) return true;
+
+        $parent = Category::find($parentId);
+        if (!$parent) return false;
+
+        // Hitung depth dari parent
+        $parentDepth = $this->getCategoryDepth($parent);
+
+        // Parent tidak boleh lebih dari level 1 (karena akan jadi level 2, dan anaknya jadi level 3)
+        if ($parentDepth >= 2) {
+            return false;
+        }
+
+        // Cek circular reference jika editing
+        if ($currentCategoryId) {
+            $childrenIds = [];
+            $this->getChildrenIds(Category::find($currentCategoryId), $childrenIds);
+            if (in_array($parentId, $childrenIds)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
     public function create(Request $request)
     {
@@ -82,9 +128,9 @@ class CategoryController extends Controller
         return view('backend.pages.categories.create', compact('types', 'type', 'parentId', 'potentialParents'));
     }
 
-    /**
-     * Validasi maksimal 10 kategori aktif per tipe
-     */
+    // /**
+    //  * Validasi maksimal 10 kategori aktif per tipe
+    //  */
     private function validateMaxActiveCategories($type, $excludeId = null)
     {
         $query = Category::where('type', $type)->where('is_active', true);
@@ -128,27 +174,17 @@ class CategoryController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
         // Validasi maksimal 10 kategori aktif jika is_active = true
         if ($request->boolean('is_active')) {
             if (!$this->validateMaxActiveCategories($request->type)) {
                 $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
         }
 
@@ -159,33 +195,19 @@ class CategoryController extends Controller
             // 1. Parent harus memiliki type yang sama
             if ($parent->type !== $request->type) {
                 $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
 
-            // 2. Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
-            if ($parent->parent_id !== null) {
-                $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
-
+            // 2. Validasi hirarki 3 level
+            if (!$this->validateParentHierarchy($request->parent_id)) {
+                $error = ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']];
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
         }
 
@@ -193,7 +215,6 @@ class CategoryController extends Controller
             DB::beginTransaction();
 
             $gambarPath = null;
-            // Handle gambar upload
             if ($request->hasFile('gambar')) {
                 $gambarPath = $request->file('gambar')->store('categories', 'public');
             }
@@ -218,6 +239,7 @@ class CategoryController extends Controller
                 'type' => $category->type,
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
+                'depth' => $this->getCategoryDepth($category),
                 'is_active' => $category->is_active
             ]);
 
@@ -233,12 +255,9 @@ class CategoryController extends Controller
                 ->with('success', 'Kategori berhasil dibuat');
         } catch (\Exception $e) {
             DB::rollback();
-
-            // Delete uploaded gambar if exists
             if (isset($gambarPath) && $gambarPath) {
                 Storage::disk('public')->delete($gambarPath);
             }
-
             Log::error('Error creating category: ' . $e->getMessage());
 
             if ($request->ajax()) {
@@ -247,7 +266,6 @@ class CategoryController extends Controller
                     'message' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()
                 ], 500);
             }
-
             return redirect()->back()
                 ->withErrors(['error' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()])
                 ->withInput();
@@ -299,7 +317,7 @@ class CategoryController extends Controller
         $user = Auth::user();
         $userRole = $user->role->slug ?? null;
 
-        // Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
+        // Cek otorisasi
         if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengedit kategori ini.');
         }
@@ -327,32 +345,19 @@ class CategoryController extends Controller
 
         if ($validator->fails()) {
             if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
-
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Validasi maksimal 10 kategori aktif jika is_active = true
+        // Validasi maksimal 10 kategori aktif
         if ($request->boolean('is_active')) {
             if (!$this->validateMaxActiveCategories($request->type, $category->id)) {
                 $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
         }
 
@@ -363,33 +368,19 @@ class CategoryController extends Controller
             // 1. Parent harus memiliki type yang sama
             if ($parent->type !== $request->type) {
                 $error = ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
 
             // 2. Prevent circular reference
             if ($request->parent_id == $category->id) {
                 $error = ['parent_id' => ['Kategori tidak boleh menjadi induk dari dirinya sendiri']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
 
             // 3. Check if parent is a child of current category
@@ -397,50 +388,31 @@ class CategoryController extends Controller
             $this->getChildrenIds($category, $childrenIds);
             if (in_array($request->parent_id, $childrenIds)) {
                 $error = ['parent_id' => ['Kategori induk tidak boleh merupakan anak dari kategori ini']];
-
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
 
-            // 4. Parent tidak boleh sudah memiliki parent (maksimal 2 level hierarki)
-            if ($parent->parent_id !== null) {
-                $error = ['parent_id' => ['Kategori yang dipilih sebagai parent sudah merupakan sub-kategori. Hanya kategori utama yang dapat menjadi parent.']];
-
+            // 4. Validasi hirarki 3 level untuk update
+            if (!$this->validateParentHierarchy($request->parent_id, $category->id)) {
+                $error = ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']];
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
 
-            // 5. Jika kategori ini sudah punya anak, tidak boleh dijadikan child
-            $hasChildren = Category::where('parent_id', $category->id)->exists();
-            if ($hasChildren) {
-                $error = ['parent_id' => ['Kategori ini sudah memiliki sub-kategori. Kategori yang memiliki anak tidak dapat dijadikan sub-kategori.']];
+            // 5. Jika kategori ini sudah punya anak level 2, tidak boleh dijadikan child level 2
+            $hasGrandchildren = $this->hasGrandchildren($category);
+            $parentDepth = $this->getCategoryDepth($parent);
 
+            if ($hasGrandchildren && $parentDepth >= 1) {
+                $error = ['parent_id' => ['Kategori ini memiliki sub-kategori level 3. Tidak dapat dipindahkan ke level yang lebih dalam.']];
                 if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'errors' => $error
-                    ], 422);
+                    return response()->json(['success' => false, 'errors' => $error], 422);
                 }
-
-                return redirect()->back()
-                    ->withErrors($error)
-                    ->withInput();
+                return redirect()->back()->withErrors($error)->withInput();
             }
         }
 
@@ -460,15 +432,11 @@ class CategoryController extends Controller
 
             // Handle gambar upload
             if ($request->hasFile('gambar')) {
-                // Delete old gambar
                 if ($category->gambar) {
                     Storage::disk('public')->delete($category->gambar);
                 }
-
-                // Upload new gambar
                 $updateData['gambar'] = $request->file('gambar')->store('categories', 'public');
             } elseif ($request->has('remove_gambar') && $request->remove_gambar) {
-                // Remove gambar if requested
                 if ($category->gambar) {
                     Storage::disk('public')->delete($category->gambar);
                 }
@@ -476,7 +444,6 @@ class CategoryController extends Controller
             }
 
             $category->update($updateData);
-
             DB::commit();
 
             Log::info('Category updated successfully', [
@@ -484,6 +451,7 @@ class CategoryController extends Controller
                 'type' => $category->type,
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
+                'depth' => $this->getCategoryDepth($category),
                 'is_active' => $category->is_active
             ]);
 
@@ -507,7 +475,6 @@ class CategoryController extends Controller
                     'message' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()
                 ], 500);
             }
-
             return redirect()->back()
                 ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()])
                 ->withInput();
@@ -515,18 +482,43 @@ class CategoryController extends Controller
     }
 
     /**
-     * Helper method untuk mendapatkan semua children IDs
+     * Check if category has grandchildren (level 3)
+     */
+    private function hasGrandchildren($category)
+    {
+        $children = Category::where('parent_id', $category->id)->get();
+        foreach ($children as $child) {
+            if (Category::where('parent_id', $child->id)->exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Helper method untuk mendapatkan semua children IDs recursively
      */
     private function getChildrenIds($category, &$childrenIds)
     {
         $children = Category::where('parent_id', $category->id)->get();
-
         foreach ($children as $child) {
             $childrenIds[] = $child->id;
-            // Recursive call untuk anak dari anak (jika ada)
             $this->getChildrenIds($child, $childrenIds);
         }
     }
+
+    /**
+     * Validasi maksimal 10 kategori aktif per tipe
+     */
+    // private function validateMaxActiveCategories($type, $excludeId = null)
+    // {
+    //     $query = Category::where('type', $type)->where('is_active', true);
+    //     if ($excludeId) {
+    //         $query->where('id', '!=', $excludeId);
+    //     }
+    //     $activeCount = $query->count();
+    //     return $activeCount < 10;
+    // }
 
     public function destroy($id)
     {
@@ -682,19 +674,50 @@ class CategoryController extends Controller
         ]);
     }
 
+
     /**
-     * API method to get category options for select
+     * API method to get category options for select (updated for 3-level)
      */
     public function getOptions($type)
     {
         $categories = Category::where('type', $type)
-            ->whereNull('parent_id')
+            ->with(['children.children'])
             ->orderBy('nama')
-            ->get(['id', 'nama']);
+            ->get();
+
+        // Build hierarchical options
+        $options = [];
+
+        foreach ($categories->where('parent_id', null) as $parent) {
+            $options[] = [
+                'id' => $parent->id,
+                'nama' => $parent->nama,
+                'level' => 0,
+                'can_have_children' => true
+            ];
+
+            foreach ($parent->children as $child) {
+                $options[] = [
+                    'id' => $child->id,
+                    'nama' => '-- ' . $child->nama,
+                    'level' => 1,
+                    'can_have_children' => true
+                ];
+
+                foreach ($child->children as $grandchild) {
+                    $options[] = [
+                        'id' => $grandchild->id,
+                        'nama' => '---- ' . $grandchild->nama,
+                        'level' => 2,
+                        'can_have_children' => false
+                    ];
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $categories
+            'data' => $options
         ]);
     }
 

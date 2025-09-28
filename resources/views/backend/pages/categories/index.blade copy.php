@@ -152,9 +152,8 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Gambar</th>
-                                    <th>Nama & Hirarki</th>
+                                    <th>Nama</th>
                                     <th>Type</th>
-                                    <th>Level</th>
                                     <th>Parent</th>
                                     <th>Warna</th>
                                     <th>Jenis</th>
@@ -166,338 +165,270 @@
                             <tbody>
                                 @php
                                     $no = 1;
-                                    $user = Auth::user();
-                                    $role = $user->role->slug ?? null;
-
-                                    // Function to recursively render hierarchy with 3 levels
-                                    function renderCategoryHierarchy(
-                                        $categories,
-                                        $parentId = null,
-                                        $level = 0,
-                                        &$no,
-                                        $user,
-                                        $role,
-                                    ) {
-                                        $filteredCategories = $categories
-                                            ->where('parent_id', $parentId)
-                                            ->sortBy('nama');
-                                        $output = '';
-
-                                        foreach ($filteredCategories as $kategori) {
-                                            // Determine styling based on level
-                                            $rowClass = '';
-                                            $indentClass = '';
-                                            $levelBadge = '';
-                                            $hierarchyIcon = '';
-
-                                            switch ($level) {
-                                                case 0: // Parent (Level 1)
-                                                    $rowClass = 'parent-category level-0';
-                                                    $levelBadge = '<span class="badge bg-primary">Level 1</span>';
-                                                    $imageSize = '50px';
-                                                    $colorSize = '24px';
-                                                    $iconSize = '1.4em';
-                                                    break;
-                                                case 1: // Child (Level 2)
-                                                    $rowClass = 'child-category level-1 children-' . $parentId;
-                                                    $indentClass = 'hierarchy-level-1';
-                                                    $levelBadge = '<span class="badge bg-success">Level 2</span>';
-                                                    $hierarchyIcon =
-                                                        '<i class="mdi mdi-subdirectory-arrow-right text-success me-2"></i>';
-                                                    $imageSize = '40px';
-                                                    $colorSize = '20px';
-                                                    $iconSize = '1.2em';
-                                                    break;
-                                                case 2: // Grandchild (Level 3)
-                                                    $rowClass = 'grandchild-category level-2 children-' . $parentId;
-                                                    $indentClass = 'hierarchy-level-2';
-                                                    $levelBadge =
-                                                        '<span class="badge bg-warning text-dark">Level 3</span>';
-                                                    $hierarchyIcon =
-                                                        '<i class="mdi mdi-call-split text-warning me-2"></i>';
-                                                    $imageSize = '35px';
-                                                    $colorSize = '18px';
-                                                    $iconSize = '1.1em';
-                                                    break;
-                                            }
-
-                                            // Check if has children
-                                            $hasChildren = $categories->where('parent_id', $kategori->id)->count() > 0;
-                                            $childCount = $categories->where('parent_id', $kategori->id)->count();
-
-                                            // Start building row
-                                            $output .=
-                                                '<tr data-category-id="' .
-                                                $kategori->id .
-                                                '" data-parent-id="' .
-                                                $kategori->parent_id .
-                                                '" class="' .
-                                                $rowClass .
-                                                '"';
-                                            if ($level > 0) {
-                                                $output .= ' style="display: none;"';
-                                            }
-                                            $output .= '>';
-
-                                            // No
-                                            $output .= '<td>' . $no++ . '</td>';
-
-                                            // Gambar
-                                            $output .= '<td class="text-center">';
-                                            if ($kategori->gambar) {
-                                                $output .=
-                                                    '<img src="' .
-                                                    asset('storage/' . $kategori->gambar) .
-                                                    '" alt="' .
-                                                    $kategori->nama .
-                                                    '" class="category-image img-thumbnail" style="width: ' .
-                                                    $imageSize .
-                                                    '; height: ' .
-                                                    $imageSize .
-                                                    '; object-fit: cover; cursor: pointer;" onclick="showImageModal(\'' .
-                                                    asset('storage/' . $kategori->gambar) .
-                                                    '\', \'' .
-                                                    $kategori->nama .
-                                                    '\')">';
-                                            } else {
-                                                $output .=
-                                                    '<div class="text-muted" style="width: ' .
-                                                    $imageSize .
-                                                    '; height: ' .
-                                                    $imageSize .
-                                                    '; display: flex; align-items: center; justify-content: center; border: 1px dashed #dee2e6; border-radius: 4px;"><i class="mdi mdi-image-outline"></i></div>';
-                                            }
-                                            $output .= '</td>';
-
-                                            // Nama & Hirarki
-                                            $output .= '<td>';
-                                            $output .= '<div class="d-flex align-items-center ' . $indentClass . '">';
-
-                                            // Toggle button for categories that have children
-                                            if ($hasChildren) {
-                                                $output .=
-                                                    '<button class="btn btn-link btn-sm p-0 me-2 hierarchy-toggle text-secondary" data-target="children-' .
-                                                    $kategori->id .
-                                                    '" title="Expand"><i class="mdi mdi-chevron-right"></i></button>';
-                                            } else {
-                                                $output .= '<span class="me-4"></span>';
-                                            }
-
-                                            $output .= $hierarchyIcon;
-
-                                            $output .= '<div>';
-                                            $fontWeight = $level == 0 ? 'fw-bold' : 'fw-medium';
-                                            $output .=
-                                                '<span class="text-dark ' .
-                                                $fontWeight .
-                                                '">' .
-                                                $kategori->nama .
-                                                '</span>';
-
-                                            // Description
-                                            if ($kategori->deskripsi) {
-                                                $descLimit = $level == 0 ? 50 : 40;
-                                                $output .=
-                                                    '<br><small class="text-muted">' .
-                                                    Str::limit($kategori->deskripsi, $descLimit) .
-                                                    '</small>';
-                                            }
-
-                                            // Children count badge
-                                            if ($hasChildren) {
-                                                $output .=
-                                                    '<span class="badge bg-info text-white ms-2" style="font-size: 0.65em;">' .
-                                                    $childCount .
-                                                    ' sub</span>';
-                                            }
-
-                                            // Show hierarchy path for deeper levels
-                                            if ($level > 0) {
-                                                $parentNames = [];
-                                                $currentParentId = $kategori->parent_id;
-                                                $tempLevel = 0;
-
-                                                while ($currentParentId && $tempLevel < 3) {
-                                                    // Prevent infinite loop
-                                                    $parentCat = $categories->where('id', $currentParentId)->first();
-                                                    if ($parentCat) {
-                                                        array_unshift($parentNames, $parentCat->nama);
-                                                        $currentParentId = $parentCat->parent_id;
-                                                        $tempLevel++;
-                                                    } else {
-                                                        break;
-                                                    }
-                                                }
-
-                                                // if (!empty($parentNames)) {
-                                                //     $output .=
-                                                //         '<br><small class="text-muted"><i class="mdi mdi-link me-1"></i>Path: ' .
-                                                //         implode(' → ', $parentNames) .
-                                                //         ' → <span class="text-primary">' .
-                                                //         $kategori->nama .
-                                                //         '</span></small>';
-                                                // }
-                                            }
-
-                                            $output .= '</div>';
-                                            $output .= '</div>';
-                                            $output .= '</td>';
-
-                                            // Type
-                                            $typeBadgeClass =
-                                                $level == 0
-                                                    ? 'bg-primary'
-                                                    : ($level == 1
-                                                        ? 'bg-success'
-                                                        : 'bg-warning text-dark');
-                                            $output .=
-                                                '<td><span class="badge ' .
-                                                $typeBadgeClass .
-                                                ' text-white">' .
-                                                strtoupper($kategori->type) .
-                                                '</span></td>';
-
-                                            // Level
-                                            $output .= '<td>' . $levelBadge . '</td>';
-
-                                            // Parent
-                                            if ($kategori->parent_id) {
-                                                $parent = $categories->where('id', $kategori->parent_id)->first();
-                                                $output .=
-                                                    '<td><span class="text-primary">' .
-                                                    ($parent ? $parent->nama : '-') .
-                                                    '</span></td>';
-                                            } else {
-                                                $output .= '<td><span class="text-muted">-</span></td>';
-                                            }
-
-                                            // Warna
-                                            $output .= '<td>';
-                                            if ($kategori->warna) {
-                                                $output .= '<div class="color-preview d-flex align-items-center">';
-                                                $output .=
-                                                    '<span class="color-box me-2" style="background-color: ' .
-                                                    $kategori->warna .
-                                                    '; width: ' .
-                                                    $colorSize .
-                                                    '; height: ' .
-                                                    $colorSize .
-                                                    '; border-radius: 4px; border: 1px solid #dee2e6; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></span>';
-                                                $output .= '<small class="text-muted">' . $kategori->warna . '</small>';
-                                                $output .= '</div>';
-                                            } else {
-                                                $output .= '<span class="text-muted">-</span>';
-                                            }
-                                            $output .= '</td>';
-
-                                            // Jenis
-                                            $output .= '<td>';
-                                            if ($kategori->is_marker) {
-                                                $output .=
-                                                    '<span class="badge bg-warning text-dark"><i class="mdi mdi-map-marker"></i> Marker</span>';
-                                            } else {
-                                                $output .=
-                                                    '<span class="badge bg-info text-white"><i class="mdi mdi-layers"></i> Layer</span>';
-                                            }
-                                            $output .= '</td>';
-
-                                            // Icon
-                                            $output .= '<td class="text-center">';
-                                            if ($kategori->is_marker && $kategori->icon) {
-                                                $output .=
-                                                    '<i class="' .
-                                                    $kategori->icon .
-                                                    '" style="color: ' .
-                                                    ($kategori->warna ?? '#007bff') .
-                                                    '; font-size: ' .
-                                                    $iconSize .
-                                                    ';" title="' .
-                                                    $kategori->icon .
-                                                    '"></i>';
-                                            } else {
-                                                $output .= '<span class="text-muted">-</span>';
-                                            }
-                                            $output .= '</td>';
-
-                                            // Status
-                                            $output .= '<td class="text-center">';
-                                            if ($kategori->is_active) {
-                                                $output .=
-                                                    '<span class="badge bg-success text-white"><i class="mdi mdi-check-circle"></i> Aktif</span>';
-                                            } else {
-                                                $output .=
-                                                    '<span class="badge bg-secondary text-white"><i class="mdi mdi-pause-circle"></i> Nonaktif</span>';
-                                            }
-                                            $output .= '</td>';
-
-                                            // Actions
-                                            $output .= '<td>';
-                                            if (
-                                                in_array($role, ['super-admin', 'admin-bappeda']) ||
-                                                $kategori->user_id === $user->id
-                                            ) {
-                                                $output .= '<div class="btn-group" role="group">';
-                                                $output .=
-                                                    '<button type="button" class="btn btn-sm btn-outline-success btn-edit" ';
-                                                $output .= 'data-id="' . $kategori->id . '" ';
-                                                $output .= 'data-nama="' . htmlspecialchars($kategori->nama) . '" ';
-                                                $output .= 'data-type="' . $kategori->type . '" ';
-                                                $output .= 'data-parent-id="' . $kategori->parent_id . '" ';
-                                                $output .= 'data-warna="' . $kategori->warna . '" ';
-                                                $output .= 'data-is-marker="' . ($kategori->is_marker ? 1 : 0) . '" ';
-                                                $output .= 'data-is-active="' . ($kategori->is_active ? 1 : 0) . '" ';
-                                                $output .= 'data-icon="' . $kategori->icon . '" ';
-                                                $output .= 'data-gambar="' . $kategori->gambar . '" ';
-                                                $output .=
-                                                    'data-deskripsi="' . htmlspecialchars($kategori->deskripsi) . '" ';
-                                                $output .=
-                                                    'data-bs-toggle="modal" data-bs-target="#editModal" title="Edit">';
-                                                $output .= '<i class="mdi mdi-pencil"></i>';
-                                                $output .= '</button>';
-
-                                                $output .=
-                                                    '<form action="' .
-                                                    route('categories.destroy', $kategori->id) .
-                                                    '" method="POST" style="display: inline-block;" data-confirm="delete" data-name="' .
-                                                    htmlspecialchars($kategori->nama) .
-                                                    '">';
-                                                $output .= csrf_field();
-                                                $output .= method_field('DELETE');
-                                                $output .=
-                                                    '<button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus kategori">';
-                                                $output .= '<i class="fa fa-trash"></i>';
-                                                $output .= '</button>';
-                                                $output .= '</form>';
-                                                $output .= '</div>';
-                                            }
-                                            $output .= '</td>';
-
-                                            $output .= '</tr>';
-
-                                            // Recursively render children (supports unlimited depth, but we limit to 3 levels)
-                                            if ($hasChildren && $level < 2) {
-                                                // Limit to 3 levels (0, 1, 2)
-                                                $output .= renderCategoryHierarchy(
-                                                    $categories,
-                                                    $kategori->id,
-                                                    $level + 1,
-                                                    $no,
-                                                    $user,
-                                                    $role,
-                                                );
-                                            }
-                                        }
-
-                                        return $output;
-                                    }
-
-                                    // Render the hierarchy starting from root categories
-                                    echo renderCategoryHierarchy($categories, null, 0, $no, $user, $role);
+                                    // Separate parent and child categories for proper hierarchy
+                                    $parentKategoris = $categories->where('parent_id', null)->sortBy('nama');
+                                    $childKategoris = $categories->where('parent_id', '!=', null)->groupBy('parent_id');
                                 @endphp
+                                @forelse($parentKategoris as $kategori)
+                                    {{-- Parent Category Row --}}
+                                    <tr data-category-id="{{ $kategori->id }}" data-parent-id="{{ $kategori->parent_id }}"
+                                        class="parent-category">
+                                        <td>{{ $no++ }}</td>
+                                        <td class="text-center">
+                                            @if ($kategori->gambar)
+                                                <img src="{{ asset('storage/' . $kategori->gambar) }}"
+                                                    alt="{{ $kategori->nama }}" class="category-image img-thumbnail"
+                                                    style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                                    onclick="showImageModal('{{ asset('storage/' . $kategori->gambar) }}', '{{ $kategori->nama }}')">
+                                            @else
+                                                <div class="text-muted"
+                                                    style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px dashed #dee2e6; border-radius: 4px;">
+                                                    <i class="mdi mdi-image-outline"></i>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
+                                                    <button
+                                                        class="btn btn-link btn-sm p-0 me-2 hierarchy-toggle text-secondary"
+                                                        data-target="children-{{ $kategori->id }}" title="Expand">
+                                                        <i class="mdi mdi-chevron-right"></i>
+                                                    </button>
+                                                @else
+                                                    <span class="me-4"></span>
+                                                @endif
+                                                <div>
+                                                    <strong class="text-dark">{{ $kategori->nama }}</strong>
+                                                    @if ($kategori->deskripsi)
+                                                        <br><small
+                                                            class="text-muted">{{ Str::limit($kategori->deskripsi, 50) }}</small>
+                                                    @endif
+                                                    @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
+                                                        <span class="badge bg-info text-white ms-2"
+                                                            style="font-size: 0.65em;">
+                                                            {{ $childKategoris[$kategori->id]->count() }} sub
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="badge bg-primary text-white">{{ strtoupper($kategori->type) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            @if ($kategori->warna)
+                                                <div class="color-preview d-flex align-items-center">
+                                                    <span class="color-box me-2"
+                                                        style="background-color: {{ $kategori->warna }}; width: 24px; height: 24px; border-radius: 4px; border: 1px solid #dee2e6; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></span>
+                                                    <small class="text-muted">{{ $kategori->warna }}</small>
+                                                </div>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($kategori->is_marker)
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="mdi mdi-map-marker"></i> Marker
+                                                </span>
+                                            @else
+                                                <span class="badge bg-info text-white">
+                                                    <i class="mdi mdi-layers"></i> Layer
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($kategori->is_marker && $kategori->icon)
+                                                <i class="{{ $kategori->icon }}"
+                                                    style="color: {{ $kategori->warna ?? '#007bff' }}; font-size: 1.4em;"
+                                                    title="{{ $kategori->icon }}"></i>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($kategori->is_active)
+                                                <span class="badge bg-success text-white">
+                                                    <i class="mdi mdi-check-circle"></i> Aktif
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary text-white">
+                                                    <i class="mdi mdi-pause-circle"></i> Nonaktif
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @php
+                                                $user = Auth::user();
+                                                $role = $user->role->slug ?? null;
+                                            @endphp
 
-                                @if ($categories->count() == 0)
+                                            @if ($role === 'super-admin' || $role === 'admin-bappeda' || $kategori->user_id === $user->id)
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                        data-id="{{ $kategori->id }}" data-nama="{{ $kategori->nama }}"
+                                                        data-type="{{ $kategori->type }}"
+                                                        data-parent-id="{{ $kategori->parent_id }}"
+                                                        data-warna="{{ $kategori->warna }}"
+                                                        data-is-marker="{{ $kategori->is_marker }}"
+                                                        data-is-active="{{ $kategori->is_active }}"
+                                                        data-icon="{{ $kategori->icon }}"
+                                                        data-gambar="{{ $kategori->gambar }}"
+                                                        data-deskripsi="{{ $kategori->deskripsi }}"
+                                                        data-bs-toggle="modal" data-bs-target="#editModal"
+                                                        title="Edit">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </button>
+                                                    <form action="{{ route('categories.destroy', $kategori->id) }}"
+                                                        method="POST" style="display: inline-block;"
+                                                        data-confirm="delete" data-name="{{ $kategori->nama }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            title="Hapus kategori">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+
+                                    {{-- Child Categories Rows (directly after parent) --}}
+                                    @if (isset($childKategoris[$kategori->id]) && $childKategoris[$kategori->id]->count() > 0)
+                                        @foreach ($childKategoris[$kategori->id]->sortBy('nama') as $child)
+                                            <tr data-category-id="{{ $child->id }}"
+                                                data-parent-id="{{ $child->parent_id }}"
+                                                class="child-category children-{{ $kategori->id }}"
+                                                style="display: none;">
+                                                <td>{{ $no++ }}</td>
+                                                <td class="text-center">
+                                                    @if ($child->gambar)
+                                                        <img src="{{ asset('storage/' . $child->gambar) }}"
+                                                            alt="{{ $child->nama }}"
+                                                            class="category-image img-thumbnail"
+                                                            style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;"
+                                                            onclick="showImageModal('{{ asset('storage/' . $child->gambar) }}', '{{ $child->nama }}')">
+                                                    @else
+                                                        <div class="text-muted"
+                                                            style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px dashed #dee2e6; border-radius: 4px;">
+                                                            <i class="mdi mdi-image-outline"></i>
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="hierarchy-line me-2">
+                                                            <span class="hierarchy-connector"></span>
+                                                        </div>
+                                                        <i class="mdi mdi-subdirectory-arrow-right text-secondary me-2"
+                                                            style="font-size: 1.1em;"></i>
+                                                        <div>
+                                                            <span class="text-dark fw-medium">{{ $child->nama }}</span>
+                                                            <br><small class="text-muted">
+                                                                <i class="mdi mdi-link me-1"></i>Sub dari:
+                                                                <span class="text-primary">{{ $kategori->nama }}</span>
+                                                            </small>
+                                                            @if ($child->deskripsi)
+                                                                <br><small
+                                                                    class="text-muted">{{ Str::limit($child->deskripsi, 40) }}</small>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        class="badge bg-secondary text-white">{{ strtoupper($child->type) }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-primary">{{ $kategori->nama }}</span>
+                                                </td>
+                                                <td>
+                                                    @if ($child->warna)
+                                                        <div class="color-preview d-flex align-items-center">
+                                                            <span class="color-box me-2"
+                                                                style="background-color: {{ $child->warna }}; width: 20px; height: 20px; border-radius: 3px; border: 1px solid #dee2e6;"></span>
+                                                            <small class="text-muted">{{ $child->warna }}</small>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($child->is_marker)
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="mdi mdi-map-marker"></i> Marker
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-info text-white">
+                                                            <i class="mdi mdi-layers"></i> Layer
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    @if ($child->is_marker && $child->icon)
+                                                        <i class="{{ $child->icon }}"
+                                                            style="color: {{ $child->warna ?? '#007bff' }}; font-size: 1.2em;"
+                                                            title="{{ $child->icon }}"></i>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    @if ($child->is_active)
+                                                        <span class="badge bg-success text-white">
+                                                            <i class="mdi mdi-check-circle"></i> Aktif
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-secondary text-white">
+                                                            <i class="mdi mdi-pause-circle"></i> Nonaktif
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($role === 'super-admin' || $role === 'admin-bappeda' || $child->user_id === $user->id)
+                                                        <div class="btn-group" role="group">
+                                                            <button type="button"
+                                                                class="btn btn-sm btn-outline-success btn-edit"
+                                                                data-id="{{ $child->id }}"
+                                                                data-nama="{{ $child->nama }}"
+                                                                data-type="{{ $child->type }}"
+                                                                data-parent-id="{{ $child->parent_id }}"
+                                                                data-warna="{{ $child->warna }}"
+                                                                data-is-marker="{{ $child->is_marker }}"
+                                                                data-is-active="{{ $child->is_active }}"
+                                                                data-icon="{{ $child->icon }}"
+                                                                data-gambar="{{ $child->gambar }}"
+                                                                data-deskripsi="{{ $child->deskripsi }}"
+                                                                data-bs-toggle="modal" data-bs-target="#editModal"
+                                                                title="Edit">
+                                                                <i class="mdi mdi-pencil"></i>
+                                                            </button>
+                                                            <form action="{{ route('categories.destroy', $child->id) }}"
+                                                                method="POST" style="display: inline-block;"
+                                                                data-confirm="delete" data-name="{{ $child->nama }}">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-outline-danger"
+                                                                    title="Hapus kategori">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
+                                @empty
                                     <tr>
-                                        <td colspan="11" class="text-center py-4">
+                                        <td colspan="10" class="text-center py-4">
                                             <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada kategori yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Kategori" untuk memulai</p>
@@ -507,7 +438,7 @@
                                             </button>
                                         </td>
                                     </tr>
-                                @endif
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -847,8 +778,8 @@
 @push('styles')
     <style>
         /* ===========================================
-                                                                                                                                                                   FORM STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               FORM STYLING
+                                                                                                                                            =========================================== */
         .form-control-color {
             max-width: 50px;
             height: 38px;
@@ -862,8 +793,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   TABLE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               TABLE STYLING
+                                                                                                                                            =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -925,8 +856,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   BADGE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               BADGE STYLING
+                                                                                                                                            =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -951,8 +882,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   COLOR PREVIEW STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               COLOR PREVIEW STYLING
+                                                                                                                                            =========================================== */
         .color-preview {
             display: flex;
             align-items: center;
@@ -965,8 +896,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   BUTTON GROUP STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               BUTTON GROUP STYLING
+                                                                                                                                            =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -978,8 +909,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   DATATABLE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               DATATABLE STYLING
+                                                                                                                                            =========================================== */
         .dataTables_wrapper {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -1045,8 +976,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   MODAL STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               MODAL STYLING
+                                                                                                                                            =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -1065,8 +996,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   ICON PREVIEW STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               ICON PREVIEW STYLING
+                                                                                                                                            =========================================== */
         .icon-preview-container {
             min-height: 60px;
             display: flex;
@@ -1119,8 +1050,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   STATISTICS CARDS
-                                                                                                                                                                =========================================== */
+                                                                                                                                               STATISTICS CARDS
+                                                                                                                                            =========================================== */
         .card.bg-gradient-primary,
         .card.bg-gradient-success,
         .card.bg-gradient-warning,
@@ -1138,8 +1069,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   HIERARCHY CONTROLS STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                               HIERARCHY CONTROLS STYLING
+                                                                                                                                            =========================================== */
         .hierarchy-controls {
             margin-bottom: 10px;
         }
@@ -1177,8 +1108,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   UTILITY CLASSES
-                                                                                                                                                                =========================================== */
+                                                                                                                                               UTILITY CLASSES
+                                                                                                                                            =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -1188,8 +1119,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   RESPONSIVE IMPROVEMENTS
-                                                                                                                                                                =========================================== */
+                                                                                                                                               RESPONSIVE IMPROVEMENTS
+                                                                                                                                            =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -1224,8 +1155,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   FOCUS AND ACCESSIBILITY
-                                                                                                                                                                =========================================== */
+                                                                                                                                               FOCUS AND ACCESSIBILITY
+                                                                                                                                            =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -1245,8 +1176,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   ACTIVE COUNT WARNING STYLES
-                                                                                                                                                                =========================================== */
+                                                                                                                                               ACTIVE COUNT WARNING STYLES
+                                                                                                                                            =========================================== */
         .form-text.text-warning {
             background-color: rgba(255, 193, 7, 0.1);
             border: 1px solid rgba(255, 193, 7, 0.3);
