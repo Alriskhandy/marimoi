@@ -333,7 +333,7 @@
                     ],
                     [
                         'id' => 'uJyzLgpJa8U',
-                        'title' => 'Direktur Regional III Indonesia Timur BAPPENAS',
+                        'title' => 'Direktur Pembangunan Indonesia Timur Kementrian PPN/BAPPENAS',
                         'url' => 'https://youtu.be/uJyzLgpJa8U',
                     ],
                     [
