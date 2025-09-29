@@ -338,17 +338,17 @@
                     ],
                     [
                         'id' => '2wWShCIhAzs',
-                        'title' => 'Kepala Dinas KOMINFO Provinsi Maluku Utara',
+                        'title' => 'Kepala DISKOMINFO dan Persandian Prov MALUT',
                         'url' => 'https://youtu.be/2wWShCIhAzs',
                     ],
                     [
                         'id' => '6fkOgICo_Xs',
-                        'title' => 'Kepala Dinas Pendidikan Provinsi Maluku Utara',
+                        'title' => 'PLT. Kepala DISDIKBUD Provinsi Maluku Utara',
                         'url' => 'https://youtu.be/6fkOgICo_Xs',
                     ],
                     [
                         'id' => 'tvWS8IOxy0w',
-                        'title' => 'Kepala Dinas PERKIM Provinsi Maluku Utara',
+                        'title' => 'Kepala DISPERKIM Provinsi Maluku Utara',
                         'url' => 'https://youtu.be/tvWS8IOxy0w',
                     ],
                     [
@@ -367,9 +367,9 @@
                         'url' => 'https://youtu.be/wJAVmcA_CDc',
                     ],
                     [
-                        'id' => 'qKU3BAL2CBA',
+                        'id' => 'oaV902ATMn8',
                         'title' => 'BP3D Kabupaten Halmahera Barat',
-                        'url' => 'https://youtu.be/qKU3BAL2CBA',
+                        'url' => 'https://youtu.be/oaV902ATMn8',
                     ],
                     [
                         'id' => 'Fxv5cDKptIQ',
