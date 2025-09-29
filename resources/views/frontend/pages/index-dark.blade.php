@@ -57,7 +57,10 @@
     
     <!-- Logo Section -->
     @include('frontend.pages.index-section.faq')    
-
+    
+    <!-- Logo Section -->
+    @include('frontend.pages.index-section.filosofi')    
+   
     <!-- Footer -->
     @include('frontend.partials.footer-dark-tailwind')
 @endsection
