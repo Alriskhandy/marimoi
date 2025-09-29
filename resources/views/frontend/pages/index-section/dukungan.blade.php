@@ -343,7 +343,7 @@
                     ],
                     [
                         'id' => '6fkOgICo_Xs',
-                        'title' => 'PLT. Kepala DISDIKBUD Provinsi Maluku Utara',
+                        'title' => 'PLT. KADIKBUD Provinsi Maluku Utara',
                         'url' => 'https://youtu.be/6fkOgICo_Xs',
                     ],
                     [
