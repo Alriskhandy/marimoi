@@ -1,84 +1,84 @@
 @push('styles')
-<style>
-    /* Custom mask untuk radial spotlight - tidak tersedia di Tailwind */
-    .spotlight-mask::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: url("{{ asset('frontend/img/about-bg2.png') }}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        opacity: var(--bg-opacity, 1);
-        transition: opacity 0.1s ease;
-        z-index: 1;
-        pointer-events: none;
-        mask-image: radial-gradient(circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
-                black,
-                transparent);
-        -webkit-mask-image: radial-gradient(circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
-                black,
-                transparent);
-        mask-repeat: no-repeat;
-        -webkit-mask-repeat: no-repeat;
-    }
-
-    /* Responsive mask sizes */
-    @media (max-width: 1350px) {
+    <style>
+        /* Custom mask untuk radial spotlight - tidak tersedia di Tailwind */
         .spotlight-mask::before {
-            mask-image: radial-gradient(circle 280px at var(--mask-x, 82%) var(--mask-y, 50%),
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("{{ asset('frontend/img/about-bg2.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: var(--bg-opacity, 1);
+            transition: opacity 0.1s ease;
+            z-index: 1;
+            pointer-events: none;
+            mask-image: radial-gradient(circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
                     black,
                     transparent);
-            -webkit-mask-image: radial-gradient(circle 280px at var(--mask-x, 82%) var(--mask-y, 50%),
+            -webkit-mask-image: radial-gradient(circle 300px at var(--mask-x, 75%) var(--mask-y, 50%),
                     black,
                     transparent);
+            mask-repeat: no-repeat;
+            -webkit-mask-repeat: no-repeat;
         }
-    }
 
-    @media (max-width: 1024px) {
-        .spotlight-mask::before {
-            mask-image: radial-gradient(circle 250px at var(--mask-x, 80%) var(--mask-y, 50%),
-                    black,
-                    transparent);
-            -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 80%) var(--mask-y, 50%),
-                    black,
-                    transparent);
+        /* Responsive mask sizes */
+        @media (max-width: 1350px) {
+            .spotlight-mask::before {
+                mask-image: radial-gradient(circle 280px at var(--mask-x, 82%) var(--mask-y, 50%),
+                        black,
+                        transparent);
+                -webkit-mask-image: radial-gradient(circle 280px at var(--mask-x, 82%) var(--mask-y, 50%),
+                        black,
+                        transparent);
+            }
         }
-    }
 
-    @media (max-width: 768px) {
-        .spotlight-mask::before {
-            mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
-            -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
+        @media (max-width: 1024px) {
+            .spotlight-mask::before {
+                mask-image: radial-gradient(circle 250px at var(--mask-x, 80%) var(--mask-y, 50%),
+                        black,
+                        transparent);
+                -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 80%) var(--mask-y, 50%),
+                        black,
+                        transparent);
+            }
         }
-    }
 
-    @media (max-width: 480px) {
-        .spotlight-mask::before {
-            mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
-            -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
+        @media (max-width: 768px) {
+            .spotlight-mask::before {
+                mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+                -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+            }
         }
-    }
 
-    @media (max-width: 360px) {
-        .spotlight-mask::before {
-            mask-image: radial-gradient(circle 200px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
-            -webkit-mask-image: radial-gradient(circle 200px at var(--mask-x, 50%) var(--mask-y, 70%),
-                    black,
-                    transparent);
+        @media (max-width: 480px) {
+            .spotlight-mask::before {
+                mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+                -webkit-mask-image: radial-gradient(circle 250px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+            }
         }
-    }
-</style>
+
+        @media (max-width: 360px) {
+            .spotlight-mask::before {
+                mask-image: radial-gradient(circle 200px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+                -webkit-mask-image: radial-gradient(circle 200px at var(--mask-x, 50%) var(--mask-y, 70%),
+                        black,
+                        transparent);
+            }
+        }
+    </style>
 @endpush
 
 <section
@@ -135,69 +135,70 @@
     </div>
 </section>
 
-@push('scripts')    
-<script>
-    // Ganti ID video sesuai kebutuhan
-    const aboutVideoIds = [
-        'cWA8hBj4PcE"', // video 1 (dipakai awal)
-        'fcbyr-_O8VM', // ganti dengan ID video ke-2
-        'SlncXrLMJrM' // ganti dengan ID video ke-3
-    ];
+@push('scripts')
+    <script>
+        // Ganti ID video sesuai kebutuhan
+        const aboutVideoIds = [
+            'cWA8hBj4PcE"', // video 1 (dipakai awal)
+            'fcbyr-_O8VM', // ganti dengan ID video ke-2
+            'SlncXrLMJrM', // ganti dengan ID video ke-3
+            'vv9mi5gTMi0'
+        ];
 
-    let aboutPlayer;
-    let aboutIndex = 0;
+        let aboutPlayer;
+        let aboutIndex = 0;
 
-    // Muat API YouTube secara dinamis
-    (function loadYouTubeAPI() {
-        if (window.YT && window.YT.Player) {
+        // Muat API YouTube secara dinamis
+        (function loadYouTubeAPI() {
+            if (window.YT && window.YT.Player) {
+                initAboutPlayer();
+                return;
+            }
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.head.appendChild(tag);
+        })();
+
+        // Dipanggil oleh API YouTube setelah script dimuat
+        function onYouTubeIframeAPIReady() {
             initAboutPlayer();
-            return;
         }
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-    })();
 
-    // Dipanggil oleh API YouTube setelah script dimuat
-    function onYouTubeIframeAPIReady() {
-        initAboutPlayer();
-    }
-
-    function initAboutPlayer() {
-        aboutPlayer = new YT.Player('aboutPlayer', {
-            playerVars: {
-                autoplay: 0, // autoplay dikendalikan via API
-                controls: 1,
-                rel: 0,
-                modestbranding: 1,
-                playsinline: 1
-            },
-            events: {
-                onReady: function(event) {
-                    // mute supaya autoplay bekerja di sebagian besar browser
-                    // event.target.mute();
-                    // mainkan video pertama
-                    event.target.playVideo();
+        function initAboutPlayer() {
+            aboutPlayer = new YT.Player('aboutPlayer', {
+                playerVars: {
+                    autoplay: 0, // autoplay dikendalikan via API
+                    controls: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1
                 },
-                onStateChange: function(event) {
-                    // 0 = ended
-                    if (event.data === YT.PlayerState.ENDED) {
-                        aboutIndex = (aboutIndex + 1) % aboutVideoIds.length;
-                        // load next video dan langsung mainkan
-                        aboutPlayer.loadVideoById({
-                            videoId: aboutVideoIds[aboutIndex],
-                            startSeconds: 0
-                        });
-                        // pastikan diputar (beberapa browser butuh playVideo setelah load)
-                        setTimeout(() => {
-                            try {
-                                aboutPlayer.playVideo();
-                            } catch (e) {}
-                        }, 200);
+                events: {
+                    onReady: function(event) {
+                        // mute supaya autoplay bekerja di sebagian besar browser
+                        // event.target.mute();
+                        // mainkan video pertama
+                        event.target.playVideo();
+                    },
+                    onStateChange: function(event) {
+                        // 0 = ended
+                        if (event.data === YT.PlayerState.ENDED) {
+                            aboutIndex = (aboutIndex + 1) % aboutVideoIds.length;
+                            // load next video dan langsung mainkan
+                            aboutPlayer.loadVideoById({
+                                videoId: aboutVideoIds[aboutIndex],
+                                startSeconds: 0
+                            });
+                            // pastikan diputar (beberapa browser butuh playVideo setelah load)
+                            setTimeout(() => {
+                                try {
+                                    aboutPlayer.playVideo();
+                                } catch (e) {}
+                            }, 200);
+                        }
                     }
                 }
-            }
-        });
-    }
-</script>
+            });
+        }
+    </script>
 @endpush
