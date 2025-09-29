@@ -50,15 +50,18 @@
     @include('frontend.pages.index-section.aspirasi')
 
     <!-- About -->
+    @include('frontend.pages.index-section.dukungan')
+
+    <!-- About -->
     @include('frontend.pages.index-section.about')
 
     <!-- Logo Section -->
     @include('frontend.pages.index-section.logo-section')
     
-    <!-- Logo Section -->
+    <!-- FAQ Section -->
     @include('frontend.pages.index-section.faq')    
     
-    <!-- Logo Section -->
+    <!-- Filosofi Section -->
     @include('frontend.pages.index-section.filosofi')    
    
     <!-- Footer -->

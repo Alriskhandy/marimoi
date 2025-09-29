@@ -91,14 +91,14 @@
             <!-- Left Side: Quotes - Mobile First -->
             <div class="flex justify-start items-start relative z-[3]">
                 <div class="w-full">
-                    <!-- Video Section -->
+                    {{-- <!-- Video Section -->
                     <iframe id="aboutPlayer"
                         src="https://www.youtube-nocookie.com/embed/cWA8hBj4PcE?enablejsapi=1&rel=0&playsinline=1"
                         title="YouTube video player"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; autoplay"
                         allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"
                         class="w-full h-full aspect-[2/1] border border-black/10 md:pr-10 mb-8">
-                    </iframe>
+                    </iframe> --}}
                     <blockquote class="m-0 p-0 border-none">
                         <p
                             class="text-[0.9rem] md:text-base lg:text-[1.2rem] leading-[1.4] md:leading-[1.5] lg:leading-[1.6] text-white mb-4 md:mb-5 relative text-left font-[Inter,sans-serif] [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
@@ -135,7 +135,7 @@
     </div>
 </section>
 
-@push('scripts')
+{{-- @push('scripts')
     <script>
         // Ganti ID video sesuai kebutuhan
         const aboutVideoIds = [
@@ -201,4 +201,4 @@
             });
         }
     </script>
-@endpush
+@endpush --}}
