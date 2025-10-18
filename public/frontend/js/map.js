@@ -111,6 +111,9 @@ let isLoadingData = false; // Prevent concurrent loading
 let currentLoadingCategory = null; // Track current loading category
 let loadingProgressInterval = null; // For animated progress
 
+// Add near the top after other global variables
+let mapDataStore = null; // Will be initialized in DOMContentLoaded
+
 /**
  * Create and manage loading overlay
  */
@@ -878,7 +881,7 @@ async function loadCategoriesMetadata() {
 }
 
 /**
- * Modified to support loading data from a third level category
+ * Enhanced loadCategoryData with cache integration
  */
 async function loadCategoryData(categoryName, parentName = null, grandparentName = null) {
     // Skip if already loaded or currently loading
@@ -893,8 +896,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
         // Show loading overlay
         showLoadingOverlay(categoryName);
-
-        // Update checkbox to show loading state
         updateCheckboxLoadingState(categoryName, true);
 
         loadingToast = showAlert(
@@ -909,24 +910,20 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
         const subType = tipeLayer.sub_type || null;
         const year = tipeLayer.year || null;
 
-        // Find target layer for this category - now with 3 levels
+        // Find target layer for this category
         let targetLayer = null;
 
         if (grandparentName && parentName) {
-            // Third level category
             if (layerGroups[grandparentName]?.[parentName]?.[categoryName]) {
                 targetLayer = layerGroups[grandparentName][parentName][categoryName];
             }
         } else if (parentName) {
-            // Second level category (for backward compatibility)
             if (layerGroups[parentName]?.[categoryName]) {
-                // Check if it's actually a container for third level
                 if (layerGroups[parentName][categoryName][categoryName]) {
                     targetLayer = layerGroups[parentName][categoryName][categoryName];
                 }
             }
         } else {
-            // First level (for backward compatibility)
             if (layerGroups[categoryName]?.[categoryName]?.[categoryName]) {
                 targetLayer = layerGroups[categoryName][categoryName][categoryName];
             }
@@ -936,83 +933,84 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
             throw new Error(`Layer group for ${categoryName} not found`);
         }
 
-        // Clear existing data in layer
         targetLayer.clearLayers();
 
         let offset = 0;
         let totalLoaded = 0;
         let hasMore = true;
-        const maxRecords = 3000; // Maximum records to load
-        const chunkSize = 500; // Records per request
-        let estimatedTotal = maxRecords; // Initial estimate
+        const maxRecords = 3000;
+        const chunkSize = 500;
+        let estimatedTotal = maxRecords;
 
-        // Load data in chunks with pagination
+        // Load data in chunks with cache check
         while (hasMore && totalLoaded < maxRecords) {
             try {
-                let queryString = "?";
-                if (dataType)
-                    queryString += `type=${encodeURIComponent(dataType)}`;
-                if (subType)
-                    queryString += `&sub_type=${encodeURIComponent(subType)}`;
-                if (year) queryString += `&year=${encodeURIComponent(year)}`;
-                queryString += `&kategori[]=${encodeURIComponent(
-                    categoryName
-                )}`;
+                const cacheParams = {
+                    type: dataType,
+                    sub_type: subType,
+                    year: year,
+                    category: categoryName,
+                    limit: Math.min(chunkSize, maxRecords - totalLoaded),
+                    offset: offset
+                };
 
-                // Calculate remaining records to load
-                const remainingRecords = maxRecords - totalLoaded;
-                const currentChunkSize = Math.min(chunkSize, remainingRecords);
-
-                queryString += `&limit=${currentChunkSize}&offset=${offset}`;
-
-                // Update loading progress
-                updateLoadingProgress(
-                    totalLoaded,
-                    estimatedTotal,
-                    `Memuat Layer ${Math.floor(offset / chunkSize) + 1}...`
-                );
-
-                const response = await fetch(`/geojson${queryString}`);
-
-                if (!response.ok) {
-                    // Enhanced error handling
-                    let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
-                    try {
-                        const errorData = await response.json();
-                        if (errorData.message) {
-                            errorDetails += ` - ${errorData.message}`;
-                        }
-                        if (
-                            errorData.details &&
-                            errorData.details !== errorData.message
-                        ) {
-                            errorDetails += ` (${errorData.details})`;
-                        }
-                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                            console.error("Server error response:", errorData);
-                        }
-                    } catch (e) {
-                        try {
-                            const errorText = await response.text();
-                            if (errorText && errorText.length > 0) {
-                                errorDetails += ` - ${errorText.substring(
-                                    0,
-                                    200
-                                )}${errorText.length > 200 ? "..." : ""}`;
-                            }
-                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                                console.error("Server error text:", errorText);
-                            }
-                        } catch (e2) {
-                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                                console.error("Could not parse error response");
-                            }
-                        }
+                const cacheKey = mapDataStore?.generateCacheKey(cacheParams);
+                
+                // Try cache first
+                let geoJsonData = null;
+                if (mapDataStore && cacheKey) {
+                    geoJsonData = await mapDataStore.getCachedData(cacheKey);
+                    
+                    if (geoJsonData) {
+                        // Update progress for cache hit
+                        updateLoadingProgress(
+                            totalLoaded,
+                            estimatedTotal,
+                            `Memuat Data - Layer ${Math.floor(offset / chunkSize) + 1}...`
+                        );
                     }
-                    throw new Error(errorDetails);
                 }
 
-                const geoJsonData = await response.json();
+                // If no cache hit, fetch from network
+                if (!geoJsonData) {
+                    let queryString = "?";
+                    if (dataType) queryString += `type=${encodeURIComponent(dataType)}`;
+                    if (subType) queryString += `&sub_type=${encodeURIComponent(subType)}`;
+                    if (year) queryString += `&year=${encodeURIComponent(year)}`;
+                    queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
+
+                    const remainingRecords = maxRecords - totalLoaded;
+                    const currentChunkSize = Math.min(chunkSize, remainingRecords);
+                    queryString += `&limit=${currentChunkSize}&offset=${offset}`;
+
+                    updateLoadingProgress(
+                        totalLoaded,
+                        estimatedTotal,
+                        `Memuat Data - Layer ${Math.floor(offset / chunkSize) + 1}...`
+                    );
+
+                    const response = await fetch(`/geojson${queryString}`);
+
+                    if (!response.ok) {
+                        let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.message) {
+                                errorDetails += ` - ${errorData.message}`;
+                            }
+                        } catch (e) {
+                            // Handle error parsing
+                        }
+                        throw new Error(errorDetails);
+                    }
+
+                    geoJsonData = await response.json();
+
+                    // Cache the result
+                    if (mapDataStore && cacheKey && geoJsonData?.features?.length) {
+                        await mapDataStore.setCachedData(cacheKey, geoJsonData, categoryName);
+                    }
+                }
 
                 // Check if we got any features
                 if (!geoJsonData?.features?.length) {
@@ -1021,18 +1019,13 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
                 // Update estimate if we have metadata
                 if (geoJsonData.meta?.total_features && offset === 0) {
-                    estimatedTotal = Math.min(
-                        geoJsonData.meta.total_features,
-                        maxRecords
-                    );
+                    estimatedTotal = Math.min(geoJsonData.meta.total_features, maxRecords);
                 }
 
                 // Determine marker options (only need to do this once)
                 let markerOptions = null;
                 if (offset === 0) {
-                    const catObj = geoJsonData.all_categories?.find(
-                        (c) => c.nama === categoryName
-                    );
+                    const catObj = geoJsonData.all_categories?.find((c) => c.nama === categoryName);
                     if (catObj?.is_marker && catObj.icon) {
                         markerOptions = L.ExtraMarkers.icon({
                             icon: catObj.icon,
@@ -1050,7 +1043,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
                 let featuresAdded = 0;
                 geoJsonData.features.forEach((feature, index) => {
                     try {
-                        // Validate feature structure
                         if (!feature || !feature.geometry) {
                             return;
                         }
@@ -1072,14 +1064,11 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
                         featuresAdded++;
 
-                        // Update progress periodically during feature loading
                         if (index % 50 === 0) {
                             updateLoadingProgress(
                                 totalLoaded + featuresAdded,
                                 estimatedTotal,
-                                `Memproses fitur ${
-                                    totalLoaded + featuresAdded
-                                }...`
+                                `Memproses fitur ${totalLoaded + featuresAdded}...`
                             );
                         }
                     } catch (featureError) {
@@ -1089,7 +1078,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
                 totalLoaded += featuresAdded;
 
-                // Update progress after chunk completion
                 updateLoadingProgress(
                     totalLoaded,
                     estimatedTotal,
@@ -1098,63 +1086,43 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
                         : `${totalLoaded} fitur dimuat...`
                 );
 
-                // Check if we have more data and haven't reached the limit
                 const serverHasMore = geoJsonData.meta?.has_more === true;
-                hasMore =
-                    serverHasMore &&
-                    totalLoaded < maxRecords &&
-                    featuresAdded > 0;
+                hasMore = serverHasMore && totalLoaded < maxRecords && featuresAdded > 0;
                 offset += chunkSize;
 
-                // Add small delay to prevent overwhelming the server and show progress
                 if (hasMore) {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             } catch (chunkError) {
-                // Log error in development only
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    console.error(
-                        `Error loading layer at offset ${offset}:`,
-                        chunkError
-                    );
+                    console.error(`Error loading layer at offset ${offset}:`, chunkError);
                 }
 
-                // If this is the first chunk, re-throw the error
                 if (offset === 0) {
                     throw chunkError;
                 }
 
-                // For subsequent chunks, just log and break
                 updateLoadingProgress(
                     totalLoaded,
                     estimatedTotal,
-                    `Error pada Layer ${Math.floor(offset / chunkSize)}: ${
-                        chunkError.message
-                    }`
+                    `Error pada Layer ${Math.floor(offset / chunkSize)}: ${chunkError.message}`
                 );
-                await new Promise((resolve) => setTimeout(resolve, 1000)); // Show error for 1 second
+                await new Promise((resolve) => setTimeout(resolve, 1000));
                 break;
             }
         }
 
         loadedCategories.add(categoryName);
-
-        // Final progress update
         updateLoadingProgress(totalLoaded, totalLoaded, "Selesai!");
-
-        // Wait a moment to show completion
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Hide loading states
         hideLoadingOverlay();
         updateCheckboxLoadingState(categoryName, false);
 
-        // Hide loading toast safely
         if (loadingToast) {
             hideToast(loadingToast);
         }
 
-        // Final success message
         let finalMessage;
         if (totalLoaded >= maxRecords) {
             finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur - maksimum tercapai)`;
@@ -1165,27 +1133,19 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
         showAlert(finalMessage, "success");
 
     } catch (error) {
-        console.error(
-            `Error loading data for category ${categoryName}:`,
-            error
-        );
+        console.error(`Error loading data for category ${categoryName}:`, error);
 
-        // Hide loading states
         hideLoadingOverlay();
         updateCheckboxLoadingState(categoryName, false);
 
-        // Hide loading toast safely
         if (loadingToast) {
             hideToast(loadingToast);
         }
 
-        // Show detailed error in alert
         let errorMessage = `Gagal memuat data ${categoryName}`;
 
-        // Provide more specific error messages
         if (error.message.includes("500")) {
-            errorMessage +=
-                ": Server mengalami masalah internal. Coba lagi nanti.";
+            errorMessage += ": Server mengalami masalah internal. Coba lagi nanti.";
         } else if (error.message.includes("404")) {
             errorMessage += ": Data tidak ditemukan.";
         } else if (error.message.includes("timeout")) {
@@ -1194,19 +1154,7 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
             errorMessage += `: ${error.message}`;
         }
 
-        // Log full error stack for debugging in development only
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.error("Full error details:", {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-                categoryName: categoryName,
-            });
-        }
-
         showAlert(errorMessage, "danger");
-
-        // Remove category from loaded set so user can retry
         loadedCategories.delete(categoryName);
     } finally {
         isLoadingData = false;
@@ -1520,32 +1468,42 @@ function updateSecondLevelCheckboxState(secondLevelCheckbox, thirdLevelContainer
  * This function needs to be updated for expandParentGroupIfNeeded
  * to work with the new hierarchy structure where root level has no checkbox
  */
-function expandParentGroupIfNeeded(checkbox) {
+async function expandParentGroupIfNeeded(checkbox) {
     // For third level - need to expand both parent and grandparent
     if (checkbox.getAttribute('data-level') === '3') {
         const parentName = checkbox.getAttribute('data-parent');
         const grandparentName = checkbox.getAttribute('data-grandparent');
         
         if (parentName && grandparentName) {
-            // First expand root level - no longer using rootId for a checkbox, just for the container
+            // First expand root level
             const rootId = `root-${grandparentName.replace(/\s+/g, "-")}`;
-            const rootHeader = document.querySelector(`#${rootId}-children`).closest('.mb-3').querySelector('.flex.items-center.justify-between');
             const rootContainer = document.getElementById(`${rootId}-children`);
             
-            if (rootHeader && rootContainer && rootContainer.classList.contains('hidden')) {
-                rootHeader.click();
-                return new Promise(resolve => setTimeout(resolve, 300)).then(() => {
-                    // Then expand second level
-                    const secondId = `second-${grandparentName}-${parentName}`.replace(/\s+/g, "-");
-                    const secondHeader = document.querySelector(`#${secondId}`).closest('.flex.items-center.justify-between');
-                    const secondContainer = document.getElementById(`${secondId}-children`);
-                    
-                    if (secondHeader && secondContainer && secondContainer.classList.contains('hidden')) {
-                        secondHeader.click();
-                        return new Promise(resolve => setTimeout(resolve, 300));
-                    }
-                });
+            if (rootContainer && rootContainer.classList.contains('hidden')) {
+                // Find root header and click it
+                const rootWrapper = rootContainer.closest('.mb-3');
+                const rootHeader = rootWrapper?.querySelector('.flex.items-center.justify-between');
+                if (rootHeader) {
+                    rootHeader.click();
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
             }
+            
+            // Then expand second level
+            const secondId = `second-${grandparentName}-${parentName}`.replace(/\s+/g, "-");
+            const secondContainer = document.getElementById(`${secondId}-children`);
+            
+            if (secondContainer && secondContainer.classList.contains('hidden')) {
+                // Find second header and click it
+                const secondItem = secondContainer.closest('.px-2.py-1');
+                const secondHeader = secondItem?.querySelector('.flex.items-center.justify-between');
+                if (secondHeader) {
+                    secondHeader.click();
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+            
+            return;
         }
     }
     
@@ -1555,13 +1513,18 @@ function expandParentGroupIfNeeded(checkbox) {
         
         if (parentName) {
             const rootId = `root-${parentName.replace(/\s+/g, "-")}`;
-            const rootHeader = document.querySelector(`#${rootId}-children`).closest('.mb-3').querySelector('.flex.items-center.justify-between');
             const rootContainer = document.getElementById(`${rootId}-children`);
             
-            if (rootHeader && rootContainer && rootContainer.classList.contains('hidden')) {
-                rootHeader.click();
-                return new Promise(resolve => setTimeout(resolve, 300));
+            if (rootContainer && rootContainer.classList.contains('hidden')) {
+                const rootWrapper = rootContainer.closest('.mb-3');
+                const rootHeader = rootWrapper?.querySelector('.flex.items-center.justify-between');
+                if (rootHeader) {
+                    rootHeader.click();
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
             }
+            
+            return;
         }
     }
     
@@ -1569,7 +1532,7 @@ function expandParentGroupIfNeeded(checkbox) {
     const groupElement = checkbox.closest(".mb-3");
 
     if (!groupElement) {
-        return Promise.resolve();
+        return;
     }
 
     // Cari sub-layer list (container yang mungkin hidden)
@@ -1586,11 +1549,9 @@ function expandParentGroupIfNeeded(checkbox) {
             header.click();
 
             // Tunggu animasi expand selesai
-            return new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
         }
     }
-    
-    return Promise.resolve();
 }
 
 /**
@@ -2014,6 +1975,23 @@ async function expandParentGroupIfNeeded(checkbox) {
 
 // Update existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
+    // Initialize MapDataStore first
+    if (window.MapDataStore) {
+        mapDataStore = new window.MapDataStore();
+        
+        // Add debug tools in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            window.MAP_DEBUG = {
+                cache: mapDataStore,
+                getCacheStats: () => mapDataStore.getCacheStats(),
+                clearCache: () => mapDataStore.clearAllCache(),
+                layerGroups: () => layerGroups,
+                loadedCategories: () => Array.from(loadedCategories)
+            };
+            console.log('Debug tools available at window.MAP_DEBUG');
+        }
+    }
+
     // Init map
     changeBaseMap("osm");
     setupUI();

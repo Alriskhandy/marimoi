@@ -362,5 +362,6 @@
     </script>
     @endif
     
+    <script src="{{ asset('frontend/js/map-cache.js') }}"></script>
     <script src="{{ asset('frontend/js/map.js') }}"></script>
 @endpush
