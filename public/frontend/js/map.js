@@ -1746,7 +1746,7 @@ function setupUI() {
             radioInput.value = bm.id;
             radioInput.className = "hidden";
             radioInput.style.cssText = "display:none;";
-            if (i === 4) radioInput.checked = true;
+            if (i === 0) radioInput.checked = true;
 
             // Click handler
             basemapItem.addEventListener("click", function () {
@@ -2015,7 +2015,7 @@ async function expandParentGroupIfNeeded(checkbox) {
 // Update existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
     // Init map
-    changeBaseMap("esri-world-imagery");
+    changeBaseMap("osm");
     setupUI();
 
     // Show loading spinner for layer list
