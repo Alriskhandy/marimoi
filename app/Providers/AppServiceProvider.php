@@ -25,6 +25,17 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrap();
 
+        // Force HTTPS jika ada header dari proxy/load balancer
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+            URL::forceScheme('https');
+        }
+        
+        // Atau gunakan header X-Forwarded-Proto dari load balancer
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            URL::forceScheme('https');
+        }
+        
+        // Fallback: force di production
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
