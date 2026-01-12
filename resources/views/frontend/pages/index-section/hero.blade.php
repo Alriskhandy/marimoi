@@ -37,11 +37,11 @@
     <div class="w-full flex justify-center sm:mt-2 md:mt-5 lg:mt-10 pt-10">
         <div id="mockupPosition" class="mockup-position pointer-events-none z-[2]">
             <div id="mockupWrapper" class="mockup-wrapper mx-auto">
-                <img id="mockupImg" src="{{ secure_asset('frontend/img/mockup/tab-mockup.png') }}"
+                <img id="mockupImg" src="{{ asset('frontend/img/mockup/tab-mockup.png') }}"
                     alt="Desktop & Smartphone Mockup"
                     class="mockup-img h-[560px] xl:h-[540px] lg:h-[460px] md:h-[360px] sm:h-[260px] xs:h-[180px] w-auto max-w-[92vw] lg:max-w-[1000px] object-contain pointer-events-none"
                     loading="lazy" decoding="async" sizes="(max-width: 640px) 90vw, (max-width:1024px) 70vw, 1000px"
-                    srcset="{{ secure_asset('frontend/img/mockup/tab-mockup.png') }} 1100w">
+                    srcset="{{ asset('frontend/img/mockup/tab-mockup.png') }} 1100w">
             </div>
         </div>
     </div>
