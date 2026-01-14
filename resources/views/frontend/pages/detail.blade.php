@@ -228,20 +228,19 @@
         </div>
     </section><!-- /Detail Section -->
 
-    <!-- Form sederhana untuk testing - sesuai dengan contoh data -->
-    <section class="section py-4">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-7">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h5>Form Feedback - Testing</h5>
-                        </div>
-                        <div class="card-body">
-                            <!-- Alert container -->
-                            <div id="alertContainer" style="display: none;">
-                                <div id="alertMessage" class="alert" role="alert"></div>
-                            </div>
+    @if ($project->data_type != 'tematik')
+        <!-- Form Feedback Section -->
+        <section class="py-12 bg-white">
+            <div class="container mx-auto px-4 max-w-6xl">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-7">
+                        <div class="bg-slate-50 rounded-xl p-6 lg:p-8 h-full">
+                            <h3 class="text-xl text-center md:text-2xl font-bold text-slate-800 mb-6">Formulir Tanggapan
+                                Kegiatan</h3>
+                            <div class="space-y-6">
+                                <form id="feedbackForm" action="{{ route('feedback.store') }}" method="POST"
+                                    enctype="multipart/form-data">
+                                    @csrf
 
                                     <!-- Hidden fields sesuai contoh data -->
                                     <input type="hidden" name="data_spatial_id" value="{{ $project->id }}">
@@ -480,15 +479,14 @@
                                     </ol>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="laporan_gambar" class="form-label">Lampiran Gambar
-                                        <span id="image_required" class="text-danger" style="display: none;">*</span>
-                                    </label>
-                                    <input type="file" class="form-control" id="laporan_gambar" name="laporan_gambar"
-                                        accept="image/jpeg,image/png,image/jpg,image/gif">
-                                    <small class="text-muted">Maksimal 2MB. Format: JPG, JPEG, PNG.
-                                        <span id="image_note">Wajib untuk pengaduan.</span>
-                                    </small>
+                                <div class="border-t border-slate-200 pt-4">
+                                    <h4 class="font-semibold text-slate-900 mb-3">Catatan:</h4>
+                                    <ul class="text-sm text-slate-600 space-y-1 list-disc list-inside">
+                                        <li>Gambar penting untuk memperjelas pengaduan.</li>
+                                        <li>Email aktif dibutuhkan untuk tindak lanjut.</li>
+                                        <li>Masukan Anda akan diproses dan ditindaklanjuti.</li>
+                                        <li>Notifikasi akan dikirim lewat email atau WhatsApp.</li>
+                                    </ul>
                                 </div>
 
                                 <div class="border-t border-slate-200 pt-4">
@@ -497,34 +495,6 @@
                                         Data Anda aman dan hanya digunakan untuk penanganan masukan.
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-5">
-                    <div class="card h-100 border-info">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0">Keterangan &amp; Petunjuk</h5>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-unstyled mb-3">
-                                <li><strong>Form ini digunakan untuk memberikan feedback, saran, pengaduan, atau apresiasi
-                                        terkait proyek yang sedang berjalan.</strong></li>
-                                <li>Isi data dengan benar dan lengkap agar tanggapan Anda dapat diproses dengan baik.</li>
-                                <li>Jika memilih <span class="fw-bold text-danger">Pengaduan</span>, lampiran gambar <span
-                                        class="fw-bold text-danger">wajib</span> diunggah.</li>
-                                <li>Pastikan nomor WhatsApp aktif untuk komunikasi lebih lanjut.</li>
-                                <li>Feedback Anda akan diteruskan ke tim terkait untuk ditindaklanjuti.</li>
-                            </ul>
-                            <hr>
-                            <div class="mb-2">
-                                <strong>Kontak Bantuan:</strong><br>
-                                <span class="d-block"><i class="bi bi-envelope"></i> info@marimoi.id</span>
-                                <span class="d-block"><i class="bi bi-whatsapp"></i> 0812-3456-7890</span>
-                            </div>
-                            <div class="mb-2">
-                                <strong>Privasi:</strong><br>
-                                Data Anda aman dan hanya digunakan untuk keperluan tindak lanjut feedback.
                             </div>
                         </div>
                     </div>
