@@ -1,0 +1,134 @@
+/* ==========================================================================
+   FOOTER TAILWIND SUPPORT CSS
+   ========================================================================== */
+/* Font family fallback */
+.font-inter {
+    font-family: "Inter", sans-serif;
+}
+
+/* Custom animations yang tidak bisa dibuat dengan Tailwind */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Floating buttons visibility states */
+.floating-buttons.visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+.floating-buttons.visible .float-btn:nth-child(1) {
+    animation: fadeInUp 0.3s ease 0.1s both;
+}
+
+.floating-buttons.visible .float-btn:nth-child(2) {
+    animation: fadeInUp 0.3s ease 0.2s both;
+}
+
+/* Hover effects untuk social icons yang menggunakan CSS variables */
+.social-icon:hover {
+    background: var(--bg-secondary) !important;
+    color: white !important;
+}
+
+/* FAQ button gradient fallback */
+.faq-btn {
+    background: linear-gradient(
+        135deg,
+        var(--bg-primary) 0%,
+        var(--bg-secondary) 100%
+    ) !important;
+}
+
+.faq-btn:hover {
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        var(--bg-primary) 100%
+    ) !important;
+}
+
+/* Mobile responsive yang lebih spesifik */
+@media (max-width: 1024px) {
+    .footer-grid-lg {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-grid-lg {
+        grid-template-columns: 1fr;
+    }
+
+    .floating-buttons {
+        bottom: 15px !important;
+        right: 15px !important;
+        gap: 10px !important;
+    }
+
+    .floating-buttons .float-btn {
+        width: 50px !important;
+        height: 50px !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .floating-buttons .float-btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .floating-buttons .float-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .floating-buttons {
+        bottom: 12px !important;
+        right: 12px !important;
+        gap: 8px !important;
+    }
+
+    .floating-buttons .float-btn {
+        width: 45px !important;
+        height: 45px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .floating-buttons .float-btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .floating-buttons .float-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .floating-buttons {
+        bottom: 10px !important;
+        right: 10px !important;
+        gap: 6px !important;
+    }
+
+    .floating-buttons .float-btn {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .floating-buttons .float-btn svg {
+        width: 15px !important;
+        height: 15px !important;
+    }
+}

@@ -1,252 +1,424 @@
-@extends('frontend.layouts.main')
+@extends('frontend.layouts.app')
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('frontend/css/index-mobile.css') }}">
+@endpush
 
 @section('main')
-    <!-- Navbar Section -->
-    @include('frontend.partials.nav-map')
-
     <!-- Hero Section -->
-    <section id="hero" class="hero section dark-background position-relative">
+    @include('frontend.partials.hero')
 
-        <img src="{{ asset('frontend/img/hero2.png') }}" alt="" class="hero-bg" data-aos="fade-in">
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>Fitur Utama MARIMOI</h2>
+                <p>
+                    Platform terintegrasi untuk manajemen infrastruktur yang
+                    efektif dan transparan
+                </p>
+            </div>
 
-        <div class="overlay-dark position-absolute top-0 start-0 w-100 h-100"
-            style="z-index: 1; background-color: rgba(0, 0, 0, 0.5);"></div>
-
-        <div class="container position-relative" style="z-index: 2;">
-            <div class="row gy-4 d-flex justify-content-center">
-                <div class="col-lg-10 order-2 order-lg-1 d-flex flex-column justify-content-center">
-                    <h2 class="text-center text-white" data-aos="fade-up">SISTEM INFORMASI MANAJEMEN AKSELERASI
-                        INFRASTRUKTUR UNTUK MONITORING DAN INTEGRASI WILAYAH</h2>
-                    <p class="text-white text-center" data-aos="fade-up" data-aos-delay="100">Sistem digital terpadu
-                        berbasis web dan mobile yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan
-                        evaluasi pembangunan infrastruktur daerah secara lebih efektif, partisipatif, dan terintegrasi.
-                        Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah
-                        Provinsi Maluku Utara.</p>
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h4>Proyek Strategis Daerah</h4>
+                    <p>
+                        Pemetaan proyek strategis daerah.
+                    </p>
+                    <a href="/proyek-strategis-daerah" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
 
-                <div class="col-lg-5 order-1 order-lg-2 hero-img" data-aos="zoom-out">
-                    <img src="assets/img/hero-img.svg" class="img-fluid mb-3 mb-lg-0" alt="">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-flag"></i>
+                    </div>
+                    <h4>Proyek Strategis Nasional</h4>
+                    <p>
+                        Pemetaan proyek nasional di Maluku Utara.
+                    </p>
+                    <a href="/proyek-strategis-nasional" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
 
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <h4>Prioritas Daerah 2025-2029</h4>
+                    <p>
+                        Program prioritas jangka menengah daerah.
+                    </p>
+                    <a href="/prioritas-daerah" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4>Usulan Musrenbang</h4>
+                    <p>
+                        Pemetaan usulan pembangunan hasil Musrenbang.
+                    </p>
+                    <a href="/usulan-musrenbang" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <h4>Pokir DPRD</h4>
+                    <p>
+                        Pemetaan usulan pembangunan pokok pikiran DPRD.
+                    </p>
+                    <a href="/pokir-dprd" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h4>Aspirasi Masyarakat</h4>
+                    <p>
+                        Formulir Saran, Kritik, dan Aspirasi Pembangunan.
+                    </p>
+                    <a href="/aspirasi-masyarakat" class="feature-link">
+                        Lihat Detail <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
             </div>
         </div>
+    </section>
 
-    </section><!-- /Hero Section -->
-
-    <!--Indikator Pembangunan Section -->
-    <section id="featured-services" class="featured-services section pt-3 pb-5">
-        <!-- Section Title -->
-        <div class="container section-title" data-aos="fade-up">
-            <span>Indikator Pembangunan Strategis<br></span>
-            <h2>Indikator Pembangunan Strategis</h2>
-            <p>Kontribusi MARIMOI Terhadap Indikator-Indikator Pembangunan Strategis</p>
-        </div><!-- End Section Title -->
-
+    <!-- Indikator Pembangunan Section -->
+    <section id="indikator" class="features-section" style="background: var(--gray-light)">
         <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>Indikator Pembangunan Strategis</h2>
+                <p>
+                    Kontribusi MARIMOI Terhadap Indikator-Indikator
+                    Pembangunan Strategis
+                </p>
+            </div>
 
             <div class="row gy-4">
-
-                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="100">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-map-location-dot"></i></div>
-                    <div>
-                        <h4 class="title">Indeks Pengembangan Wilayah</h4>
-                        <p class="description">MARIMOI
-                            meningkatkan Indeks Pengembangan Wilayah
-                            melalui:
-                        </p>
-                        <ul>
-                            <li>Penyediaan data spasial dan sektoral untuk mengukur
-                                keterjangkauan layanan dasar.</li>
-                            <li>Akselerasi pembangunan infrastruktur di wilayah hinterland
-                                dan kawasan tertinggal.</li>
-                            <li>Integrasi lintas wilayah dalam perencanaan berbasis
-                                konektivitas (antarpulau, antarkawasan).</li>
-                        </ul>
+                <!-- Card 1: Indeks Pengembangan Wilayah -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="service-item d-flex animate-on-scroll">
+                        <div class="icon flex-shrink-0 me-4">
+                            <div class="service-icon" style="background: var(--primary-blue);">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="service-title">Indeks Pengembangan Wilayah</h4>
+                            <p class="service-description">
+                                MARIMOI meningkatkan Indeks Pengembangan Wilayah melalui:
+                            </p>
+                            <ul class="service-list">
+                                <li>Penyediaan data spasial dan sektoral untuk mengukur keterjangkauan layanan dasar.</li>
+                                <li>Akselerasi pembangunan infrastruktur di wilayah hinterland dan kawasan tertinggal.</li>
+                                <li>Integrasi lintas wilayah dalam perencanaan berbasis konektivitas (antarpulau,
+                                    antarkawasan).</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-                <!-- End Service Item -->
 
-                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="200">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-person"></i></div>
-                    <div>
-                        <h4 class="title">Indeks Pelayanan Publik</h4>
-                        <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
-                            melalui:</p>
-                        <ul>
-                            <li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur
-                                (jalan rusak, PSU, jembatan, dIl).</li>
-                            <li>Penyediaan data real-time kepada unit pelayanan teknis
-                                untuk respon cepat.</li>
-                            <li>Penguatan kualitas layanan berbasis kebutuhan wilayah,
-                                bukan hanya standar sektoral.</li>
-                        </ul>
+                <!-- Card 2: Indeks Pelayanan Publik -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="service-item d-flex animate-on-scroll">
+                        <div class="icon flex-shrink-0 me-4">
+                            <div class="service-icon" style="background: var(--green-accent);">
+                                <i class="fa-solid fa-person"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="service-title">Indeks Pelayanan Publik</h4>
+                            <p class="service-description">
+                                MARIMOI memberi dampak pada Indeks Pelayanan melalui:
+                            </p>
+                            <ul class="service-list">
+                                <li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur (jalan rusak, PSU,
+                                    jembatan, dll).</li>
+                                <li>Penyediaan data real-time kepada unit pelayanan teknis untuk respon cepat.</li>
+                                <li>Penguatan kualitas layanan berbasis kebutuhan wilayah, bukan hanya standar sektoral.
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                </div><!-- End Service Item -->
+                </div>
 
-                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-computer"></i></div>
-                    <div>
-                        <h4 class="title">Indeks SPBE</h4>
-                        <p class="description">MARIMOI mendorong pencapaian SPBE melalui:</p>
-                        <ul>
-                            <li>Digitalisasi proses perencanaan, monitoring, dan pelaporan
-                                infrastruktur.</li>
-                            <li>Interoperabilitas data antar instansi (Bappeda, OPD teknis,
-                                DPRD).</li>
-                            <li>Fitur dashboard publik sebagai bentuk pelayanan digital
-                                transparan.</li>
-                        </ul>
+                <!-- Card 3: Indeks SPBE -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="service-item d-flex animate-on-scroll">
+                        <div class="icon flex-shrink-0 me-4">
+                            <div class="service-icon" style="background: var(--cyan-accent);">
+                                <i class="fa-solid fa-computer"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="service-title">Indeks SPBE</h4>
+                            <p class="service-description">
+                                MARIMOI mendorong pencapaian SPBE melalui:
+                            </p>
+                            <ul class="service-list">
+                                <li>Digitalisasi proses perencanaan, monitoring, dan pelaporan infrastruktur.</li>
+                                <li>Interoperabilitas data antar instansi (Bappeda, OPD teknis, DPRD).</li>
+                                <li>Fitur dashboard publik sebagai bentuk pelayanan digital transparan.</li>
+                            </ul>
+                        </div>
                     </div>
-                </div><!-- End Service Item -->
-                <div class="col-lg-6 col-md-6 service-item d-flex" data-aos="fade-up" data-aos-delay="300">
-                    <div class="icon flex-shrink-0"><i class="fa-solid fa-road-bridge"></i></div>
-                    <div>
-                        <h4 class="title">Indeks Kualitas Layanan Infrastruktur</h4>
-                        <p class="description">MARIMOI memberi dampak pada Indeks Pelayanan
-                            melalui:</p>
-                        <ul>
-                            <li>Partisipasi masyarakat dalam pelaporan kondisi infrastruktur
-                                (jalan rusak, PSU, jembatan, dIl).</li>
-                            <li>Penyediaan data real-time kepada unit pelayanan teknis
-                                untuk respon cepat.</li>
-                            <li>Penguatan kualitas layanan berbasis kebutuhan wilayah,
-                                bukan hanya standar sektoral.</li>
-                        </ul>
+                </div>
+
+                <!-- Card 4: Indeks Kualitas Layanan Infrastruktur -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="service-item d-flex animate-on-scroll">
+                        <div class="icon flex-shrink-0 me-4">
+                            <div class="service-icon" style="background: var(--yellow-accent);">
+                                <i class="fa-solid fa-road-bridge"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="service-title">Indeks Kualitas Layanan Infrastruktur</h4>
+                            <p class="service-description">
+                                Melalui Marimoi:
+                            </p>
+                            <ul class="service-list">
+                                <li>Pemerintah dapat memantau kondisi infrastruktur secara spasial dan waktu nyata.</li>
+                                <li>Sistem mendukung evaluasi kinerja infrastruktur berdasarkan output dan outcome.</li>
+                                <li>Layanan infrastruktur menjadi lebih merata, berkualitas, dan efisien.</li>
+                            </ul>
+                        </div>
                     </div>
-                </div><!-- End Service Item -->
-
-
+                </div>
             </div>
 
         </div>
+    </section>
 
-    </section><!-- /Indikator Pembangunan Section -->
+    <!-- Backlink Section -->
+    <section id="backlink" class="backlink-section">
+        <div class="container">
+            <div class="row">
+                <div class="col d-flex flex-wrap justify-content-center align-items-center gap-4">
+                    <a href="https://bappeda.malutprov.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo.webp') }}" alt="Bappeda Maluku Utara" class="logo">
+                        <span>BAPPEDA MALUT</span>
+                    </a>
+                    <a href="https://opendata.malutprov.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-opendata-malut.png') }}" alt="Opendata Maluku Utara"
+                            class="logo">
+                        <span>OPENDATA MALUT</span>
+                    </a>
+                    <a href="https://malut.bps.go.id/id" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-bps.webp') }}" alt="BPS Maluku Utara" class="logo">
+                        <span>BADAN PUSAT STATISTIK</span>
+                    </a>
+                    <a href="https://bappenas.go.id/" class="web-link" target="_blank" rel="noopener">
+                        <img src="{{ asset('frontend/img/logo-bappenas.png') }}" alt="BAPPENAS" class="logo">
+                        <span>BAPPENAS</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section id="stats" class="features-section">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>Statistik</h2>
+                <p>
+                    Peta interaktif dari berbagai proyek infrastruktur.
+                </p>
+            </div>
+
+            <div class="stats-container animate-on-scroll">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="{{ $totalPsd }}">0</span>
+                        <div class="stat-label">Proyek Strategis Daerah</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="{{ $totalPsn }}">0</span>
+                        <div class="stat-label">Proyek Strategis Nasional</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="{{ $totalMusrenbang }}">0</span>
+                        <div class="stat-label">Usulan Musrenbang</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="{{ $totalPokir }}">0</span>
+                        <div class="stat-label">Pokir DPRD</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Monitoring Section -->
+    <section id="monitoring" class="monitoring-section">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>Proyek Paling Populer</h2>
+                <p>
+                    Lihat proyek yang paling menarik perhatian masyarakat.
+                </p>
+            </div>
+
+            <div class="monitoring-dashboard animate-on-scroll">
+                <div class="dashboard-header">
+                    <h3 class="dashboard-title">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Kategori Proyek
+                    </h3>
+                    <div class="status-filters">
+                        <button class="status-btn active" onclick="filterProjects(event, 'psd')">
+                            Strategis Daerah
+                        </button>
+                        <button class="status-btn" onclick="filterProjects(event, 'psn')">
+                            Strategis Nasional
+                        </button>
+                        <button class="status-btn" onclick="filterProjects(event, 'usulan_musrenbang')">
+                            Usulan Musrenbang
+                        </button>
+                        <button class="status-btn" onclick="filterProjects(event, 'pokir_dprd')">
+                            Pokir DPRD
+                        </button>
+                    </div>
+                </div>
+
+                <div class="project-grid" id="projectGrid">
+                    @foreach ($dataPeta as $data)
+                        @php
+                            $status = $data->sub_type ?? $data->data_type;
+                            $slug = $links[$status] ?? '#';
+
+                            $kegiatan = $data->dbf_attributes['KEGIATAN'] ?? ($data->dbf_attributes['NAMAOBJ'] ?? '-');
+
+                            $lokasi = $data->dbf_attributes['KABUPATEN'] ?? ($data->dbf_attributes['WADMPR'] ?? '-');
+
+                            $rfi = $data->dbf_attributes['RFI'] ?? '0%';
+                            $ran = $data->dbf_attributes['RAN'] ?? '0%';
+                        @endphp
+
+                        <div class="project-card" data-status="{{ $status }}">
+                            <h4 class="project-title">{{ $kegiatan }}</h4>
+
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ $lokasi }}
+                            </p>
+
+                            <div class="progress-group">
+                                <div class="progress-header">
+                                    <p class="progress-label">Realisasi Fisik</p>
+                                    <p class="progress-text">{{ $rfi }}</p>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ $rfi }}"></div>
+                                </div>
+                            </div>
+
+                            <div class="progress-group">
+                                <div class="progress-header">
+                                    <p class="progress-label">Realisasi Anggaran</p>
+                                    <p class="progress-text">{{ $ran }}</p>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ $ran }}"></div>
+                                </div>
+                            </div>
+
+                            <a class="project-button" href="{{ url($slug . '/' . $data->uuid) }}">
+                                Lihat Detail
+                            </a>
+                        </div>
+                    @endforeach
+
+
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- About Section -->
-    <section id="about" class="about section">
-
+    <section id="about" class="features-section">
         <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="animate-on-scroll">
+                        <h2 class="mb-4">Tentang MARIMOI</h2>
+                        <p class="mb-4">
+                            MARIMOI adalah sistem digital terpadu untuk memperkuat
+                            koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan
+                            pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung
+                            perencanaan lintas sektor secara kolaboratif dan transparan.
 
-            <div class="row gy-4">
-
-                <div class="col-lg-6 position-relative align-self-start order-lg-last order-first" data-aos="fade-up"
-                    data-aos-delay="200">
-                    <img src="{{ asset('frontend/img/kantor-gub-malut.jpeg') }}" class="img-fluid" alt="">
-                    <a href="https://www.youtube.com/watch?v=EQbw-E1ecB8" class="glightbox pulsating-play-btn"></a>
+                            Platform ini mempercepat perencanaan, mendorong partisipasi publik, dan meningkatkan
+                            akuntabilitas, menjadi bagian dari transformasi digital berbasis data dan kebutuhan lokal.
+                        </p>
+                        <div class="row my-4">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Integrasi data spasial & sektoral</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Pemantauan proyek strategis</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Kelola usulan Pokir & Musrenbang</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Prioritas pembangunan 2025–2029</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Evaluasi & pelaporan transparan</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas fa-check-circle me-3 fs-5" style="color: var(--green-accent)"></i>
+                                    <span>Dorong partisipasi & kolaborasi</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <div class="col-lg-6">
+                    <div class="animate-on-scroll">
+                        <div class="position-relative">
+                            <div class="ratio ratio-16x9 rounded-4 border border-primary">
+                                <iframe src="https://www.youtube-nocookie.com/embed/EQbw-E1ecB8"
+                                    title="YouTube video player"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen referrerpolicy="strict-origin-when-cross-origin">
+                                </iframe>
 
-                <div class="col-lg-6 content order-last  order-lg-first" data-aos="fade-up" data-aos-delay="100">
-                    <h3>TENTANG BAPPEDA</h3>
-                    <p>
-                        Badan Perencanaan Pembangunan Daerah merupakan Organisasi
-                        Perangkat Daerah yang mengemban tugas mengkoordinasikan penyusunan
-                        dokumen Perencanaan Pembangunan Daerah serta melakukan pemantauan dan
-                        evaluasi pelaksanaan rencana pada periodesasi tertentu sesuai ketentuan
-                        perundang - undangan yang berlaku.
-                    </p>
-                    <br>
-                    <p>
-                        Bappeda Provinsi Maluku Utara dibentuk berdasarkan Peraturan Gubernur Nomor 63 Tahun 2021 dan
-                        bertugas membantu Gubernur dalam melaksanakan fungsi penunjang urusan pemerintahan di bidang
-                        perencanaan dan pembangunan daerah, dengan mengacu pada RPJPD, RPJMD, kebijakan Gubernur, kondisi
-                        objektif, serta peraturan perundang-undangan yang berlaku.
-                    </p>
-
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
             </div>
-
         </div>
+    </section>
 
-    </section><!-- /About Section -->
-
-    <!-- Fitur Section -->
-    <section id="services" class="services section pt-3 pb-5">
-
-        <!-- Section Title -->
-        <div class="container section-title" data-aos="fade-up">
-            <span>Fitur-Fitur<br></span>
-            <h2>Fitur-Fitur</h2>
-            <p>Jelajahi Fitur-Fitur Sistem Informasi Manajemen Akselerasi Untuk Monitoring dan Integrasi Wilayah (MARIMOI)
-            </p>
-        </div><!-- End Section Title -->
-
-        <div class="container">
-
-            <div class="row gy-4">
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                    <div class="card">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/daerah.png') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.psd') }}" class="stretched-link">Proyek Strategis Daerah</a></h3>
-                        <p>Mempermudah pemantauan dan pelaporan proyek-proyek strategis di tingkat daerah untuk mendukung
-                            akselerasi pembangunan wilayah.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                    <div class="card">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/nasional.jpg') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.psn') }}" class="stretched-link">Proyek Strategis Nasional</a></h3>
-                        <p>Integrasi data proyek strategis nasional untuk memastikan koordinasi yang lebih baik dan
-                            monitoring yang efektif di seluruh Indonesia.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                    <div class="card">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/wilayah.jpg') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.prioritas') }}" class="stretched-link">Prioritas Daerah 2025-2029</a>
-                        </h3>
-                        <p>Menampilkan rencana dan prioritas pembangunan wilayah Provinsi Maluku Utara untuk periode 2025-2029, mendukung
-                            visi & misi Gubernur 2025-2029.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-                    <div class="card">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/musyawarah.jpg') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.musrenbang') }}" class="stretched-link">Usulan Musrenbang</a></h3>
-                        <p>Menampilkan pengembangan wilayah sesuai dengan hasil usulan dalam Musyawarah Perencanaan
-                            Pembangunan (Musrenbang) tingkat daerah.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
-                    <div class="card">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/pokok-pikiran.jpg') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.pokir') }}" class="stretched-link">Pokir DPRD</a></h3>
-                        <p>Pokok Pikiran (Pokir) DPRD dalam rangka pengembangan wilayah Maluku Utara.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-                    <div class="card d-flex text-justify">
-                        <div class="card-img">
-                            <img src="{{ asset('frontend/img/aspirasi.jpg') }}" alt="" class="img-fluid">
-                        </div>
-                        <h3><a href="{{ route('tampil.aspirasi') }}" class="stretched-link">Aspirasi Masyarakat</a></h3>
-                        <p>Menyediakan platform bagi masyarakat untuk menyampaikan aspirasi dan pengaduan terkait
-                            pembangunan dan kebijakan publik.</p>
-                    </div>
-                </div><!-- End Card Item -->
-
-            </div>
-
-        </div>
-
-    </section><!-- /Fitur Section -->
-
-    <!-- Footer Section -->
+    <!-- Footer -->
     @include('frontend.partials.footer')
 @endsection

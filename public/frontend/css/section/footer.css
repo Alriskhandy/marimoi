@@ -1,0 +1,359 @@
+/* ==========================================================================
+   FOOTER SECTION
+   ========================================================================== */
+
+.footer {
+    background: #fff;
+    color: #000;
+    padding: 60px 0 0;
+    font-family: "Inter", sans-serif;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 3fr 3fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+/* Video Section */
+.footer-video-section iframe {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 2/1;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 5%;
+}
+
+/* Logo Section */
+.footer-logo-section {
+    padding-right: 20px;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.footer-logo-img {
+    width: auto;
+    height: 40px;
+    margin-right: 12px;
+}
+
+.footer-logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000;
+}
+
+.footer-description {
+    color: #0d0d0d;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+}
+
+.footer-address h4 {
+    color: #000;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.footer-address p {
+    color: #0e0e0e;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* Contact Section */
+.footer-contact-section h3 {
+    color: #000;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: #0e0e0e;
+    font-size: 0.9rem;
+}
+
+.contact-item svg {
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+.social-media-icons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.social-icon {
+    background: rgba(0, 0, 0, 0.1);
+    color: #000;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.social-icon:hover {
+    background: var(--bg-secondary);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    border-top: 1.5px solid rgba(0, 0, 0, 0.3);
+    padding: 15px 0;
+}
+
+.footer-bottom-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-bottom-content p {
+    color: #222222;
+    font-size: 0.9rem;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-bottom-content a {
+    color: #222;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Responsive Footer */
+@media (max-width: 1024px) {
+    .footer-content {
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer {
+        padding: 40px 0 0;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .footer-bottom-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .footer-links {
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   FLOATING ACTION BUTTONS
+   ========================================================================== */
+
+.floating-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.floating-buttons.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.float-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    font-size: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.float-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+}
+
+.float-btn:active {
+    transform: translateY(0);
+    transition: transform 0.1s ease;
+}
+
+/* FAQ Button */
+.faq-btn {
+    background: linear-gradient(
+        135deg,
+        var(--bg-primary) 0%,
+        var(--bg-secondary) 100%
+    );
+    color: white;
+}
+
+.faq-btn:hover {
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        var(--bg-primary) 100%
+    );
+}
+
+/* Back to Top Button */
+.back-to-top-btn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.back-to-top-btn:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
+}
+
+/* Button Icons */
+.float-btn svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.float-btn:hover svg {
+    transform: scale(1.1);
+}
+
+.back-to-top-btn:hover svg {
+    transform: translateY(-2px) scale(1.1);
+}
+
+/* Responsive Floating Buttons */
+@media (max-width: 768px) {
+    .floating-buttons {
+        bottom: 15px;
+        right: 15px;
+        gap: 10px;
+    }
+
+    .float-btn {
+        width: 50px;
+        height: 50px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .float-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .float-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .floating-buttons {
+        bottom: 12px;
+        right: 12px;
+        gap: 8px;
+    }
+
+    .float-btn {
+        width: 45px;
+        height: 45px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .float-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .float-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 360px) {
+    .floating-buttons {
+        bottom: 10px;
+        right: 10px;
+        gap: 6px;
+    }
+
+    .float-btn {
+        width: 42px;
+        height: 42px;
+    }
+
+    .float-btn svg {
+        width: 15px;
+        height: 15px;
+    }
+}
+
+/* Animation for button appearance */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.floating-buttons.visible .float-btn:nth-child(1) {
+    animation: fadeInUp 0.3s ease 0.1s both;
+}
+
+.floating-buttons.visible .float-btn:nth-child(2) {
+    animation: fadeInUp 0.3s ease 0.2s both;
+}

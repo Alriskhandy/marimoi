@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\ValidHCaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -26,9 +27,28 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+        ];
+
+        // Hanya tambahkan CAPTCHA jika tidak di environment local
+        if (!app()->environment('local')) {
+            $rules['h-captcha-response'] = ['required', new ValidHCaptcha()];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Custom the error messges for h-captcha-response.
+     *
+     * @return array<string>
+     */
+    public function messages(): array
+    {
+        return [
+            'h-captcha-response.required' => 'CAPTCHA tidak valid.',
         ];
     }
 
@@ -80,6 +100,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

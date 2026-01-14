@@ -1,606 +1,407 @@
 <?php
-use App\Http\Controllers\KategoriLayerController;
-use App\Http\Controllers\KategoriPokirDprdController;
-use App\Http\Controllers\KategoriPSDController;
-use App\Http\Controllers\KategoriPSNController;
-use App\Http\Controllers\LokasiController;
-use App\Http\Controllers\MalukuUtaraController;
-use App\Http\Controllers\PokirDprdController;
+
+use App\Http\Controllers\AspirasiController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DataSpatialController;
+use App\Http\Controllers\KategoriAspirasiController;
+use App\Http\Controllers\OpdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DokumenController;
-use App\Http\Controllers\KategoriMusrenbangController;
 use App\Http\Controllers\ProjectFeedbackController;
-use App\Http\Controllers\ProyekStrategisDaerahController;
-use App\Http\Controllers\ProyekStrategisNasionalController;
-use App\Http\Controllers\UsulanMusrenbangController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PublicationController;
+use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\VisitorsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Web Routes - Unified Structure
+|--------------------------------------------------------------------------
+|
+| This file contains the refactored routes using the unified DataSpatial
+| controller and Category system. All old separate controllers are replaced
+| with the unified approach.
+|
+| Roles: super-admin, admin-bappeda, admin-opd
+|
+*/
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard Routes
+|--------------------------------------------------------------------------
+*/
+
+
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+// Dashboard API routes untuk AJAX calls
+Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
+    Route::get('/years', [DashboardController::class, 'getAvailableYears'])->name('years');
+    Route::get('/categories', [DashboardController::class, 'getCategories'])->name('categories');
+    Route::get('/statistics', [DashboardController::class, 'getStatistics'])->name('statistics');
+    Route::get('/top-categories', [DashboardController::class, 'getTopCategories'])->name('top-categories');
+    Route::get('/response-time', [DashboardController::class, 'getResponseTimeAnalytics'])->name('response-time');
+    Route::get('/stats', [DashboardController::class, 'getDashboardStats'])->name('stats');
+});
+
+// Statistics page route
+Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics');
+
+/*
+|--------------------------------------------------------------------------
+| Profile Management
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Add this to your routes file
+    Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisitorStatistics'])->name('dashboard.visitor.statistics');
 });
 
-// Lokasi routes with auth
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard/lokasi', [LokasiController::class, 'index'])->name('lokasi.index');
-    Route::get('/dashboard/lokasi/create', [LokasiController::class, 'create'])->name('lokasi.create');
-    Route::post('/dashboard/lokasi', [LokasiController::class, 'store'])->name('lokasi.store');
-    Route::get('/dashboard/lokasi/{id}/edit', [LokasiController::class, 'edit'])->name('lokasi.edit');
-    Route::put('/dashboard/lokasi/{id}', [LokasiController::class, 'update'])->name('lokasi.update');
-    Route::delete('/dashboard/lokasi/{id}', [LokasiController::class, 'destroy'])->name('lokasi.destroy');
-
-    Route::get('/dashboard/peta', [LokasiController::class, 'peta'])->name('lokasi.peta');
-});
-
-Route::group(['prefix' => 'dashboard', 'middleware' => ['auth', 'verified']], function () {
-    Route::resource('kategori-layers', KategoriLayerController::class);
-
-    Route::get('/coming-soon', function () {
-        return view('backend.cooming_soon');
-    })->name('cooming_soon');
-});
-
-// Project Feedback Routes with auth
-Route::prefix('project-feedbacks')->name('project-feedbacks.')->middleware(['auth', 'verified'])->group(function () {
-    // Main index page
-    Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index');
-    
-    // Store new feedback
-    Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store');
-    
-    // Show specific feedback (for modal detail)
-    Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show');
-    
-   // Update feedback response (use PUT method properly)
-    Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
-    
-    // Delete feedback
-    Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy');
-});
-
-// Statistics endpoint with auth
-Route::get('/project-feedbacks-statistics', [ProjectFeedbackController::class, 'statistics'])
-    ->middleware(['auth', 'verified'])
-    ->name('project-feedbacks.statistics');
-
-// Maluku Utara Reference Data Routes with auth
-Route::prefix('maluku-utara')->name('maluku-utara.')->middleware(['auth', 'verified'])->group(function () {
-    // Get reference data (kabupaten list)
-    Route::get('/reference', [MalukuUtaraController::class, 'reference'])->name('reference');
-    
-    // Get kecamatan by kabupaten
-    Route::get('/kecamatan/{kabupaten}', [MalukuUtaraController::class, 'kecamatan'])->name('kecamatan');
-});
-
-
-// ProyekStrategisDaerahController
-Route::prefix('dashboard')->middleware('auth')->group(function () {
-    
-    // Route untuk Proyek Strategis Daerah dengan prefix psd
-    Route::prefix('psd')->name('psd.')->group(function () {
-        
-        // Route utama untuk semua data (tanpa filter tahun)
-        Route::get('/', [ProyekStrategisDaerahController::class, 'index'])
-            ->name('index');
-        
-        Route::get('/create', [ProyekStrategisDaerahController::class, 'create'])
-            ->name('create');
-        
-        Route::post('/', [ProyekStrategisDaerahController::class, 'store'])
-            ->name('store');
-        
-        Route::get('/{id}/edit', [ProyekStrategisDaerahController::class, 'edit'])
-            ->where('id', '[0-9]+')
-            ->name('edit');
-        
-        Route::put('/{id}', [ProyekStrategisDaerahController::class, 'update'])
-            ->where('id', '[0-9]+')
-            ->name('update');
-        
-        Route::delete('/{id}', [ProyekStrategisDaerahController::class, 'destroy'])
-            ->where('id', '[0-9]+')
-            ->name('destroy');
-        
-        // Route untuk debugging shapefile
-        Route::post('/debug-shapefile', [ProyekStrategisDaerahController::class, 'debugShapefile'])
-            ->name('debug-shapefile');
-        
-        // Route untuk data per tahun (dinamis berdasarkan data yang ada)
-        Route::prefix('tahun')->name('tahun.')->group(function () {
-            
-            // Route untuk menampilkan daftar tahun yang tersedia
-            Route::get('/', [ProyekStrategisDaerahController::class, 'getAvailableYears'])
-                ->name('index');
-            
-            // Route dinamis untuk tahun yang ada di database
-            Route::get('/{year}', [ProyekStrategisDaerahController::class, 'indexByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('show');
-            
-            Route::get('/{year}/create', [ProyekStrategisDaerahController::class, 'createByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('create');
-            
-            Route::post('/{year}', [ProyekStrategisDaerahController::class, 'storeByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('store');
-            
-            Route::get('/{year}/edit/{id}', [ProyekStrategisDaerahController::class, 'editByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('edit');
-            
-            Route::put('/{year}/update/{id}', [ProyekStrategisDaerahController::class, 'updateByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('update');
-            
-            Route::delete('/{year}/delete/{id}', [ProyekStrategisDaerahController::class, 'destroyByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('destroy');
-        });
-        
-        // Route untuk kategori proyek daerah
-        Route::prefix('kategori')->name('kategori.')->group(function () {
-            
-            Route::get('/', [KategoriPSDController::class, 'indexByCategory'])
-                ->name('index');
-            
-            // Route untuk create proyek baru (tanpa kategori spesifik)
-            Route::get('/create', [ProyekStrategisDaerahController::class, 'create'])
-                ->name('create');
-            
-            Route::get('/{kategori}', [KategoriPSDController::class, 'showByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('show');
-                
-            Route::get('/{kategori}/create', [KategoriPSDController::class, 'createByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('create.specific');
-            
-            // Route kategori per tahun
-            Route::get('/{kategori}/tahun/{year}', [KategoriPSDController::class, 'showByCategoryAndYear'])
-                ->where(['kategori' => '[0-9]+', 'year' => '[0-9]{4}'])
-                ->name('show.year');
-        });
-        
-        // Route untuk peta
-        Route::get('/peta', [ProyekStrategisDaerahController::class, 'peta'])
-            ->name('peta');
-        
-        // Route untuk peta berdasarkan tahun
-        Route::get('/peta/{year}', [ProyekStrategisDaerahController::class, 'petaByYear'])
-            ->where('year', '[0-9]{4}')
-            ->name('peta.year');
-        
-        // API Routes untuk data GeoJSON dan informasi
-        Route::prefix('api')->name('api.')->group(function () {
-            
-            // Route untuk mendapatkan tahun yang tersedia
-            Route::get('/years', [ProyekStrategisDaerahController::class, 'getAvailableYearsApi'])
-                ->name('years');
-            
-            // Route untuk mendapatkan data GeoJSON
-            Route::get('/geojson', [ProyekStrategisDaerahController::class, 'geojson'])
-                ->name('geojson');
-            
-            // Route untuk mendapatkan data GeoJSON berdasarkan tahun
-            Route::get('/geojson/{year}', [ProyekStrategisDaerahController::class, 'geojsonByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('geojson.year');
-            
-            // Route untuk mendapatkan kolom DBF
-            Route::get('/dbf-columns', [ProyekStrategisDaerahController::class, 'getDbfColumns'])
-                ->name('dbf-columns');
-            
-            // Route untuk mendapatkan kolom DBF berdasarkan tahun
-            Route::get('/dbf-columns/{year}', [ProyekStrategisDaerahController::class, 'getDbfColumnsByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('dbf-columns.year');
-            
-            // Route untuk mendapatkan nilai kolom DBF tertentu
-            Route::get('/dbf-columns/{column}/values', [ProyekStrategisDaerahController::class, 'getDbfColumnValues'])
-                ->name('dbf-column-values');
-            
-            // Route untuk mendapatkan nilai kolom DBF berdasarkan tahun
-            Route::get('/dbf-columns/{column}/values/{year}', [ProyekStrategisDaerahController::class, 'getDbfColumnValuesByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('dbf-column-values.year');
-            
-            // Route untuk mendapatkan daftar kategori
-            Route::get('/categories', [ProyekStrategisDaerahController::class, 'getCategories'])
-                ->name('categories');
-            
-            // Route untuk mendapatkan kategori berdasarkan tahun
-            Route::get('/categories/{year}', [ProyekStrategisDaerahController::class, 'getCategoriesByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('categories.year');
-            
-            // Route untuk mendapatkan statistik data
-            Route::get('/statistics', [ProyekStrategisDaerahController::class, 'getStatistics'])
-                ->name('statistics');
-            
-            // Route untuk mendapatkan statistik berdasarkan tahun
-            Route::get('/statistics/{year}', [ProyekStrategisDaerahController::class, 'getStatisticsByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('statistics.year');
-            
-            // Route untuk mendapatkan data berdasarkan kategori
-            Route::get('/category/{kategori}', [ProyekStrategisDaerahController::class, 'getByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('category');
-            
-            // Route untuk mendapatkan data berdasarkan kategori dan tahun
-            Route::get('/category/{kategori}/{year}', [ProyekStrategisDaerahController::class, 'getByCategoryAndYear'])
-                ->where(['kategori' => '[0-9]+', 'year' => '[0-9]{4}'])
-                ->name('category.year');
-        });
-    });
-
-    // Route terpisah untuk manajemen Kategori PSD (CRUD)
-    Route::prefix('kategori-psd')->name('kategori-psd.')->group(function () {
-        
-        // Route index
-        Route::get('/', [KategoriPSDController::class, 'index'])
-            ->name('index');
-        
-        // Route create
-        Route::get('/create', [KategoriPSDController::class, 'create'])
-            ->name('create');
-        
-        Route::post('/', [KategoriPSDController::class, 'store'])
-            ->name('store');
-        
-        // Route dengan ID constraint untuk menghindari konflik
-        Route::get('/{kategoriPsd}/edit', [KategoriPSDController::class, 'edit'])
-            ->where('kategoriPsd', '[0-9]+')
-            ->name('edit');
-        
-        Route::put('/{kategoriPsd}', [KategoriPSDController::class, 'update'])
-            ->where('kategoriPsd', '[0-9]+')
-            ->name('update');
-        
-        Route::delete('/{kategoriPsd}', [KategoriPSDController::class, 'destroy'])
-            ->where('kategoriPsd', '[0-9]+')
-            ->name('destroy');
-        
-        Route::get('/{kategoriPsd}', [KategoriPSDController::class, 'show'])
-            ->where('kategoriPsd', '[0-9]+')
-            ->name('show');
-        
-        // API Routes untuk kategori
-        Route::prefix('api')->name('api.')->group(function () {
-            
-            Route::get('/categories', [KategoriPSDController::class, 'getCategoriesApi'])
-                ->name('categories');
-            
-            Route::get('/statistics/{kategoriId}', [KategoriPSDController::class, 'getCategoryStatistics'])
-                ->where('kategoriId', '[0-9]+')
-                ->name('statistics');
-        });
-    });
-});
-
-// Route fallback untuk menangani halaman yang tidak ditemukan (opsional)
-// Catatan: Fallback route sebaiknya ditempatkan di akhir file route
 /*
-Route::fallback(function () {
-    return redirect()->route('psd.index')->with('error', 'Halaman tidak ditemukan.');
-});
+|--------------------------------------------------------------------------
+| Dashboard Panel Routes
+|--------------------------------------------------------------------------
 */
-// end ProyekStrategisDaerahController
+
+Route::prefix('dashboard')->middleware(['auth'])->group(function () {
+    // Visitor Analytics routes
+    Route::get('/visitors/export', [VisitorsController::class, 'export'])->name('visitors.export');
+    Route::post('/visitors/analytics', [VisitorsController::class, 'analytics'])->name('visitors.analytics');
+    Route::delete('/visitors/bulk-destroy', [VisitorsController::class, 'bulkDestroy'])->name('visitors.bulk-destroy');
+
+    // Resource routes for visitors
+    Route::resource('visitors', VisitorsController::class)->only(['index', 'show', 'destroy']);
+    /*
+    |--------------------------------------------------------------------------
+    | Unified Data Spatial Management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'index'])->name('index');
+        Route::get('/create', [DataSpatialController::class, 'create'])->name('create');
+        Route::post('/store', [DataSpatialController::class, 'store'])->name('store');
+        Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
+        Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
+        Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
 
 
-// // ProyekStrategisNasionalController
-Route::prefix('dashboard')->middleware('auth')->group(function () {
-    
-    // Route untuk Proyek Strategis Daerah dengan prefix psd
-    Route::prefix('psn')->name('psn.')->group(function () {
-        
-        // Route utama untuk semua data (tanpa filter tahun)
-        Route::get('/', [ProyekStrategisNasionalController::class, 'index'])
-            ->name('index');
-        
-        Route::get('/create', [ProyekStrategisNasionalController::class, 'create'])
-            ->name('create');
-        
-        Route::post('/', [ProyekStrategisNasionalController::class, 'store'])
-            ->name('store');
-        
-        Route::get('/{id}/edit', [ProyekStrategisNasionalController::class, 'edit'])
-            ->where('id', '[0-9]+')
-            ->name('edit');
-        
-        Route::put('/{id}', [ProyekStrategisNasionalController::class, 'update'])
-            ->where('id', '[0-9]+')
-            ->name('update');
-        
-        Route::delete('/{id}', [ProyekStrategisNasionalController::class, 'destroy'])
-            ->where('id', '[0-9]+')
-            ->name('destroy');
-        
-        // Route untuk debugging shapefile
-        Route::post('/debug-shapefile', [ProyekStrategisNasionalController::class, 'debugShapefile'])
-            ->name('debug-shapefile');
-        
-        // Route untuk data per tahun (dinamis berdasarkan data yang ada)
-        Route::prefix('tahun')->name('tahun.')->group(function () {
-            
-            // Route untuk menampilkan daftar tahun yang tersedia
-            Route::get('/', [ProyekStrategisNasionalController::class, 'getAvailableYears'])
-                ->name('index');
-            
-            // Route dinamis untuk tahun yang ada di database
-            Route::get('/{year}', [ProyekStrategisNasionalController::class, 'indexByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('show');
-            
-            Route::get('/{year}/create', [ProyekStrategisNasionalController::class, 'createByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('create');
-            
-            Route::post('/{year}', [ProyekStrategisNasionalController::class, 'storeByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('store');
-            
-            Route::get('/{year}/edit/{id}', [ProyekStrategisNasionalController::class, 'editByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('edit');
-            
-            Route::put('/{year}/update/{id}', [ProyekStrategisNasionalController::class, 'updateByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('update');
-            
-            Route::delete('/{year}/delete/{id}', [ProyekStrategisNasionalController::class, 'destroyByYear'])
-                ->where(['year' => '[0-9]{4}', 'id' => '[0-9]+'])
-                ->name('destroy');
-        });
-        
-        // Route untuk kategori proyek daerah
-        Route::prefix('kategori')->name('kategori.')->group(function () {
-            
-            Route::get('/', [KategoriPSNController::class, 'indexByCategory'])
-                ->name('index');
-            
-            // Route untuk create proyek baru (tanpa kategori spesifik)
-            Route::get('/create', [ProyekStrategisNasionalController::class, 'create'])
-                ->name('create');
-            
-            Route::get('/{kategori}', [KategoriPSNController::class, 'showByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('show');
-                
-            Route::get('/{kategori}/create', [KategoriPSNController::class, 'createByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('create.specific');
-            
-            // Route kategori per tahun
-            Route::get('/{kategori}/tahun/{year}', [KategoriPSNController::class, 'showByCategoryAndYear'])
-                ->where(['kategori' => '[0-9]+', 'year' => '[0-9]{4}'])
-                ->name('show.year');
-        });
-        
-        // Route untuk peta
-        Route::get('/peta', [ProyekStrategisNasionalController::class, 'peta'])
-            ->name('peta');
-        
-        // Route untuk peta berdasarkan tahun
-        Route::get('/peta/{year}', [ProyekStrategisNasionalController::class, 'petaByYear'])
-            ->where('year', '[0-9]{4}')
-            ->name('peta.year');
-        
-        // API Routes untuk data GeoJSON dan informasi
-        Route::prefix('api')->name('api.')->group(function () {
-            
-            // Route untuk mendapatkan tahun yang tersedia
-            Route::get('/years', [ProyekStrategisNasionalController::class, 'getAvailableYearsApi'])
-                ->name('years');
-            
-            // Route untuk mendapatkan data GeoJSON
-            Route::get('/geojson', [ProyekStrategisNasionalController::class, 'geojson'])
-                ->name('geojson');
-            
-            // Route untuk mendapatkan data GeoJSON berdasarkan tahun
-            Route::get('/geojson/{year}', [ProyekStrategisNasionalController::class, 'geojsonByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('geojson.year');
-            
-            // Route untuk mendapatkan kolom DBF
-            Route::get('/dbf-columns', [ProyekStrategisNasionalController::class, 'getDbfColumns'])
-                ->name('dbf-columns');
-            
-            // Route untuk mendapatkan kolom DBF berdasarkan tahun
-            Route::get('/dbf-columns/{year}', [ProyekStrategisNasionalController::class, 'getDbfColumnsByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('dbf-columns.year');
-            
-            // Route untuk mendapatkan nilai kolom DBF tertentu
-            Route::get('/dbf-columns/{column}/values', [ProyekStrategisNasionalController::class, 'getDbfColumnValues'])
-                ->name('dbf-column-values');
-            
-            // Route untuk mendapatkan nilai kolom DBF berdasarkan tahun
-            Route::get('/dbf-columns/{column}/values/{year}', [ProyekStrategisNasionalController::class, 'getDbfColumnValuesByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('dbf-column-values.year');
-            
-            // Route untuk mendapatkan daftar kategori
-            Route::get('/categories', [ProyekStrategisNasionalController::class, 'getCategories'])
-                ->name('categories');
-            
-            // Route untuk mendapatkan kategori berdasarkan tahun
-            Route::get('/categories/{year}', [ProyekStrategisNasionalController::class, 'getCategoriesByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('categories.year');
-            
-            // Route untuk mendapatkan statistik data
-            Route::get('/statistics', [ProyekStrategisNasionalController::class, 'getStatistics'])
-                ->name('statistics');
-            
-            // Route untuk mendapatkan statistik berdasarkan tahun
-            Route::get('/statistics/{year}', [ProyekStrategisNasionalController::class, 'getStatisticsByYear'])
-                ->where('year', '[0-9]{4}')
-                ->name('statistics.year');
-            
-            // Route untuk mendapatkan data berdasarkan kategori
-            Route::get('/category/{kategori}', [ProyekStrategisNasionalController::class, 'getByCategory'])
-                ->where('kategori', '[0-9]+')
-                ->name('category');
-            
-            // Route untuk mendapatkan data berdasarkan kategori dan tahun
-            Route::get('/category/{kategori}/{year}', [ProyekStrategisNasionalController::class, 'getByCategoryAndYear'])
-                ->where(['kategori' => '[0-9]+', 'year' => '[0-9]{4}'])
-                ->name('category.year');
-        });
+        // Debug routes for file uploads
+        Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
+        Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz');
+
+        // Detail endpoint for modal
+        Route::get('/{uuid}/details', function ($uuid) {
+            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            return response()->json([
+                'success' => $data ? true : false,
+                'data' => $data,
+                'message' => $data ? 'Data found' : 'Data not found'
+            ]);
+        })->name('details');
     });
 
-    // // Route terpisah untuk manajemen Kategori PSN (CRUD)
-    Route::prefix('kategori-psn')->name('kategori-psn.')->group(function () {
-        
-        // Route index
-        Route::get('/', [KategoriPSNController::class, 'index'])
-            ->name('index');
-        
-        // Route create
-        Route::get('/create', [KategoriPSNController::class, 'create'])
-            ->name('create');
-        
-        Route::post('/', [KategoriPSNController::class, 'store'])
-            ->name('store');
-        
-        // Route dengan ID constraint untuk menghindari konflik
-        Route::get('/{kategoriPsn}/edit', [KategoriPSNController::class, 'edit'])
-            ->where('kategoriPsn', '[0-9]+')
-            ->name('edit');
-        
-        Route::put('/{kategoriPsn}', [KategoriPSNController::class, 'update'])
-            ->where('kategoriPsn', '[0-9]+')
-            ->name('update');
-        
-        Route::delete('/{kategoriPsn}', [KategoriPSNController::class, 'destroy'])
-            ->where('kategoriPsn', '[0-9]+')
-            ->name('destroy');
-        
-        Route::get('/{kategoriPsn}', [KategoriPSNController::class, 'show'])
-            ->where('kategoriPsn', '[0-9]+')
-            ->name('show');
-        
-        // API Routes untuk kategori
-        Route::prefix('api')->name('api.')->group(function () {
-            
-            Route::get('/categories', [KategoriPSNController::class, 'getCategoriesApi'])
-                ->name('categories');
-            
-            Route::get('/statistics/{kategoriId}', [KategoriPSNController::class, 'getCategoryStatistics'])
-                ->where('kategoriId', '[0-9]+')
-                ->name('statistics');
-        });
+    /*
+    |--------------------------------------------------------------------------
+    | Peta RPJMD (Tematik) Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('tematik')->name('tematik.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index');
+        Route::get('/create', function () {
+            return redirect()->route('data-spatial.create') . '?type=tematik';
+        })->name('create');
+        Route::get('/{uuid}/edit', function ($id) {
+            return redirect()->route('data-spatial.edit', $id);
+        })->name('edit');
+        Route::put('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.update', $id);
+        })->name('update');
+        Route::delete('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.destroy', $id);
+        })->name('destroy');
     });
-});
 
-// end ProyekStrategisnasinonal
+    /*
+    |--------------------------------------------------------------------------
+    | Usulan Musrenbang Routes
+    |--------------------------------------------------------------------------
+    */
 
-// // Upload Dokumen
-Route::prefix('dashboard')->middleware('auth')->group(function () {
-    
-    // Routes for Dokumen upload management
-    Route::prefix('upload-dokumen')->name('dokumen.')->group(function () {
-        
+    Route::prefix('usulan-musrenbang')->name('usulan-musrenbang.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indexUsulanmusrenbang'])->name('index');
+        Route::get('/create', function () {
+            return redirect()->route('data-spatial.create') . '?type=usulan_musrenbang';
+        })->name('create');
+        Route::get('/{uuid}/edit', function ($id) {
+            return redirect()->route('data-spatial.edit', $id);
+        })->name('edit');
+        Route::put('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.update', $id);
+        })->name('update');
+        Route::delete('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.destroy', $id);
+        })->name('destroy');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pokir DPRD Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('pokir-dprd')->name('pokir-dprd.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indexPokirDprd'])->name('index');
+        Route::get('/create', function () {
+            return redirect()->route('data-spatial.create') . '?type=pokir_dprd';
+        })->name('create');
+        Route::get('/{uuid}/edit', function ($id) {
+            return redirect()->route('data-spatial.edit', $id);
+        })->name('edit');
+        Route::put('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.update', $id);
+        })->name('update');
+        Route::delete('/{uuid}', function ($id) {
+            return redirect()->route('data-spatial.destroy', $id);
+        })->name('destroy');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proyek Strategis Daerah Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('proyek-strategis-daerah')->name('psd.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('index');
+        Route::get('/create', function () {
+            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psd';
+        })->name('create');
+
+        // Routes berdasarkan tahun
+        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('tahun.show');
+        Route::get('/tahun/{year}/create', function ($year) {
+            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psd&year={$year}";
+        })->name('tahun.create');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proyek Strategis Nasional Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('proyek-strategis-nasional')->name('psn.')->group(function () {
+        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('index');
+        Route::get('/create', function () {
+            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psn';
+        })->name('create');
+
+        // Routes berdasarkan tahun
+        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('tahun.show');
+        Route::get('/tahun/{year}/create', function ($year) {
+            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psn&year={$year}";
+        })->name('tahun.create');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Category Management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [CategoryController::class, 'index'])->name('index');
+        Route::get('/create', [CategoryController::class, 'create'])->name('create');
+        Route::post('/store', [CategoryController::class, 'store'])->name('store');
+        Route::get('/{id}', [CategoryController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
+        Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+
+        // API routes untuk categories
+        Route::get('/api/by-type/{type}', [CategoryController::class, 'getByType'])->name('api.by-type');
+        Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree');
+        Route::get('/api/options/{type}', [CategoryController::class, 'getOptions'])->name('api.options');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document Upload Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->prefix('upload-dokumen')->name('dokumen.')->group(function () {
         Route::get('/', [DokumenController::class, 'index'])->name('index');
         Route::post('/', [DokumenController::class, 'store'])->name('store');
         Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update');
         Route::delete('/{id}', [DokumenController::class, 'destroy'])->where('id', '[0-9]+')->name('destroy');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project Feedback Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('project-feedbacks')->name('project-feedbacks.')->group(function () {
+        Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index');
+        Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store');
+        Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show');
+        Route::put('/{id}', [ProjectFeedbackController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy');
+
+        // Admin Response
+        Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
+        Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
+        // Route untuk update OPD feedback
+        Route::put('/feedback/{feedback}/update-opd', [ProjectFeedbackController::class, 'updateOpd'])->name('update-opd');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resource Routes
+    |--------------------------------------------------------------------------
+    */
+
+    // Aspirasi Management
+    Route::resource('aspirasi', AspirasiController::class);
+    Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
+    // Routes untuk lampiran
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/download', [AspirasiController::class, 'downloadLampiran'])
+        ->name('aspirasi.downloadLampiran')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/preview', [AspirasiController::class, 'previewLampiran'])
+        ->name('aspirasi.previewLampiran')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/{aspirasi}/lampiran/{index}/info', [AspirasiController::class, 'getFileInfo'])
+        ->name('aspirasi.getFileInfo')
+        ->where('index', '[0-9]+');
+
+    Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
+    Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
+    Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
+
+
+    // Bulk operations - also before resource routes
+    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
+
+
+
+    // Kategori Aspirasi Management
+    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
+
+        // Kategori Aspirasi Management
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
+        Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
+        Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
+
+        // OPD Management
+        Route::resource('opd', OpdController::class);
+        Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
+        Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
+        Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+
+        // User Management
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | General API Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('api')->name('api.')->group(function () {
+
+        // Categories
+        Route::get('/categories', [DataSpatialController::class, 'getCategories'])->name('categories');
+        Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd');
+
+        // Data Spatial Details
+        Route::get('/data-spatial/{uuid}/details', function ($uuid) {
+            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            return response()->json([
+                'success' => $data ? true : false,
+                'data' => $data,
+                'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan'
+            ]);
+        })->name('data-spatial.details');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | publications Routes
+    |--------------------------------------------------------------------------
+    */
+    // routes/web.php
+
+    Route::prefix('publications')->name('publications.')->group(function () {
+        // List all publications for admin
+        Route::get('/', [PublicationController::class, 'adminIndex'])->name('index');
+
+        // Create new publication
+        Route::get('/create', [PublicationController::class, 'create'])->name('create');
+        Route::post('/', [PublicationController::class, 'store'])->name('store');
+
+        // Edit publication
+        Route::get('/{publication}/edit', [PublicationController::class, 'edit'])->name('edit');
+        Route::put('/{publication}', [PublicationController::class, 'update'])->name('update');
+
+        // Delete publication
+        Route::delete('/{publication}', [PublicationController::class, 'destroy'])->name('destroy');
+
+        // Download and Preview - FIXED
+        Route::get('/{publication}/download', [PublicationController::class, 'download'])->name('download');
+        Route::get('/{publication}/preview', [PublicationController::class, 'preview'])->name('preview');
+
+        // Toggle publication status
+        Route::patch('/{publication}/toggle-status', [PublicationController::class, 'toggleStatus'])->name('toggle-status');
+
+        // Bulk actions
+        Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status');
+
+        Route::prefix('downloads')->name('downloads.')->group(function () {
+            Route::get('/', [PublicationDownloadController::class, 'index'])->name('index');
+            Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show');
+            Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics');
+            Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export');
+            Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
+            Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Utility Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/coming-soon', function () {
+        return view('backend.cooming_soon');
+    })->name('coming_soon');
 });
-// end Upload Dokumen
-
-
-// pokir DPRD
-// Pokir DPRD routes with auth
-
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard/pokir-dprd', [PokirDprdController::class, 'index'])->name('pokir-dprd.index');
-    Route::get('/dashboard/pokir-dprd/create', [PokirDprdController::class, 'create'])->name('pokir-dprd.create');
-    Route::post('/dashboard/pokir-dprd', [PokirDprdController::class, 'store'])->name('pokir-dprd.store');
-    Route::get('/dashboard/pokir-dprd/{id}/edit', [PokirDprdController::class, 'edit'])->name('pokir-dprd.edit');
-    Route::put('/dashboard/pokir-dprd/{id}', [PokirDprdController::class, 'update'])->name('pokir-dprd.update');
-    Route::delete('/dashboard/pokir-dprd/{id}', [PokirDprdController::class, 'destroy'])->name('pokir-dprd.destroy');
-
-    Route::get('/dashboard/peta-pokir', [PokirDprdController::class, 'peta'])->name('pokir-dprd.peta');
-     Route::resource('/dashboard/kategori-pokir-dprd', KategoriPokirDprdController::class);
-});
-
-// usulan musrenbang
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard/usulan-musrenbang', [UsulanMusrenbangController::class, 'index'])->name('usulan-musrenbang.index');
-    Route::get('/dashboard/usulan-musrenbang/create', [UsulanMusrenbangController::class, 'create'])->name('usulan-musrenbang.create');
-    Route::post('/dashboard/usulan-musrenbang', [UsulanMusrenbangController::class, 'store'])->name('usulan-musrenbang.store');
-    Route::get('/dashboard/usulan-musrenbang/{id}/edit', [UsulanMusrenbangController::class, 'edit'])->name('usulan-musrenbang.edit');
-    Route::put('/dashboard/usulan-musrenbang/{id}', [UsulanMusrenbangController::class, 'update'])->name('usulan-musrenbang.update');
-    Route::delete('/dashboard/usulan-musrenbang/{id}', [UsulanMusrenbangController::class, 'destroy'])->name('usulan-musrenbang.destroy');
-
-    Route::get('/dashboard/peta-usulan-musrenbang', [UsulanMusrenbangController::class, 'peta'])->name('usulan-musrenbang.peta');
-     Route::resource('/dashboard/kategori-usulan-musrenbang', KategoriMusrenbangController::class);
-});
-// end pokir DPRD
-// end pokir DPRD
-// require __DIR__.'/auth.php';
-
-
-// ========================================
-// ROUTES CONFIGURATION (COMPATIBLE)
-// ========================================
-
-Route::prefix('dashboard')->middleware(['auth'])->group(function() {
-    // General project feedbacks (all types)
-    Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('project-feedbacks.index');
-    Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('project-feedbacks.store');
-    Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('project-feedbacks.show');
-    Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('project-feedbacks.respond');
-    Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('project-feedbacks.destroy');
-    Route::get('project-feedbacks/statistics', [ProjectFeedbackController::class, 'statistics'])->name('project-feedbacks.statistics');
-
-    // Scoped project feedbacks (per project type) - NO DEFAULTS, using URL detection
-    Route::prefix('pokir')->group(function() {
-        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('pokir.feedbacks.index');
-        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('pokir.feedbacks.store');
-        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('pokir.feedbacks.show');
-        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('pokir.feedbacks.respond');
-        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('pokir.feedbacks.destroy');
-    });
-
-    Route::prefix('usulan')->group(function() {
-        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('usulan.feedbacks.index');
-        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('usulan.feedbacks.store');
-        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('usulan.feedbacks.show');
-        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('usulan.feedbacks.respond');
-        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('usulan.feedbacks.destroy');
-    });
-
-    Route::prefix('nasional')->group(function() {
-        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('nasional.feedbacks.index');
-        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('nasional.feedbacks.store');
-        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('nasional.feedbacks.show');
-        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('nasional.feedbacks.respond');
-        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('nasional.feedbacks.destroy');
-    });
-
-    Route::prefix('daerah')->group(function() {
-        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('daerah.feedbacks.index');
-        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('daerah.feedbacks.store');
-        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('daerah.feedbacks.show');
-        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('daerah.feedbacks.respond');
-        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('daerah.feedbacks.destroy');
-    });
-
-    Route::prefix('lokasi')->group(function() {
-        Route::get('project-feedbacks', [ProjectFeedbackController::class, 'index'])->name('lokasi.feedbacks.index');
-        Route::post('project-feedbacks', [ProjectFeedbackController::class, 'store'])->name('lokasi.feedbacks.store');
-        Route::get('project-feedbacks/{id}', [ProjectFeedbackController::class, 'show'])->name('lokasi.feedbacks.show');
-        Route::put('project-feedbacks/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('lokasi.feedbacks.respond');
-        Route::delete('project-feedbacks/{id}', [ProjectFeedbackController::class, 'destroy'])->name('lokasi.feedbacks.destroy');
-    });
-});
+Route::get('/coming-soon', function () {
+    return view('coming_soon');
+})->name('coming_soon_public');

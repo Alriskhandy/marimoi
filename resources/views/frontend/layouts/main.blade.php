@@ -7,7 +7,7 @@
     <title>MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring Dan Integrasi Wilayah</title>
     <meta name="description" content="">
     <meta name="keywords" content="">
-
+    {{-- <meta name="csrf-token" content="{{ csrf_token() }}"> --}}
     <!-- Favicons -->
     <link href="{{ asset('frontend/favicon/favicon.ico') }}" rel="icon" type="image/webp">
     <link href="{{ asset('frontend/favicon/apple-touch-icon.png') }}" rel="apple-touch-icon">
@@ -68,6 +68,8 @@
 
     <!-- Main JS File -->
     <script src="{{ asset('frontend/js/main.js') }}"></script>
+
+
 
     <!-- Main JS File -->
     @stack('scripts')

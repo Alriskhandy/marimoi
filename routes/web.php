@@ -1,50 +1,74 @@
 <?php
 
-use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FrontendController;
-use App\Http\Controllers\LokasiController;
+use App\Http\Controllers\PublicationController;
+use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\SurveyController;
+use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
-Route::get('/', [FrontendController::class, 'index'])->name('beranda');
+Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
+Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
 Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
-Route::get('/rpjmd', [FrontendController::class, 'rpjmd'])->name('tampil.rpjmd');
+Route::get('/peta-tematik', [FrontendController::class, 'tematik'])->name('tampil.tematik');
 Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->name('tampil.musrenbang');
 Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
+Route::get('/dokumen-publikasi', [FrontendController::class, 'publikasi'])->name('tampil.publikasi');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
+// Log monitoring (careful: restrict in production)
+Route::get('/logs', [FrontendController::class, 'showLogs'])->name('logs.view');
+Route::post('/peta-tematik/load/{id}', [FrontendController::class, 'lihatTematik'])->name('post.tematik');
+
 // HALAMAN DETAIL //
-Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPsd'])->name('detail.psd');
-Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPsn'])->name('detail.psn');
-Route::get('/rpjmd/{id}', [FrontendController::class, 'detailRpjmd'])->name('detail.rpjmd');
-Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPokir'])->name('detail.pokir');
-Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailMusrenbang'])->name('detail.musrenbang');
+Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psd');
+Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psn');
+Route::get('/peta-tematik/{id}', [FrontendController::class, 'detailPetaTematik'])->name('detail.tematik');
+Route::get('/rpjmd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.rpjmd');
+Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.pokir');
+Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
+
+// FAQ //
+// Route::get('/faq', function () {
+//     return view('frontend.pages.faq');
+// })->name('faq');
+
+Route::get('/syarat-ketentuan', function () {
+    return view('frontend.pages.syarat_ketentuan');
+})->name('syarat_ketentuan');
+
+
+Route::get('/kebijakan-privasi', function () {
+    return view('frontend.pages.kebijakan_privasi');
+})->name('kebijakan_privasi');
 
 // FEEDBACK //
-Route::post('/proyek-strategis-daerah/{id}', [FrontendController::class, 'store'])->name('feedback.store');
+Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
+
+// USULAN ASPIRASI MASYARAKAT //
+Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi-masyarakat.store');
 
 // API GEOJSON //
-Route::prefix('geojson')->group(function(){
-    Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psdGeojson']);
-    Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psnGeojson']);
-    Route::get('/rpjmd', [FrontendController::class, 'rpjmdGeojson']);
-    Route::get('/pokir-dprd', [FrontendController::class, 'pokirGeojson']);
-    Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbangGeojson']);
+Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
+
+
+// Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
+
+// Public routes - Publications
+Route::prefix('dokumen-publikasi')->group(function () {
+    Route::get('/', [PublicationController::class, 'index'])->name('tampil.publikasi');
+    Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.publikasi');
 });
 
-Route::get('/geojson', [LokasiController::class, 'geojson'])->name('lokasi.geojson');
+// Public routes - Survey (untuk guest)
+// Route::prefix('survey')->name('survey.')->group(function () {
+//     Route::get('/', [SurveyController::class, 'showGeneralSurveyForm'])->name('form');
+//     Route::post('/', [SurveyController::class, 'submitGeneralSurvey'])->name('submit');
+//     Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
+// });
 
-// TAHAP PENGEMBANGAN //
-Route::get('/peta-gis', [FrontendController::class, 'showMap'])->name('tampil.peta');
-
-// Routes untuk project-specific feedback
-Route::post('pokir/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('pokir.feedback.store');
-Route::post('usulan/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('usulan.feedback.store');
-Route::post('nasional/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('nasional.feedback.store');
-Route::post('daerah/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('daerah.feedback.store');
-Route::post('lokasi/feedback/store/{projectId?}', [FeedbackController::class, 'store'])->name('lokasi.feedback.store');
-
-require __DIR__.'/auth.php';
-require __DIR__.'/backend.php';
+require __DIR__ . '/auth.php';
+require __DIR__ . '/backend.php';

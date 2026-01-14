@@ -1,0 +1,150 @@
+.sidebar {
+    position: absolute;
+    top: 60px; /* Sesuaikan dengan tinggi header */
+    right: 20px; /* Jarak dari kanan */
+    width: 250px; /* Lebar sidebar */
+    background-color: #f8fafc;
+    border: 1px solid #ccc;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 101; /* Pastikan sidebar di atas peta */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar.d-none {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.gradient-purple {
+    background: linear-gradient(90deg, rgb(218, 140, 255), rgb(154, 85, 255));
+    color: white;
+    padding: 5px 8px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.guide-step.d-none {
+    display: none;
+}
+
+.highlighted-control {
+    position: relative;
+    box-shadow: 0 0 10px 3px rgb(255, 255, 255);
+    border-radius: 5px;
+    z-index: 1050;
+}
+
+.btn-group,
+.btn-sm {
+    border-radius: 0;
+}
+
+/* Map styles */
+#map {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    width: 100%;
+}
+
+/* Container styles */
+.container-fluid.full-height {
+    height: calc(100ch -76px);
+}
+
+#map-section {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 76px); /* Kurangi tinggi navbar */
+    margin-top: 76px; /* Berikan margin atas sesuai tinggi navbar */
+    overflow: hidden;
+}
+
+.map-container {
+    height: 100%; /* Gunakan tinggi penuh dari parent */
+    position: relative;
+}
+
+.map-wrapper {
+    height: 100%;
+    position: relative;
+}
+
+/* Sidebar styles */
+#sidebar-layer,
+#sidebar-basemap,
+#sidebar-legend,
+#sidebar-download {
+    width: 320px;
+    padding: 15px;
+    overflow-y: auto;
+    top: 0;
+    left: 0;
+    height: 100%;
+    display: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#layer-list,
+#basemap-list,
+#legend-content,
+#download-content {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
+
+/* Control button styles */
+#sidebar-control-buttons {
+    top: 10px;
+    right: 10px;
+    z-index: 99;
+    background-color: #ccc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#nav-control-buttons {
+    bottom: 30px;
+    right: 10px;
+    z-index: 99;
+    background-color: #ccc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.control-button {
+    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid #ccc;
+}
+
+/* Map controls styling */
+.map-controls {
+    position: absolute;
+    top: 200px;
+    right: 20px;
+    left: auto;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .map-controls {
+        right: 10px;
+        left: 10px;
+        top: auto;
+        bottom: 100px;
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,51 @@
+body {
+    background: linear-gradient(to bottom, #ddf1ff, #f2faff);
+}
+
+/* Desktop styles (min-width: 768px) */
+@media (min-width: 768px) {
+    .horizontal-scroll-section {
+        max-width: 100%;
+        height: calc(100vh - 76px); /* Sesuaikan dengan tinggi navbar */
+        margin-top: 76px; /* Tambahkan margin-top sesuai tinggi navbar */
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .horizontal-scroll-section img {
+        display: inline-block;
+        height: calc(100vh - 76px); /* Sesuaikan dengan tinggi navbar */
+        width: auto;
+        object-fit: contain;
+    }
+}
+
+/* Mobile styles (max-width: 767px) */
+@media (max-width: 767px) {
+    .horizontal-scroll-section {
+        max-width: 767px;
+        height: calc(
+            100vh - 76px
+        ); /* Sesuaikan dengan tinggi navbar yang sama */
+        margin-top: 76px; /* Tambahkan margin-top sesuai tinggi navbar */
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: block;
+        padding: 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .horizontal-scroll-section img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+}

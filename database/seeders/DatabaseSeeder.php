@@ -15,17 +15,43 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         $this->call([
-                KategoriLayerSeeder::class,
-                KategoriPSDSeeder::class,
-                KategoriPSNSeeder::class,
-                ProjectFeedbackSeeder::class,
-                KategoriPokirDprdSeeder::class,
-                KategoriMusrenbangSeeder::class,
-            ]);
-        User::factory()->create([
-            'name' => 'Admin',
+            KategoriLayerSeeder::class,
+            // ProjectFeedbackSeeder::class,
+            RoleSeeder::class,
+            OpdSeeder::class,
+            // KategoriAspirasiSeeder::class,
+            // AspirasiSeeder::class,
+            PublicationSeeder::class,
+            PublicationDownloadSeeder::class,
+        ]);
+
+        User::create([
+            'name' => 'Super Admin',
+            'role_id' => 1,
+            'opd_id' => 1, //bisa null
             'email' => 'admin@gmail.com',
             'password' => bcrypt('admin123')
         ]);
+
+        // User::create([
+        //     'name' => 'Super Admin',
+        //     'role_id' => 1,
+        //     'email' => 'admin@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
+        // User::create([
+        //     'name' => 'BAPPEDA',
+        //     'role_id' => 2,
+        //     'email' => 'bappeda@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
+        // User::create([
+        //     'name' => 'DISPAR',
+        //     'role_id' => 3,
+        //     'email' => 'opd@gmail.com',
+        //     'password' => bcrypt('admin123')
+        // ]);
+
+
     }
 }

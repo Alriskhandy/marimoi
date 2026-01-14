@@ -1,55 +1,117 @@
-<footer id="footer" class="footer dark-background">
+<!-- Floating Actions -->
+<div class="floating-actions">
+    <div class="fab-menu" id="fabMenu">
+        <div class="fab-item" onclick="halamanAspirasi()" title="Kirim Aspirasi">
+            <i class="fas fa-paper-plane"></i>
+        </div>
+        <div class="fab-item" onclick="halamanFAQ()" title="Bantuan">
+            <i class="fas fa-question-circle"></i>
+        </div>
+    </div>
+    <button class="fab-main" onclick="toggleFabMenu()">
+        <i class="fas fa-plus"></i>
+    </button>
+</div>
 
-    <div class="container footer-top">
-        <div class="row gy-4">
-            <div class="col-lg-6 col-md-12 footer-about">
-                <a href="index.html" class="logo d-flex align-items-center">
-                    <span class="sitename">MARIMOI</span>
-                </a>
-                <p>MARIMOI (Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah) adalah sistem digital terpadu berbasis web dan mobile yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktur daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.</p>
-                <div class="social-links d-flex mt-4">
-                    <a href=""><i class="bi bi-facebook"></i></a>
-                    <a href=""><i class="bi bi-instagram"></i></a>
-                    <a href="https://bappeda.malutprov.go.id"><i class="bi bi-link-45deg"></i></a>
+<footer id="contact" class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-3">
+
+                    <img width="40" src="{{ asset('frontend/img/logo/logo-white.png') }}" alt="Logo MARIMOI" />
+                    <h5 class="ms-3 mb-0 fs-2">
+                        MARIMOI
+                    </h5>
                 </div>
+                <p class="mb-4">
+                    Sistem Informasi Manajemen Akselerasi Infrastruktur
+                    untuk Monitoring dan Integrasi Wilayah Provinsi
+                    Maluku Utara.
+                </p>
+                <p>
+                    <strong>Bappeda Provinsi Maluku Utara</strong><br />
+                    Jl. Raya Ternate-Tobelo, Sofifi<br />
+                    Maluku Utara 97815
+                </p>
             </div>
 
-            <div class="col-lg-2 col-6 footer-links">
-                <h4>Jumlah Pengunjung</h4>
-                <ul>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Hari Ini : 0</p>
+            <div class="col-lg-2 col-md-6 mb-4">
+                <h5>Menu Utama</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#home">Beranda</a></li>
+                    <li class="mb-2"><a href="#features">Fitur</a></li>
+                    <li class="mb-2"><a href="#monitoring">Proyek Populer</a></li>
+                    <li class="mb-2"><a href="{{ route('tampil.aspirasi') }}">Kirim Aspirasi</a></li>
+                    <li class="mb-2"><a href="#about">Tentang</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Kategori Proyek</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="#">Proyek Strategis Daerah</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Minggu Ini : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Proyek Strategis Nasional</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Bulan Ini : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Prioritas Daerah</a>
                     </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Tahun Ini : 0</p>
-                    </li>
-                    <li>
-                        <p class="my-0"><i class="bi bi-caret-right-fill"></i> Total : 0</p>
+                    <li class="mb-2">
+                        <a href="#">Usulan Musrenbang</a>
                     </li>
                 </ul>
             </div>
 
-            <div class="col-lg-4 col-md-12 footer-contact text-center text-md-justify">
-                <h4>Bappeda Provinsi Maluku Utara</h4>
-                <p>Jl. Trans Halmahera,</p>
-                <p>Guraping, Oba Utara, </p>
-                <p>Kota Tidore Kepulauan, Maluku Utara</p>
-                <p><strong>Email:</strong> <span>bappedamalut@gmail.com</span></p>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <h5>Kontak</h5>
+                <p class="mb-2">
+                    <i class="fas fa-phone me-2"></i>+62 921 123 4567
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-envelope me-2"></i>bappeda@malutprov.go.id
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-globe me-2"></i>www.bappeda.malutprov.go.id
+                </p>
+                <div class="mt-3">
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-decoration-none me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-decoration-none"><i class="fab fa-youtube"></i></a>
+                </div>
             </div>
+        </div>
 
+        <hr class="my-4" style="border-color: #374151" />
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    &copy; {{ date('Y') }}
+                    MARIMOI - Bappeda Provinsi Maluku Utara.
+                    All rights reserved.
+                </p>
+                <p class="mb-0 mt-1 d-flex align-items-center">
+                    <span class="me-1" style="font-size: 0.7rem;">Developed by</span>
+                    <span style="font-size: 0.7rem;">
+                        <a href="https://www.instagram.com/heartware_digital?igsh=MWdoM3A1a3p1bXFkMg%3D%3D&utm_source=qr"
+                            target="_blank" rel="noopener noreferrer"
+                            class="text-decoration-none d-inline-flex align-items-center">
+                            Heartware Digital
+                            <img src="{{ asset('frontend/img/logo_heartware_putih.png') }}" alt="Heartware Digital Logo"
+                                class="ms-1" style="height: 15px; width: auto;">
+                        </a>
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="{{ route('kebijakan_privasi') }}" class="me-3">Kebijakan Privasi</a>
+                <a href="{{ route('syarat_ketentuan') }}">Syarat & Ketentuan</a>
+            </div>
         </div>
     </div>
-
-    <div class="container copyright text-center mt-4">
-        <p>© <span>Copyright</span> <strong class="px-1 sitename">MARIMOI</strong> <span>All Rights Reserved</span></p>
-        <p><span>Beta Version 1.0 | Developed By</span> <strong class="px-1 sitename"><a href="https://heartware-digital.my.id">Heartware Digital</a></strong></p>
-
-    </div>
-
 </footer>
+<!-- Visitor Tracking Script -->
+<script src="{{ asset('js/tracking.js') }}"></script>

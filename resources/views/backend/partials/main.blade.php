@@ -24,9 +24,10 @@
 
     <!-- Layout styles -->
     <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('backend/DataTables/datatables.js') }}"> --}}
     <!-- End layout styles -->
-
-    <link rel="shortcut icon" href="{{ asset('backend/assets/images/logo.png') }}" />
+    <link rel="stylesheet" href="{{ asset('backend/datatables/datatables.min.css') }}">
+    <link rel="shortcut icon" href="{{ asset('frontend/img/logo/logo-white.png') }}" />
     @stack('styles')
     <style>
         .nav .nav-item .nav-link,
@@ -115,9 +116,11 @@
     <script src="{{ asset('backend/assets/js/settings.js') }}"></script>
     <script src="{{ asset('backend/assets/js/todolist.js') }}"></script>
     <script src="{{ asset('backend/assets/js/jquery.cookie.js') }}"></script>
+
     <!-- endinject -->
 
-    <script src="{{ asset('backend/assets/vendors/sweetalert/sweetalert2.all.min.js') }}"></script>
+    {{-- <script src="{{ asset('/assets/js/sweetalert/sweetalert2.all.min.js') }}"></script> --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const deleteForms = document.querySelectorAll('form[data-confirm="delete"]');
@@ -141,13 +144,37 @@
                     });
                 });
             });
+
+            // Tampilkan notifikasi jika ada flash message
+            @if (session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: '{{ session('success') }}',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            @endif
+            @if (session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: '{{ session('error') }}',
+                    confirmButtonText: 'OK'
+                });
+            @endif
         });
     </script>
+
+    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('backend/datatables/datatables.min.js') }}"></script>
+
 
     <!-- Custom js for this page -->
     <script src="{{ asset('backend/assets/js/dashboard.js') }}"></script>
     <!-- End custom js for this page -->
     @yield('scripts')
+    @stack('scripts')
 </body>
 
 </html>

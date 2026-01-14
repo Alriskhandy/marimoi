@@ -29,4 +29,10 @@ Route::middleware('api')->group(function () {
         Route::get('validate/{kabupaten}/{kecamatan?}', [MalukuUtaraController::class, 'validateInput']);
     });
 
+
 });
+
+
+
+
+// routes/web.php

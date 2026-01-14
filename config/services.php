@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'hcaptcha' => [
+        'sitekey' => env('H_CAPTCHA_SITEKEY'),
+        'sitekey_test' => env('H_CAPTCHA_SITEKEY_TEST'),
+        'secret' => env('H_CAPTCHA_SECRET'),
+    ],
+
 ];

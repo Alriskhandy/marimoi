@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            MARIMOI - Sistem Informasi Manajemen Akselerasi Infrastruktur
+        </title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --primary-blue: #1e3a8a;
+                --light-blue: #3b82f6;
+                --yellow-accent: #fbbf24;
+                --green-accent: #10b981;
+                --cyan-accent: #06b6d4;
+                --gray-dark: #1f2937;
+                --gray-light: #f8fafc;
+                --white: #ffffff;
+                --text-primary: #334155;
+                --text-secondary: #64748b;
+                --border-light: #e2e8f0;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Inter", -apple-system, BlinkMacSystemFont,
+                    sans-serif;
+                line-height: 1.6;
+                color: var(--text-primary);
+                overflow-x: hidden;
+            }
+
+            .navbar {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-bottom: 1px solid var(--border-light);
+                padding: 1rem 0;
+                transition: all 0.3s ease;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .navbar-brand {
+                font-weight: 700;
+                font-size: 1.5rem;
+                color: var(--primary-blue) !important;
+                text-decoration: none;
+            }
+
+            .nav-link {
+                font-weight: 500;
+                margin: 0 0.5rem;
+                color: var(--text-secondary) !important;
+                transition: all 0.3s ease;
+                position: relative;
+            }
+
+            .nav-link:hover {
+                color: var(--primary-blue) !important;
+                transform: translateY(-2px);
+            }
+
+            .nav-link::after {
+                content: "";
+                position: absolute;
+                bottom: -5px;
+                left: 50%;
+                width: 0;
+                height: 2px;
+                background: var(--primary-blue);
+                transition: all 0.3s ease;
+                transform: translateX(-50%);
+            }
+
+            .nav-link:hover::after {
+                width: 100%;
+            }
+
+            .hero-section {
+                min-height: 100vh;
+                background: var(--gray-light);
+                display: flex;
+                align-items: center;
+                position: relative;
+                overflow: hidden;
+                padding-top: 100px;
+            }
+
+            .hero-section::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e3a8a' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+
+            .hero-content {
+                position: relative;
+                z-index: 2;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+
+            .hero-title {
+                font-size: 4rem;
+                font-weight: 800;
+                color: var(--gray-dark);
+                margin-bottom: 2rem;
+                line-height: 1.1;
+                position: relative;
+            }
+
+            .hero-title .highlight {
+                color: var(--primary-blue);
+            }
+
+            .typing-container {
+                display: inline-block;
+                background: var(--green-accent);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 12px;
+                font-weight: 700;
+                position: relative;
+                margin-left: 10px;
+            }
+
+            .typing-text {
+                font-size: inherit;
+            }
+
+            .typing-cursor {
+                display: inline-block;
+                background-color: white;
+                margin-left: 3px;
+                width: 3px;
+                animation: blink 1s infinite;
+            }
+
+            @keyframes blink {
+                0%,
+                50% {
+                    opacity: 1;
+                }
+                51%,
+                100% {
+                    opacity: 0;
+                }
+            }
+
+            .hero-decorations {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            .decoration-element {
+                position: absolute;
+                border-radius: 50%;
+                animation: float 6s ease-in-out infinite;
+            }
+
+            .decoration-element.yellow {
+                width: 60px;
+                height: 60px;
+                background: var(--yellow-accent);
+                top: 20%;
+                left: 10%;
+                animation-delay: 0s;
+            }
+
+            .decoration-element.blue {
+                width: 40px;
+                height: 40px;
+                background: var(--cyan-accent);
+                top: 10%;
+                right: 20%;
+                animation-delay: 2s;
+            }
+
+            .decoration-element.green {
+                width: 50px;
+                height: 50px;
+                background: var(--green-accent);
+                bottom: 30%;
+                right: 10%;
+                animation-delay: 4s;
+            }
+
+            .decoration-element.small-blue {
+                width: 30px;
+                height: 30px;
+                background: var(--light-blue);
+                bottom: 20%;
+                left: 15%;
+                animation-delay: 1s;
+            }
+
+            @keyframes float {
+                0%,
+                100% {
+                    transform: translateY(0px);
+                }
+                50% {
+                    transform: translateY(-20px);
+                }
+            }
+
+            .hero-icons {
+                position: relative;
+                z-index: 2;
+            }
+
+            .hero-icon-item {
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                text-align: center;
+                margin-bottom: 20px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+
+            .hero-icon-item:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            }
+
+            .hero-icon-item i {
+                font-size: 3rem;
+                margin-bottom: 15px;
+            }
+
+            .hero-icon-item h5 {
+                color: var(--gray-dark);
+                font-weight: 600;
+                margin: 0;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+                color: var(--text-secondary);
+                margin-bottom: 2.5rem;
+                font-weight: 400;
+                max-width: 600px;
+            }
+
+            .hero-description {
+                font-size: 1.3rem;
+                color: var(--text-secondary);
+                margin-bottom: 3rem;
+                font-weight: 400;
+                max-width: 800px;
+                line-height: 1.7;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .cta-button {
+                background: var(--primary-blue);
+                color: white;
+                padding: 16px 32px;
+                border: none;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 1.1rem;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                transition: all 0.3s ease;
+                box-shadow: 0 8px 25px rgba(30, 58, 138, 0.25);
+            }
+
+            .cta-button:hover {
+                background: var(--light-blue);
+                transform: translateY(-3px);
+                box-shadow: 0 12px 35px rgba(30, 58, 138, 0.35);
+                color: white;
+            }
+
+            .stats-container {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                margin-top: 4rem;
+                box-shadow: 0 20px 50px rgba(37, 99, 235, 0.1);
+                border: 1px solid var(--border-light);
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 2rem;
+            }
+
+            .stat-item {
+                text-align: center;
+                padding: 1.5rem;
+                border-radius: 12px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                background: var(--gray-light);
+            }
+
+            .stat-item:hover {
+                transform: translateY(-5px);
+                background: #f1f5f9;
+                box-shadow: 0 10px 25px rgba(37, 99, 235, 0.1);
+            }
+
+            .stat-number {
+                font-size: 2.5rem;
+                font-weight: 800;
+                color: var(--primary-blue);
+                display: block;
+                margin-bottom: 0.5rem;
+                counter-reset: number;
+                animation: countUp 2s ease-out;
+            }
+
+            .stat-label {
+                color: var(--text-secondary);
+                font-weight: 500;
+                font-size: 0.95rem;
+            }
+
+            .features-section {
+                padding: 120px 0;
+                background: white;
+            }
+
+            .section-title {
+                text-align: center;
+                margin-bottom: 80px;
+            }
+
+            .section-title h2 {
+                font-size: 2.8rem;
+                font-weight: 700;
+                color: var(--gray-dark);
+                margin-bottom: 1rem;
+            }
+
+            .section-title p {
+                font-size: 1.2rem;
+                color: var(--text-secondary);
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .features-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 2rem;
+            }
+
+            .feature-card {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                border: 2px solid var(--border-light);
+                transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .feature-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: rgba(30, 58, 138, 0.05);
+                transition: left 0.5s ease;
+            }
+
+            .feature-card:hover::before {
+                left: 100%;
+            }
+
+            .feature-card:hover {
+                transform: translateY(-12px);
+                border-color: var(--primary-blue);
+                box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15);
+            }
+
+            .feature-icon {
+                width: 70px;
+                height: 70px;
+                background: var(--primary-blue);
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.8rem;
+                color: white;
+                margin-bottom: 24px;
+                transition: all 0.3s ease;
+            }
+
+            .feature-card:hover .feature-icon {
+                transform: scale(1.1) rotate(5deg);
+                background: var(--cyan-accent);
+            }
+
+            .feature-card h4 {
+                font-size: 1.4rem;
+                font-weight: 600;
+                margin-bottom: 16px;
+                color: var(--gray-dark);
+            }
+
+            .feature-card p {
+                color: var(--text-secondary);
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+
+            .feature-link {
+                color: var(--primary-blue);
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+            }
+
+            .feature-link:hover {
+                color: var(--cyan-accent);
+                transform: translateX(4px);
+            }
+
+            .monitoring-section {
+                padding: 120px 0;
+                background: var(--gray-light);
+            }
+
+            .monitoring-dashboard {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+                border: 1px solid var(--border-light);
+            }
+
+            .dashboard-header {
+                display: flex;
+                justify-content: between;
+                align-items: center;
+                margin-bottom: 30px;
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+
+            .dashboard-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--gray-dark);
+            }
+
+            .status-filters {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .status-btn {
+                padding: 8px 16px;
+                border-radius: 25px;
+                border: 2px solid var(--border-light);
+                background: white;
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .status-btn.active,
+            .status-btn:hover {
+                background: var(--primary-blue);
+                border-color: var(--primary-blue);
+                color: white;
+            }
+
+            .project-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+
+            .project-card {
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 24px;
+                border-left: 4px solid var(--primary-blue);
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+
+            .project-card:hover {
+                transform: translateX(8px);
+                box-shadow: 0 8px 25px rgba(37, 99, 235, 0.1);
+            }
+
+            .project-status {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                margin-bottom: 12px;
+            }
+
+            .status-aktif {
+                background: #dcfce7;
+                color: #166534;
+            }
+            .status-perencanaan {
+                background: #fef3c7;
+                color: #92400e;
+            }
+            .status-selesai {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+
+            .project-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--gray-dark);
+                margin-bottom: 8px;
+            }
+
+            .project-location {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                margin-bottom: 12px;
+            }
+
+            .progress-bar {
+                width: 100%;
+                height: 6px;
+                background: #e2e8f0;
+                border-radius: 3px;
+                overflow: hidden;
+                margin-bottom: 8px;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: var(--primary-blue);
+                border-radius: 3px;
+                transition: width 0.5s ease;
+            }
+
+            .progress-text {
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                text-align: right;
+            }
+
+            .interactive-map {
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+                border: 1px solid var(--border-light);
+                margin-top: 3rem;
+                text-align: center;
+                min-height: 400px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .map-placeholder {
+                width: 200px;
+                height: 200px;
+                background: var(--green-accent);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 4rem;
+                margin-bottom: 20px;
+                opacity: 0.9;
+            }
+
+            .floating-actions {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                z-index: 1000;
+            }
+
+            .fab-main {
+                width: 60px;
+                height: 60px;
+                background: var(--primary-blue);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+                transition: all 0.3s ease;
+                border: none;
+            }
+
+            .fab-main:hover {
+                transform: scale(1.1) rotate(90deg);
+                background: var(--cyan-accent);
+            }
+
+            .fab-menu {
+                position: absolute;
+                bottom: 80px;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.3s ease;
+                pointer-events: none;
+            }
+
+            .fab-menu.active {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: all;
+            }
+
+            .fab-item {
+                width: 50px;
+                height: 50px;
+                background: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--primary-blue);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border: 2px solid var(--border-light);
+            }
+
+            .fab-item:hover {
+                background: var(--primary-blue);
+                color: white;
+                transform: scale(1.1);
+            }
+
+            .footer {
+                background: var(--gray-dark);
+                color: white;
+                padding: 60px 0 30px;
+            }
+
+            .footer h5 {
+                font-weight: 600;
+                margin-bottom: 20px;
+                color: white;
+            }
+
+            .footer a {
+                color: #94a3b8;
+                text-decoration: none;
+                transition: color 0.3s ease;
+            }
+
+            .footer a:hover {
+                color: white;
+            }
+
+            @media (max-width: 768px) {
+                .hero-title {
+                    font-size: 2.5rem;
+                }
+
+                .hero-description {
+                    font-size: 1.1rem;
+                }
+
+                .section-title h2 {
+                    font-size: 2rem;
+                }
+
+                .features-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            .animate-on-scroll {
+                opacity: 0;
+                transform: translateY(30px);
+                transition: all 0.6s ease;
+            }
+
+            .animate-on-scroll.animated {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            @keyframes countUp {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .hero-title {
+                font-size: 2.8rem;
+                font-weight: 800;
+                color: var(--gray-dark);
+                margin-bottom: 2rem;
+                line-height: 1.2;
+                position: relative;
+            }
+
+            .hero-description {
+                font-size: 1.1rem;
+                color: var(--text-secondary);
+                margin-bottom: 3rem;
+                font-weight: 400;
+                max-width: 800px;
+                line-height: 1.7;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            @media (max-width: 768px) {
+                .hero-title {
+                    font-size: 2rem;
+                }
+
+                .hero-description {
+                    font-size: 1rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <img
+                        width="40"
+                        src="public\frontend\img\logo.webp"
+                        alt=""
+                    />MARIMOI
+                </a>
+                <button
+                    class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#home">Beranda</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#features">Fitur</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#monitoring"
+                                >Monitoring</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#about">Tentang</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#contact">Kontak</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section id="home" class="hero-section">
+            <div class="hero-decorations">
+                <div class="decoration-element yellow d-none d-lg-block"></div>
+                <div class="decoration-element blue"></div>
+                <div class="decoration-element green d-none d-lg-block"></div>
+                <div class="decoration-element small-blue"></div>
+            </div>
+
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="hero-content animate-on-scroll text-center">
+                            <h1 class="hero-title">
+                                <span class="highlight"
+                                    >SISTEM INFORMASI MANAJEMEN</span
+                                ><br />
+                                AKSELERASI INFRASTRUKTUR UNTUK
+                                <img src="" alt="" />
+                                <span class="typing-container">
+                                    <span class="typing-text" id="typingText"
+                                        >MONITORING</span
+                                    >
+                                    <span class="typing-cursor">|</span> </span
+                                ><br />
+                                DAN INTEGRASI WILAYAH
+                            </h1>
+                            <p class="hero-description">
+                                Platform digital berbasis web untuk perencanaan,
+                                pelaksanaan, pemantauan, dan evaluasi
+                                pembangunan infrastruktur daerah secara
+                                partisipatif, terintegrasi, dan efektif di
+                                Provinsi Maluku Utara.
+                            </p>
+                            <a href="#monitoring" class="cta-button">
+                                <i class="fas fa-chart-line"></i>
+                                Lihat Dashboard Monitoring
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="container">
+                <div class="section-title animate-on-scroll">
+                    <h2>Fitur Utama MARIMOI</h2>
+                    <p>
+                        Platform terintegrasi untuk manajemen infrastruktur yang
+                        efektif dan transparan
+                    </p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <h4>Proyek Strategis Daerah</h4>
+                        <p>
+                            Pemantauan dan pengelolaan proyek-proyek strategis
+                            pembangunan infrastruktur daerah secara real-time
+                            dengan visualisasi yang interaktif.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <h4>Proyek Strategis Nasional</h4>
+                        <p>
+                            Koordinasi dan integrasi proyek-proyek strategis
+                            nasional yang berlokasi di wilayah Maluku Utara
+                            dengan monitoring terpusat.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <h4>Prioritas Daerah 2025-2029</h4>
+                        <p>
+                            Program prioritas pembangunan daerah jangka menengah
+                            dengan timeline dan target yang jelas serta terukur.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4>Usulan Musrenbang</h4>
+                        <p>
+                            Platform digital untuk mengelola dan memantau hasil
+                            usulan masyarakat melalui Musyawarah Perencanaan
+                            Pembangunan.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <h4>Pokir DPRD</h4>
+                        <p>
+                            Manajemen pokok-pokok pikiran DPRD untuk
+                            pengembangan dan pembangunan wilayah yang
+                            terintegrasi dengan sistem perencanaan.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h4>Aspirasi Masyarakat</h4>
+                        <p>
+                            Kanal komunikasi dua arah untuk menerima, mengelola,
+                            dan merespons aspirasi serta pengaduan masyarakat
+                            secara digital.
+                        </p>
+                        <a href="#" class="feature-link">
+                            Lihat Detail <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Monitoring Section -->
+        <section id="monitoring" class="monitoring-section">
+            <div class="container">
+                <div class="section-title animate-on-scroll">
+                    <h2>Dashboard Monitoring Real-time</h2>
+                    <p>
+                        Pantau progres infrastruktur Maluku Utara secara
+                        langsung
+                    </p>
+                </div>
+
+                <div class="monitoring-dashboard animate-on-scroll">
+                    <div class="dashboard-header">
+                        <h3 class="dashboard-title">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Proyek Infrastruktur Aktif
+                        </h3>
+                        <div class="status-filters">
+                            <button
+                                class="status-btn active"
+                                onclick="filterProjects('semua')"
+                            >
+                                Semua
+                            </button>
+                            <button
+                                class="status-btn"
+                                onclick="filterProjects('aktif')"
+                            >
+                                Aktif
+                            </button>
+                            <button
+                                class="status-btn"
+                                onclick="filterProjects('perencanaan')"
+                            >
+                                Perencanaan
+                            </button>
+                            <button
+                                class="status-btn"
+                                onclick="filterProjects('selesai')"
+                            >
+                                Selesai
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="project-grid" id="projectGrid">
+                        <div class="project-card" data-status="aktif">
+                            <span class="project-status status-aktif"
+                                >Sedang Berjalan</span
+                            >
+                            <h4 class="project-title">Jalan Trans Halmahera</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i
+                                >Halmahera Utara
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 75%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">75% selesai</p>
+                        </div>
+
+                        <div class="project-card" data-status="perencanaan">
+                            <span class="project-status status-perencanaan"
+                                >Perencanaan</span
+                            >
+                            <h4 class="project-title">Pelabuhan Tobelo</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i
+                                >Halmahera Utara
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 25%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">25% selesai</p>
+                        </div>
+
+                        <div class="project-card" data-status="aktif">
+                            <span class="project-status status-aktif"
+                                >Sedang Berjalan</span
+                            >
+                            <h4 class="project-title">Bandara Gamar Malamo</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i>Galela
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 90%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">90% selesai</p>
+                        </div>
+
+                        <div class="project-card" data-status="selesai">
+                            <span class="project-status status-selesai"
+                                >Selesai</span
+                            >
+                            <h4 class="project-title">Jembatan Dufa-Dufa</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i
+                                >Ternate
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 100%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">100% selesai</p>
+                        </div>
+
+                        <div class="project-card" data-status="aktif">
+                            <span class="project-status status-aktif"
+                                >Sedang Berjalan</span
+                            >
+                            <h4 class="project-title">
+                                Terminal Tipe A Sofifi
+                            </h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i>Tidore
+                                Kepulauan
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 60%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">60% selesai</p>
+                        </div>
+
+                        <div class="project-card" data-status="perencanaan">
+                            <span class="project-status status-perencanaan"
+                                >Perencanaan</span
+                            >
+                            <h4 class="project-title">RSUD Chasan Boesoirie</h4>
+                            <p class="project-location">
+                                <i class="fas fa-map-marker-alt me-1"></i
+                                >Ternate
+                            </p>
+                            <div class="progress-bar">
+                                <div
+                                    class="progress-fill"
+                                    style="width: 15%"
+                                ></div>
+                            </div>
+                            <p class="progress-text">15% selesai</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section id="stats" class="features-section">
+            <div class="container">
+                <div class="section-title animate-on-scroll">
+                    <h2>Statistik</h2>
+                    <p>
+                        Platform terintegrasi untuk manajemen infrastruktur yang
+                        efektif dan transparan
+                    </p>
+                </div>
+
+                <div class="stats-container animate-on-scroll">
+                    <div class="stats-grid">
+                        <div class="stat-item" onclick="animateStatNumbers()">
+                            <span class="stat-number" data-target="127">0</span>
+                            <div class="stat-label">Proyek Aktif</div>
+                        </div>
+                        <div class="stat-item" onclick="animateStatNumbers()">
+                            <span class="stat-number" data-target="85">0</span>
+                            <div class="stat-label">% Progres Rata-rata</div>
+                        </div>
+                        <div class="stat-item" onclick="animateStatNumbers()">
+                            <span class="stat-number" data-target="15">0</span>
+                            <div class="stat-label">Kabupaten/Kota</div>
+                        </div>
+                        <div class="stat-item" onclick="animateStatNumbers()">
+                            <span class="stat-number" data-target="42">0</span>
+                            <div class="stat-label">Proyek Selesai</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Indikator Pembangunan Section -->
+        <section
+            id="indikator"
+            class="features-section"
+            style="background: var(--gray-light)"
+        >
+            <div class="container">
+                <div class="section-title animate-on-scroll">
+                    <h2>Indikator Pembangunan Strategis</h2>
+                    <p>
+                        Kontribusi MARIMOI Terhadap Indikator-Indikator
+                        Pembangunan Strategis
+                    </p>
+                </div>
+
+                <div class="row gy-4">
+                    <div class="col-lg-6 col-md-6">
+                        <div
+                            class="service-item d-flex animate-on-scroll"
+                            style="
+                                background: white;
+                                padding: 30px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                                border: 2px solid var(--border-light);
+                                transition: all 0.3s ease;
+                            "
+                        >
+                            <div class="icon flex-shrink-0 me-4">
+                                <div
+                                    style="
+                                        width: 60px;
+                                        height: 60px;
+                                        background: var(--primary-blue);
+                                        border-radius: 12px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        color: white;
+                                        font-size: 1.5rem;
+                                    "
+                                >
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h4
+                                    class="title"
+                                    style="
+                                        color: var(--gray-dark);
+                                        font-weight: 600;
+                                        margin-bottom: 12px;
+                                    "
+                                >
+                                    Indeks Pengembangan Wilayah
+                                </h4>
+                                <p
+                                    class="description"
+                                    style="
+                                        color: var(--text-secondary);
+                                        margin-bottom: 16px;
+                                    "
+                                >
+                                    MARIMOI meningkatkan Indeks Pengembangan
+                                    Wilayah melalui:
+                                </p>
+                                <ul
+                                    style="
+                                        color: var(--text-secondary);
+                                        line-height: 1.6;
+                                    "
+                                >
+                                    <li>
+                                        Penyediaan data spasial dan sektoral
+                                        untuk mengukur keterjangkauan layanan
+                                        dasar.
+                                    </li>
+                                    <li>
+                                        Akselerasi pembangunan infrastruktur di
+                                        wilayah hinterland dan kawasan
+                                        tertinggal.
+                                    </li>
+                                    <li>
+                                        Integrasi lintas wilayah dalam
+                                        perencanaan berbasis konektivitas
+                                        (antarpulau, antarkawasan).
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div
+                            class="service-item d-flex animate-on-scroll"
+                            style="
+                                background: white;
+                                padding: 30px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                                border: 2px solid var(--border-light);
+                                transition: all 0.3s ease;
+                            "
+                        >
+                            <div class="icon flex-shrink-0 me-4">
+                                <div
+                                    style="
+                                        width: 60px;
+                                        height: 60px;
+                                        background: var(--green-accent);
+                                        border-radius: 12px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        color: white;
+                                        font-size: 1.5rem;
+                                    "
+                                >
+                                    <i class="fa-solid fa-person"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h4
+                                    class="title"
+                                    style="
+                                        color: var(--gray-dark);
+                                        font-weight: 600;
+                                        margin-bottom: 12px;
+                                    "
+                                >
+                                    Indeks Pelayanan Publik
+                                </h4>
+                                <p
+                                    class="description"
+                                    style="
+                                        color: var(--text-secondary);
+                                        margin-bottom: 16px;
+                                    "
+                                >
+                                    MARIMOI memberi dampak pada Indeks Pelayanan
+                                    melalui:
+                                </p>
+                                <ul
+                                    style="
+                                        color: var(--text-secondary);
+                                        line-height: 1.6;
+                                    "
+                                >
+                                    <li>
+                                        Partisipasi masyarakat dalam pelaporan
+                                        kondisi infrastruktur (jalan rusak, PSU,
+                                        jembatan, dll).
+                                    </li>
+                                    <li>
+                                        Penyediaan data real-time kepada unit
+                                        pelayanan teknis untuk respon cepat.
+                                    </li>
+                                    <li>
+                                        Penguatan kualitas layanan berbasis
+                                        kebutuhan wilayah, bukan hanya standar
+                                        sektoral.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div
+                            class="service-item d-flex animate-on-scroll"
+                            style="
+                                background: white;
+                                padding: 30px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                                border: 2px solid var(--border-light);
+                                transition: all 0.3s ease;
+                            "
+                        >
+                            <div class="icon flex-shrink-0 me-4">
+                                <div
+                                    style="
+                                        width: 60px;
+                                        height: 60px;
+                                        background: var(--cyan-accent);
+                                        border-radius: 12px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        color: white;
+                                        font-size: 1.5rem;
+                                    "
+                                >
+                                    <i class="fa-solid fa-computer"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h4
+                                    class="title"
+                                    style="
+                                        color: var(--gray-dark);
+                                        font-weight: 600;
+                                        margin-bottom: 12px;
+                                    "
+                                >
+                                    Indeks SPBE
+                                </h4>
+                                <p
+                                    class="description"
+                                    style="
+                                        color: var(--text-secondary);
+                                        margin-bottom: 16px;
+                                    "
+                                >
+                                    MARIMOI mendorong pencapaian SPBE melalui:
+                                </p>
+                                <ul
+                                    style="
+                                        color: var(--text-secondary);
+                                        line-height: 1.6;
+                                    "
+                                >
+                                    <li>
+                                        Digitalisasi proses perencanaan,
+                                        monitoring, dan pelaporan infrastruktur.
+                                    </li>
+                                    <li>
+                                        Interoperabilitas data antar instansi
+                                        (Bappeda, OPD teknis, DPRD).
+                                    </li>
+                                    <li>
+                                        Fitur dashboard publik sebagai bentuk
+                                        pelayanan digital transparan.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-6">
+                        <div
+                            class="service-item d-flex animate-on-scroll"
+                            style="
+                                background: white;
+                                padding: 30px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                                border: 2px solid var(--border-light);
+                                transition: all 0.3s ease;
+                            "
+                        >
+                            <div class="icon flex-shrink-0 me-4">
+                                <div
+                                    style="
+                                        width: 60px;
+                                        height: 60px;
+                                        background: var(--yellow-accent);
+                                        border-radius: 12px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        color: white;
+                                        font-size: 1.5rem;
+                                    "
+                                >
+                                    <i class="fa-solid fa-road-bridge"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h4
+                                    class="title"
+                                    style="
+                                        color: var(--gray-dark);
+                                        font-weight: 600;
+                                        margin-bottom: 12px;
+                                    "
+                                >
+                                    Indeks Kualitas Layanan Infrastruktur
+                                </h4>
+                                <p
+                                    class="description"
+                                    style="
+                                        color: var(--text-secondary);
+                                        margin-bottom: 16px;
+                                    "
+                                >
+                                    MARIMOI memberi dampak pada Indeks Pelayanan
+                                    melalui:
+                                </p>
+                                <ul
+                                    style="
+                                        color: var(--text-secondary);
+                                        line-height: 1.6;
+                                    "
+                                >
+                                    <li>
+                                        Partisipasi masyarakat dalam pelaporan
+                                        kondisi infrastruktur (jalan rusak, PSU,
+                                        jembatan, dll).
+                                    </li>
+                                    <li>
+                                        Penyediaan data real-time kepada unit
+                                        pelayanan teknis untuk respon cepat.
+                                    </li>
+                                    <li>
+                                        Penguatan kualitas layanan berbasis
+                                        kebutuhan wilayah, bukan hanya standar
+                                        sektoral.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- About Section -->
+        <section id="about" class="features-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <div class="animate-on-scroll">
+                            <h2 class="mb-4">Tentang MARIMOI</h2>
+                            <p class="mb-4">
+                                MARIMOI (Manajemen Akselerasi Infrastruktur
+                                untuk Monitoring dan Integrasi Wilayah) adalah
+                                sistem informasi yang dikembangkan oleh Bappeda
+                                Provinsi Maluku Utara untuk mendukung
+                                transparansi dan efektivitas pembangunan
+                                infrastruktur daerah.
+                            </p>
+                            <p class="mb-4">
+                                Platform ini memungkinkan integrasi data dari
+                                berbagai sumber, mulai dari proyek strategis
+                                nasional dan daerah, hingga aspirasi langsung
+                                dari masyarakat melalui Musrenbang dan saluran
+                                pengaduan digital.
+                            </p>
+                            <div class="row mt-4">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i
+                                            class="fas fa-check-circle me-3 fs-5"
+                                            style="color: var(--green-accent)"
+                                        ></i>
+                                        <span>Real-time Monitoring</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i
+                                            class="fas fa-check-circle me-3 fs-5"
+                                            style="color: var(--green-accent)"
+                                        ></i>
+                                        <span>Partisipasi Masyarakat</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i
+                                            class="fas fa-check-circle me-3 fs-5"
+                                            style="color: var(--green-accent)"
+                                        ></i>
+                                        <span>Integrasi Data</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i
+                                            class="fas fa-check-circle me-3 fs-5"
+                                            style="color: var(--green-accent)"
+                                        ></i>
+                                        <span>Transparansi Publik</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="animate-on-scroll">
+                            <div class="position-relative">
+                                <div
+                                    class="ratio ratio-16x9 rounded-4 border border-primary"
+                                >
+                                    <iframe
+                                        src="https://www.youtube.com/embed/3UlvbSy2ms0?si=SO54pz2P7VLNnrkZ"
+                                        title="YouTube video player"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                    >
+                                    </iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Floating Actions -->
+        <div class="floating-actions">
+            <div class="fab-menu" id="fabMenu">
+                <div
+                    class="fab-item"
+                    onclick="reportIssue()"
+                    title="Laporkan Masalah"
+                >
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div
+                    class="fab-item"
+                    onclick="submitAspiration()"
+                    title="Kirim Aspirasi"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="fab-item" onclick="viewHelp()" title="Bantuan">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+            </div>
+            <button class="fab-main" onclick="toggleFabMenu()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer id="contact" class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <h5>
+                            <img
+                                width="50"
+                                src="public\frontend\img\logo.webp"
+                                alt=""
+                            />
+                            MARIMOI
+                        </h5>
+                        <p class="mb-4">
+                            Sistem Informasi Manajemen Akselerasi Infrastruktur
+                            untuk Monitoring dan Integrasi Wilayah Provinsi
+                            Maluku Utara.
+                        </p>
+                        <p>
+                            <strong>Bappeda Provinsi Maluku Utara</strong><br />
+                            Jl. Raya Ternate-Tobelo, Sofifi<br />
+                            Maluku Utara 97815
+                        </p>
+                    </div>
+
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5>Menu Utama</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="#home">Beranda</a></li>
+                            <li class="mb-2"><a href="#features">Fitur</a></li>
+                            <li class="mb-2">
+                                <a href="#monitoring">Monitoring</a>
+                            </li>
+                            <li class="mb-2"><a href="#about">Tentang</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <h5>Kategori Proyek</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <a href="#">Proyek Strategis Daerah</a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="#">Proyek Strategis Nasional</a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="#">Prioritas Daerah</a>
+                            </li>
+                            <li class="mb-2">
+                                <a href="#">Usulan Musrenbang</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <h5>Kontak</h5>
+                        <p class="mb-2">
+                            <i class="fas fa-phone me-2"></i>+62 921 123 4567
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-envelope me-2"></i
+                            >bappeda@malutprov.go.id
+                        </p>
+                        <p class="mb-2">
+                            <i class="fas fa-globe me-2"></i
+                            >www.bappeda.malutprov.go.id
+                        </p>
+                        <div class="mt-3">
+                            <a href="#" class="text-decoration-none me-3"
+                                ><i class="fab fa-facebook-f"></i
+                            ></a>
+                            <a href="#" class="text-decoration-none me-3"
+                                ><i class="fab fa-twitter"></i
+                            ></a>
+                            <a href="#" class="text-decoration-none me-3"
+                                ><i class="fab fa-instagram"></i
+                            ></a>
+                            <a href="#" class="text-decoration-none"
+                                ><i class="fab fa-youtube"></i
+                            ></a>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" style="border-color: #374151" />
+
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0">
+                            &copy; 2025 MARIMOI - Bappeda Provinsi Maluku Utara.
+                            All rights reserved.
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="#" class="me-3">Kebijakan Privasi</a>
+                        <a href="#">Syarat & Ketentuan</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+                anchor.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(
+                        this.getAttribute("href")
+                    );
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                        });
+                    }
+                });
+            });
+
+            // Scroll animation
+            const animateOnScroll = () => {
+                const elements =
+                    document.querySelectorAll(".animate-on-scroll");
+                elements.forEach((element) => {
+                    const elementTop = element.getBoundingClientRect().top;
+                    const elementVisible = 150;
+
+                    if (elementTop < window.innerHeight - elementVisible) {
+                        element.classList.add("animated");
+                    }
+                });
+            };
+
+            window.addEventListener("scroll", animateOnScroll);
+            window.addEventListener("load", animateOnScroll);
+
+            // Animate counter numbers
+            function animateStatNumbers() {
+                const counters = document.querySelectorAll(".stat-number");
+                counters.forEach((counter) => {
+                    const target = parseInt(
+                        counter.getAttribute("data-target")
+                    );
+                    const increment = target / 100;
+                    let current = 0;
+
+                    counter.textContent = "0";
+
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            counter.textContent = target;
+                            clearInterval(timer);
+                        } else {
+                            counter.textContent = Math.floor(current);
+                        }
+                    }, 30);
+                });
+            }
+
+            // Auto-animate counters when stats section is visible
+            const statsSection = document.querySelector("#stats");
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        animateStatNumbers();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+
+            if (statsSection) {
+                observer.observe(statsSection);
+            }
+
+            // Typing animation
+            const typingWords = [
+                "Monitoring",
+                "Integrasi",
+                "Perencanaan",
+                "Evaluasi",
+                "Transparansi",
+            ];
+            let currentWordIndex = 0;
+            let currentCharIndex = 0;
+            let isDeleting = false;
+            let typingSpeed = 100;
+
+            function typeWriter() {
+                const typingElement = document.getElementById("typingText");
+                const currentWord = typingWords[currentWordIndex];
+
+                if (isDeleting) {
+                    typingElement.textContent = currentWord.substring(
+                        0,
+                        currentCharIndex - 1
+                    );
+                    currentCharIndex--;
+                    typingSpeed = 50;
+                } else {
+                    typingElement.textContent = currentWord.substring(
+                        0,
+                        currentCharIndex + 1
+                    );
+                    currentCharIndex++;
+                    typingSpeed = 100;
+                }
+
+                if (!isDeleting && currentCharIndex === currentWord.length) {
+                    setTimeout(() => {
+                        isDeleting = true;
+                    }, 2000);
+                } else if (isDeleting && currentCharIndex === 0) {
+                    isDeleting = false;
+                    currentWordIndex =
+                        (currentWordIndex + 1) % typingWords.length;
+                }
+
+                setTimeout(typeWriter, typingSpeed);
+            }
+
+            // Start typing animation when page loads
+            window.addEventListener("load", function () {
+                setTimeout(typeWriter, 1000);
+            });
+
+            // Project filtering
+            function filterProjects(status) {
+                const cards = document.querySelectorAll(".project-card");
+                const buttons = document.querySelectorAll(".status-btn");
+
+                // Update active button
+                buttons.forEach((btn) => btn.classList.remove("active"));
+                event.target.classList.add("active");
+
+                // Filter cards
+                cards.forEach((card) => {
+                    if (
+                        status === "semua" ||
+                        card.getAttribute("data-status") === status
+                    ) {
+                        card.style.display = "block";
+                        card.style.animation = "fadeIn 0.5s ease";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            }
+
+            // Floating Action Button
+            let fabMenuOpen = false;
+
+            function toggleFabMenu() {
+                const fabMenu = document.getElementById("fabMenu");
+                const fabMain = document.querySelector(".fab-main i");
+
+                fabMenuOpen = !fabMenuOpen;
+
+                if (fabMenuOpen) {
+                    fabMenu.classList.add("active");
+                    fabMain.style.transform = "rotate(45deg)";
+                } else {
+                    fabMenu.classList.remove("active");
+                    fabMain.style.transform = "rotate(0deg)";
+                }
+            }
+
+            function reportIssue() {
+                alert(
+                    "Fitur pelaporan masalah akan segera tersedia!\n\nAnda dapat melaporkan masalah infrastruktur melalui platform ini."
+                );
+                toggleFabMenu();
+            }
+
+            function submitAspiration() {
+                alert(
+                    "Fitur pengiriman aspirasi akan segera tersedia!\n\nSampaikan aspirasi Anda untuk pembangunan infrastruktur Maluku Utara."
+                );
+                toggleFabMenu();
+            }
+
+            function viewHelp() {
+                alert(
+                    "Bantuan MARIMOI:\n\n1. Gunakan menu navigasi untuk menjelajahi fitur\n2. Klik pada kartu proyek untuk detail\n3. Gunakan filter untuk menyaring data\n4. Hubungi kami jika ada pertanyaan"
+                );
+                toggleFabMenu();
+            }
+
+            function openMap() {
+                alert(
+                    "Peta interaktif akan segera tersedia!\n\nFitur ini akan menampilkan visualisasi geografis dari semua proyek infrastruktur di Maluku Utara."
+                );
+            }
+
+            // Navbar background on scroll
+            window.addEventListener("scroll", function () {
+                const navbar = document.querySelector(".navbar");
+                if (window.scrollY > 50) {
+                    navbar.style.background = "rgba(255, 255, 255, 0.98)";
+                    navbar.style.boxShadow = "0 2px 20px rgba(0,0,0,0.1)";
+                } else {
+                    navbar.style.background = "rgba(255, 255, 255, 0.95)";
+                    navbar.style.boxShadow = "none";
+                }
+            });
+
+            // Feature card interactions
+            document.querySelectorAll(".feature-card").forEach((card) => {
+                card.addEventListener("click", function () {
+                    const title = this.querySelector("h4").textContent;
+                    alert(
+                        `Fitur "${title}" akan segera tersedia!\n\nFitur ini akan memberikan akses lengkap untuk mengelola ${title.toLowerCase()}.`
+                    );
+                });
+            });
+
+            // Project card interactions
+            document.querySelectorAll(".project-card").forEach((card) => {
+                card.addEventListener("click", function () {
+                    const title =
+                        this.querySelector(".project-title").textContent;
+                    const status =
+                        this.querySelector(".project-status").textContent;
+                    const location = this.querySelector(
+                        ".project-location"
+                    ).textContent.replace("📍 ", "");
+                    const progress =
+                        this.querySelector(".progress-text").textContent;
+
+                    alert(
+                        `Detail Proyek:\n\nNama: ${title}\nStatus: ${status}\nLokasi: ${location}\nProgress: ${progress}\n\nKlik "Lihat Detail" untuk informasi lengkap.`
+                    );
+                });
+            });
+
+            // Add loading animation
+            window.addEventListener("load", function () {
+                document.body.style.opacity = "0";
+                document.body.style.transition = "opacity 0.5s ease";
+                setTimeout(() => {
+                    document.body.style.opacity = "1";
+                }, 100);
+            });
+
+            // Close fab menu when clicking outside
+            document.addEventListener("click", function (event) {
+                const fab = document.querySelector(".floating-actions");
+                if (!fab.contains(event.target) && fabMenuOpen) {
+                    toggleFabMenu();
+                }
+            });
+        </script>
+    </body>
+</html>

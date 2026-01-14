@@ -1,0 +1,306 @@
+/* ==========================================================================
+   5. FITUR UTAMA SECTION
+   ========================================================================== */
+
+/* Fitur Utama Section */
+.fitur-utama {
+    background: #fff;
+    color: #000;
+    width: 100%;
+    max-width: none;
+    position: relative;
+    padding: 10px 0;
+}
+
+.fitur-utama .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header with Title and Menu Layout */
+.fitur-header {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 80px;
+    align-items: center;
+    margin-bottom: 0;
+    min-height: 500px;
+}
+
+/* Left Side - Menu Section */
+.menu-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Right Side - Content Section */
+.fitur-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 40px;
+    text-align: left;
+}
+
+.section-title-right {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #000;
+    text-align: right;
+    margin-bottom: 30px;
+    font-family: "Inter", sans-serif;
+    line-height: 1.2;
+}
+
+.section-description {
+    font-size: 1.1rem;
+    color: #666;
+    text-align: right;
+    line-height: 1.7;
+    margin: 0;
+    font-family: "Inter", sans-serif;
+}
+
+/* Vertical Menu */
+.menu-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vertical-menu-item {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    font-family: "Poppins", sans-serif;
+}
+
+.vertical-menu-item:hover {
+    border-color: var(--primary);
+    background: #f0f8ff;
+    transform: translateX(10px);
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 15px rgba(0, 127, 255, 0.2);
+}
+
+.vertical-menu-item:active {
+    transform: translateX(5px) scale(1.2);
+}
+
+.vertical-menu-item:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 127, 255, 0.1);
+}
+
+.vertical-menu-item span {
+    font-weight: 500;
+    font-size: 1rem;
+    font-family: "Poppins", sans-serif;
+}
+
+.arrow {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+/* Ripple Animation for Menu Items */
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* ==========================================================================
+   FITUR UTAMA SECTION - ENHANCED RESPONSIVE
+   ========================================================================== */
+
+/* Small Tablet */
+@media (max-width: 900px) {
+    .fitur-utama .container {
+        padding: 0 15px;
+    }
+
+    .fitur-header {
+        gap: 40px;
+        min-height: auto;
+    }
+
+    .section-title-right {
+        font-size: 2.2rem;
+        margin-bottom: 25px;
+    }
+
+    .section-description {
+        font-size: 1.05rem;
+        margin-bottom: 35px;
+    }
+
+    .vertical-menu-item {
+        padding: 16px 18px;
+    }
+
+    .vertical-menu-item span {
+        font-size: 0.95rem;
+    }
+}
+
+/* Mobile Landscape */
+@media (max-width: 640px) {
+    .fitur-utama {
+        padding: 50px 0;
+    }
+
+    .fitur-utama .container {
+        padding: 0 12px;
+    }
+
+    .fitur-header {
+        gap: 35px;
+    }
+
+    .section-title-right {
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+        line-height: 1.1;
+    }
+
+    .section-description {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+
+    .menu-vertical {
+        gap: 8px;
+    }
+
+    .vertical-menu-item {
+        padding: 14px 16px;
+        border-radius: 8px;
+    }
+
+    .vertical-menu-item span {
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+
+    .arrow {
+        font-size: 1rem;
+    }
+
+    .vertical-menu-item:hover {
+        transform: translateX(3px);
+    }
+
+    .vertical-menu-item:active {
+        transform: translateX(1px) scale(0.99);
+    }
+}
+
+/* Mobile Portrait */
+@media (max-width: 480px) {
+    .fitur-utama {
+        padding: 40px 0;
+    }
+
+    .fitur-utama .container {
+        padding: 0 10px;
+    }
+
+    .fitur-header {
+        gap: 30px;
+    }
+
+    .section-title-right {
+        font-size: 1.6rem;
+        margin-bottom: 15px;
+    }
+
+    .section-description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 25px;
+    }
+
+    .menu-vertical {
+        gap: 6px;
+    }
+
+    .vertical-menu-item {
+        padding: 12px 14px;
+        border-radius: 6px;
+    }
+
+    .vertical-menu-item span {
+        font-size: 0.85rem;
+        line-height: 1.2;
+    }
+
+    .arrow {
+        font-size: 0.9rem;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 360px) {
+    .fitur-utama {
+        padding: 30px 0;
+    }
+
+    .fitur-utama .container {
+        padding: 0 8px;
+    }
+
+    .fitur-header {
+        gap: 25px;
+    }
+
+    .section-title-right {
+        font-size: 1.4rem;
+        margin-bottom: 12px;
+        line-height: 1.1;
+    }
+
+    .section-description {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-bottom: 20px;
+    }
+
+    .menu-vertical {
+        gap: 5px;
+    }
+
+    .vertical-menu-item {
+        padding: 10px 12px;
+        border-radius: 6px;
+    }
+
+    .vertical-menu-item span {
+        font-size: 0.8rem;
+        line-height: 1.1;
+    }
+
+    .arrow {
+        font-size: 0.8rem;
+    }
+
+    .vertical-menu-item:hover {
+        transform: translateX(2px);
+    }
+}
