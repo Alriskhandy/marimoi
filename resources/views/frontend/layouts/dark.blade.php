@@ -7,11 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $title ?? 'MARIMOI - Sistem Informasi Manajemen Akselerasi Infrastruktur' }}</title>
     <meta name="google-site-verification" content="6RZF3ryk7c1bQytWoY25iwHocGbgi7eHi5j9-Y0u0E8" />
+    
     <!-- Primary Meta Tags -->
     <meta name="title"
-        content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara | Monitoring & Perencanaan Terintegrasi">
+        content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta name="description"
-        content="MARIMOI adalah sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Dengan pendekatan spasial dan peta tematik, sistem ini menyediakan data real-time yang mendukung perencanaan lintas sektor secara kolaboratif dan transparan.">
+        content="MARIMOI adalah sistem digital terpadu berbasi web yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktru daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.">
     <meta name="keywords"
         content="MARIMOI,marimoi,bappeda malut, sistem informasi infrastruktur, akselerasi infrastruktur maluku utara, manajemen proyek digital, monitoring infrastruktur, peta proyek, pemerintahan digital, sistem infrastruktur, pembangunan daerah, WebGIS, koordinasi pembangunan, perencanaan infrastruktur, transformasi digital, data real-time infrastruktur, maluku utara">
     <meta name="author" content="Pemerintah Provinsi Maluku Utara">
@@ -23,13 +24,13 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="MARIMOI - BAPPEDA Maluku Utara">
     <meta property="og:title"
-        content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara | Monitoring & Perencanaan Terintegrasi">
+        content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta property="og:description"
-        content="Sistem digital terpadu untuk memperkuat koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara. Platform berbasis data real-time dengan pendekatan spasial untuk perencanaan lintas sektor yang kolaboratif dan transparan.">
-    <meta property="og:image" content="{{ asset('frontend/img/kantor-gubernur-malut.jpg') }}">
+        content="MARIMOI adalah sistem digital terpadu berbasi web yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktru daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.">
+    <meta property="og:image" content="{{ asset('frontend/img/index-marimoi.png') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara">
+    <meta property="og:image:alt" content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:locale" content="id_ID">
 
@@ -37,10 +38,10 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MalukuUtaraProv">
     <meta name="twitter:creator" content="@MalukuUtaraProv">
-    <meta name="twitter:title" content="MARIMOI - Sistem Digital Infrastruktur Maluku Utara">
+    <meta name="twitter:title" content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta name="twitter:description"
-        content="Sistem digital terpadu untuk koordinasi, pemantauan, dan integrasi pembangunan infrastruktur di Maluku Utara dengan data real-time dan pendekatan spasial.">
-    <meta name="twitter:image" content="{{ asset('frontend/img/kantor-gubernur-malut.jpg') }}">
+        content="MARIMOI adalah sistem digital terpadu berbasi web yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktru daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.">
+    <meta name="twitter:image" content="{{ asset('frontend/img/index-marimoi.png') }}">
     <meta name="twitter:image:alt" content="MARIMOI - Sistem Digital Infrastruktur">
 
     <!-- Geographic Meta Tags -->
