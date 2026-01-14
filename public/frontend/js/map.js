@@ -520,26 +520,15 @@ function generateLegend() {
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
-    let content = `
-        <div class="p-4 max-w-xs bg-white rounded-lg shadow-lg border border-gray-200">
-            <h5 class="text-md font-semibold text-blue-600 mb-3 border-b border-gray-200 pb-2">
-                ${props.kategori || "Feature"}
-            </h5>`;
+    let content = `<div class="py-1" style="max-width: 230px; font-size: 12px;">
+        <h5 class="fw-bold text-primary" style="font-size: 12px; margin-bottom: 5px;">${
+            props.kategori || "Feature"
+        }</h5>
+        <img src="frontend/img/kantor-gub-malut.jpeg" alt="Template Image" style="width: 100%; max-height: 120px; object-fit: cover; margin-bottom: 5px;">`;
 
-    if (props.gambar) {
-        content += `
-            <div class="mb-3">
-                <img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}"
-                    class="w-full h-32 object-cover rounded-md border border-gray-300 shadow-sm">
-            </div>`;
-    }
+    content += `<hr style="margin: 5px 0;"><div style="max-height: 100px; overflow-y:auto; padding-right: 5px;">
+        <table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
 
-    content += `
-        <div class="space-y-2 mb-4">
-            <div class="max-h-40 overflow-y-auto">
-                <table class="w-full text-[9px]" >`;
-
-    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
     Object.entries(props).forEach(([key, value]) => {
         if (allowedKeys.includes(key.toUpperCase()) && value) {
             const label = key
@@ -553,20 +542,15 @@ function bindPopupContent(feature, layer, urlPath) {
         }
     });
 
-    content += `</table></div></div>`;
+    content += `</table></div>`;
 
     const geom = feature.geometry;
     let center = null;
 
     if (geom) {
         const type = geom.type;
-        content += `
-            <div class="border-t border-gray-200 pt-3 mb-3">
-                <table class="w-full text-[9px]">
-                    <tr class="border-b border-gray-100">
-                        <td class="text-[9px] font-medium text-gray-700 py-1 pr-2">Geometry</td>
-                        <td class="text-[9px] text-gray-600 py-1">${type}</td>
-                    </tr>`;
+        content += `<hr style="margin: 5px 0;"><table class="table table-sm table-borderless" style="font-size: 9px; width: 100%; margin-bottom: 5px;">`;
+        content += `<tr><td class="fw-medium">Geometry</td><td>${type}</td></tr>`;
 
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
             let length = 0;
@@ -627,17 +611,9 @@ function bindPopupContent(feature, layer, urlPath) {
     const lng = center?.[0] || 0;
 
     content += `
-        <div class="flex gap-2 pt-2">
-            <button class="zoomToBtn flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                data-lat="${lat}" data-lng="${lng}">
-                <i class="bi bi-zoom-in mr-1"></i>
-                Zoom To
-            </button>
-            <a href="${urlPath}/${id}"
-                class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 no-underline">
-                <i class="bi bi-eye mr-1"></i>
-                Detail
-            </a>
+        <div class="d-flex justify-content-between">
+            <button class="btn text-white btn-sm btn-warning zoomToBtn" data-lat="${lat}" data-lng="${lng}" style="font-size: 10px; padding: 4px 8px;">Zoom To</button>
+            <a href="${urlPath}/${id}" class="btn text-white btn-sm btn-warning" style="font-size: 10px; padding: 4px 8px;">Lihat Detail</a>
         </div>
     </div>`;
 
@@ -717,29 +693,12 @@ function changeBaseMap(baseMapId) {
 /**
  * Menentukan tipe data berdasarkan path URL.
  */
-function getDataType(urlPath) {
-    const defaultResult = { type: "tematik", sub_type: null, year: null };
-
-    switch (urlPath) {
-        case "/proyek-strategis-daerah":
-            return { type: "proyek_strategis", sub_type: "psd", year: null };
-        case "/proyek-strategis-nasional":
-            return { type: "proyek_strategis", sub_type: "psn", year: null };
-        case "/peta-tematik":
-            return { type: "tematik", sub_type: null, year: null };
-        case "/usulan-musrenbang":
-            return { type: "usulan_musrenbang", sub_type: null, year: null };
-        case "/pokir-dprd":
-            return { type: "pokir_dprd", sub_type: null, year: null };
-        default:
-            return defaultResult;
+async function initMap() {
+    // Tampilkan loading di sidebar layer
+    const layerListContainer = document.getElementById("layer-list");
+    if (layerListContainer) {
+        layerListContainer.innerHTML = `<div id="layer-loading" style="display:flex;align-items:center;justify-content:center;height:120px;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
     }
-}
-
-/**
- * Load only categories metadata without spatial data - Modified for 3-level hierarchy
- */
-async function loadCategoriesMetadata() {
     try {
         // tampilkan loading toast (persistent)
         const loadingToast = showAlert(
@@ -759,10 +718,17 @@ async function loadCategoriesMetadata() {
         if (subType) queryString += `&sub_type=${subType}`;
         if (year) queryString += `&year=${year}`;
 
-        const response = await fetch(`/geojson${queryString}`);
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!geoJsonData?.features?.length) {
+            // Tampilkan pesan di sidebar layer jika data kosong
+            const layerListContainer = document.getElementById("layer-list");
+            if (layerListContainer) {
+                layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                    <span class="mt-2 text-muted">Data peta belum tersedia.</span>
+                </div>`;
+            }
+            showAlert("Data GeoJSON kosong", "warning");
+            return;
         }
 
         const data = await response.json();
@@ -1132,56 +1098,22 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
         showAlert(finalMessage, "success");
 
+        updateLayerList();
+        // Sembunyikan loading setelah selesai
+        const loadingDiv = document.getElementById("layer-loading");
+        if (loadingDiv) loadingDiv.remove();
+        generateLegend();
     } catch (error) {
-        console.error(`Error loading data for category ${categoryName}:`, error);
-
-        hideLoadingOverlay();
-        updateCheckboxLoadingState(categoryName, false);
-
-        if (loadingToast) {
-            hideToast(loadingToast);
+        console.error("Error:", error);
+        // Tampilkan pesan error di sidebar layer
+        const layerListContainer = document.getElementById("layer-list");
+        if (layerListContainer) {
+            layerListContainer.innerHTML = `<div class="d-flex flex-column align-items-center justify-content-center" style="height:120px;">
+                <i class="bi bi-x-circle text-danger" style="font-size:2rem;"></i>
+                <span class="mt-2 text-danger">Terjadi kesalahan saat memuat data peta.</span>
+            </div>`;
         }
-
-        let errorMessage = `Gagal memuat data ${categoryName}`;
-
-        if (error.message.includes("500")) {
-            errorMessage += ": Server mengalami masalah internal. Coba lagi nanti.";
-        } else if (error.message.includes("404")) {
-            errorMessage += ": Data tidak ditemukan.";
-        } else if (error.message.includes("timeout")) {
-            errorMessage += ": Koneksi timeout. Periksa koneksi internet Anda.";
-        } else {
-            errorMessage += `: ${error.message}`;
-        }
-
-        showAlert(errorMessage, "danger");
-        loadedCategories.delete(categoryName);
-    } finally {
-        isLoadingData = false;
-    }
-}
-
-/**
- * Helper function to update parent checkbox state based on children
- */
-function updateParentCheckboxState(parentId, childContainer) {
-    const parentCheckbox = document.getElementById(parentId);
-    if (!parentCheckbox) return;
-    
-    const childCheckboxes = childContainer.querySelectorAll('input[type="checkbox"]');
-    if (childCheckboxes.length === 0) return;
-    
-    const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
-    
-    if (checkedCount === 0) {
-        parentCheckbox.checked = false;
-        parentCheckbox.indeterminate = false;
-    } else if (checkedCount === childCheckboxes.length) {
-        parentCheckbox.checked = true;
-        parentCheckbox.indeterminate = false;
-    } else {
-        parentCheckbox.checked = false;
-        parentCheckbox.indeterminate = true;
+        showAlert("Gagal memuat data peta", "danger");
     }
 }
 

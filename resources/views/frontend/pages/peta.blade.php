@@ -1,7 +1,7 @@
 @extends('frontend.layouts.dark', ['title' => 'MARIMOI - Peta Interaktif'])
 
 @push('styles')
-    @vite(['resources/css/app.css'])
+    <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
@@ -170,15 +170,21 @@
                             </div>
                         </div>
 
-                        <!-- Footer -->
-                        <div class="flex justify-end gap-2 px-4 py-3 border-t border-t-gray-400">
-                            <button id="btnSkip"
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Skip</button>
-                            <button id="btnPrev"
-                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded disabled:opacity-50"
-                                disabled>Prev</button>
-                            <button id="btnNext"
-                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Next</button>
+                    <!-- Sidebar Layer -->
+                    <div id="sidebar-layer" class="sidebar bg-white text-dark position-absolute"
+                        style="width: 320px; padding: 15px; overflow-y: auto; top: 0; left: 0; height: 100%; display: none; margin-left: 0; margin-right: 0;">
+                        <div class="d-flex justify-content-between align-items-center mb-3 gradient-purple">
+                            <h6 class="text-white mb-0">Layer</h6>
+                            <button id="btn-close-sidebar-layer" class="btn btn-sm"><i
+                                    class="bi bi-x-lg text-white"></i></button>
+                        </div>
+                        <div class="mb-3 ms-2">
+                            <label for="transparency" class="form-label text-sm">Transparansi Layer</label>
+                            <input type="range" class="form-range" min="0" max="100" value="100"
+                                id="transparency">
+                        </div>
+                        <div id="layer-list" class="ms-2" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                            <!-- Layer list will be populated dynamically -->
                         </div>
                     </div>
                 </div>
