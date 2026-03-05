@@ -9,7 +9,7 @@
         muted
         loop
         playsinline loading="lazy">
-        <source src="{{ asset('frontend/img/hero/drone.webm') }}" type="video/webm">
+        <source src="{{ asset('frontend/img/hero/bpd-footage.webm') }}" type="video/webm">
         <!-- Fallback untuk browser yang tidak mendukung WebM -->
         <source src="{{ asset('frontend/img/hero/drone.gif') }}" type="video/gif">
     </video>
