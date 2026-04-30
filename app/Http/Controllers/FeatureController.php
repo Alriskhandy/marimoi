@@ -10,6 +10,39 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
+use OpenApi\Attributes as OA;
+
+#[OA\Tag(name: "Features", description: "Endpoint pengelolaan fitur")]
+#[OA\Schema(
+    schema: "Feature",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "uuid", type: "string", example: "550e8400-e29b-41d4-a716-446655440000"),
+        new OA\Property(property: "layer_id", type: "integer", example: 1),
+        new OA\Property(property: "user_id", type: "integer", example: 1, nullable: true),
+        new OA\Property(property: "properties", type: "object", example: ["name" => "Contoh Fitur", "description" => "Deskripsi fitur contoh"]),
+        new OA\Property(property: "year", type: "integer", example: 2024, nullable: true),
+        new OA\Property(property: "views", type: "integer", example: 0),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+        new OA\Property(property: "layer", ref: "#/components/schemas/Layer", nullable: true),
+        new OA\Property(property: "user", ref: "#/components/schemas/User", nullable: true),
+        new OA\Property(property: "images", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage"))
+    ]
+)]
+#[OA\Schema(
+    schema: "PaginationMeta",
+    type: "object",
+    properties: [
+        new OA\Property(property: "current_page", type: "integer", example: 1),
+        new OA\Property(property: "per_page", type: "integer", example: 50),
+        new OA\Property(property: "total", type: "integer", example: 100),
+        new OA\Property(property: "last_page", type: "integer", example: 2),
+        new OA\Property(property: "from", type: "integer", example: 1),
+        new OA\Property(property: "to", type: "integer", example: 50)
+    ]
+)]
 class FeatureController extends Controller
 {
     protected $featureService;
@@ -26,6 +59,64 @@ class FeatureController extends Controller
     /**
      * Display a listing of features
      */
+    #[OA\Get(
+        path: "/api/gis/features",
+        summary: "Ambil daftar fitur",
+        description: "Mengambil daftar fitur dengan paginasi dan filter opsional",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "layer_id",
+                description: "Filter berdasarkan ID layer",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "user_id",
+                description: "Filter berdasarkan ID pengguna",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "year",
+                description: "Filter berdasarkan tahun",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "search",
+                description: "Cari berdasarkan properti atau UUID",
+                in: "query",
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "layer_type",
+                description: "Filter berdasarkan tipe layer (point, line, polygon)",
+                in: "query",
+                schema: new OA\Schema(type: "string", enum: ["point", "line", "polygon"])
+            ),
+            new OA\Parameter(
+                name: "per_page",
+                description: "Jumlah data per halaman (maks 500)",
+                in: "query",
+                schema: new OA\Schema(type: "integer", default: 50, maximum: 500)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Feature")),
+                        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function index(Request $request): JsonResponse
     {
         try {
@@ -58,6 +149,46 @@ class FeatureController extends Controller
     /**
      * Store a newly created feature
      */
+    #[OA\Post(
+        path: "/api/gis/features",
+        summary: "Buat fitur baru",
+        description: "Membuat fitur baru dengan gambar opsional",
+        tags: ["Features"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["layer_id"],
+                properties: [
+                    new OA\Property(property: "layer_id", type: "integer", description: "ID layer"),
+                    new OA\Property(property: "user_id", type: "integer", description: "ID pengguna", nullable: true),
+                    new OA\Property(property: "properties", type: "object", description: "Properti fitur"),
+                    new OA\Property(property: "year", type: "integer", description: "Tahun", nullable: true),
+                    new OA\Property(property: "uuid", type: "string", description: "UUID (dibuat otomatis jika kosong)", nullable: true),
+                    new OA\Property(property: "images", type: "array", description: "Gambar fitur", items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: "file_path", type: "string"),
+                            new OA\Property(property: "caption", type: "string", nullable: true)
+                        ]
+                    ), nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Fitur berhasil dibuat",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Feature")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function store(Request $request): JsonResponse
     {
         try {
@@ -80,6 +211,35 @@ class FeatureController extends Controller
     /**
      * Display the specified feature
      */
+    #[OA\Get(
+        path: "/api/gis/features/{id}",
+        summary: "Ambil fitur berdasarkan ID",
+        description: "Mengambil data fitur tertentu berdasarkan ID-nya",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID fitur",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Feature")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Fitur tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function show(int $id): JsonResponse
     {
         try {
@@ -101,6 +261,47 @@ class FeatureController extends Controller
     /**
      * Update the specified feature
      */
+    #[OA\Put(
+        path: "/api/gis/features/{id}",
+        summary: "Perbarui fitur",
+        description: "Memperbarui data fitur yang sudah ada",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID fitur",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "layer_id", type: "integer", description: "ID layer"),
+                    new OA\Property(property: "user_id", type: "integer", description: "ID pengguna", nullable: true),
+                    new OA\Property(property: "properties", type: "object", description: "Properti fitur"),
+                    new OA\Property(property: "year", type: "integer", description: "Tahun", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Fitur berhasil diperbarui",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Feature")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Fitur tidak ditemukan"),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function update(Request $request, int $id): JsonResponse
     {
         try {
@@ -129,6 +330,35 @@ class FeatureController extends Controller
     /**
      * Remove the specified feature
      */
+    #[OA\Delete(
+        path: "/api/gis/features/{id}",
+        summary: "Hapus fitur",
+        description: "Menghapus fitur beserta gambar-gambar yang terkait",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID fitur",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Fitur berhasil dihapus",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Fitur tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function destroy(int $id): JsonResponse
     {
         try {
@@ -150,6 +380,35 @@ class FeatureController extends Controller
     /**
      * Get feature by UUID
      */
+    #[OA\Get(
+        path: "/api/gis/features/uuid/{uuid}",
+        summary: "Ambil fitur berdasarkan UUID",
+        description: "Mengambil data fitur tertentu berdasarkan UUID-nya",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "uuid",
+                description: "UUID fitur",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "string")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Feature")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Fitur tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function showByUuid(string $uuid): JsonResponse
     {
         try {
@@ -171,6 +430,35 @@ class FeatureController extends Controller
     /**
      * Get features by layer
      */
+    #[OA\Get(
+        path: "/api/gis/features/by-layer/{layerId}",
+        summary: "Ambil fitur berdasarkan layer",
+        description: "Mengambil semua fitur yang termasuk dalam layer tertentu",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "layerId",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Feature"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getByLayer(int $layerId): JsonResponse
     {
         try {
@@ -188,6 +476,35 @@ class FeatureController extends Controller
     /**
      * Get features by user
      */
+    #[OA\Get(
+        path: "/api/gis/features/by-user/{userId}",
+        summary: "Ambil fitur berdasarkan pengguna",
+        description: "Mengambil semua fitur yang dibuat oleh pengguna tertentu",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "userId",
+                description: "ID pengguna",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Feature"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Pengguna tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getByUser(int $userId): JsonResponse
     {
         try {
@@ -205,6 +522,68 @@ class FeatureController extends Controller
     /**
      * Get features within bounding box
      */
+    #[OA\Get(
+        path: "/api/gis/features/within-bounds",
+        summary: "Ambil fitur dalam batas geografis",
+        description: "Mengambil fitur yang berada dalam batas geografis yang ditentukan",
+        tags: ["Features"],
+        parameters: [
+            new OA\Parameter(
+                name: "north",
+                description: "Lintang utara",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "number", format: "float")
+            ),
+            new OA\Parameter(
+                name: "south",
+                description: "Lintang selatan",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "number", format: "float")
+            ),
+            new OA\Parameter(
+                name: "east",
+                description: "Bujur timur",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "number", format: "float")
+            ),
+            new OA\Parameter(
+                name: "west",
+                description: "Bujur barat",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "number", format: "float")
+            ),
+            new OA\Parameter(
+                name: "layer_id",
+                description: "Filter berdasarkan ID layer",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "layer_type",
+                description: "Filter berdasarkan tipe layer",
+                in: "query",
+                schema: new OA\Schema(type: "string", enum: ["point", "line", "polygon"])
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Feature"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Parameter batas tidak valid"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getWithinBounds(Request $request): JsonResponse
     {
         try {
@@ -352,6 +731,51 @@ class FeatureController extends Controller
     /**
      * Bulk create features
      */
+    #[OA\Post(
+        path: "/api/gis/features/bulk",
+        summary: "Buat banyak fitur sekaligus",
+        description: "Membuat banyak fitur dalam satu permintaan",
+        tags: ["Features"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["features"],
+                properties: [
+                    new OA\Property(
+                        property: "features",
+                        type: "array",
+                        description: "Array fitur yang akan dibuat",
+                        items: new OA\Items(
+                            required: ["layer_id"],
+                            properties: [
+                                new OA\Property(property: "layer_id", type: "integer"),
+                                new OA\Property(property: "user_id", type: "integer", nullable: true),
+                                new OA\Property(property: "properties", type: "object"),
+                                new OA\Property(property: "year", type: "integer", nullable: true),
+                                new OA\Property(property: "uuid", type: "string", nullable: true)
+                            ]
+                        )
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Fitur berhasil dibuat",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Feature")),
+                        new OA\Property(property: "count", type: "integer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function bulkStore(Request $request): JsonResponse
     {
         try {

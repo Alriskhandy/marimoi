@@ -8,6 +8,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
+use OpenApi\Attributes as OA;
+
+#[OA\Tag(name: "Feature Images", description: "Feature image management endpoints")]
+#[OA\Schema(
+    schema: "FeatureImage",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "feature_id", type: "integer", example: 1),
+        new OA\Property(property: "file_path", type: "string", example: "feature-images/abc123.jpg"),
+        new OA\Property(property: "caption", type: "string", example: "Sample image caption", nullable: true),
+        new OA\Property(property: "file_size", type: "integer", example: 1024000),
+        new OA\Property(property: "mime_type", type: "string", example: "image/jpeg"),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+        new OA\Property(property: "feature", ref: "#/components/schemas/Feature", nullable: true)
+    ]
+)]
 class FeatureImageController extends Controller
 {
     protected $featureImageService;
@@ -20,6 +38,58 @@ class FeatureImageController extends Controller
     /**
      * Display a listing of images
      */
+    #[OA\Get(
+        path: "/api/gis/images",
+        summary: "Get list of feature images",
+        description: "Retrieve a paginated list of feature images with optional filters",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "feature_id",
+                description: "Filter by feature ID",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "layer_id",
+                description: "Filter by layer ID",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "user_id",
+                description: "Filter by user ID",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "search",
+                description: "Search in caption",
+                in: "query",
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "per_page",
+                description: "Items per page (max 500)",
+                in: "query",
+                schema: new OA\Schema(type: "integer", default: 50, maximum: 500)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Images retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage")),
+                        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function index(Request $request): JsonResponse
     {
         try {
@@ -52,6 +122,38 @@ class FeatureImageController extends Controller
     /**
      * Store a newly created image
      */
+    #[OA\Post(
+        path: "/api/gis/images",
+        summary: "Create a new feature image",
+        description: "Create a new feature image record",
+        tags: ["Feature Images"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["feature_id", "file_path"],
+                properties: [
+                    new OA\Property(property: "feature_id", type: "integer", description: "Feature ID"),
+                    new OA\Property(property: "file_path", type: "string", description: "File path of the image"),
+                    new OA\Property(property: "caption", type: "string", description: "Image caption", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Image created successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/FeatureImage")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation failed"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function store(Request $request): JsonResponse
     {
         try {
@@ -74,6 +176,35 @@ class FeatureImageController extends Controller
     /**
      * Display the specified image
      */
+    #[OA\Get(
+        path: "/api/gis/images/{id}",
+        summary: "Get feature image by ID",
+        description: "Retrieve a specific feature image by its ID",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Image ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Image retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", ref: "#/components/schemas/FeatureImage")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Image not found"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function show(int $id): JsonResponse
     {
         try {
@@ -95,6 +226,44 @@ class FeatureImageController extends Controller
     /**
      * Update the specified image
      */
+    #[OA\Put(
+        path: "/api/gis/images/{id}",
+        summary: "Update feature image",
+        description: "Update an existing feature image",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Image ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "caption", type: "string", description: "Image caption", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Image updated successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/FeatureImage")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Image not found"),
+            new OA\Response(response: 422, description: "Validation failed"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function update(Request $request, int $id): JsonResponse
     {
         try {
@@ -123,6 +292,35 @@ class FeatureImageController extends Controller
     /**
      * Remove the specified image
      */
+    #[OA\Delete(
+        path: "/api/gis/images/{id}",
+        summary: "Delete feature image",
+        description: "Delete a feature image and its associated file",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Image ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Image deleted successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Image not found"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function destroy(int $id): JsonResponse
     {
         try {
@@ -144,6 +342,35 @@ class FeatureImageController extends Controller
     /**
      * Get images by feature
      */
+    #[OA\Get(
+        path: "/api/gis/images/feature/{featureId}",
+        summary: "Get images by feature",
+        description: "Retrieve all images for a specific feature",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "featureId",
+                description: "Feature ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Images retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Feature not found"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function getByFeature(int $featureId): JsonResponse
     {
         try {
@@ -161,6 +388,34 @@ class FeatureImageController extends Controller
     /**
      * Get images by layer
      */
+    #[OA\Get(
+        path: "/api/gis/images/layer/{layerId}",
+        summary: "Get images by layer",
+        description: "Retrieve all images for a specific layer",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "layerId",
+                description: "Layer ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Images retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function getByLayer(int $layerId): JsonResponse
     {
         try {
@@ -178,6 +433,34 @@ class FeatureImageController extends Controller
     /**
      * Get images by user
      */
+    #[OA\Get(
+        path: "/api/gis/images/user/{userId}",
+        summary: "Get images by user",
+        description: "Retrieve all images uploaded by a specific user",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "userId",
+                description: "User ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Images retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function getByUser(int $userId): JsonResponse
     {
         try {
@@ -195,6 +478,49 @@ class FeatureImageController extends Controller
     /**
      * Upload and create image
      */
+    #[OA\Post(
+        path: "/api/gis/images/upload/{featureId}",
+        summary: "Upload image for a feature",
+        description: "Upload an image file and associate it with a feature",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "featureId",
+                description: "Feature ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["image"],
+                    properties: [
+                        new OA\Property(property: "image", type: "string", format: "binary", description: "Image file (jpeg, jpg, png, gif, webp, max 5MB)"),
+                        new OA\Property(property: "caption", type: "string", description: "Image caption", nullable: true)
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Image uploaded successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/FeatureImage")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation failed"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function upload(Request $request, int $featureId): JsonResponse
     {
         try {
@@ -228,6 +554,50 @@ class FeatureImageController extends Controller
     /**
      * Bulk upload images
      */
+    #[OA\Post(
+        path: "/api/gis/images/bulk-upload/{featureId}",
+        summary: "Bulk upload images for a feature",
+        description: "Upload multiple image files (max 10) and associate them with a feature",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "featureId",
+                description: "Feature ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["images"],
+                    properties: [
+                        new OA\Property(property: "images[]", type: "array", items: new OA\Items(type: "string", format: "binary"), description: "Image files (max 10, each max 5MB)"),
+                        new OA\Property(property: "captions[]", type: "array", items: new OA\Items(type: "string"), description: "Optional captions for each image")
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Images uploaded successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage")),
+                        new OA\Property(property: "count", type: "integer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation failed"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function bulkUpload(Request $request, int $featureId): JsonResponse
     {
         try {
@@ -264,6 +634,49 @@ class FeatureImageController extends Controller
     /**
      * Bulk create images
      */
+    #[OA\Post(
+        path: "/api/gis/images/bulk",
+        summary: "Bulk create feature images",
+        description: "Create multiple feature image records using file paths",
+        tags: ["Feature Images"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["feature_id", "images"],
+                properties: [
+                    new OA\Property(property: "feature_id", type: "integer", description: "Feature ID"),
+                    new OA\Property(
+                        property: "images",
+                        type: "array",
+                        description: "Array of image data",
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: "file_path", type: "string", description: "File path of the image"),
+                                new OA\Property(property: "caption", type: "string", description: "Image caption", nullable: true)
+                            ]
+                        )
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Images created successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/FeatureImage")),
+                        new OA\Property(property: "count", type: "integer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Bad request"),
+            new OA\Response(response: 422, description: "Validation failed"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function bulkStore(Request $request): JsonResponse
     {
         try {
@@ -296,6 +709,34 @@ class FeatureImageController extends Controller
     /**
      * Check if image file exists
      */
+    #[OA\Get(
+        path: "/api/gis/images/{id}/exists",
+        summary: "Check if image file exists",
+        description: "Check whether the physical file for a feature image still exists in storage",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Image ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "File existence checked",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "exists", type: "boolean", example: true)
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function checkFileExists(int $id): JsonResponse
     {
         try {
@@ -313,6 +754,35 @@ class FeatureImageController extends Controller
     /**
      * Get image file URL
      */
+    #[OA\Get(
+        path: "/api/gis/images/{id}/url",
+        summary: "Get image file URL",
+        description: "Get the public URL of the image file in storage",
+        tags: ["Feature Images"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Image ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "URL retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "url", type: "string", example: "http://localhost:8000/storage/feature-images/abc123.jpg")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Image not found"),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function getFileUrl(int $id): JsonResponse
     {
         try {
@@ -334,6 +804,33 @@ class FeatureImageController extends Controller
     /**
      * Get images statistics
      */
+    #[OA\Get(
+        path: "/api/gis/images/statistics/all",
+        summary: "Get image statistics",
+        description: "Retrieve aggregate statistics for all feature images",
+        tags: ["Feature Images"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Statistics retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "total_images", type: "integer"),
+                                new OA\Property(property: "total_size", type: "integer"),
+                                new OA\Property(property: "images_by_mime_type", type: "object")
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function getStatistics(): JsonResponse
     {
         try {
@@ -351,6 +848,26 @@ class FeatureImageController extends Controller
     /**
      * Cleanup orphaned image files
      */
+    #[OA\Post(
+        path: "/api/gis/images/cleanup",
+        summary: "Cleanup orphaned image files",
+        description: "Remove image files from storage that no longer have a corresponding database record",
+        tags: ["Feature Images"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Cleanup completed",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "cleaned_files", type: "integer", example: 3)
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Internal server error")
+        ]
+    )]
     public function cleanupOrphanedFiles(): JsonResponse
     {
         try {

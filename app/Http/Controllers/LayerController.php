@@ -8,6 +8,28 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
+use OpenApi\Attributes as OA;
+
+#[OA\Tag(name: "Layers", description: "Endpoint pengelolaan layer")]
+#[OA\Schema(
+    schema: "Layer",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "name", type: "string", example: "Contoh Layer"),
+        new OA\Property(property: "description", type: "string", example: "Deskripsi layer contoh", nullable: true),
+        new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], example: "point"),
+        new OA\Property(property: "style", type: "object", example: ["color" => "#FF0000", "weight" => 2]),
+        new OA\Property(property: "is_active", type: "boolean", example: true),
+        new OA\Property(property: "parent_id", type: "integer", example: 1, nullable: true),
+        new OA\Property(property: "user_id", type: "integer", example: 1),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+        new OA\Property(property: "parent", ref: "#/components/schemas/Layer", nullable: true),
+        new OA\Property(property: "children", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer")),
+        new OA\Property(property: "features_count", type: "integer", example: 10)
+    ]
+)]
 class LayerController extends Controller
 {
     protected $layerService;
@@ -20,6 +42,64 @@ class LayerController extends Controller
     /**
      * Display a listing of layers
      */
+    #[OA\Get(
+        path: "/api/layers",
+        summary: "Ambil daftar layer",
+        description: "Mengambil daftar layer dengan paginasi dan filter opsional",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "type",
+                description: "Filter berdasarkan tipe layer",
+                in: "query",
+                schema: new OA\Schema(type: "string", enum: ["point", "line", "polygon"])
+            ),
+            new OA\Parameter(
+                name: "user_id",
+                description: "Filter berdasarkan ID pengguna",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "is_active",
+                description: "Filter berdasarkan status aktif",
+                in: "query",
+                schema: new OA\Schema(type: "boolean")
+            ),
+            new OA\Parameter(
+                name: "parent_id",
+                description: "Filter berdasarkan ID layer induk",
+                in: "query",
+                schema: new OA\Schema(type: "integer")
+            ),
+            new OA\Parameter(
+                name: "search",
+                description: "Cari berdasarkan nama atau deskripsi layer",
+                in: "query",
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "per_page",
+                description: "Jumlah data per halaman (maks 500)",
+                in: "query",
+                schema: new OA\Schema(type: "integer", default: 50, maximum: 500)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer")),
+                        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function index(Request $request): JsonResponse
     {
         try {
@@ -52,6 +132,42 @@ class LayerController extends Controller
     /**
      * Store a newly created layer
      */
+    #[OA\Post(
+        path: "/api/layers",
+        summary: "Buat layer baru",
+        description: "Membuat layer baru dengan relasi induk opsional",
+        tags: ["Layers"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "type"],
+                properties: [
+                    new OA\Property(property: "name", type: "string", description: "Nama layer"),
+                    new OA\Property(property: "description", type: "string", description: "Deskripsi layer", nullable: true),
+                    new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], description: "Tipe geometri layer"),
+                    new OA\Property(property: "style", type: "object", description: "Konfigurasi tampilan layer"),
+                    new OA\Property(property: "is_active", type: "boolean", description: "Status aktif layer", default: true),
+                    new OA\Property(property: "parent_id", type: "integer", description: "ID layer induk untuk hierarki", nullable: true),
+                    new OA\Property(property: "user_id", type: "integer", description: "ID pengguna pemilik layer")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Layer berhasil dibuat",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Layer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function store(Request $request): JsonResponse
     {
         try {
@@ -74,6 +190,35 @@ class LayerController extends Controller
     /**
      * Display the specified layer
      */
+    #[OA\Get(
+        path: "/api/layers/{id}",
+        summary: "Ambil layer berdasarkan ID",
+        description: "Mengambil data layer tertentu berdasarkan ID-nya",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Layer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function show(int $id): JsonResponse
     {
         try {
@@ -95,6 +240,49 @@ class LayerController extends Controller
     /**
      * Update the specified layer
      */
+    #[OA\Put(
+        path: "/api/layers/{id}",
+        summary: "Perbarui layer",
+        description: "Memperbarui data layer yang sudah ada",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", description: "Nama layer"),
+                    new OA\Property(property: "description", type: "string", description: "Deskripsi layer", nullable: true),
+                    new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], description: "Tipe geometri layer"),
+                    new OA\Property(property: "style", type: "object", description: "Konfigurasi tampilan layer"),
+                    new OA\Property(property: "is_active", type: "boolean", description: "Status aktif layer"),
+                    new OA\Property(property: "parent_id", type: "integer", description: "ID layer induk untuk hierarki", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Layer berhasil diperbarui",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Layer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function update(Request $request, int $id): JsonResponse
     {
         try {
@@ -123,6 +311,36 @@ class LayerController extends Controller
     /**
      * Remove the specified layer
      */
+    #[OA\Delete(
+        path: "/api/layers/{id}",
+        summary: "Hapus layer",
+        description: "Menghapus layer (hanya jika tidak memiliki anak atau fitur)",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Layer berhasil dihapus",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Layer tidak dapat dihapus (memiliki anak atau fitur)"),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function destroy(int $id): JsonResponse
     {
         try {
@@ -144,6 +362,25 @@ class LayerController extends Controller
     /**
      * Get root layers
      */
+    #[OA\Get(
+        path: "/api/layers/roots",
+        summary: "Ambil layer root",
+        description: "Mengambil semua layer yang tidak memiliki induk (layer level paling atas)",
+        tags: ["Layers"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer root berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getRootLayers(): JsonResponse
     {
         try {
@@ -161,6 +398,35 @@ class LayerController extends Controller
     /**
      * Get layer children
      */
+    #[OA\Get(
+        path: "/api/layers/{parentId}/children",
+        summary: "Ambil layer anak",
+        description: "Mengambil semua layer anak langsung dari layer tertentu",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "parentId",
+                description: "ID layer induk",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer anak berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer induk tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getChildren(int $parentId): JsonResponse
     {
         try {
@@ -178,6 +444,25 @@ class LayerController extends Controller
     /**
      * Get layer tree
      */
+    #[OA\Get(
+        path: "/api/layers/tree",
+        summary: "Ambil pohon hierarki layer",
+        description: "Mengambil seluruh struktur hierarki layer secara lengkap",
+        tags: ["Layers"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Pohon hierarki layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getLayerTree(): JsonResponse
     {
         try {
@@ -195,6 +480,35 @@ class LayerController extends Controller
     /**
      * Get layers by user
      */
+    #[OA\Get(
+        path: "/api/layers/user/{userId}",
+        summary: "Ambil layer berdasarkan pengguna",
+        description: "Mengambil semua layer yang dibuat oleh pengguna tertentu",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "userId",
+                description: "ID pengguna",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Pengguna tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getByUser(int $userId): JsonResponse
     {
         try {
@@ -212,6 +526,25 @@ class LayerController extends Controller
     /**
      * Get active layers
      */
+    #[OA\Get(
+        path: "/api/layers/active/all",
+        summary: "Ambil layer aktif",
+        description: "Mengambil semua layer yang sedang aktif",
+        tags: ["Layers"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer aktif berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getActiveLayers(): JsonResponse
     {
         try {
@@ -229,6 +562,36 @@ class LayerController extends Controller
     /**
      * Toggle layer active status
      */
+    #[OA\Post(
+        path: "/api/layers/{id}/toggle-active",
+        summary: "Ubah status aktif layer",
+        description: "Mengubah status aktif/nonaktif sebuah layer",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Status layer berhasil diubah",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Layer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function toggleActive(int $id): JsonResponse
     {
         try {
@@ -253,6 +616,34 @@ class LayerController extends Controller
     /**
      * Get layers by type
      */
+    #[OA\Get(
+        path: "/api/layers/type/{type}",
+        summary: "Ambil layer berdasarkan tipe",
+        description: "Mengambil semua layer dengan tipe geometri tertentu",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "type",
+                description: "Tipe geometri layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "string", enum: ["point", "line", "polygon"])
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getByType(string $type): JsonResponse
     {
         try {
@@ -270,6 +661,45 @@ class LayerController extends Controller
     /**
      * Move layer to new parent
      */
+    #[OA\Post(
+        path: "/api/layers/{id}/move",
+        summary: "Pindahkan layer ke induk baru",
+        description: "Memindahkan layer ke induk baru dalam hierarki (mencegah referensi melingkar)",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer yang akan dipindahkan",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "parent_id", type: "integer", description: "ID layer induk baru (null untuk level root)", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Layer berhasil dipindahkan",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "data", ref: "#/components/schemas/Layer")
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Terdeteksi referensi melingkar atau induk tidak valid"),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 422, description: "Validasi gagal"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function moveToParent(Request $request, int $id): JsonResponse
     {
         try {
@@ -304,6 +734,38 @@ class LayerController extends Controller
     /**
      * Get layer with features count
      */
+    #[OA\Get(
+        path: "/api/layers/{id}/with-features",
+        summary: "Ambil layer beserta jumlah fitur",
+        description: "Mengambil data layer beserta jumlah fitur yang dimilikinya",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "ID layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer beserta jumlah fitur berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "object", properties: [
+                            new OA\Property(property: "layer", ref: "#/components/schemas/Layer"),
+                            new OA\Property(property: "features_count", type: "integer", example: 25)
+                        ])
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: "Layer tidak ditemukan"),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
     public function getWithFeaturesCount(int $id): JsonResponse
     {
         try {

@@ -33,7 +33,7 @@ Route::middleware('api')->group(function () {
     });
 
     // GIS Features API Routes
-    Route::prefix('gis')->group(function () {
+    Route::prefix('api')->group(function () {
 
         // Features Routes
         Route::prefix('features')->group(function () {
@@ -59,25 +59,25 @@ Route::middleware('api')->group(function () {
 
         // Layers Routes
         Route::prefix('layers')->group(function () {
+            // Static routes must come before /{id} to avoid being captured as a parameter
+            Route::get('/roots', [LayerController::class, 'getRootLayers']);
+            Route::get('/tree', [LayerController::class, 'getLayerTree']);
+            Route::get('/active/all', [LayerController::class, 'getActiveLayers']);
+            Route::get('/statistics/all', [LayerController::class, 'getStatistics']);
+            Route::get('/user/{userId}', [LayerController::class, 'getByUser']);
+            Route::get('/type/{type}', [LayerController::class, 'getByType']);
+            Route::post('/bulk', [LayerController::class, 'bulkStore']);
+
             Route::get('/', [LayerController::class, 'index']);
             Route::post('/', [LayerController::class, 'store']);
             Route::get('/{id}', [LayerController::class, 'show']);
             Route::put('/{id}', [LayerController::class, 'update']);
             Route::delete('/{id}', [LayerController::class, 'destroy']);
-
-            // Additional Layer Routes
-            Route::get('/roots', [LayerController::class, 'getRootLayers']);
-            Route::get('/tree', [LayerController::class, 'getLayerTree']);
             Route::get('/{parentId}/children', [LayerController::class, 'getChildren']);
-            Route::get('/user/{userId}', [LayerController::class, 'getByUser']);
-            Route::get('/active/all', [LayerController::class, 'getActiveLayers']);
-            Route::get('/type/{type}', [LayerController::class, 'getByType']);
             Route::post('/{id}/toggle-active', [LayerController::class, 'toggleActive']);
             Route::post('/{id}/move', [LayerController::class, 'moveToParent']);
             Route::get('/{id}/with-features', [LayerController::class, 'getWithFeaturesCount']);
-            Route::get('/statistics/all', [LayerController::class, 'getStatistics']);
             Route::post('/{id}/duplicate', [LayerController::class, 'duplicate']);
-            Route::post('/bulk', [LayerController::class, 'bulkStore']);
         });
 
         // Feature Images Routes
@@ -101,7 +101,7 @@ Route::middleware('api')->group(function () {
             Route::post('/cleanup', [FeatureImageController::class, 'cleanupOrphanedFiles']);
         });
     });
-    
+
 });
 
 

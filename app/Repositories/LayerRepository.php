@@ -95,7 +95,7 @@ class LayerRepository
     public function getLayerTree(): Collection
     {
         return $this->model->whereNull('parent_id')
-                          ->with(['children.features', 'user'])
+                          ->with(['children'])
                           ->orderBy('name')
                           ->get();
     }
