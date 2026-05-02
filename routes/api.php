@@ -66,6 +66,7 @@ Route::middleware('api')->group(function () {
             Route::get('/statistics/all', [LayerController::class, 'getStatistics']);
             Route::get('/user/{userId}', [LayerController::class, 'getByUser']);
             Route::get('/type/{type}', [LayerController::class, 'getByType']);
+            Route::get('/category/{category}', [LayerController::class, 'getByCategory']);
             Route::post('/bulk', [LayerController::class, 'bulkStore']);
 
             Route::get('/', [LayerController::class, 'index']);

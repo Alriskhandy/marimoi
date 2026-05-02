@@ -135,6 +135,14 @@ class LayerService
     }
 
     /**
+     * Get layers by category
+     */
+    public function getLayersByCategory(string $category): SupportCollection
+    {
+        return $this->layerRepository->getByCategory($category);
+    }
+
+    /**
      * Move layer to new parent
      */
     public function moveLayerToParent(int $layerId, ?int $newParentId): bool
@@ -206,6 +214,7 @@ class LayerService
             $newLayerData = array_merge([
                 'name' => $originalLayer->name . ' (Copy)',
                 'type' => $originalLayer->type,
+                'category' => $originalLayer->category,
                 'style' => $originalLayer->style,
                 'parent_id' => $originalLayer->parent_id,
                 'is_active' => $originalLayer->is_active,
@@ -241,6 +250,7 @@ class LayerService
         $rules = [
             'name' => 'required|string|max:255',
             'type' => 'required|in:point,line,polygon',
+            'category' => 'required|in:tematik,psd,psn,musrenbang,pokir',
             'style' => 'nullable|array',
             'parent_id' => 'nullable|exists:layers,id',
             'is_active' => 'boolean',

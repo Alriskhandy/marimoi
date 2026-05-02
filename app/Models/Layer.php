@@ -14,6 +14,7 @@ class Layer extends Model
     protected $fillable = [
         'name',
         'type',
+        'category',
         'style',
         'parent_id',
         'is_active',

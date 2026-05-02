@@ -19,6 +19,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "name", type: "string", example: "Contoh Layer"),
         new OA\Property(property: "description", type: "string", example: "Deskripsi layer contoh", nullable: true),
         new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], example: "point"),
+        new OA\Property(property: "category", type: "string", enum: ["tematik", "psd", "psn", "musrenbang", "pokir"], example: "tematik"),
         new OA\Property(property: "style", type: "object", example: ["color" => "#FF0000", "weight" => 2]),
         new OA\Property(property: "is_active", type: "boolean", example: true),
         new OA\Property(property: "parent_id", type: "integer", example: 1, nullable: true),
@@ -73,6 +74,12 @@ class LayerController extends Controller
                 schema: new OA\Schema(type: "integer")
             ),
             new OA\Parameter(
+                name: "category",
+                description: "Filter berdasarkan kategori layer",
+                in: "query",
+                schema: new OA\Schema(type: "string", enum: ["tematik", "psd", "psn", "musrenbang", "pokir"])
+            ),
+            new OA\Parameter(
                 name: "search",
                 description: "Cari berdasarkan nama atau deskripsi layer",
                 in: "query",
@@ -104,7 +111,7 @@ class LayerController extends Controller
     {
         try {
             $filters = $request->only([
-                'type', 'user_id', 'is_active', 'parent_id', 'search'
+                'type', 'category', 'user_id', 'is_active', 'parent_id', 'search'
             ]);
 
             $perPage = $request->get('per_page', 50);
@@ -140,11 +147,12 @@ class LayerController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["name", "type"],
+                required: ["name", "type", "category"],
                 properties: [
                     new OA\Property(property: "name", type: "string", description: "Nama layer"),
                     new OA\Property(property: "description", type: "string", description: "Deskripsi layer", nullable: true),
                     new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], description: "Tipe geometri layer"),
+                    new OA\Property(property: "category", type: "string", enum: ["tematik", "psd", "psn", "musrenbang", "pokir"], description: "Kategori layer"),
                     new OA\Property(property: "style", type: "object", description: "Konfigurasi tampilan layer"),
                     new OA\Property(property: "is_active", type: "boolean", description: "Status aktif layer", default: true),
                     new OA\Property(property: "parent_id", type: "integer", description: "ID layer induk untuk hierarki", nullable: true),
@@ -260,6 +268,7 @@ class LayerController extends Controller
                     new OA\Property(property: "name", type: "string", description: "Nama layer"),
                     new OA\Property(property: "description", type: "string", description: "Deskripsi layer", nullable: true),
                     new OA\Property(property: "type", type: "string", enum: ["point", "line", "polygon"], description: "Tipe geometri layer"),
+                    new OA\Property(property: "category", type: "string", enum: ["tematik", "psd", "psn", "musrenbang", "pokir"], description: "Kategori layer"),
                     new OA\Property(property: "style", type: "object", description: "Konfigurasi tampilan layer"),
                     new OA\Property(property: "is_active", type: "boolean", description: "Status aktif layer"),
                     new OA\Property(property: "parent_id", type: "integer", description: "ID layer induk untuk hierarki", nullable: true)
@@ -781,6 +790,51 @@ class LayerController extends Controller
             ]);
         } catch (\Exception $e) {
             return $this->errorResponse('Failed to retrieve layer data', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * Get layers by category
+     */
+    #[OA\Get(
+        path: "/api/layers/category/{category}",
+        summary: "Ambil layer berdasarkan kategori",
+        description: "Mengambil semua layer dengan kategori tertentu",
+        tags: ["Layers"],
+        parameters: [
+            new OA\Parameter(
+                name: "category",
+                description: "Kategori layer",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "string", enum: ["tematik", "psd", "psn", "musrenbang", "pokir"])
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Data layer berhasil diambil",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Layer"))
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: "Kesalahan server internal")
+        ]
+    )]
+    public function getByCategory(string $category): JsonResponse
+    {
+        try {
+            $layers = $this->layerService->getLayersByCategory($category);
+
+            return response()->json([
+                'success' => true,
+                'data' => $layers
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to retrieve layers', 500, $e->getMessage());
         }
     }
 

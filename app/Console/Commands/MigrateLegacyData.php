@@ -162,6 +162,7 @@ class MigrateLegacyData extends Command
             $layerData = [
                 'name'      => $cat->nama ?? ucwords(str_replace('_', ' ', $cat->type)),
                 'type'      => $geomType,
+                'category'  => $this->resolveCategoryFromCategoryType($cat->type),
                 'style'     => $style ?: null,
                 'parent_id' => $isDryRun ? null : $parentLayerId,
                 'is_active' => (bool) ($cat->is_active ?? true),
@@ -316,6 +317,7 @@ class MigrateLegacyData extends Command
                 $layer = Layer::create([
                     'name'      => $name,
                     'type'      => $geomType,
+                    'category'  => $this->resolveCategoryFromDataType($group->data_type, $group->sub_type),
                     'is_active' => true,
                     'user_id'   => 1,
                 ]);
@@ -551,6 +553,48 @@ class MigrateLegacyData extends Command
         $this->newLine();
         $this->line("  ✓ {$migrated} feature_images dimigrasikan.");
         return $migrated;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CATEGORY RESOLVERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Petakan categories.type → kolom category pada layers.
+     * Nilai enum: tematik | psd | psn | musrenbang | pokir
+     */
+    private function resolveCategoryFromCategoryType(string $categoryType): string
+    {
+        return match ($categoryType) {
+            'tematik'           => 'tematik',
+            'usulan_musrenbang' => 'musrenbang',
+            'pokir_dprd'        => 'pokir',
+            'psd'               => 'psd',
+            'psn'               => 'psn',
+            default             => 'tematik',
+        };
+    }
+
+    /**
+     * Petakan data_spatial.data_type + sub_type → kolom category pada layers.
+     * Nilai enum: tematik | psd | psn | musrenbang | pokir
+     */
+    private function resolveCategoryFromDataType(string $dataType, ?string $subType): string
+    {
+        if ($dataType === 'proyek_strategis') {
+            return match ($subType) {
+                'psd'   => 'psd',
+                'psn'   => 'psn',
+                default => 'psd',
+            };
+        }
+
+        return match ($dataType) {
+            'tematik'           => 'tematik',
+            'usulan_musrenbang' => 'musrenbang',
+            'pokir_dprd'        => 'pokir',
+            default             => 'tematik',
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -28,6 +28,11 @@ class LayerRepository
             $query->where('type', $filters['type']);
         }
 
+        // Filter by category
+        if (isset($filters['category'])) {
+            $query->where('category', $filters['category']);
+        }
+
         // Filter by user_id
         if (isset($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
@@ -187,6 +192,17 @@ class LayerRepository
     }
 
     /**
+     * Get layers by category
+     */
+    public function getByCategory(string $category): Collection
+    {
+        return $this->model->where('category', $category)
+                          ->with(['parent', 'children',])
+                          ->orderBy('name')
+                          ->get();
+    }
+
+    /**
      * Get statistics
      */
     public function getStatistics(): array
@@ -198,6 +214,11 @@ class LayerRepository
                                           ->groupBy('type')
                                           ->pluck('count', 'type')
                                           ->toArray(),
+            'layers_by_category' => $this->model->selectRaw('category, COUNT(*) as count')
+                                              ->whereNotNull('category')
+                                              ->groupBy('category')
+                                              ->pluck('count', 'category')
+                                              ->toArray(),
             'root_layers' => $this->model->whereNull('parent_id')->count(),
             'layers_with_features' => $this->model->has('features')->count(),
         ];
