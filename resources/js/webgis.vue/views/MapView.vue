@@ -12,7 +12,6 @@
         <!-- ── Left-side sidebars ────────────────────────────────────── -->
         <SidebarLayerTools
             :visible="activeSidebar === 'tools'"
-            :active-layer-name="activeToolsLayerName"
             @close="closeSidebar"
         />
         <SidebarLayer

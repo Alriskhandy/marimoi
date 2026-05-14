@@ -352,6 +352,27 @@ export function useLeafletMap() {
 
             loadedCategories.add(key)
             node.loaded = true
+
+            // Sync slider with actual rendered opacity of the first feature.
+            // L.Polyline has fill:false and its fillOpacity defaults to 0.2 (Leaflet default),
+            // so we must check fill:false and fall back to stroke opacity for lines.
+            let detectedOpacity = 100
+            let found = false
+            _eachFeature(targetLayer, feature => {
+                if (found) return
+                const opts = feature.options || {}
+                if (opts.fill !== false && opts.fillOpacity !== undefined) {
+                    // Polygon / CircleMarker — use fill opacity
+                    detectedOpacity = Math.round(opts.fillOpacity * 100)
+                    found = true
+                } else if (opts.opacity !== undefined) {
+                    // Line or Marker — use stroke/element opacity
+                    detectedOpacity = Math.round(opts.opacity * 100)
+                    found = true
+                }
+            })
+            node.opacity = detectedOpacity
+
             toastFn?.(`Data ${thirdName} berhasil dimuat (${totalLoaded} fitur)`, 'success')
             return true
         } catch (err) {
@@ -597,6 +618,8 @@ export function useLeafletMap() {
                     loaded:   false,
                     layerId:  layer.id,
                     dataType: layer.style?.original_type || null,
+                    opacity:  100,                          // 0–100 %
+                    color:    layer.style?.color || '#007fff',
                 }
             }
 
@@ -642,6 +665,74 @@ export function useLeafletMap() {
         }
     }
 
+    // ── Real-time layer style controls (not persisted) ─────────────────────
+    // Layer structure: targetLayer (layerGroup) → geoJsonLayer (L.GeoJSON) → actual feature
+    // Must iterate two levels deep to reach circleMarker / L.marker
+
+    function _eachFeature(targetLayer, cb) {
+        targetLayer.eachLayer(geoJsonLayer => {
+            // GeoJSON wrapper — propagates setStyle to vector layers (polygon/line/circleMarker)
+            // but NOT to L.marker. Iterate inner layers to reach the actual feature.
+            if (typeof geoJsonLayer.eachLayer === 'function') {
+                geoJsonLayer.eachLayer(cb)
+            } else {
+                cb(geoJsonLayer)
+            }
+        })
+    }
+
+    function setLayerOpacity(rootName, secondName, thirdName, opacityPct) {
+        const key = `${rootName}/${secondName}/${thirdName}`
+        const targetLayer = leafletLayerMap[key]
+        if (!targetLayer) return
+
+        const o = Math.max(0, Math.min(100, opacityPct)) / 100
+
+        _eachFeature(targetLayer, feature => {
+            if (feature.setStyle)  feature.setStyle({ opacity: o, fillOpacity: o })
+            if (feature.setOpacity) feature.setOpacity(o)  // L.marker / ExtraMarkers
+        })
+
+        const node = categoryTree[rootName]?.children[secondName]?.children[thirdName]
+        if (node) node.opacity = opacityPct
+    }
+
+    function setLayerColor(rootName, secondName, thirdName, color) {
+        const key = `${rootName}/${secondName}/${thirdName}`
+        const targetLayer = leafletLayerMap[key]
+        if (!targetLayer) return
+
+        const markerClass = iconMap[thirdName] || null
+        const isMarker    = isMarkerMap[thirdName] || false
+
+        _eachFeature(targetLayer, feature => {
+            if (feature.setStyle) {
+                // circleMarker, polygon, line
+                feature.setStyle({ color, fillColor: color })
+            } else if (isMarker && markerClass && feature.setIcon) {
+                // ExtraMarkers (L.marker) — recreate icon with new color
+                const EM = window.L?.ExtraMarkers
+                if (EM) {
+                    try {
+                        feature.setIcon(EM.icon({
+                            icon:        markerClass,
+                            prefix:      'fa',
+                            svg:         true,
+                            markerColor: color,
+                            iconColor:   'white',
+                            shape:       'circle',
+                            html:        `<i class="${markerClass}" style="color:white"></i>`,
+                        }))
+                    } catch (_) {}
+                }
+            }
+        })
+
+        const node = categoryTree[rootName]?.children[secondName]?.children[thirdName]
+        if (node) node.color = color
+        kategoriColors[thirdName] = color
+    }
+
     return {
         mapInstance,
         categoryTree,
@@ -655,6 +746,8 @@ export function useLeafletMap() {
         loadCategoryData,
         addCategoryToMap,
         removeCategoryFromMap,
+        setLayerOpacity,
+        setLayerColor,
         resetView,
         toggleFullscreen,
         destroyMap,
