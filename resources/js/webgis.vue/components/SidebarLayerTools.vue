@@ -1,7 +1,7 @@
 <template>
     <div
         :class="[
-            'fixed w-[260px] h-auto bg-white border border-gray-300 shadow-lg z-[500] text-gray-900 flex flex-col rounded-md overflow-hidden',
+            'fixed w-[260px] h-auto bg-white border border-gray-300 shadow-lg z-[200] text-gray-900 flex flex-col rounded-md overflow-hidden',
             visible ? '' : 'hidden',
         ]"
         :style="{ top: '204px', left: '10px', maxHeight: 'calc(100vh - 208px)' }"

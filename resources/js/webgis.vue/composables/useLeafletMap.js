@@ -120,6 +120,11 @@ export function useLeafletMap() {
             attributionControl: true,
         }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
 
+        // Custom panes — z-index ordering: polygon < line < point < marker (default 600)
+        map.createPane('polygonPane'); map.getPane('polygonPane').style.zIndex = 390
+        map.createPane('linePane');    map.getPane('linePane').style.zIndex    = 400
+        map.createPane('pointPane');   map.getPane('pointPane').style.zIndex   = 410
+
         mapInstance.value = map
         changeBasemap('osm')
         return map
@@ -326,16 +331,23 @@ export function useLeafletMap() {
                     if (!feature?.geometry) return
                     const geomType = feature.geometry.type
                     const isLine   = geomType === 'LineString' || geomType === 'MultiLineString'
+                    const isPoint  = geomType === 'Point'      || geomType === 'MultiPoint'
+
+                    // Assign to pane by geometry type: polygon(390) < line(400) < point(410) < marker(600)
+                    const pane = isLine ? 'linePane' : (isPoint ? 'pointPane' : 'polygonPane')
 
                     L().geoJSON(feature, {
+                        pane,
                         style: () => isLine
-                            ? { color, weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }
-                            : { color, weight: 2, opacity: 0.7, fillColor: color, fillOpacity: 0.4 },
+                            ? { pane, color, weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }
+                            : { pane, color, weight: 2, opacity: 0.7, fillColor: color, fillOpacity: 0.4 },
                         pointToLayer: (f, latlng) => {
                             if (stableMarkerIcon) {
+                                // L.marker goes to default markerPane (z-index 600) — always on top
                                 return L().marker(latlng, { icon: stableMarkerIcon, riseOnHover: true })
                             }
                             return L().circleMarker(latlng, {
+                                pane: 'pointPane',
                                 radius: 7, fillColor: color,
                                 color: '#ffffff', weight: 1.5,
                                 opacity: 1, fillOpacity: 0.9,
