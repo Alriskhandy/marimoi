@@ -81,6 +81,13 @@
             font-size: 14px !important;
         }
 
+        /* ── Protect Leaflet marker from Tailwind box-sizing reset ─────────────── */
+        /* DO NOT reset margin here — Leaflet sets margin-left/top inline for anchor */
+        .leaflet-marker-icon,
+        .leaflet-marker-shadow {
+            box-sizing: content-box !important;
+        }
+
         /* ── Restore Leaflet zoom control sizes (Tailwind preflight resets them) ── */
         .leaflet-bar {
             box-shadow: 0 1px 5px rgba(0,0,0,.4) !important;

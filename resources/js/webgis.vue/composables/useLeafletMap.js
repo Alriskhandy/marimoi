@@ -1,4 +1,5 @@
 import { ref, reactive } from 'vue'
+import { useFeatureDetail } from './useFeatureDetail.js'
 
 const DEFAULT_CENTER = [0.735485, 128.028201] // Maluku Utara
 const DEFAULT_ZOOM = 7
@@ -102,7 +103,19 @@ export function useLeafletMap() {
     const L = () => window.L
 
     function initMap(containerId) {
-        const map = L().map(containerId, {
+        // Patch Leaflet Popup._animateZoom — guard against _map being null
+        // (happens when a popup's layer is removed while the popup is still open)
+        const LLib = L()
+        if (LLib.Popup && !LLib.Popup._zoomPatchApplied) {
+            const orig = LLib.Popup.prototype._animateZoom
+            LLib.Popup.prototype._animateZoom = function (e) {
+                if (!this._map) return
+                orig.call(this, e)
+            }
+            LLib.Popup._zoomPatchApplied = true
+        }
+
+        const map = LLib.map(containerId, {
             zoomControl: true,
             attributionControl: true,
         }).setView(DEFAULT_CENTER, DEFAULT_ZOOM)
@@ -262,6 +275,8 @@ export function useLeafletMap() {
         node.loading = true
 
         try {
+            // Close any open popup before clearing — prevents _map null error on zoom animation
+            mapInstance.value?.closePopup()
             targetLayer.clearLayers()
 
             let offset = 0
@@ -270,25 +285,27 @@ export function useLeafletMap() {
             let totalLoaded = 0
             let hasMore = true
 
-            const color = kategoriColors[thirdName] || kategoriColors[secondName] || '#007fff'
-            const useMarker = isMarkerMap[thirdName] || false
+            const color      = kategoriColors[thirdName] || kategoriColors[secondName] || '#007fff'
+            const useMarker  = isMarkerMap[thirdName] || false
             const markerIcon = iconMap[thirdName] || null
 
-            // Build ExtraMarkers icon once if this category uses marker icons.
-            // cat.icon is stored as full class string e.g. "fa fa-hospital-o",
-            // so prefix must be '' to avoid duplicating "fa".
-            let extraMarkerIcon = null
+            // Use ExtraMarkers matching map.js reference exactly:
+            // - prefix: "fa" (not empty) so FA classes resolve correctly
+            // - html: overrides inner content, keeps only the pin SVG shell
+            // - svg: true generates the colored pin shape as inline SVG
+            let stableMarkerIcon = null
             if (useMarker && markerIcon) {
                 const EM = window.L?.ExtraMarkers
                 if (EM) {
                     try {
-                        extraMarkerIcon = EM.icon({
-                            icon: markerIcon,
-                            prefix: '',
-                            svg: true,
-                            markerColor: color || '#007fff',
-                            iconColor: '#ffffff',
-                            shape: 'circle',
+                        stableMarkerIcon = EM.icon({
+                            icon:        markerIcon,
+                            prefix:      'fa',
+                            svg:         true,
+                            markerColor: color || 'blue',
+                            iconColor:   'white',
+                            shape:       'circle',
+                            html:        `<i class="${markerIcon}" style="color:white"></i>`,
                         })
                     } catch (_) { /* fall back to circleMarker */ }
                 }
@@ -308,23 +325,20 @@ export function useLeafletMap() {
                 data.features.forEach(feature => {
                     if (!feature?.geometry) return
                     const geomType = feature.geometry.type
-                    const isLine = geomType === 'LineString' || geomType === 'MultiLineString'
+                    const isLine   = geomType === 'LineString' || geomType === 'MultiLineString'
 
                     L().geoJSON(feature, {
                         style: () => isLine
                             ? { color, weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }
                             : { color, weight: 2, opacity: 0.7, fillColor: color, fillOpacity: 0.4 },
                         pointToLayer: (f, latlng) => {
-                            if (extraMarkerIcon) {
-                                return L().marker(latlng, { icon: extraMarkerIcon })
+                            if (stableMarkerIcon) {
+                                return L().marker(latlng, { icon: stableMarkerIcon, riseOnHover: true })
                             }
                             return L().circleMarker(latlng, {
-                                radius: 8,
-                                fillColor: color,
-                                color: '#172953',
-                                weight: 1,
-                                opacity: 0.9,
-                                fillOpacity: 0.75,
+                                radius: 7, fillColor: color,
+                                color: '#ffffff', weight: 1.5,
+                                opacity: 1, fillOpacity: 0.9,
                             })
                         },
                         onEachFeature: (f, l) => bindPopup(f, l),
@@ -404,34 +418,137 @@ export function useLeafletMap() {
     }
 
     function bindPopup(feature, layer) {
-        const p = feature.properties || {}
-        const name = p.NAMA_OBJEK || p.NAMOBJ || p.nama || p.name || 'Detail'
+        const p        = feature.properties || {}
+        const geom     = feature.geometry   || null
+        const name     = p.NAMA_OBJEK || p.NAMOBJ || p.nama || p.name || 'Detail'
         const kategori = p.kategori || ''
+        const imageUrl = p.gambar   || null
 
-        const excluded = new Set(['geometry', 'id', 'kategori_color', 'kategori', 'parent_kategori', 'kategori_full_path'])
+        // Resolve a center coordinate for Zoom To
+        let zoomLat = 0, zoomLng = 0, coordText = ''
+        if (geom) {
+            const c = geom.coordinates
+            if (geom.type === 'Point') {
+                zoomLng = c[0]; zoomLat = c[1]
+            } else if (geom.type === 'LineString') {
+                const m = c[Math.floor(c.length / 2)]
+                zoomLng = m[0]; zoomLat = m[1]
+            } else if (geom.type === 'Polygon') {
+                const m = c[0][Math.floor(c[0].length / 2)]
+                zoomLng = m[0]; zoomLat = m[1]
+            } else if (geom.type === 'MultiPolygon') {
+                const m = c[0][0][Math.floor(c[0][0].length / 2)]
+                zoomLng = m[0]; zoomLat = m[1]
+            }
+            if (zoomLat || zoomLng)
+                coordText = `${zoomLat.toFixed(5)}, ${zoomLng.toFixed(5)}`
+        }
+
+        // Attribute rows — skip internal, system, and sensitive fields
+        const excluded = new Set([
+            // system / internal
+            'id','uuid','geometry','geom',
+            // category metadata
+            'kategori','kategori_id','kategori_color','kategori_full_path',
+            'parent_kategori','parent_kategori_id',
+            // display fields already shown in header
+            'NAMA_OBJEK','NAMOBJ','nama','name','gambar',
+            // data type / classification (internal routing)
+            'data_type','sub_type','type','original_type',
+            // layer / user relations
+            'layer_id','user_id','feature_id',
+            // timestamps & counters
+            'created_at','updated_at','deleted_at','views','year',
+            // legacy
+            'legacy_uuid','deskripsi',
+        ])
         const rows = Object.entries(p)
             .filter(([k, v]) => v != null && v !== '' && !excluded.has(k))
-            .slice(0, 8)
+            .slice(0, 6)
             .map(([k, v]) => {
                 const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                 return `<tr>
-                    <td style="color:#6b7280;padding:2px 8px 2px 0;vertical-align:top;white-space:nowrap;font-size:11px">${label}</td>
-                    <td style="color:#1f2937;font-size:11px;padding:2px 0">${v}</td>
+                    <td style="font-weight:600;font-size:11px;color:#374151;padding:3px 10px 3px 0;white-space:nowrap;vertical-align:top">${label}</td>
+                    <td style="font-size:11px;color:#6b7280;padding:3px 0;vertical-align:top">${v}</td>
                 </tr>`
-            })
-            .join('')
+            }).join('')
+
+        const imgHtml = imageUrl
+            ? `<img src="${imageUrl}" alt="${name}" style="width:100%;height:80px;object-fit:cover;display:block">`
+            : ''
+
+        const geomHtml = geom ? `
+            <div style="padding:6px 14px 8px;border-top:1px solid #f3f4f6">
+                <table style="width:100%;border-collapse:collapse">
+                    <tr>
+                        <td style="font-weight:600;font-size:11px;color:#374151;padding:2px 10px 2px 0">Geometry</td>
+                        <td style="font-size:11px;color:#6b7280">${geom.type}</td>
+                    </tr>
+                    ${coordText ? `<tr>
+                        <td style="font-weight:600;font-size:11px;color:#374151;padding:2px 10px 2px 0">Koordinat</td>
+                        <td style="font-size:11px;color:#6b7280;font-family:monospace">${coordText}</td>
+                    </tr>` : ''}
+                </table>
+            </div>` : ''
 
         layer.bindPopup(`
-            <div style="min-width:200px;max-width:300px;border-radius:8px;overflow:hidden">
-                <div style="background:linear-gradient(to right,#007fff,#0066cc);color:white;padding:8px 12px">
-                    <p style="margin:0;font-weight:600;font-size:13px">${name}</p>
-                    <p style="margin:0;font-size:11px;color:#bfdbfe">${kategori}</p>
+            <div style="min-width:220px;max-width:300px;font-family:'Inter',sans-serif">
+                <div style="padding:10px 14px;border-bottom:2px solid #007fff">
+                    <div style="font-weight:700;font-size:14px;color:#007fff;margin:0 0 2px">${name}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin:0">${kategori}</div>
                 </div>
-                <div style="padding:8px 12px">
-                    <table style="width:100%;border-collapse:collapse">${rows}</table>
+                ${imgHtml}
+                <div style="padding:8px 14px">
+                    <table style="width:100%;border-collapse:collapse">
+                        ${rows || '<tr><td colspan="2" style="color:#9ca3af;font-size:11px;padding:4px 0">—</td></tr>'}
+                    </table>
+                </div>
+                ${geomHtml}
+                <div style="padding:8px 14px 12px;display:flex;gap:8px;border-top:1px solid #f3f4f6">
+                    <button class="popup-zoom-btn"
+                        data-lat="${zoomLat}" data-lng="${zoomLng}"
+                        style="flex:1;background:#007fff;color:#fff;border:none;border-radius:6px;padding:6px 0;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px">
+                        <i class="bi bi-zoom-in"></i> Zoom To
+                    </button>
+                    <button class="popup-detail-btn"
+                        style="flex:1;background:transparent;color:#007fff;border:1.5px solid #007fff;border-radius:6px;padding:6px 0;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px">
+                        <i class="bi bi-eye"></i> Detail
+                    </button>
                 </div>
             </div>
         `, { className: 'tailwind-popup', maxWidth: 320 })
+
+        layer.on('popupopen', () => {
+            const el  = layer.getPopup()?.getElement()
+            const map = mapInstance.value
+            if (!el) return
+
+            // Zoom To
+            const zBtn = el.querySelector('.popup-zoom-btn')
+            if (zBtn && map) {
+                zBtn.onclick = () => {
+                    const lat = parseFloat(zBtn.dataset.lat)
+                    const lng = parseFloat(zBtn.dataset.lng)
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        if (geom?.type === 'Point') {
+                            map.flyTo([lat, lng], 16, { duration: 0.8 })
+                        } else {
+                            try { map.flyToBounds(layer.getBounds(), { padding: [40, 40], duration: 0.8 }) } catch (_) {
+                                map.flyTo([lat, lng], 14, { duration: 0.8 })
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Detail → open bottom bar
+            const dBtn = el.querySelector('.popup-detail-btn')
+            if (dBtn) {
+                dBtn.onclick = () => {
+                    useFeatureDetail().setFeature(feature)
+                }
+            }
+        })
     }
 
     async function loadLayersTreeByCategory(toastFn) {

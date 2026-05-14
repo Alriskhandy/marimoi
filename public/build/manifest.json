@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-C5U8Bltr.css",
+    "file": "assets/app-DUWkM_6p.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -11,12 +11,12 @@
     "isEntry": true
   },
   "resources/js/webgis-app.js": {
-    "file": "assets/webgis-app-DJjcwUFg.js",
+    "file": "assets/webgis-app-DxAF3Gy4.js",
     "name": "webgis-app",
     "src": "resources/js/webgis-app.js",
     "isEntry": true,
     "css": [
-      "assets/webgis-app-BLlCF80P.css"
+      "assets/webgis-app-Cdl5pZjX.css"
     ]
   }
 }
