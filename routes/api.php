@@ -46,6 +46,7 @@ Route::middleware('api')->group(function () {
 
             // Additional Feature Routes
             Route::get('/layer/{layerId}', [FeatureController::class, 'getByLayer']);
+            Route::get('/geojson/{layerId}', [FeatureController::class, 'getGeoJsonByLayer']);
             Route::get('/user/{userId}', [FeatureController::class, 'getByUser']);
             Route::get('/bounds', [FeatureController::class, 'getWithinBounds']);
             Route::post('/{id}/views', [FeatureController::class, 'incrementViews']);

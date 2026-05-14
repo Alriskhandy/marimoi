@@ -60,7 +60,7 @@ class FeatureController extends Controller
      * Display a listing of features
      */
     #[OA\Get(
-        path: "/api/gis/features",
+        path: "/api/features",
         summary: "Ambil daftar fitur",
         description: "Mengambil daftar fitur dengan paginasi dan filter opsional",
         tags: ["Features"],
@@ -150,7 +150,7 @@ class FeatureController extends Controller
      * Store a newly created feature
      */
     #[OA\Post(
-        path: "/api/gis/features",
+        path: "/api/features",
         summary: "Buat fitur baru",
         description: "Membuat fitur baru dengan gambar opsional",
         tags: ["Features"],
@@ -212,7 +212,7 @@ class FeatureController extends Controller
      * Display the specified feature
      */
     #[OA\Get(
-        path: "/api/gis/features/{id}",
+        path: "/api/features/{id}",
         summary: "Ambil fitur berdasarkan ID",
         description: "Mengambil data fitur tertentu berdasarkan ID-nya",
         tags: ["Features"],
@@ -262,7 +262,7 @@ class FeatureController extends Controller
      * Update the specified feature
      */
     #[OA\Put(
-        path: "/api/gis/features/{id}",
+        path: "/api/features/{id}",
         summary: "Perbarui fitur",
         description: "Memperbarui data fitur yang sudah ada",
         tags: ["Features"],
@@ -331,7 +331,7 @@ class FeatureController extends Controller
      * Remove the specified feature
      */
     #[OA\Delete(
-        path: "/api/gis/features/{id}",
+        path: "/api/features/{id}",
         summary: "Hapus fitur",
         description: "Menghapus fitur beserta gambar-gambar yang terkait",
         tags: ["Features"],
@@ -381,7 +381,7 @@ class FeatureController extends Controller
      * Get feature by UUID
      */
     #[OA\Get(
-        path: "/api/gis/features/uuid/{uuid}",
+        path: "/api/features/uuid/{uuid}",
         summary: "Ambil fitur berdasarkan UUID",
         description: "Mengambil data fitur tertentu berdasarkan UUID-nya",
         tags: ["Features"],
@@ -431,7 +431,7 @@ class FeatureController extends Controller
      * Get features by layer
      */
     #[OA\Get(
-        path: "/api/gis/features/by-layer/{layerId}",
+        path: "/api/features/by-layer/{layerId}",
         summary: "Ambil fitur berdasarkan layer",
         description: "Mengambil semua fitur yang termasuk dalam layer tertentu",
         tags: ["Features"],
@@ -474,10 +474,54 @@ class FeatureController extends Controller
     }
 
     /**
+     * Get features as GeoJSON FeatureCollection for a specific layer (paginated).
+     */
+    public function getGeoJsonByLayer(int $layerId, Request $request): JsonResponse
+    {
+        try {
+            $limit  = min((int) $request->get('limit', 500), 3000);
+            $offset = max(0, (int) $request->get('offset', 0));
+
+            $rows  = $this->featureService->getGeoJsonByLayer($layerId, $limit, $offset);
+            $total = $this->featureService->countGeoJsonByLayer($layerId);
+
+            $features = $rows->map(function ($row) {
+                $geometry   = $row->geojson ? json_decode($row->geojson) : null;
+                $properties = is_string($row->properties)
+                    ? json_decode($row->properties, true)
+                    : (array) $row->properties;
+
+                // Inject layer name as kategori for popup display
+                $properties['kategori'] = $row->layer_name;
+                $properties['uuid']     = $row->uuid;
+
+                return [
+                    'type'       => 'Feature',
+                    'geometry'   => $geometry,
+                    'properties' => $properties,
+                ];
+            })->filter(fn($f) => $f['geometry'] !== null)->values();
+
+            return response()->json([
+                'type'     => 'FeatureCollection',
+                'features' => $features,
+                'meta'     => [
+                    'total'    => $total,
+                    'limit'    => $limit,
+                    'offset'   => $offset,
+                    'has_more' => ($offset + $features->count()) < $total,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to retrieve GeoJSON', 500, $e->getMessage());
+        }
+    }
+
+    /**
      * Get features by user
      */
     #[OA\Get(
-        path: "/api/gis/features/by-user/{userId}",
+        path: "/api/features/by-user/{userId}",
         summary: "Ambil fitur berdasarkan pengguna",
         description: "Mengambil semua fitur yang dibuat oleh pengguna tertentu",
         tags: ["Features"],
@@ -523,7 +567,7 @@ class FeatureController extends Controller
      * Get features within bounding box
      */
     #[OA\Get(
-        path: "/api/gis/features/within-bounds",
+        path: "/api/features/within-bounds",
         summary: "Ambil fitur dalam batas geografis",
         description: "Mengambil fitur yang berada dalam batas geografis yang ditentukan",
         tags: ["Features"],
@@ -732,7 +776,7 @@ class FeatureController extends Controller
      * Bulk create features
      */
     #[OA\Post(
-        path: "/api/gis/features/bulk",
+        path: "/api/features/bulk",
         summary: "Buat banyak fitur sekaligus",
         description: "Membuat banyak fitur dalam satu permintaan",
         tags: ["Features"],

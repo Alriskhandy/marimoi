@@ -112,6 +112,22 @@ class FeatureService
     }
 
     /**
+     * Get features as GeoJSON rows for a specific layer (paginated).
+     */
+    public function getGeoJsonByLayer(int $layerId, int $limit = 500, int $offset = 0): SupportCollection
+    {
+        return $this->featureRepository->getGeoJsonByLayer($layerId, $limit, $offset);
+    }
+
+    /**
+     * Count features with geometry for a layer.
+     */
+    public function countGeoJsonByLayer(int $layerId): int
+    {
+        return $this->featureRepository->countGeoJsonByLayer($layerId);
+    }
+
+    /**
      * Get features by user
      */
     public function getFeaturesByUser(int $userId): SupportCollection

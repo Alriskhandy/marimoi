@@ -101,7 +101,7 @@ class LayerRepository
     {
         return $this->model->whereNull('parent_id')
                           ->with(['children'])
-                          ->orderBy('name')
+                          ->orderBy('category')
                           ->get();
     }
 

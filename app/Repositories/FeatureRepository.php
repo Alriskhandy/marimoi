@@ -122,6 +122,35 @@ class FeatureRepository
     }
 
     /**
+     * Get features as GeoJSON for a specific layer, with pagination.
+     * Returns raw rows including ST_AsGeoJSON(geom) and the layer name.
+     */
+    public function getGeoJsonByLayer(int $layerId, int $limit = 500, int $offset = 0): \Illuminate\Support\Collection
+    {
+        return DB::table('features as f')
+            ->join('layers as l', 'f.layer_id', '=', 'l.id')
+            ->select(
+                'f.uuid',
+                'f.properties',
+                'l.name as layer_name',
+                DB::raw('ST_AsGeoJSON(f.geom) as geojson')
+            )
+            ->where('f.layer_id', $layerId)
+            ->whereNotNull('f.geom')
+            ->limit($limit)
+            ->offset($offset)
+            ->get();
+    }
+
+    /**
+     * Count features with geometry for a layer.
+     */
+    public function countGeoJsonByLayer(int $layerId): int
+    {
+        return $this->model->where('layer_id', $layerId)->whereNotNull('geom')->count();
+    }
+
+    /**
      * Get features by user
      */
     public function getByUser(int $userId): Collection

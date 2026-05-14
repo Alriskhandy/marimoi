@@ -8,6 +8,10 @@ use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
+Route::get('/pemetaan', function () {
+    return view('frontend.pages.peta-v2', ['documents' => []]);
+})->name('peta.v2');
+
 Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
 Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');
 Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
