@@ -61,7 +61,7 @@
         <img
             :src="bappedaLogoUrl"
             alt="BAPPEDA"
-            class="absolute bottom-6 right-3 z-[200] opacity-80 pointer-events-none"
+            class="absolute bottom-6 right-3 z-[100] opacity-80 pointer-events-none"
             style="height: 32px; width: auto;"
         />
 
