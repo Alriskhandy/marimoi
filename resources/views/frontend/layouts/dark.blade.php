@@ -123,9 +123,9 @@
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="nav-content">
-            <a href="/" class="logo"
-                style="display: flex; justify-content: center; align-items: center; text-decoration: none; color: inherit;">
+            <a href="/" class="logo">
                 <img src="{{ asset('frontend/img/logo/logo-white.png') }}" alt="MARIMOI Logo">
+                <span class="logo-brand">MARIMOI</span>
             </a>
             <button class="mobile-menu-button" id="mobileMenuButton" aria-label="Menu">
                 <span></span>
@@ -137,61 +137,11 @@
                     <li><a href="{{ route('beranda') }}"
                             class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
                     <li><a href="{{ route('tampil.reformer') }}"
-                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a>
-                    </li>
-                    <li><a href="{{ route('tampil.tematik') }}"
-                            class="{{ request()->routeIs('tampil.tematik') ? 'active' : '' }}">Peta
-                            Tematik</a></li>
-                    <li class="dropdown">
-                        @php
-                            $isDropdownActive = request()->routeIs('tampil.psd') || request()->routeIs('tampil.psn');
-                        @endphp
-                        <a href="#" class="dropdown-trigger {{ $isDropdownActive ? 'active' : '' }}"
-                            aria-haspopup="true" aria-expanded="false" role="button">
-                            Proyek Strategis
-                            <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu" aria-label="Proyek Strategis Menu">
-                            <li role="none"><a href="{{ route('tampil.psd') }}" role="menuitem"
-                                    class="{{ request()->routeIs('tampil.psd') ? 'active' : '' }}">Proyek Strategis
-                                    Daerah</a></li>
-                            <li role="none"><a href="{{ route('tampil.psn') }}" role="menuitem"
-                                    class="{{ request()->routeIs('tampil.psn') ? 'active' : '' }}">Proyek Strategis
-                                    Nasional</a></li>
-                        </ul>
-                    </li>
+                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a></li>
+                    <li><a href="{{ route('peta.v2') }}"
+                            class="{{ request()->routeIs('peta.v2') ? 'active' : '' }}">Peta</a></li>
                     <li><a href="{{ route('tampil.prioritas') }}"
-                            class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah
-                            2025-2029</a></li>
-                    <li class="dropdown">
-                        @php
-                            $isDropdownActive =
-                                request()->routeIs('tampil.musrenbang') || request()->routeIs('coming_soon');
-                        @endphp
-                        <a href="#" class="dropdown-trigger {{ $isDropdownActive ? 'active' : '' }}"
-                            aria-haspopup="true" aria-expanded="false" role="button">
-                            Musrenbang
-                            <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu" aria-label="Musrenbang Menu">
-                            <li role="none">
-                                <a href="{{ route('tampil.musrenbang') }}" role="menuitem"
-                                    class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">
-                                    Peta Musrenbang
-                                </a>
-                            </li>
-                            <li role="none">
-                                <a href="{{ route('coming_soon_public') }}" role="menuitem"
-                                    class="{{ request()->routeIs('coming_soon_public') ? 'active' : '' }}">
-                                    Musrenbang Digital
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <li><a href="{{ route('tampil.pokir') }}"
-                            class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir
-                            DPRD</a></li>
+                            class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah</a></li>
                     <li><a href="{{ route('tampil.publikasi') }}"
                             class="{{ request()->routeIs('tampil.publikasi') ? 'active' : '' }}">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}"
@@ -199,6 +149,8 @@
                 </ul>
             </div>
         </div>
+        <!-- Right spacer — same width as Navbar.vue control buttons (4×44px) -->
+        <div class="nav-spacer" aria-hidden="true"></div>
         <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
     </nav>
 
