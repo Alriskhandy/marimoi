@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Controllers\Auth\AccessTokenController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
+
+// ── OAuth2 Token Endpoint ─────────────────────────────────────────────────────
+// Rate limited + custom controller untuk per-client expiry (3 hari public, 7 hari admin)
+Route::middleware('throttle:oauth-token')
+    ->post('/oauth/token', [AccessTokenController::class, 'issueToken'])
+    ->name('passport.token');
 
 // HALAMAN //
 Route::get('/pemetaan', function () {
@@ -76,4 +83,3 @@ Route::prefix('dokumen-publikasi')->group(function () {
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/backend.php';
-require __DIR__ . '/api.php';

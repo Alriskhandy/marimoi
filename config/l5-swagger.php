@@ -1,51 +1,56 @@
 <?php
 
 return [
-    'default' => 'default',
+    'default' => 'public',
     'documentations' => [
-        'default' => [
+        'public' => [
             'api' => [
-                'title' => 'Marimoi - Dokumentasi API',
+                'title' => 'Marimoi Public API v1',
             ],
 
             'routes' => [
-                /*
-                 * Route for accessing api documentation interface
-                 */
-                'api' => 'api/documentation',
+                'api'             => 'api/documentation',
+                'docs'            => 'docs/public',
+                'oauth2_callback' => 'api/oauth2-callback/public',
             ],
             'paths' => [
-                /*
-                 * Edit to include full URL in ui for assets
-                 */
                 'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
-
-                /*
-                * Edit to set path where swagger ui assets should be stored
-                */
                 'swagger_ui_assets_path' => env('L5_SWAGGER_UI_ASSETS_PATH', 'vendor/swagger-api/swagger-ui/dist/'),
-
-                /*
-                 * File name of the generated json documentation file
-                 */
-                'docs_json' => 'api-docs.json',
-
-                /*
-                 * File name of the generated YAML documentation file
-                 */
-                'docs_yaml' => 'api-docs.yaml',
-
-                /*
-                 * Set this to `json` or `yaml` to determine which documentation file to use in UI
-                 */
+                'docs_json' => 'public-api-docs.json',
+                'docs_yaml' => 'public-api-docs.yaml',
                 'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
-
-                /*
-                 * Absolute paths to directory containing the swagger annotations are stored.
-                 */
                 'annotations' => [
-                    base_path('app/Http/Controllers'),
-                    base_path('app/Docs'),
+                    base_path('app/Http/Controllers/Api/Public'),
+                    base_path('app/Docs/Public'),
+                ],
+            ],
+        ],
+
+        'admin' => [
+            'api' => [
+                'title' => 'Marimoi Admin API v1 (Internal)',
+            ],
+
+            'routes' => [
+                'api'             => 'dashboard/api/documentation',
+                'docs'            => 'docs/admin',
+                'oauth2_callback' => 'api/oauth2-callback/admin',
+                'middleware' => [
+                    'api'             => ['web', 'auth'],
+                    'asset'           => ['web', 'auth'],
+                    'docs'            => ['web', 'auth'],
+                    'oauth2_callback' => ['web', 'auth'],
+                ],
+            ],
+            'paths' => [
+                'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
+                'swagger_ui_assets_path' => env('L5_SWAGGER_UI_ASSETS_PATH', 'vendor/swagger-api/swagger-ui/dist/'),
+                'docs_json' => 'admin-api-docs.json',
+                'docs_yaml' => 'admin-api-docs.yaml',
+                'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
+                'annotations' => [
+                    base_path('app/Http/Controllers/Api/Admin'),
+                    base_path('app/Docs/Admin'),
                 ],
             ],
         ],

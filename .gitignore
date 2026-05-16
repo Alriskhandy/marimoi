@@ -33,3 +33,6 @@ Homestead.yaml
 /.vscode
 /.zed
 /.nova
+
+#claude
+/.claudeignore
