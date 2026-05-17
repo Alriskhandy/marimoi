@@ -7,42 +7,9 @@ use App\Models\ProjectFeedback;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use OpenApi\Attributes as OA;
 
 class PublicFeedbackController extends Controller
 {
-    #[OA\Post(
-        path: '/api/v1/feedbacks',
-        tags: ['Feedback'],
-        summary: 'Submit feedback proyek pembangunan',
-        security: [['bearerAuth' => []]],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    required: ['nama_pemberi_aspirasi', 'nama_proyek', 'kabupaten_kota', 'tanggapan', 'jenis_tanggapan'],
-                    properties: [
-                        new OA\Property(property: 'nama_pemberi_aspirasi', type: 'string'),
-                        new OA\Property(property: 'nama_proyek',           type: 'string'),
-                        new OA\Property(property: 'kabupaten_kota',        type: 'string'),
-                        new OA\Property(property: 'kecamatan',             type: 'string', nullable: true),
-                        new OA\Property(property: 'tanggapan',             type: 'string'),
-                        new OA\Property(property: 'jenis_tanggapan',       type: 'string', enum: ['keluhan', 'saran', 'apresiasi', 'pertanyaan']),
-                        new OA\Property(property: 'email',                 type: 'string', format: 'email', nullable: true),
-                        new OA\Property(property: 'phone',                 type: 'string', nullable: true),
-                        new OA\Property(property: 'latitude',              type: 'number', format: 'float', nullable: true),
-                        new OA\Property(property: 'longitude',             type: 'number', format: 'float', nullable: true),
-                        new OA\Property(property: 'laporan_gambar',        type: 'string', format: 'binary', nullable: true),
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(response: 201, description: 'Created'),
-            new OA\Response(response: 422, description: 'Validation error'),
-        ]
-    )]
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

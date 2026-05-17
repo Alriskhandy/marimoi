@@ -3,9 +3,11 @@
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TrackVisitor;
 use App\Http\Middleware\ValidateClientType;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Laravel\Passport\Http\Middleware\CheckClientCredentials;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -30,5 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['/oauth/token']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Rute api/* selalu kembalikan JSON — cegah redirect ke /login
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $_e) {
+            return $request->is('api/*');
+        });
     })->create();

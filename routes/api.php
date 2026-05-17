@@ -83,33 +83,22 @@ Route::prefix('api')->group(function () {
     });
 });
 
-// ── Public API v1 — wajib Bearer token dari Public Client ────────────────────
+// ── Public API v1 — tanpa token (bebas akses) ────────────────────────────────
 use App\Http\Controllers\Api\Public\PublicFeatureController;
 use App\Http\Controllers\Api\Public\PublicLayerController;
-use App\Http\Controllers\Api\Public\PublicLocationController;
-use App\Http\Controllers\Api\Public\PublicFeedbackController;
+use App\Http\Controllers\Api\Public\PublicStatisticController;
+use App\Http\Controllers\Api\Public\PublicPublicationController;
 
 Route::prefix('v1')->middleware(['client:public.read', 'client.type:public'])->group(function () {
-    // specific routes SEBELUM {id} — cegah route collision
-    Route::get('features/uuid/{uuid}',       [PublicFeatureController::class, 'showByUuid']);
-    Route::get('features/layer/{layerId}',   [PublicFeatureController::class, 'getByLayer']);
-    Route::get('features/geojson/{layerId}', [PublicFeatureController::class, 'getGeoJson']);
-    Route::get('features',                   [PublicFeatureController::class, 'index']);
-    Route::get('features/{id}',              [PublicFeatureController::class, 'show']);
-
     Route::get('layers/tree',  [PublicLayerController::class, 'getTree']);
     Route::get('layers',       [PublicLayerController::class, 'index']);
     Route::get('layers/{id}',  [PublicLayerController::class, 'show']);
 
-    Route::prefix('locations')->group(function () {
-        Route::get('reference',          [PublicLocationController::class, 'getReferenceData']);
-        Route::get('kecamatan/{kab}',    [PublicLocationController::class, 'getKecamatan']);
-        Route::get('maps-center',        [PublicLocationController::class, 'getMapsCenter']);
-    });
-});
+    Route::get('count-visitors',    [PublicStatisticController::class, 'showCountVisitors']);
+    Route::get('count-aspirations', [PublicStatisticController::class, 'showCountAspirations']);
 
-Route::prefix('v1')->middleware(['client:feedback.write', 'client.type:public'])->group(function () {
-    Route::post('feedbacks', [PublicFeedbackController::class, 'store']);
+    Route::get('publications',      [PublicPublicationController::class, 'index']);
+    Route::get('publications/{id}', [PublicPublicationController::class, 'show']);
 });
 
 // ── Admin API v1 — wajib Bearer token dari Admin Client ──────────────────────
