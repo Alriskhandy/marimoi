@@ -83,7 +83,12 @@ Route::prefix('api')->group(function () {
     });
 });
 
-// ── Public API v1 — tanpa token (bebas akses) ────────────────────────────────
+// ── Map token endpoint — generate admin token server-side tanpa HTTP self-call ─
+use App\Http\Controllers\Api\MapTokenController;
+
+Route::middleware('throttle:30,1')->get('map/token', MapTokenController::class);
+
+// ── Public API v1 — wajib public client token ────────────────────────────────
 use App\Http\Controllers\Api\Public\PublicFeatureController;
 use App\Http\Controllers\Api\Public\PublicLayerController;
 use App\Http\Controllers\Api\Public\PublicStatisticController;
@@ -113,9 +118,10 @@ use App\Http\Controllers\Api\Admin\AdminFeedbackController;
 Route::prefix('v1/admin')->middleware(['client.type:admin'])->group(function () {
 
     Route::middleware('client:admin.features')->group(function () {
-        Route::get('features/statistics',  [AdminFeatureController::class, 'getStatistics']);
-        Route::post('features/bulk',       [AdminFeatureController::class, 'bulkStore']);
-        Route::apiResource('features',     AdminFeatureController::class);
+        Route::get('features/statistics',          [AdminFeatureController::class, 'getStatistics']);
+        Route::get('features/geojson/{layerId}',   [AdminFeatureController::class, 'getGeoJsonByLayer']);
+        Route::post('features/bulk',               [AdminFeatureController::class, 'bulkStore']);
+        Route::apiResource('features',             AdminFeatureController::class);
     });
 
     Route::middleware('client:admin.layers')->group(function () {

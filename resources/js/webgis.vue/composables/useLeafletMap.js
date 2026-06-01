@@ -86,6 +86,28 @@ const currentTileLayer = ref(null)
 const activeBasemap = ref('osm')
 const loading = ref(false)
 
+// In-memory only — fetched from /api/map/token, never written to localStorage/sessionStorage
+let _mapToken = null
+let _mapTokenExpiresAt = 0  // epoch ms
+
+async function fetchMapToken() {
+    try {
+        const res = await fetch('/api/map/token')
+        if (!res.ok) return null
+        const data = await res.json()
+        _mapToken = data.access_token ?? null
+        _mapTokenExpiresAt = Date.now() + ((data.expires_in ?? 3600) - 60) * 1000
+        return _mapToken
+    } catch {
+        return null
+    }
+}
+
+async function getMapToken() {
+    if (_mapToken && Date.now() < _mapTokenExpiresAt) return _mapToken
+    return fetchMapToken()
+}
+
 // 3-level category tree (reactive)
 // { rootName: { children: { secondName: { allChecked, someChecked, children: { thirdName: { checked, loading, loaded } } } } } }
 const categoryTree = reactive({})
@@ -316,12 +338,13 @@ export function useLeafletMap() {
                 }
             }
 
-            // Use the new features GeoJSON API keyed by layerId
             const layerId = node.layerId
+            const token   = await getMapToken()
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
             while (hasMore && totalLoaded < maxRecords) {
-                const url = `/api/features/geojson/${layerId}?limit=${chunkSize}&offset=${offset}`
-                const res = await fetch(url)
+                const url = `/api/v1/admin/features/geojson/${layerId}?limit=${chunkSize}&offset=${offset}`
+                const res = await fetch(url, { headers })
                 if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
                 const data = await res.json()
@@ -589,7 +612,12 @@ export function useLeafletMap() {
         toastFn?.('Memuat daftar layer...', 'info')
 
         try {
-            const res = await fetch('/api/layers/tree')
+            const token = await getMapToken()
+            const fetchOptions = {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            }
+
+            const res = await fetch('/api/v1/admin/layers/tree', fetchOptions)
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
             const json = await res.json()

@@ -15,9 +15,7 @@ Route::middleware('throttle:oauth-token')
     ->name('passport.token');
 
 // HALAMAN //
-Route::get('/pemetaan', function () {
-    return view('frontend.pages.peta-v2', ['documents' => []]);
-})->name('peta.v2');
+Route::get('/pemetaan', [App\Http\Controllers\PetaController::class, 'index'])->name('peta.v2');
 
 Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
 Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');

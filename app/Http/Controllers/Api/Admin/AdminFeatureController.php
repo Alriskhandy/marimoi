@@ -95,4 +95,21 @@ class AdminFeatureController extends FeatureController
     {
         return parent::bulkStore($request);
     }
+
+    #[OA\Get(
+        path: '/api/v1/admin/features/geojson/{layerId}',
+        tags: ['Admin Features'],
+        summary: 'GeoJSON features untuk layer (dipakai peta)',
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(name: 'layerId', in: 'path',  required: true,  schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'limit',   in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 500)),
+            new OA\Parameter(name: 'offset',  in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 0)),
+        ],
+        responses: [new OA\Response(response: 200, description: 'FeatureCollection GeoJSON')]
+    )]
+    public function getGeoJsonByLayer(int $layerId, Request $request): JsonResponse
+    {
+        return parent::getGeoJsonByLayer($layerId, $request);
+    }
 }
