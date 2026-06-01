@@ -64,6 +64,43 @@
         </div>
     </div>
 
+    <!-- Layer & Feature Stats Row (Arsitektur Baru) -->
+    <div class="row">
+        <div class="col-md-6 stretch-card grid-margin">
+            <div class="card bg-gradient-danger card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle-image" />
+                    <h4 class="font-weight-normal mb-3">
+                        Total Layer Aktif
+                        <i class="mdi mdi-layers mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-2">{{ $totalLayers ?? '0' }}</h2>
+                    <h6 class="card-text">
+                        <a href="{{ route('layers.index') }}" class="text-white text-decoration-underline">
+                            Kelola Layer →
+                        </a>
+                    </h6>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 stretch-card grid-margin">
+            <div class="card bg-gradient-success card-img-holder text-white">
+                <div class="card-body">
+                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
+                        alt="circle-image" />
+                    <h4 class="font-weight-normal mb-3">
+                        Total Fitur Spasial
+                        <i class="mdi mdi-map-marker-multiple mdi-24px float-end"></i>
+                    </h4>
+                    <h2 class="mb-2">{{ $totalFeatures ?? '0' }}</h2>
+                    <h6 class="card-text">Jumlah geometri di semua layer</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Visitor Statistics Row (Only for non admin-opd) -->
     @if (!auth()->user() || auth()->user()->role->slug !== 'admin-opd')
         <div class="row">

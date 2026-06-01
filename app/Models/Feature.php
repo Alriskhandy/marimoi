@@ -18,6 +18,7 @@ class Feature extends Model
         'properties',
         'year',
         'views',
+        'geom',
     ];
 
     protected $casts = [

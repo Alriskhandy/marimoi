@@ -513,6 +513,65 @@
             </div>
         </li>
 
+        {{-- ═══════════════════════════════════════════════════════════════
+             MENU BARU: Manajemen Layer & Feature (Arsitektur Baru)
+             Tidak menghapus menu lama di atas, hanya menambah di sini.
+        ═══════════════════════════════════════════════════════════════ --}}
+        @php
+            $isLayerMenuActive = request()->routeIs('layers.*');
+        @endphp
+        <li class="nav-item nav-category">
+            <span class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
+                  style="cursor: default;">
+                <i class="mdi mdi-layers-outline me-2 fs-5 opacity-50"></i>
+                Manajemen Layer
+            </span>
+        </li>
+
+        <li class="nav-item {{ $isLayerMenuActive ? 'active' : '' }}">
+            <a class="nav-link" data-bs-toggle="collapse" href="#layerMenu"
+               aria-expanded="{{ $isLayerMenuActive ? 'true' : 'false' }}" aria-controls="layerMenu">
+                <span class="menu-title">Layer & Fitur</span>
+                <i class="menu-arrow"></i>
+                <i class="mdi mdi-layers menu-icon"></i>
+            </a>
+            <div class="collapse {{ $isLayerMenuActive ? 'show' : '' }}" id="layerMenu">
+                <ul class="nav flex-column sub-menu">
+                    <li class="nav-item {{ request()->routeIs('layers.index') && !request('category') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index') }}">
+                            <i class="mdi mdi-view-list me-2"></i>Semua Layer
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('layers.*') && request('category') === 'tematik' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index', ['category' => 'tematik']) }}">
+                            <i class="mdi mdi-map-outline me-2"></i>Peta Tematik
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('layers.*') && request('category') === 'psd' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index', ['category' => 'psd']) }}">
+                            <i class="mdi mdi-city me-2"></i>Proyek Strategis Daerah
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('layers.*') && request('category') === 'psn' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index', ['category' => 'psn']) }}">
+                            <i class="mdi mdi-flag me-2"></i>Proyek Strategis Nasional
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('layers.*') && request('category') === 'pokir' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index', ['category' => 'pokir']) }}">
+                            <i class="mdi mdi-gavel me-2"></i>Pokir DPRD
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('layers.*') && request('category') === 'musrenbang' ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('layers.index', ['category' => 'musrenbang']) }}">
+                            <i class="mdi mdi-forum me-2"></i>Usulan Musrenbang
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        {{-- ═══════════════════════════════════════════════════════════════ --}}
+
         @if ($slug != 'admin-opd')
 
             <!-- Upload Dokumen -->

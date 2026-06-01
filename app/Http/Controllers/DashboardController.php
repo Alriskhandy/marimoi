@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataSpatial;
+use App\Models\Feature;
+use App\Models\Layer;
 use App\Models\Opd;
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
@@ -47,7 +49,16 @@ class DashboardController extends Controller
         }
 
         $totalOpd = Opd::count();
-        
+
+        // Layer & Feature stats (arsitektur baru)
+        try {
+            $totalLayers   = Layer::where('is_active', true)->count();
+            $totalFeatures = Feature::count();
+        } catch (\Exception $e) {
+            $totalLayers   = 0;
+            $totalFeatures = 0;
+        }
+
         // Build base query for aspirasi with OPD filter
         $aspirasiBaseQuery = DB::table('aspirasi');
         $aspirasiBaseQuery = $this->applyOpdFilterToRawQuery($aspirasiBaseQuery);
@@ -107,6 +118,8 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalLokasi',
+            'totalLayers',
+            'totalFeatures',
             'totalOpd',
             'totalPendingAspirasi',
             'totalAspirasi',

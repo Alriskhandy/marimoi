@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AspirasiController;
+use App\Http\Controllers\LayerWebController;
+use App\Http\Controllers\FeatureWebController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DataSpatialController;
 use App\Http\Controllers\KategoriAspirasiController;
@@ -401,6 +403,36 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::get('/coming-soon', function () {
         return view('backend.cooming_soon');
     })->name('coming_soon');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Layer & Feature Management (Arsitektur Baru)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('layers')->name('layers.')->group(function () {
+        Route::get('/', [LayerWebController::class, 'index'])->name('index');
+        Route::get('/data', [LayerWebController::class, 'getData'])->name('data');
+        Route::get('/create', [LayerWebController::class, 'create'])->name('create');
+        Route::post('/', [LayerWebController::class, 'store'])->name('store');
+        Route::get('/{layer}/edit', [LayerWebController::class, 'edit'])->name('edit');
+        Route::put('/{layer}', [LayerWebController::class, 'update'])->name('update');
+        Route::delete('/{layer}', [LayerWebController::class, 'destroy'])->name('destroy');
+        Route::patch('/{layer}/toggle-active', [LayerWebController::class, 'toggleActive'])->name('toggle-active');
+        Route::patch('/{layer}/move', [LayerWebController::class, 'move'])->name('move');
+
+        Route::prefix('{layer}/features')->name('features.')->group(function () {
+            Route::get('/', [FeatureWebController::class, 'index'])->name('index');
+            Route::get('/map-data', [FeatureWebController::class, 'mapData'])->name('map-data');
+            Route::get('/create', [FeatureWebController::class, 'create'])->name('create');
+            Route::post('/', [FeatureWebController::class, 'store'])->name('store');
+            Route::get('/{feature}', [FeatureWebController::class, 'show'])->name('show');
+            Route::get('/{feature}/edit', [FeatureWebController::class, 'edit'])->name('edit');
+            Route::put('/{feature}', [FeatureWebController::class, 'update'])->name('update');
+            Route::delete('/{feature}', [FeatureWebController::class, 'destroy'])->name('destroy');
+            Route::post('/{feature}/images', [FeatureWebController::class, 'uploadImage'])->name('images.store');
+            Route::delete('/{feature}/images/{image}', [FeatureWebController::class, 'deleteImage'])->name('images.destroy');
+        });
+    });
 });
 Route::get('/coming-soon', function () {
     return view('coming_soon');

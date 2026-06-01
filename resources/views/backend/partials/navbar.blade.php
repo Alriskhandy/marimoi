@@ -7,7 +7,7 @@
         {{-- <h1 class="fw-bold fs-4 d-none d-md-inline">MARIMOI</h1> --}}
 
         <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}">
-            <img src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="logo" style="height: 40px; width: auto;" />
+            <img src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="logo" style="height: 28px; width: auto;" />
         </a>
     </div>
 
