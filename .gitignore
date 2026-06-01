@@ -34,3 +34,7 @@ Homestead.yaml
 /.zed
 /.nova
 /.claudeignore
+
+# macOS
+.DS_Store
+**/.DS_Store
