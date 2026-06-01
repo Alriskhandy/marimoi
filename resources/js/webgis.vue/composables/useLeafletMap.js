@@ -690,7 +690,8 @@ export function useLeafletMap() {
                             leafletLayerMap[`${rootLabel}/${layer.name}/${child.name}`] = L().layerGroup()
                         })
                     } else {
-                        // layer has no children — it is the leaf itself
+                        // leaf layer — no children, sidebar renders it flat at L2
+                        categoryTree[rootLabel].children[layer.name].directLeaf = true
                         categoryTree[rootLabel].children[layer.name].children[layer.name] = leafNode(layer)
                         leafletLayerMap[`${rootLabel}/${layer.name}/${layer.name}`] = L().layerGroup()
                     }

@@ -81,60 +81,84 @@
                         <template v-for="(secondNode, secondName) in rootNode.children" :key="secondName">
                             <div v-if="secondVisible(rootName, secondName, secondNode)" class="px-2 py-1">
 
-                                <!-- Second level header -->
-                                <div class="flex items-center px-3 py-2 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors duration-200 ml-3 mb-1">
-                                    <i
-                                        class="bi mr-2 text-gray-500 text-xs cursor-pointer transition-transform duration-200"
-                                        :class="isSecondExpanded(rootName, secondName) ? 'bi-chevron-down' : 'bi-chevron-right'"
-                                        @click="toggleSecond(rootName, secondName)"
-                                    ></i>
+                                <!-- Leaf layer — no children, render flat without expand/collapse -->
+                                <div
+                                    v-if="secondNode.directLeaf"
+                                    class="flex items-center py-2 hover:bg-gray-100 transition-colors rounded px-2 ml-3"
+                                >
                                     <input
                                         type="checkbox"
-                                        class="mr-2 h-4 w-4 cursor-pointer accent-blue-500"
+                                        class="mr-2 h-4 w-4 cursor-pointer flex-shrink-0 accent-blue-400"
                                         :checked="secondNode.allChecked"
-                                        @click.stop
-                                        @change="onSecondChange(rootName, secondName, $event.target.checked)"
-                                        :ref="el => setIndeterminate(el, secondNode.someChecked)"
+                                        :disabled="secondNode.children[secondName]?.loading"
+                                        @change="onThirdChange(rootName, secondName, secondName, $event.target.checked)"
                                     />
+                                    <i
+                                        v-if="secondNode.children[secondName]?.loading"
+                                        class="bi bi-arrow-clockwise animate-spin mr-1 text-blue-500 flex-shrink-0 text-xs"
+                                    ></i>
                                     <label
-                                        class="text-sm text-gray-700 cursor-pointer flex-1 select-none"
-                                        @click="toggleSecond(rootName, secondName)"
+                                        class="text-xs text-gray-600 cursor-pointer flex-1 leading-tight select-none"
+                                        :class="secondNode.children[secondName]?.loading ? 'opacity-60 animate-pulse' : ''"
                                         v-html="highlight(secondName)"
                                     ></label>
-                                    <span class="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full flex-shrink-0">
-                                        {{ Object.keys(secondNode.children).length }}
-                                    </span>
                                 </div>
 
-                                <!-- Third level -->
-                                <div
-                                    v-show="isSecondExpanded(rootName, secondName)"
-                                    class="pl-4 ml-5 border-l border-gray-200 mt-1"
-                                >
-                                    <template v-for="(thirdNode, thirdName) in secondNode.children" :key="thirdName">
-                                        <div
-                                            v-if="thirdVisible(thirdName)"
-                                            class="flex items-center py-2 hover:bg-gray-100 transition-colors rounded px-2 mt-1"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                class="mr-2 h-4 w-4 cursor-pointer flex-shrink-0 accent-blue-400"
-                                                :checked="thirdNode.checked"
-                                                :disabled="thirdNode.loading"
-                                                @change="onThirdChange(rootName, secondName, thirdName, $event.target.checked)"
-                                            />
-                                            <i
-                                                v-if="thirdNode.loading"
-                                                class="bi bi-arrow-clockwise animate-spin mr-1 text-blue-500 flex-shrink-0 text-xs"
-                                            ></i>
-                                            <label
-                                                class="text-xs text-gray-600 cursor-pointer flex-1 leading-tight select-none"
-                                                :class="thirdNode.loading ? 'opacity-60 animate-pulse' : ''"
-                                                v-html="highlight(thirdName)"
-                                            ></label>
-                                        </div>
-                                    </template>
-                                </div>
+                                <!-- Parent layer — has children, render expandable -->
+                                <template v-else>
+                                    <div class="flex items-center px-3 py-2 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors duration-200 ml-3 mb-1">
+                                        <i
+                                            class="bi mr-2 text-gray-500 text-xs cursor-pointer transition-transform duration-200"
+                                            :class="isSecondExpanded(rootName, secondName) ? 'bi-chevron-down' : 'bi-chevron-right'"
+                                            @click="toggleSecond(rootName, secondName)"
+                                        ></i>
+                                        <input
+                                            type="checkbox"
+                                            class="mr-2 h-4 w-4 cursor-pointer accent-blue-500"
+                                            :checked="secondNode.allChecked"
+                                            @click.stop
+                                            @change="onSecondChange(rootName, secondName, $event.target.checked)"
+                                            :ref="el => setIndeterminate(el, secondNode.someChecked)"
+                                        />
+                                        <label
+                                            class="text-sm text-gray-700 cursor-pointer flex-1 select-none"
+                                            @click="toggleSecond(rootName, secondName)"
+                                            v-html="highlight(secondName)"
+                                        ></label>
+                                        <span class="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full flex-shrink-0">
+                                            {{ Object.keys(secondNode.children).length }}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        v-show="isSecondExpanded(rootName, secondName)"
+                                        class="pl-4 ml-5 border-l border-gray-200 mt-1"
+                                    >
+                                        <template v-for="(thirdNode, thirdName) in secondNode.children" :key="thirdName">
+                                            <div
+                                                v-if="thirdVisible(thirdName)"
+                                                class="flex items-center py-2 hover:bg-gray-100 transition-colors rounded px-2 mt-1"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    class="mr-2 h-4 w-4 cursor-pointer flex-shrink-0 accent-blue-400"
+                                                    :checked="thirdNode.checked"
+                                                    :disabled="thirdNode.loading"
+                                                    @change="onThirdChange(rootName, secondName, thirdName, $event.target.checked)"
+                                                />
+                                                <i
+                                                    v-if="thirdNode.loading"
+                                                    class="bi bi-arrow-clockwise animate-spin mr-1 text-blue-500 flex-shrink-0 text-xs"
+                                                ></i>
+                                                <label
+                                                    class="text-xs text-gray-600 cursor-pointer flex-1 leading-tight select-none"
+                                                    :class="thirdNode.loading ? 'opacity-60 animate-pulse' : ''"
+                                                    v-html="highlight(thirdName)"
+                                                ></label>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
 
                             </div>
                         </template>
