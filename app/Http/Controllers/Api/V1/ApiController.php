@@ -9,10 +9,6 @@ use OpenApi\Attributes as OA;
     title: 'MARIMOI API',
     version: '1.0.0',
     description: 'Manajemen Akselerasi Untuk Monitoring dan Integrasi Wilayah - REST API v1',
-    contact: new OA\Contact(
-        name: 'BAPPEDA Maluku Utara',
-        email: 'admin@marimoi.malutprov.go.id'
-    )
 )]
 #[OA\Server(url: L5_SWAGGER_CONST_HOST, description: 'API Server')]
 #[OA\SecurityScheme(
