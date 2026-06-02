@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 // Model untuk Categories
 class Category extends Model
@@ -26,6 +27,20 @@ class Category extends Model
     protected $casts = [
         'is_marker' => 'boolean',
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        $clearCache = function () {
+            foreach (['', '.tematik', '.usulan_musrenbang', '.pokir_dprd', '.psd', '.psn'] as $suffix) {
+                Cache::forget('api.v1.layers.tree' . $suffix);
+            }
+        };
+
+        static::saved($clearCache);
+        static::deleted($clearCache);
+    }
 
     // Relasi hierarki
     public function children(): HasMany

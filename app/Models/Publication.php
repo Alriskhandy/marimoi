@@ -21,12 +21,10 @@ class Publication extends Model
         'file_size',
         'category',
         'cover',
-        'published_date',
         'download_count',
     ];
 
     protected $casts = [
-        'published_date' => 'date',
         'file_size' => 'integer',
         'download_count' => 'integer',
     ];

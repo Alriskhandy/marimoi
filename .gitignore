@@ -38,3 +38,6 @@ Homestead.yaml
 # macOS
 .DS_Store
 **/.DS_Store
+
+# api docs
+/api docs
