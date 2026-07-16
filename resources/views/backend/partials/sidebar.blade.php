@@ -565,11 +565,6 @@
                     </li>
 
                     @if ($isSuperAdmin)
-                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('opd.index') }}">
-                                <i class="mdi mdi-office-building me-2"></i>OPD
-                            </a>
-                        </li>
                         <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
                                 <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
@@ -616,6 +611,11 @@
                         <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('users.index') }}">
                                 <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('opd.index') }}">
+                                <i class="mdi mdi-office-building me-2"></i>ManajemenOPD
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('visitors.*') ? 'active' : '' }}">
