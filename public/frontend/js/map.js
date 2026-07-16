@@ -737,6 +737,25 @@ function getDataType(urlPath) {
 }
 
 /**
+ * Buat layer group untuk satu kategori "leaf". Kategori marker (is_marker = true)
+ * memakai Leaflet.markercluster supaya titik yang berdekatan/menumpuk otomatis
+ * dikelompokkan jadi satu bubble dan tidak berantakan di peta; kategori garis/poligon
+ * tetap pakai layer group biasa karena clustering hanya relevan untuk point marker.
+ */
+function createCategoryLayerGroup(catObj) {
+    if (catObj?.is_marker && typeof L.markerClusterGroup === "function") {
+        return L.markerClusterGroup({
+            maxClusterRadius: 60,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            disableClusteringAtZoom: 18,
+        });
+    }
+
+    return L.layerGroup();
+}
+
+/**
  * Load only categories metadata without spatial data - Modified for 3-level hierarchy
  */
 async function loadCategoriesMetadata() {
@@ -815,17 +834,17 @@ async function loadCategoriesMetadata() {
                         if (childrenL3.length > 0) {
                             // Add third level categories
                             childrenL3.forEach((childL3) => {
-                                layerGroups[root.nama][childL2.nama][childL3.nama] = L.layerGroup();
+                                layerGroups[root.nama][childL2.nama][childL3.nama] = createCategoryLayerGroup(childL3);
                             });
                         } else {
                             // No third level, use second level as leaf
-                            layerGroups[root.nama][childL2.nama][childL2.nama] = L.layerGroup();
+                            layerGroups[root.nama][childL2.nama][childL2.nama] = createCategoryLayerGroup(childL2);
                         }
                     });
                 } else {
                     // No second level, use root as both second and third
                     layerGroups[root.nama][root.nama] = {};
-                    layerGroups[root.nama][root.nama][root.nama] = L.layerGroup();
+                    layerGroups[root.nama][root.nama][root.nama] = createCategoryLayerGroup(root);
                 }
             });
         } else if (data.root_categories) {
@@ -840,15 +859,15 @@ async function loadCategoriesMetadata() {
                         
                         if (Array.isArray(childL2.children) && childL2.children.length > 0) {
                             childL2.children.forEach((childL3) => {
-                                layerGroups[rootName][childL2.nama][childL3.nama] = L.layerGroup();
+                                layerGroups[rootName][childL2.nama][childL3.nama] = createCategoryLayerGroup(childL3);
                             });
                         } else {
-                            layerGroups[rootName][childL2.nama][childL2.nama] = L.layerGroup();
+                            layerGroups[rootName][childL2.nama][childL2.nama] = createCategoryLayerGroup(childL2);
                         }
                     });
                 } else {
                     layerGroups[rootName][rootName] = {};
-                    layerGroups[rootName][rootName][rootName] = L.layerGroup();
+                    layerGroups[rootName][rootName][rootName] = createCategoryLayerGroup(root);
                 }
             });
         }
