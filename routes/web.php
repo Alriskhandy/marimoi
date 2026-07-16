@@ -19,8 +19,6 @@ Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.po
 Route::get('/dokumen-publikasi', [FrontendController::class, 'publikasi'])->name('tampil.publikasi');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 
-// Log monitoring (careful: restrict in production)
-Route::get('/logs', [FrontendController::class, 'showLogs'])->name('logs.view');
 Route::post('/peta-tematik/load/{id}', [FrontendController::class, 'lihatTematik'])->name('post.tematik');
 
 // HALAMAN DETAIL //

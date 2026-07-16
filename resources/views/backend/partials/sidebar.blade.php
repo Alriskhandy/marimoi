@@ -595,44 +595,6 @@
             </li>
 
             @php
-                $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
-            @endphp
-            <!-- Sistem & Pengguna -->
-            <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
-                <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu"
-                    aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
-                    <span class="menu-title">Sistem & Pengguna</span>
-                    <i class="menu-arrow"></i>
-                    <i class="mdi mdi-cog-outline menu-icon"></i>
-                </a>
-
-                <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
-                    <ul class="nav flex-column sub-menu">
-                        <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('users.index') }}">
-                                <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('opd.index') }}">
-                                <i class="mdi mdi-office-building me-2"></i>ManajemenOPD
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('visitors.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('visitors.index') }}">
-                                <i class="mdi mdi-chart-line me-2"></i>Analytics Pengunjung
-                            </a>
-                        </li>
-                        {{-- <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('settings.index') }}">
-                        <i class="mdi mdi-settings me-2"></i>Pengaturan Sistem
-                    </a>
-                </li> --}}
-                    </ul>
-                </div>
-            </li>
-
-            @php
                 $isPublicationActive = request()->routeIs('publications.*');
             @endphp
             <!-- Manajemen Publikasi -->
@@ -654,6 +616,44 @@
                         <li class="nav-item {{ request()->routeIs('publications.downloads.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('publications.downloads.index') }}">
                                 <i class="mdi mdi-account-group me-2"></i>Data Download
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            @php
+                $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
+            @endphp
+            <!-- Sistem & Pengguna -->
+            <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
+                <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu"
+                    aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
+                    <span class="menu-title">Sistem & Pengguna</span>
+                    <i class="menu-arrow"></i>
+                    <i class="mdi mdi-cog-outline menu-icon"></i>
+                </a>
+
+                <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
+                    <ul class="nav flex-column sub-menu">
+                        <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('users.index') }}">
+                                <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('opd.index') }}">
+                                <i class="mdi mdi-office-building me-2"></i>Manajemen OPD
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('visitors.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('visitors.index') }}">
+                                <i class="mdi mdi-chart-line me-2"></i>Anlisis Pengunjung
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('logs.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('logs.index') }}">
+                                <i class="mdi mdi-file-document-outline me-2"></i>Log Sistem
                             </a>
                         </li>
                     </ul>

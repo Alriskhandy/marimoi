@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\UserController;
@@ -390,6 +391,20 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
             Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
             Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Management (super-admin only)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware(['role:super-admin'])->prefix('logs')->name('logs.')->group(function () {
+        Route::get('/', [LogController::class, 'index'])->name('index');
+        Route::get('/download', [LogController::class, 'download'])->name('download');
+        Route::post('/clear', [LogController::class, 'clear'])->name('clear');
+        Route::delete('/destroy', [LogController::class, 'destroy'])->name('destroy');
+        Route::delete('/prune-old', [LogController::class, 'pruneOld'])->name('prune-old');
     });
 
     /*
