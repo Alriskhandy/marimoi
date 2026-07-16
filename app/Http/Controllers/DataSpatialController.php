@@ -108,7 +108,10 @@ class DataSpatialController extends Controller
 
         // Get categories
         $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
-            ->with(['children:id,nama,parent_id'])
+            ->with([
+                'children:id,nama,parent_id',
+                'children.children:id,nama,parent_id',
+            ])
             ->roots();
 
         if ($type === 'proyek_strategis') {

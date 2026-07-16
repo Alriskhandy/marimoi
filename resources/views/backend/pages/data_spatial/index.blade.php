@@ -131,97 +131,92 @@
                         </div>
 
                         <!-- Search and Filter Controls -->
+                        @php
+                            $resetQuery = request()->except(['search', 'category_id', 'page']);
+                            $resetQuery = array_filter($resetQuery, fn($value) => $value !== null && $value !== '');
+                            $resetUrl =
+                                request()->url() . (count($resetQuery) ? '?' . http_build_query($resetQuery) : '');
+                        @endphp
+
                         <div class="row mb-4 g-3 align-items-end">
-                            <div class="col-md-5">
-                                <form method="GET" action="{{ request()->url() }}" class="d-flex gap-3 align-items-end">
+                            <div class="col-12">
+                                <form method="GET" action="{{ request()->url() }}"
+                                    class="row g-3 align-items-end filter-toolbar">
                                     <!-- Preserve current parameters -->
                                     @foreach (request()->query() as $key => $value)
-                                        @if (!in_array($key, ['search', 'per_page', 'page']))
+                                        @if (!in_array($key, ['search', 'category_id', 'per_page', 'page']))
                                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                                         @endif
                                     @endforeach
 
-                                    <div class="flex-grow-1">
+                                    <div class="col-lg-5 col-md-12">
                                         <label for="search" class="form-label fw-semibold mb-1">
                                             <i class="mdi mdi-magnify me-1"></i>Cari Data
                                         </label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="search" name="search"
-                                                value="{{ request('search') }}"
+                                        <div class="input-group filter-input-group">
+                                            <input type="text" class="form-control filter-control" id="search"
+                                                name="search" value="{{ request('search') }}"
                                                 placeholder="Cari berdasarkan kode, kategori, atau deskripsi...">
-                                            <button class="btn btn-outline-primary" type="submit">
+                                            <button class="btn btn-md btn-primary filter-btn" type="submit">
                                                 <i class="mdi mdi-magnify"></i>
                                             </button>
                                         </div>
                                     </div>
 
-                                    @if (request('search') || request('category_id'))
-                                        <div>
-                                            <a href="{{ request()->url() }}?{{ http_build_query(array_filter(request()->query(), fn($k) => !in_array($k, ['search', 'category_id', 'page']), ARRAY_FILTER_USE_KEY)) }}"
-                                                class="btn btn-outline-secondary">
-                                                <i class="mdi mdi-close me-1"></i>Reset
-                                            </a>
-                                        </div>
-                                    @endif
-                                </form>
-                            </div>
-
-                            <div class="col-md-3">
-                                <form method="GET" action="{{ request()->url() }}" class="d-flex flex-column">
-                                    <!-- Preserve current parameters -->
-                                    @foreach (request()->query() as $key => $value)
-                                        @if ($key !== 'category_id' && $key !== 'page' && $key !== 'per_page')
-                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                                        @endif
-                                    @endforeach
-
-                                    <label for="category_id" class="form-label fw-semibold mb-1">
-                                        <i class="mdi mdi-shape me-1"></i>Filter Kategori
-                                    </label>
-                                    <select class="form-select" id="category_id" name="category_id"
-                                        onchange="this.form.submit()">
-                                        <option value="">-- Semua Kategori --</option>
-                                        @foreach ($categories as $category)
-                                            <option value="{{ $category->id }}"
-                                                {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                                {{ $category->nama }}
-                                            </option>
-                                            @foreach ($category->children as $child)
-                                                <option value="{{ $child->id }}"
-                                                    {{ request('category_id') == $child->id ? 'selected' : '' }}>
-                                                    &nbsp;&nbsp;↳ {{ $child->nama }}
+                                    <div class="col-lg-4 col-md-6">
+                                        <label for="category_id" class="form-label fw-semibold mb-1">
+                                            <i class="mdi mdi-shape me-1"></i>Filter Kategori
+                                        </label>
+                                        <select class="form-select filter-control" id="category_id" name="category_id"
+                                            onchange="this.form.submit()">
+                                            <option value="">-- Semua Kategori --</option>
+                                            @foreach ($categories as $category)
+                                                <option value="{{ $category->id }}"
+                                                    {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                                    {{ $category->nama }}
                                                 </option>
+                                                @foreach ($category->children as $child)
+                                                    <option value="{{ $child->id }}"
+                                                        {{ request('category_id') == $child->id ? 'selected' : '' }}>
+                                                        &nbsp;&nbsp;↳ {{ $child->nama }}
+                                                    </option>
+                                                    @foreach ($child->children as $grandchild)
+                                                        <option value="{{ $grandchild->id }}"
+                                                            {{ request('category_id') == $grandchild->id ? 'selected' : '' }}>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;↳ {{ $grandchild->nama }}
+                                                        </option>
+                                                    @endforeach
+                                                @endforeach
                                             @endforeach
-                                        @endforeach
-                                    </select>
-                                </form>
-                            </div>
+                                        </select>
+                                    </div>
 
-                            <div class="col-md-4">
-                                <form method="GET" action="{{ request()->url() }}" class="d-flex flex-column">
-                                    <!-- Preserve current parameters -->
-                                    @foreach (request()->query() as $key => $value)
-                                        @if ($key !== 'per_page' && $key !== 'page')
-                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                                        @endif
-                                    @endforeach
+                                    <div class="col-lg-2 col-md-4">
+                                        <label for="per_page" class="form-label fw-semibold mb-1">
+                                            <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
+                                        </label>
+                                        <select class="form-select filter-control" id="per_page" name="per_page"
+                                            onchange="this.form.submit()">
+                                            <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25
+                                                data</option>
+                                            <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50
+                                                data</option>
+                                            <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>
+                                                100 data</option>
+                                            <option value="200" {{ request('per_page', 50) == 200 ? 'selected' : '' }}>
+                                                200 data</option>
+                                            <option value="500" {{ request('per_page', 50) == 500 ? 'selected' : '' }}>
+                                                500 data</option>
+                                        </select>
+                                    </div>
 
-                                    <label for="per_page" class="form-label fw-semibold mb-1">
-                                        <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
-                                    </label>
-                                    <select class="form-select" id="per_page" name="per_page"
-                                        onchange="this.form.submit()">
-                                        <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25
-                                            data</option>
-                                        <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50
-                                            data</option>
-                                        <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>100
-                                            data</option>
-                                        <option value="200" {{ request('per_page', 50) == 200 ? 'selected' : '' }}>200
-                                            data</option>
-                                        <option value="500" {{ request('per_page', 50) == 500 ? 'selected' : '' }}>500
-                                            data</option>
-                                    </select>
+                                    <div class="col-lg-1 col-md-2">
+                                        <a href="{{ $resetUrl }}"
+                                            class="btn btn-outline-secondary btn-sm filter-reset-btn w-100 @if (!request('search') && !request('category_id')) disabled opacity-50 @endif"
+                                            @if (!request('search') && !request('category_id')) tabindex="-1" aria-disabled="true" @endif>
+                                            Reset
+                                        </a>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -692,6 +687,30 @@
             clip: rect(0, 0, 0, 0) !important;
             white-space: nowrap !important;
             border: 0 !important;
+        }
+
+        .filter-toolbar {
+            margin-bottom: 0;
+        }
+
+        .filter-control,
+        .filter-btn,
+        .filter-reset-btn {
+            min-height: 44px;
+        }
+
+        .filter-input-group .form-control {
+            border-right: 0;
+        }
+
+        .filter-input-group .btn {
+            border-left: 0;
+        }
+
+        .filter-reset-btn {
+            white-space: nowrap;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
         }
 
         .btn:focus,
