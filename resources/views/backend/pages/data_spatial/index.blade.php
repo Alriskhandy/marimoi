@@ -131,8 +131,8 @@
                         </div>
 
                         <!-- Search and Filter Controls -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
+                        <div class="row mb-4 g-3 align-items-end">
+                            <div class="col-md-5">
                                 <form method="GET" action="{{ request()->url() }}" class="d-flex gap-3 align-items-end">
                                     <!-- Preserve current parameters -->
                                     @foreach (request()->query() as $key => $value)
@@ -155,14 +155,45 @@
                                         </div>
                                     </div>
 
-                                    @if (request('search'))
+                                    @if (request('search') || request('category_id'))
                                         <div>
-                                            <a href="{{ request()->url() }}?{{ http_build_query(array_filter(request()->query(), fn($k) => !in_array($k, ['search', 'page']), ARRAY_FILTER_USE_KEY)) }}"
+                                            <a href="{{ request()->url() }}?{{ http_build_query(array_filter(request()->query(), fn($k) => !in_array($k, ['search', 'category_id', 'page']), ARRAY_FILTER_USE_KEY)) }}"
                                                 class="btn btn-outline-secondary">
                                                 <i class="mdi mdi-close me-1"></i>Reset
                                             </a>
                                         </div>
                                     @endif
+                                </form>
+                            </div>
+
+                            <div class="col-md-3">
+                                <form method="GET" action="{{ request()->url() }}" class="d-flex flex-column">
+                                    <!-- Preserve current parameters -->
+                                    @foreach (request()->query() as $key => $value)
+                                        @if ($key !== 'category_id' && $key !== 'page' && $key !== 'per_page')
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
+
+                                    <label for="category_id" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-shape me-1"></i>Filter Kategori
+                                    </label>
+                                    <select class="form-select" id="category_id" name="category_id"
+                                        onchange="this.form.submit()">
+                                        <option value="">-- Semua Kategori --</option>
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category->id }}"
+                                                {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                                {{ $category->nama }}
+                                            </option>
+                                            @foreach ($category->children as $child)
+                                                <option value="{{ $child->id }}"
+                                                    {{ request('category_id') == $child->id ? 'selected' : '' }}>
+                                                    &nbsp;&nbsp;↳ {{ $child->nama }}
+                                                </option>
+                                            @endforeach
+                                        @endforeach
+                                    </select>
                                 </form>
                             </div>
 
@@ -245,7 +276,7 @@
                                         @endif
                                         <th>No</th>
                                         <th>KODE</th>
-                                        <th>Kategori</th>
+                                        <th>Kategori/Layer</th>
                                         <th>Nama/Deskripsi</th>
                                         @php
                                             $hasTahun = $data->some(fn($item) => !empty($item->tahun));

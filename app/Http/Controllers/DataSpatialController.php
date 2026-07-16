@@ -33,6 +33,7 @@ class DataSpatialController extends Controller
         $type = $request->get('type');
         $subType = $request->get('sub_type');
         $year = $request->get('year');
+        $categoryId = $request->get('category_id');
         $search = $request->get('search');
         $perPage = (int) $request->get('per_page', 50); // Default 50, max 200
 
@@ -76,6 +77,11 @@ class DataSpatialController extends Controller
             $query->where('tahun', $year);
         }
 
+        // Filter by category if provided
+        if ($categoryId) {
+            $query->where('kategori_id', $categoryId);
+        }
+
         // Search functionality
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -117,7 +123,8 @@ class DataSpatialController extends Controller
             'categories',
             'type',
             'subType',
-            'year'
+            'year',
+            'categoryId'
         ));
     }
 
