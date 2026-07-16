@@ -64,66 +64,59 @@
 
     <!-- Statistics Cards -->
     @if ($categories->count() > 0)
-        <div class="row mb-4">
-            <div class="col-md-3 stretch-card grid-margin">
-                <div class="card bg-gradient-primary card-img-holder text-white">
+        <div class="row g-3 stats-row-compact">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card-compact bg-gradient-primary text-white">
                     <div class="card-body">
-                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                            alt="circle" />
-                        <h4 class="font-weight-normal mb-3">
-                            Kategori Utama
-                            <i class="mdi mdi-format-list-bulleted-type mdi-24px float-end"></i>
-                        </h4>
-                        <h2 class="mb-5">{{ $categories->where('parent_id', null)->count() }}</h2>
-                        <h6 class="card-text">Jumlah kategori induk</h6>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="stat-label">Kategori Utama</p>
+                                <h3 class="stat-value">{{ $categories->where('parent_id', null)->count() }}</h3>
+                            </div>
+                            <i class="mdi mdi-format-list-bulleted-type stat-icon"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-3 stretch-card grid-margin">
-                <div class="card bg-gradient-success card-img-holder text-white">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card-compact bg-gradient-success text-white">
                     <div class="card-body">
-                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                            alt="circle" />
-                        <h4 class="font-weight-normal mb-3">
-                            Sub Kategori
-                            <i class="mdi mdi-subdirectory-arrow-right mdi-24px float-end"></i>
-                        </h4>
-                        <h2 class="mb-5">
-                            {{ $categories->where('parent_id', '!=', null)->count() }}</h2>
-                        <h6 class="card-text">Kategori turunan</h6>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="stat-label">Sub Kategori</p>
+                                <h3 class="stat-value">{{ $categories->where('parent_id', '!=', null)->count() }}</h3>
+                            </div>
+                            <i class="mdi mdi-subdirectory-arrow-right stat-icon"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-3 stretch-card grid-margin">
-                <div class="card bg-gradient-warning card-img-holder text-white">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card-compact bg-gradient-warning text-white">
                     <div class="card-body">
-                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                            alt="circle" />
-                        <h4 class="font-weight-normal mb-3">
-                            Marker Aktif
-                            <i class="mdi mdi-map-marker mdi-24px float-end"></i>
-                        </h4>
-                        <h2 class="mb-5">{{ $categories->where('is_marker', true)->count() }}
-                        </h2>
-                        <h6 class="card-text">Kategori marker point</h6>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="stat-label">Marker Aktif</p>
+                                <h3 class="stat-value">{{ $categories->where('is_marker', true)->count() }}</h3>
+                            </div>
+                            <i class="mdi mdi-map-marker stat-icon"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-3 stretch-card grid-margin">
-                <div class="card bg-gradient-info card-img-holder text-white">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card-compact bg-gradient-info text-white">
                     <div class="card-body">
-                        <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                            alt="circle" />
-                        <h4 class="font-weight-normal mb-3">
-                            Status Aktif
-                            <i class="mdi mdi-check-circle mdi-24px float-end"></i>
-                        </h4>
-                        <h2 class="mb-5">{{ $categories->where('is_active', true)->count() }}
-                        </h2>
-                        <h6 class="card-text">Kategori aktif</h6>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="stat-label">Status Aktif</p>
+                                <h3 class="stat-value">{{ $categories->where('is_active', true)->count() }}</h3>
+                            </div>
+                            <i class="mdi mdi-check-circle stat-icon"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1205,22 +1198,53 @@
         }
 
         /* ===========================================
-                                                                                                                                                                               STATISTICS CARDS
+                                                                                                                                                                               STATISTICS CARDS (COMPACT)
                                                                                                                                                                             =========================================== */
-        .card.bg-gradient-primary,
-        .card.bg-gradient-success,
-        .card.bg-gradient-warning,
-        .card.bg-gradient-info {
+        .stats-row-compact {
+            margin-bottom: 1rem;
+        }
+
+        .stat-card-compact {
             border: none;
             border-radius: 10px;
             overflow: hidden;
+            height: 100%;
         }
 
-        .card-img-absolute {
-            position: absolute;
-            top: 0;
-            right: 0;
-            opacity: 0.2;
+        .stat-card-compact .card-body {
+            padding: 0.85rem 1rem;
+        }
+
+        .stat-card-compact .stat-label {
+            margin: 0 0 2px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.9;
+            white-space: nowrap;
+        }
+
+        .stat-card-compact .stat-value {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .stat-card-compact .stat-icon {
+            font-size: 1.6rem;
+            opacity: 0.55;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 576px) {
+            .stat-card-compact .stat-value {
+                font-size: 1.25rem;
+            }
+
+            .stat-card-compact .stat-icon {
+                font-size: 1.3rem;
+            }
         }
 
         /* ===========================================
@@ -1235,7 +1259,7 @@
             border: none;
             color: white;
             padding: 8px 15px;
-            border-radius: 25px;
+            border-radius: 5px;
             font-size: 0.875rem;
             font-weight: 500;
             transition: all 0.3s ease;
