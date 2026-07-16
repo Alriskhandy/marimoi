@@ -244,8 +244,7 @@
                             <div class="card-body">
                                 <!-- Form View -->
                                 <div class="table-responsive" id="attributesContainerWrapper">
-                                    <table class="table table-striped align-middle mb-0"
-                                        id="attributesTable">
+                                    <table class="table table-striped align-middle mb-0" id="attributesTable">
                                         <thead>
                                             <tr>
                                                 <th style="width: 20%;">Nama Atribut</th>
@@ -474,12 +473,18 @@
                     const row = $(`
                         <tr class="attribute-item" data-key="${key}">
                             <td>
-                                <div class="fw-semibold">${escapeHtml(key)}</div>
+                                <input type="text"
+                                       class="form-control attribute-key-input"
+                                       id="attr_${key}"
+                                       data-original-key="${escapeHtml(key)}"
+                                       data-key="${key}"
+                                       value="${escapeHtml(key)}"
+                                       placeholder="Nama atribut">
                             </td>
                             <td>
                                 <input type="text"
-                                       class="form-control attribute-input"
-                                       id="attr_${key}"
+                                       class="form-control attribute-value-input"
+                                       id="value_${key}"
                                        name="attr_${key}"
                                        data-key="${key}"
                                        value="${escapeHtml(value || '')}"
@@ -501,6 +506,52 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            }
+
+            function renameAttribute(oldKey, newKey, inputElement) {
+                if (!newKey) {
+                    showAlert('Nama atribut tidak boleh kosong!', 'danger');
+                    inputElement.val(oldKey);
+                    return;
+                }
+
+                if (!validateAttributeName(newKey)) {
+                    showAlert(
+                        'Nama atribut tidak valid! Hanya boleh menggunakan huruf, angka, dan underscore. Tidak boleh diawali dengan angka.',
+                        'danger'
+                    );
+                    inputElement.val(oldKey);
+                    return;
+                }
+
+                if (oldKey !== newKey && Object.prototype.hasOwnProperty.call(dbfAttributes, newKey)) {
+                    showAlert('Atribut dengan nama tersebut sudah ada!', 'danger');
+                    inputElement.val(oldKey);
+                    return;
+                }
+
+                if (oldKey === newKey) {
+                    return;
+                }
+
+                const currentValue = dbfAttributes[oldKey];
+                delete dbfAttributes[oldKey];
+                dbfAttributes[newKey] = currentValue;
+
+                const $row = inputElement.closest('tr');
+                const $valueInput = $row.find('.attribute-value-input');
+                const $removeButton = $row.find('.remove-attribute');
+
+                $row.attr('data-key', newKey);
+                inputElement.attr('data-original-key', newKey);
+                inputElement.attr('data-key', newKey);
+                inputElement.attr('id', `attr_${newKey}`);
+                $valueInput.attr('data-key', newKey);
+                $valueInput.attr('name', `attr_${newKey}`);
+                $valueInput.attr('id', `value_${newKey}`);
+                $removeButton.attr('data-key', newKey);
+
+                showAlert('Nama atribut berhasil diubah!', 'success');
             }
 
             // Validate attribute name
@@ -584,8 +635,16 @@
             });
 
 
+            $(document).on('change', '.attribute-key-input', function() {
+                const $input = $(this);
+                const oldKey = $input.data('original-key');
+                const newKey = $input.val().trim();
+
+                renameAttribute(oldKey, newKey, $input);
+            });
+
             // Update attributes when form input changes
-            $(document).on('input', '.attribute-input', function() {
+            $(document).on('input', '.attribute-value-input', function() {
                 const key = $(this).data('key');
                 const value = $(this).val();
                 dbfAttributes[key] = value;
@@ -632,9 +691,9 @@
             // Update JSON from form inputs
             function updateJsonFromForm() {
                 const updatedAttributes = {};
-                $('.attribute-input').each(function() {
+                $('.attribute-key-input').each(function() {
                     const key = $(this).data('key');
-                    const value = $(this).val();
+                    const value = $(this).closest('tr').find('.attribute-value-input').val();
                     updatedAttributes[key] = value;
                 });
 
