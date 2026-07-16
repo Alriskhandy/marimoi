@@ -174,12 +174,12 @@
                                 @forelse($opdList as $index => $opd)
                                     <tr class="opd-row" data-name="{{ strtolower($opd->name) }}"
                                         data-singkatan="{{ strtolower($opd->singkatan) }}"
-                                        data-has-logo="{{ $opd->logo ? 'true' : 'false' }}"
+                                        data-has-logo="{{ $opd->logo_url ? 'true' : 'false' }}"
                                         data-has-contact="{{ $opd->telepon || $opd->email ? 'true' : 'false' }}">
                                         <td class="text-center d-none d-md-table-cell">{{ $index + 1 }}</td>
                                         <td class="text-center">
-                                            @if ($opd->logo)
-                                                <img src="{{ asset('storage/' . $opd->logo) }}"
+                                            @if ($opd->logo_url)
+                                                <img src="{{ $opd->logo_url }}"
                                                     alt="Logo {{ $opd->singkatan }}" class="rounded logo-img"
                                                     style="width: 40px; height: 40px; object-fit: contain; background-color: #f8f9fa; border: 1px solid #dee2e6;">
                                             @else
@@ -240,7 +240,7 @@
                                                         data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
                                                         data-singkatan="{{ $opd->singkatan }}"
                                                         data-telepon="{{ $opd->telepon }}"
-                                                        data-email="{{ $opd->email }}" data-logo="{{ $opd->logo }}"
+                                                        data-email="{{ $opd->email }}" data-logo-url="{{ $opd->logo_url }}"
                                                         data-bs-toggle="modal" data-bs-target="#editModal"
                                                         title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
@@ -264,7 +264,7 @@
                                                     data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
                                                     data-singkatan="{{ $opd->singkatan }}"
                                                     data-telepon="{{ $opd->telepon }}" data-email="{{ $opd->email }}"
-                                                    data-logo="{{ $opd->logo }}" data-bs-toggle="modal"
+                                                    data-logo-url="{{ $opd->logo_url }}" data-bs-toggle="modal"
                                                     data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
@@ -637,12 +637,12 @@
                 $('#edit_email').val($(this).data('email'));
 
                 // Show current logo if exists
-                const currentLogo = $(this).data('logo');
+                const currentLogo = $(this).data('logo-url');
                 if (currentLogo) {
                     $('#edit_logoPreview').html(`
                         <div class="text-center">
                             <p class="mb-2"><strong>Logo saat ini:</strong></p>
-                            <img src="{{ asset('storage/') }}/${currentLogo}" alt="Current Logo" 
+                            <img src="${currentLogo}" alt="Current Logo" 
                                  class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                         </div>
                     `);
@@ -726,9 +726,9 @@
                             'id-ID'));
 
                         // Show logo
-                        if (opd.logo) {
+                        if (opd.logo_url) {
                             $('#show_logo_container').html(`
-                                <img src="{{ asset('storage/') }}/${opd.logo}" alt="Logo ${opd.singkatan}" 
+                                <img src="${opd.logo_url}" alt="Logo ${opd.singkatan}" 
                                      class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             `);
                         } else {

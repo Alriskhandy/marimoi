@@ -100,9 +100,10 @@ class Opd extends Model
      */
     public function getLogoUrlAttribute()
     {
-        if ($this->logo) {
+        if ($this->logo && Storage::disk('public')->exists($this->logo)) {
             return asset('storage/' . $this->logo);
         }
+
         return null;
     }
 
