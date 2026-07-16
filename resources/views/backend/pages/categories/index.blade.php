@@ -349,6 +349,14 @@
                                                     ' sub</span>';
                                             }
 
+                                            // Data count badge (hidden when the category has no data yet)
+                                            if ($kategori->data_spatial_count > 0) {
+                                                $output .=
+                                                    '<span class="badge bg-success text-white ms-2" style="font-size: 0.65em;">' .
+                                                    $kategori->data_spatial_count .
+                                                    ' data</span>';
+                                            }
+
                                             // Show hierarchy path for deeper levels
                                             if ($level > 0) {
                                                 $parentNames = [];
