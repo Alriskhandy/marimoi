@@ -146,6 +146,58 @@
                         @endif
                     </div>
 
+                    @php
+                        $resetQuery = request()->except(['search', 'page']);
+                        $resetQuery = array_filter($resetQuery, fn($value) => $value !== null && $value !== '');
+                        $resetUrl = request()->url() . (count($resetQuery) ? '?' . http_build_query($resetQuery) : '');
+                    @endphp
+
+                    <div class="row mb-4 g-3 align-items-end">
+                        <div class="col-12">
+                            <div class="row g-3 align-items-end filter-toolbar">
+                                <div class="col-lg-5 col-md-12">
+                                    <label for="tableSearch" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-magnify me-1"></i>Cari Kategori
+                                    </label>
+                                    <div class="input-group filter-input-group">
+                                        <input type="text" class="form-control filter-control" id="tableSearch"
+                                            placeholder="Ketik nama kategori..." value="{{ request('search') }}">
+                                        <button class="btn btn-md btn-primary filter-btn" type="button"
+                                            id="searchTableBtn">
+                                            <i class="mdi mdi-magnify"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <label for="per_page" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
+                                    </label>
+                                    <select class="form-select filter-control" id="per_page">
+                                        <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25
+                                            data</option>
+                                        <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50
+                                            data</option>
+                                        <option value="100" {{ request('per_page', 25) == 100 ? 'selected' : '' }}>100
+                                            data</option>
+                                        <option value="200" {{ request('per_page', 25) == 200 ? 'selected' : '' }}>200
+                                            data</option>
+                                        <option value="500" {{ request('per_page', 25) == 500 ? 'selected' : '' }}>500
+                                            data</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6">
+                                    <a href="{{ $resetUrl }}"
+                                        class="btn btn-outline-secondary btn-sm filter-reset-btn w-100 @if (!request('search')) disabled opacity-50 @endif"
+                                        @if (!request('search')) tabindex="-1" aria-disabled="true" @endif>
+                                        Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table id="categoriesTable" class="table table-striped" style="width:100%">
                             <thead>
@@ -847,8 +899,8 @@
 @push('styles')
     <style>
         /* ===========================================
-                                                                                                                                                                   FORM STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               FORM STYLING
+                                                                                                                                                                            =========================================== */
         .form-control-color {
             max-width: 50px;
             height: 38px;
@@ -862,8 +914,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   TABLE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               TABLE STYLING
+                                                                                                                                                                            =========================================== */
         .table {
             border-collapse: separate;
             border-spacing: 0;
@@ -925,8 +977,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   BADGE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               BADGE STYLING
+                                                                                                                                                                            =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -951,8 +1003,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   COLOR PREVIEW STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               COLOR PREVIEW STYLING
+                                                                                                                                                                            =========================================== */
         .color-preview {
             display: flex;
             align-items: center;
@@ -965,8 +1017,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   BUTTON GROUP STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               BUTTON GROUP STYLING
+                                                                                                                                                                            =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -978,8 +1030,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   DATATABLE STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               DATATABLE STYLING
+                                                                                                                                                                            =========================================== */
         .dataTables_wrapper {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -992,21 +1044,55 @@
             font-size: 0.875rem;
         }
 
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.35rem;
+            width: 100%;
+            margin: 0;
+            font-weight: 600;
+            color: #495057;
+        }
+
         .dataTables_wrapper .dataTables_length select {
             padding: 6px 12px;
             border-radius: 6px;
             border: 1px solid #ced4da;
             background-color: #fff;
             font-size: 0.875rem;
+            min-height: 44px;
+            width: 100%;
+        }
+
+        .dataTables_wrapper .dataTables_filter .input-group {
+            width: 100%;
         }
 
         .dataTables_wrapper .dataTables_filter input {
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: 6px 0 0 6px;
             border: 1px solid #ced4da;
             background-color: #fff;
             font-size: 0.875rem;
             transition: border-color 0.2s ease;
+            min-height: 44px;
+            max-width: 100%;
+        }
+
+        .dataTables_wrapper .dataTables_filter .btn {
+            min-height: 44px;
+            border-radius: 0 6px 6px 0;
         }
 
         .dataTables_wrapper .dataTables_filter input:focus {
@@ -1045,8 +1131,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   MODAL STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               MODAL STYLING
+                                                                                                                                                                            =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -1065,8 +1151,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   ICON PREVIEW STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               ICON PREVIEW STYLING
+                                                                                                                                                                            =========================================== */
         .icon-preview-container {
             min-height: 60px;
             display: flex;
@@ -1119,8 +1205,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   STATISTICS CARDS
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               STATISTICS CARDS
+                                                                                                                                                                            =========================================== */
         .card.bg-gradient-primary,
         .card.bg-gradient-success,
         .card.bg-gradient-warning,
@@ -1138,8 +1224,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   HIERARCHY CONTROLS STYLING
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               HIERARCHY CONTROLS STYLING
+                                                                                                                                                                            =========================================== */
         .hierarchy-controls {
             margin-bottom: 10px;
         }
@@ -1177,8 +1263,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   UTILITY CLASSES
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               UTILITY CLASSES
+                                                                                                                                                                            =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -1188,8 +1274,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   RESPONSIVE IMPROVEMENTS
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               RESPONSIVE IMPROVEMENTS
+                                                                                                                                                                            =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -1224,8 +1310,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   FOCUS AND ACCESSIBILITY
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               FOCUS AND ACCESSIBILITY
+                                                                                                                                                                            =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -1245,8 +1331,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                   ACTIVE COUNT WARNING STYLES
-                                                                                                                                                                =========================================== */
+                                                                                                                                                                               ACTIVE COUNT WARNING STYLES
+                                                                                                                                                                            =========================================== */
         .form-text.text-warning {
             background-color: rgba(255, 193, 7, 0.1);
             border: 1px solid rgba(255, 193, 7, 0.3);
@@ -1358,10 +1444,10 @@
             // Initialize DataTable with hierarchy support
             const table = $('#categoriesTable').DataTable({
                 "processing": true,
-                "pageLength": 25,
+                "pageLength": {{ request('per_page', 25) }},
                 "lengthMenu": [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "Semua"]
+                    [10, 25, 50, 100, 200, 500],
+                    [10, 25, 50, 100, 200, 500]
                 ],
                 "ordering": false, // Disable all sorting to maintain hierarchy
                 "columnDefs": [{
@@ -1391,8 +1477,7 @@
                         "previous": "Sebelumnya"
                     }
                 },
-                "dom": '<"row mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                    '<"row mb-2"<"col-sm-12"<"hierarchy-controls text-end">>>' +
+                "dom": '<"row mb-2"<"col-sm-12"<"hierarchy-controls text-start">>>' +
                     '<"row"<"col-sm-12"tr>>' +
                     '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 "drawCallback": function(settings) {
@@ -1405,17 +1490,26 @@
                     }, 300);
                 },
                 "initComplete": function() {
-                    // Style the search input
-                    $('.dataTables_filter input').attr('placeholder', 'Ketik nama kategori...');
+                    $('#searchTableBtn').on('click', function() {
+                        table.search($('#tableSearch').val()).draw();
+                    });
+
+                    $('#tableSearch').on('input', function() {
+                        table.search($(this).val()).draw();
+                    });
+
+                    $('#per_page').on('change', function() {
+                        table.page.len(parseInt($(this).val(), 10)).draw();
+                    });
 
                     // Add hierarchy control button only if there are parent categories with children
                     if ($('.hierarchy-toggle').length > 0) {
                         $('.hierarchy-controls').html(`
-            <button type="button" class="btn hierarchy-toggle-all" id="hierarchyToggleAll" data-state="collapsed">
-                <i class="mdi mdi-chevron-down me-1"></i>
-                <span class="toggle-text">Expand All</span>
-            </button>
-        `);
+                            <button type="button" class="btn hierarchy-toggle-all" id="hierarchyToggleAll" data-state="collapsed">
+                                <i class="mdi mdi-chevron-down me-1"></i>
+                                <span class="toggle-text">Expand All</span>
+                            </button>
+                        `);
                     }
 
                     // Initialize hierarchy controls
