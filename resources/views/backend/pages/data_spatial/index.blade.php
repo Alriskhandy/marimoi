@@ -207,7 +207,8 @@
                                                 200 data</option>
                                             <option value="500" {{ request('per_page', 50) == 500 ? 'selected' : '' }}>
                                                 500 data</option>
-                                            <option value="999999" {{ request('per_page', 50) == 999999 ? 'selected' : '' }}>
+                                            <option value="999999"
+                                                {{ request('per_page', 50) == 999999 ? 'selected' : '' }}>
                                                 All</option>
                                         </select>
                                     </div>
