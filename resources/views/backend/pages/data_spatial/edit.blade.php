@@ -45,6 +45,38 @@
             position: relative;
             display: inline-block;
         }
+
+        #attributesTable {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #attributesTable th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            color: #495057;
+            padding: 12px 8px;
+        }
+
+        #attributesTable td {
+            vertical-align: middle;
+            padding: 12px 8px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        #attributesTable tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        #attributesTable tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
     </style>
 @endpush
 @section('main')
@@ -52,7 +84,7 @@
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-map-marker"></i>
-            </span> Edit Lokasi
+            </span> Edit Data
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
@@ -73,8 +105,8 @@
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <h4 class="card-title">Form Edit Lokasi </h4>
-                    <p class="card-description">Edit informasi lokasi dan atribut DBF</p>
+                    <h4 class="card-title">Form Edit Data </h4>
+                    <p class="card-description">Edit informasi data dan atribut DBF</p>
 
                     @if ($errors->any())
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -211,11 +243,23 @@
                             </div>
                             <div class="card-body">
                                 <!-- Form View -->
-                                <div id="attributesFormView">
-                                    <div class="row" id="attributesContainer">
-                                        <!-- Attributes will be loaded here -->
-                                    </div>
+                                <div class="table-responsive" id="attributesContainerWrapper">
+                                    <table class="table table-striped align-middle mb-0"
+                                        id="attributesTable">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">Nama Atribut</th>
+                                                <th>Nilai</th>
+                                                <th style="width: 80px;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="attributesContainer">
+                                            <!-- Attributes will be loaded here -->
+                                        </tbody>
+                                    </table>
                                 </div>
+                                {{-- <div id="attributesFormView">
+                                </div> --}}
 
                                 <!-- JSON View -->
                                 <div id="attributesJsonView" style="display: none;">
@@ -415,44 +459,40 @@
 
                 if (Object.keys(dbfAttributes).length === 0) {
                     container.append(`
-                        <div class="col-12">
-                            <div class="text-center py-4">
+                        <tr>
+                            <td colspan="3" class="text-center py-4">
                                 <i class="mdi mdi-table mdi-48px text-muted"></i>
-                                <p class="text-muted mt-2">Belum ada atribut DBF. Klik "Tambah Atribut" untuk menambahkan.</p>
-                            </div>
-                        </div>
+                                <p class="text-muted mt-2 mb-0">Belum ada atribut DBF. Klik "Tambah Atribut" untuk menambahkan.</p>
+                            </td>
+                        </tr>
                     `);
                     return;
                 }
 
-                let index = 0;
                 Object.keys(dbfAttributes).forEach(function(key) {
-                    if (index % 2 === 0 && index > 0) {
-                        container.append('<div class="w-100"></div>');
-                    }
-
                     const value = dbfAttributes[key];
-                    const colDiv = $(`
-                        <div class="col-md-6 attribute-item" data-key="${key}">
-                            <div class="form-group">
-                                <label for="attr_${key}" class="d-flex justify-content-between">
-                                    <span>${key}</span>
-                                    <button type="button" class="btn btn-sm btn-outline-danger remove-attribute" data-key="${key}">
-                                        <i class="mdi mdi-delete"></i>
-                                    </button>
-                                </label>
-                                <input type="text" 
-                                       class="form-control attribute-input" 
-                                       id="attr_${key}" 
+                    const row = $(`
+                        <tr class="attribute-item" data-key="${key}">
+                            <td>
+                                <div class="fw-semibold">${escapeHtml(key)}</div>
+                            </td>
+                            <td>
+                                <input type="text"
+                                       class="form-control attribute-input"
+                                       id="attr_${key}"
                                        name="attr_${key}"
                                        data-key="${key}"
-                                       value="${escapeHtml(value || '')}" 
+                                       value="${escapeHtml(value || '')}"
                                        placeholder="Masukkan ${key}">
-                            </div>
-                        </div>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-attribute" data-key="${key}">
+                                    <i class="mdi mdi-delete"></i>
+                                </button>
+                            </td>
+                        </tr>
                     `);
-                    container.append(colDiv);
-                    index++;
+                    container.append(row);
                 });
             }
 
