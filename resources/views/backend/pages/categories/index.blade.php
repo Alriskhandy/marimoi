@@ -167,15 +167,15 @@
                                         <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
                                     </label>
                                     <select class="form-select filter-control" id="per_page">
-                                        <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25
+                                        <option value="25" {{ request('per_page', 200) == 25 ? 'selected' : '' }}>25
                                             data</option>
-                                        <option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50
+                                        <option value="50" {{ request('per_page', 200) == 50 ? 'selected' : '' }}>50
                                             data</option>
-                                        <option value="100" {{ request('per_page', 25) == 100 ? 'selected' : '' }}>100
+                                        <option value="100" {{ request('per_page', 200) == 100 ? 'selected' : '' }}>100
                                             data</option>
-                                        <option value="200" {{ request('per_page', 25) == 200 ? 'selected' : '' }}>200
+                                        <option value="200" {{ request('per_page', 200) == 200 ? 'selected' : '' }}>200
                                             data</option>
-                                        <option value="500" {{ request('per_page', 25) == 500 ? 'selected' : '' }}>500
+                                        <option value="500" {{ request('per_page', 200) == 500 ? 'selected' : '' }}>500
                                             data</option>
                                     </select>
                                 </div>
@@ -1814,7 +1814,7 @@
             // Initialize DataTable with hierarchy support
             const table = $('#categoriesTable').DataTable({
                 "processing": true,
-                "pageLength": {{ request('per_page', 25) }},
+                "pageLength": {{ request('per_page', 200) }},
                 "lengthMenu": [
                     [10, 25, 50, 100, 200, 500],
                     [10, 25, 50, 100, 200, 500]
