@@ -1,5 +1,8 @@
 {{-- File: resources/views/backend/partials/icon-options.blade.php --}}
 {{-- FontAwesome 4 Compatible Icons Only --}}
+{{-- Admin panel loads Font Awesome 4.7.0 (public/backend/assets/vendors/font-awesome) —
+     every value below is verified to exist in that exact build, so all icons render
+     correctly both here and in the categories list/marker preview. --}}
 
 <!-- Lokasi & Navigasi -->
 <optgroup label="Lokasi & Navigasi">
@@ -9,6 +12,11 @@
     <option value="fa fa-location-arrow">Petunjuk Arah</option>
     <option value="fa fa-map">Peta</option>
     <option value="fa fa-globe">Globe</option>
+    <option value="fa fa-map-o">Peta (Outline)</option>
+    <option value="fa fa-map-pin">Map Pin</option>
+    <option value="fa fa-map-signs">Papan Petunjuk</option>
+    <option value="fa fa-street-view">Street View</option>
+    <option value="fa fa-anchor">Titik Labuh/Pelabuhan</option>
 </optgroup>
 
 <!-- Pemerintahan & Fasilitas Publik -->
@@ -21,6 +29,11 @@
     <option value="fa fa-shield">Keamanan</option>
     <option value="fa fa-flag">Kantor Pemerintah</option>
     <option value="fa fa-institution">Institusi</option>
+    <option value="fa fa-gavel">Pengadilan/Hukum</option>
+    <option value="fa fa-id-card">Kependudukan/KTP</option>
+    <option value="fa fa-id-badge">Identitas/Lencana</option>
+    <option value="fa fa-archive">Arsip</option>
+    <option value="fa fa-file-text">Dokumen/Surat</option>
 </optgroup>
 
 <!-- Kesehatan & Pendidikan -->
@@ -33,6 +46,10 @@
     <option value="fa fa-heartbeat">Puskesmas/Kesehatan</option>
     <option value="fa fa-stethoscope">Fasilitas Medis</option>
     <option value="fa fa-ambulance">Ambulans</option>
+    <option value="fa fa-medkit">Kotak P3K/Medis</option>
+    <option value="fa fa-wheelchair">Akses Difabel</option>
+    <option value="fa fa-h-square">Rumah Sakit (H)</option>
+    <option value="fa fa-child">Posyandu/Anak</option>
 </optgroup>
 
 <!-- Transportasi -->
@@ -46,6 +63,7 @@
     <option value="fa fa-taxi">Taksi</option>
     <option value="fa fa-truck">Truk</option>
     <option value="fa fa-bicycle">Sepeda</option>
+    <option value="fa fa-subway">Kereta Bawah Tanah</option>
 </optgroup>
 
 <!-- Perdagangan & Ekonomi -->
@@ -58,6 +76,12 @@
     <option value="fa fa-briefcase">Bisnis/Kantor</option>
     <option value="fa fa-money">Uang/ATM</option>
     <option value="fa fa-credit-card">Kartu Kredit</option>
+    <option value="fa fa-shopping-basket">Pasar/Belanja</option>
+    <option value="fa fa-suitcase">Perjalanan Bisnis</option>
+    <option value="fa fa-usd">Mata Uang</option>
+    <option value="fa fa-percent">Persentase/Diskon</option>
+    <option value="fa fa-handshake-o">Kerja Sama/Transaksi</option>
+    <option value="fa fa-tags">Label Harga</option>
 </optgroup>
 
 <!-- Lingkungan & Alam -->
@@ -69,6 +93,9 @@
     <option value="fa fa-tint">Air/Hujan</option>
     <option value="fa fa-fire">Api</option>
     <option value="fa fa-snowflake-o">Salju</option>
+    <option value="fa fa-umbrella">Musim Hujan/Payung</option>
+    <option value="fa fa-paw">Fauna/Peternakan</option>
+    <option value="fa fa-flask">Riset Lingkungan/Lab</option>
 </optgroup>
 
 <!-- Infrastruktur -->
@@ -80,6 +107,10 @@
     <option value="fa fa-signal">Sinyal/Telekomunikasi</option>
     <option value="fa fa-cogs">Mesin/Teknik</option>
     <option value="fa fa-cog">Pengaturan</option>
+    <option value="fa fa-plug">Instalasi Listrik</option>
+    <option value="fa fa-database">Pusat Data</option>
+    <option value="fa fa-server">Server</option>
+    <option value="fa fa-tachometer">Meteran/Kecepatan</option>
 </optgroup>
 
 <!-- Olahraga & Rekreasi -->
@@ -90,6 +121,8 @@
     <option value="fa fa-film">Film/Bioskop</option>
     <option value="fa fa-gamepad">Game/Hiburan</option>
     <option value="fa fa-trophy">Trophy/Prestasi</option>
+    <option value="fa fa-binoculars">Wisata Alam/Observasi</option>
+    <option value="fa fa-flag-checkered">Garis Finish/Balapan</option>
 </optgroup>
 
 <!-- Keagamaan -->
@@ -109,6 +142,8 @@
     <option value="fa fa-life-ring">Penyelamatan</option>
     <option value="fa fa-exclamation-triangle">Peringatan</option>
     <option value="fa fa-warning">Warning</option>
+    <option value="fa fa-exclamation-circle">Peringatan Penting</option>
+    <option value="fa fa-hand-paper-o">Berhenti/Larangan</option>
 </optgroup>
 
 <!-- Pariwisata & Budaya -->
@@ -119,6 +154,8 @@
     <option value="fa fa-eye">Observasi</option>
     <option value="fa fa-camera">Foto</option>
     <option value="fa fa-flag">Landmark</option>
+    <option value="fa fa-camera-retro">Foto Vintage/Budaya</option>
+    <option value="fa fa-picture-o">Galeri Foto</option>
 </optgroup>
 
 <!-- Utilitas & Layanan -->
@@ -132,6 +169,8 @@
     <option value="fa fa-envelope">Kantor Pos</option>
     <option value="fa fa-phone">Telepon</option>
     <option value="fa fa-wifi">Internet</option>
+    <option value="fa fa-shower">MCK Umum</option>
+    <option value="fa fa-bath">Kamar Mandi Umum</option>
 </optgroup>
 
 <!-- Icon Umum -->
@@ -152,4 +191,10 @@
     <option value="fa fa-arrow-down">Panah Bawah</option>
     <option value="fa fa-arrow-left">Panah Kiri</option>
     <option value="fa fa-arrow-right">Panah Kanan</option>
+    <option value="fa fa-thumbs-up">Suka/Rekomendasi</option>
+    <option value="fa fa-bookmark">Simpan/Tandai</option>
+    <option value="fa fa-clock-o">Jam Operasional</option>
+    <option value="fa fa-calendar">Jadwal/Kalender</option>
+    <option value="fa fa-info-circle">Informasi</option>
+    <option value="fa fa-question-circle">Bantuan/FAQ</option>
 </optgroup>

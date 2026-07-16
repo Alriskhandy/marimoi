@@ -148,7 +148,7 @@
                     <div class="row mb-4 g-3 align-items-end">
                         <div class="col-12">
                             <div class="row g-3 align-items-end filter-toolbar">
-                                <div class="col-lg-5 col-md-12">
+                                <div class="col-lg-9 col-md-8">
                                     <label for="tableSearch" class="form-label fw-semibold mb-1">
                                         <i class="mdi mdi-magnify me-1"></i>Cari Kategori
                                     </label>
@@ -162,7 +162,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-lg-4 col-md-6">
+                                <div class="col-lg-3 col-md-4">
                                     <label for="per_page" class="form-label fw-semibold mb-1">
                                         <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
                                     </label>
@@ -180,13 +180,6 @@
                                     </select>
                                 </div>
 
-                                <div class="col-lg-3 col-md-6">
-                                    <a href="{{ $resetUrl }}"
-                                        class="btn btn-outline-secondary btn-sm filter-reset-btn w-100 @if (!request('search')) disabled opacity-50 @endif"
-                                        @if (!request('search')) tabindex="-1" aria-disabled="true" @endif>
-                                        Reset
-                                    </a>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -590,8 +583,9 @@
                     @csrf
                     <div class="modal-body">
                         <div class="row">
+                            <!-- LEFT COLUMN -->
                             <div class="col-md-6">
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-2">
                                     <label for="add_type" class="form-label">Tipe Kategori <span
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="add_type" name="type" required
@@ -622,106 +616,159 @@
                                     @endif
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+
+                                <div class="form-group mb-2">
                                     <label for="add_nama" class="form-label">Nama Kategori <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="add_nama" name="nama" required>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-2">
+                                    <label for="add_deskripsi" class="form-label">Deskripsi</label>
+                                    <textarea class="form-control" id="add_deskripsi" name="deskripsi" rows="2"></textarea>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="form-group mb-2">
                                     <label for="add_parent_id" class="form-label">Parent Kategori</label>
                                     <select class="form-control" id="add_parent_id" name="parent_id">
                                         <option value="">-- Pilih Parent (Opsional) --</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-3">
-                                    <label for="add_warna" class="form-label">Warna</label>
-                                    <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" id="add_warna"
-                                            name="warna" value="#007bff">
-                                        <span class="input-group-text" id="add_colorPreview"
-                                            style="background-color: #007bff; color: white;">●</span>
+
+                                <div class="form-group mb-0">
+                                    <label class="form-label d-block">Status & Jenis Kategori</label>
+                                    <div class="settings-switch-group">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_active" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="add_is_active" name="is_active" checked>
+                                            <label class="form-check-label" for="add_is_active">
+                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan
+                                                Kategori
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_marker" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="add_is_marker" name="is_marker">
+                                            <label class="form-check-label" for="add_is_marker">
+                                                <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai
+                                                Marker
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="invalid-feedback"></div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row">
+                            <!-- RIGHT COLUMN -->
                             <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="add_gambar" class="form-label">
-                                        <i class="mdi mdi-image me-1"></i> Upload Gambar
-                                    </label>
+                                <div class="form-group mb-2">
+                                    <label for="add_gambar" class="form-label">Upload Gambar</label>
                                     <input type="file" class="form-control" id="add_gambar" name="gambar"
-                                        accept="image/*" onchange="previewImage(this, 'add_imagePreview')">
+                                        accept="image/*"
+                                        onchange="previewImage(this, 'add_imagePreview'); document.getElementById('add_imagePreviewPlaceholder').style.display = this.files.length ? 'none' : 'flex';">
                                     <div class="form-text">Format: JPG, PNG, GIF. Maksimal 2MB</div>
                                     <div class="invalid-feedback"></div>
+                                </div>
 
-                                    <!-- Image Preview -->
-                                    <div id="add_imagePreview" class="mt-3" style="display: none;">
-                                        <img id="add_previewImg" src="" alt="Preview" class="img-thumbnail"
-                                            style="max-width: 200px; max-height: 150px;">
-                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2"
-                                            onclick="removeImagePreview('add')">
-                                            <i class="mdi mdi-close"></i> Hapus
-                                        </button>
+                                <div class="form-group mb-2">
+                                    <label class="form-label d-block">Preview Gambar</label>
+                                    <div class="image-preview-box">
+                                        <div class="image-preview-placeholder" id="add_imagePreviewPlaceholder">
+                                            <i class="mdi mdi-image-outline"></i>
+                                            <span>Belum ada gambar dipilih</span>
+                                        </div>
+                                        <div id="add_imagePreview" class="image-preview-content"
+                                            style="display: none;">
+                                            <img id="add_previewImg" src="" alt="Preview" class="img-fluid">
+                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 w-100"
+                                                onclick="removeImagePreview('add')">
+                                                <i class="mdi mdi-close"></i> Hapus Gambar
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3 text-center">
-                                    <label class="form-label">Status & Jenis Kategori</label>
 
-                                    <div class="form-check d-inline-block me-3">
-                                        <input type="hidden" name="is_active" value="0">
-                                        <input class="form-check-input" type="checkbox" value="1"
-                                            id="add_is_active" name="is_active" checked>
-                                        <label class="form-check-label" for="add_is_active">
-                                            <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Kategori
-                                        </label>
-                                    </div>
-
-                                    <div class="form-check d-inline-block">
-                                        <input type="hidden" name="is_marker" value="0">
-                                        <input class="form-check-input" type="checkbox" value="1"
-                                            id="add_is_marker" name="is_marker">
-                                        <label class="form-check-label" for="add_is_marker">
-                                            <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
-                                        </label>
+                                <div class="form-group mb-0">
+                                    <label for="add_warna" class="form-label">Warna</label>
+                                    <div class="color-picker-widget">
+                                        <div class="color-swatch-list" id="add_colorSwatches">
+                                            <button type="button" class="color-swatch" data-color="#007bff"
+                                                style="background-color:#007bff" title="#007bff"></button>
+                                            <button type="button" class="color-swatch" data-color="#28a745"
+                                                style="background-color:#28a745" title="#28a745"></button>
+                                            <button type="button" class="color-swatch" data-color="#dc3545"
+                                                style="background-color:#dc3545" title="#dc3545"></button>
+                                            <button type="button" class="color-swatch" data-color="#ffc107"
+                                                style="background-color:#ffc107" title="#ffc107"></button>
+                                            <button type="button" class="color-swatch" data-color="#17a2b8"
+                                                style="background-color:#17a2b8" title="#17a2b8"></button>
+                                            <button type="button" class="color-swatch" data-color="#6f42c1"
+                                                style="background-color:#6f42c1" title="#6f42c1"></button>
+                                            <button type="button" class="color-swatch" data-color="#fd7e14"
+                                                style="background-color:#fd7e14" title="#fd7e14"></button>
+                                            <button type="button" class="color-swatch" data-color="#20c997"
+                                                style="background-color:#20c997" title="#20c997"></button>
+                                            <button type="button" class="color-swatch" data-color="#6c757d"
+                                                style="background-color:#6c757d" title="#6c757d"></button>
+                                            <button type="button" class="color-swatch" data-color="#212529"
+                                                style="background-color:#212529" title="#212529"></button>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color"
+                                                id="add_warna" name="warna" value="#007bff">
+                                            <input type="text" class="form-control text-uppercase" id="add_warnaHex"
+                                                maxlength="7" placeholder="#RRGGBB" autocomplete="off"
+                                                value="#007BFF">
+                                        </div>
+                                        <div class="invalid-feedback"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group mb-3" id="add_iconContainer" style="display: none;">
-                            <label for="add_icon" class="form-label">
-                                <i class="mdi mdi-map-marker me-1"></i> Ikon Marker
-                            </label>
-                            <select class="form-select" id="add_icon" name="icon">
-                                <option value="">-- Pilih Ikon --</option>
-                                @include('backend.partials.icon-options')
-                            </select>
-                            <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point)</div>
-                            <div id="add_iconPreview" class="mt-2 icon-preview-container">
-                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
-                            </div>
-                        </div>
+                        <!-- ICON MARKER PICKER (1 column, full width) -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group mb-0" id="add_iconContainer" style="display: none;">
+                                    <label class="form-label">
+                                        <i class="mdi mdi-map-marker me-1"></i> Ikon Marker
+                                    </label>
 
-                        <div class="form-group mb-3">
-                            <label for="add_deskripsi" class="form-label">Deskripsi</label>
-                            <textarea class="form-control" id="add_deskripsi" name="deskripsi" rows="3"></textarea>
-                            <div class="invalid-feedback"></div>
+                                    <!-- Hidden select acts as the source of truth & data source for the picker -->
+                                    <select id="add_icon" name="icon" class="d-none">
+                                        <option value="">-- Pilih Ikon --</option>
+                                        @include('backend.partials.icon-options')
+                                    </select>
+
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-7">
+                                            <div class="icon-picker-search h-100">
+                                                <div class="input-group input-group-sm h-100">
+                                                    <span class="input-group-text"><i
+                                                            class="mdi mdi-magnify"></i></span>
+                                                    <input type="text" class="form-control" id="add_iconSearch"
+                                                        placeholder="Cari ikon berdasarkan nama atau class...">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div id="add_iconPreview" class="icon-preview-container icon-preview-inline">
+                                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="icon-picker-grid" id="add_iconGrid"></div>
+
+                                    <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point). Klik salah
+                                        satu ikon di atas untuk memilih.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -752,8 +799,9 @@
                     <input type="hidden" id="edit_id" name="id">
                     <div class="modal-body">
                         <div class="row">
+                            <!-- LEFT COLUMN -->
                             <div class="col-md-6">
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-2">
                                     <label for="edit_type" class="form-label">Tipe Kategori <span
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="edit_type" name="type" required>
@@ -766,115 +814,167 @@
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
+
+                                <div class="form-group mb-2">
                                     <label for="edit_nama" class="form-label">Nama Kategori <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="edit_nama" name="nama" required>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-2">
+                                    <label for="edit_deskripsi" class="form-label">Deskripsi</label>
+                                    <textarea class="form-control" id="edit_deskripsi" name="deskripsi" rows="2"></textarea>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="form-group mb-2">
                                     <label for="edit_parent_id" class="form-label">Parent Kategori</label>
                                     <select class="form-control" id="edit_parent_id" name="parent_id">
                                         <option value="">-- Pilih Parent (Opsional) --</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-3">
-                                    <label for="edit_warna" class="form-label">Warna</label>
-                                    <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" id="edit_warna"
-                                            name="warna">
-                                        <span class="input-group-text" id="edit_colorPreview"
-                                            style="background-color: #007bff; color: white;">●</span>
+
+                                <div class="form-group mb-0">
+                                    <label class="form-label d-block">Status & Jenis Kategori</label>
+                                    <div class="settings-switch-group">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_active" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="edit_is_active" name="is_active">
+                                            <label class="form-check-label" for="edit_is_active">
+                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan
+                                                Kategori
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_marker" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="edit_is_marker" name="is_marker">
+                                            <label class="form-check-label" for="edit_is_marker">
+                                                <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai
+                                                Marker
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="invalid-feedback"></div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row">
+                            <!-- RIGHT COLUMN -->
                             <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label for="edit_gambar" class="form-label">
-                                        <i class="mdi mdi-image me-1"></i> Upload Gambar
-                                    </label>
+                                <div class="form-group mb-2">
+                                    <label for="edit_gambar" class="form-label">Upload Gambar</label>
                                     <input type="file" class="form-control" id="edit_gambar" name="gambar"
-                                        accept="image/*" onchange="previewImage(this, 'edit_imagePreview')">
-                                    <div class="form-text">Format: JPG, PNG, GIF. Maksimal 2MB. Kosongkan jika tidak ingin
-                                        mengubah.</div>
+                                        accept="image/*"
+                                        onchange="previewImage(this, 'edit_imagePreview'); document.getElementById('edit_imagePreviewPlaceholder').style.display = this.files.length ? 'none' : 'flex';">
+                                    <div class="form-text">Format: JPG, PNG, GIF. Maksimal 2MB. Kosongkan jika tidak
+                                        ingin mengubah.</div>
                                     <div class="invalid-feedback"></div>
+                                </div>
 
-                                    <!-- Current Image Display -->
-                                    <div id="edit_currentImage" class="mt-2" style="display: none;">
-                                        <small class="text-muted d-block mb-2">Gambar saat ini:</small>
-                                        <img id="edit_currentImg" src="" alt="Current" class="img-thumbnail"
-                                            style="max-width: 150px; max-height: 100px;">
-                                    </div>
-
-                                    <!-- New Image Preview -->
-                                    <div id="edit_imagePreview" class="mt-2" style="display: none;">
-                                        <small class="text-muted d-block mb-2">Preview gambar baru:</small>
-                                        <img id="edit_previewImg" src="" alt="Preview" class="img-thumbnail"
-                                            style="max-width: 150px; max-height: 100px;">
-                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2"
-                                            onclick="removeImagePreview('edit')">
-                                            <i class="mdi mdi-close"></i> Hapus
-                                        </button>
+                                <div class="form-group mb-2">
+                                    <label class="form-label d-block">Preview Gambar</label>
+                                    <div class="image-preview-box">
+                                        <div class="image-preview-placeholder" id="edit_imagePreviewPlaceholder">
+                                            <i class="mdi mdi-image-outline"></i>
+                                            <span>Belum ada gambar</span>
+                                        </div>
+                                        <div id="edit_currentImage" class="image-preview-content"
+                                            style="display: none;">
+                                            <small class="text-muted d-block mb-1">Gambar saat ini</small>
+                                            <img id="edit_currentImg" src="" alt="Current" class="img-fluid">
+                                        </div>
+                                        <div id="edit_imagePreview" class="image-preview-content"
+                                            style="display: none;">
+                                            <small class="text-muted d-block mb-1">Preview gambar baru</small>
+                                            <img id="edit_previewImg" src="" alt="Preview" class="img-fluid">
+                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 w-100"
+                                                onclick="removeImagePreview('edit')">
+                                                <i class="mdi mdi-close"></i> Hapus
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3 text-center">
-                                    <label class="form-label">Status & Jenis Kategori</label>
 
-                                    <div class="form-check d-inline-block me-3">
-                                        <input type="hidden" name="is_active" value="0">
-                                        <input class="form-check-input" type="checkbox" value="1"
-                                            id="edit_is_active" name="is_active">
-                                        <label class="form-check-label" for="edit_is_active">
-                                            <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Kategori
-                                        </label>
-                                    </div>
-
-                                    <div class="form-check d-inline-block">
-                                        <input type="hidden" name="is_marker" value="0">
-                                        <input class="form-check-input" type="checkbox" value="1"
-                                            id="edit_is_marker" name="is_marker">
-                                        <label class="form-check-label" for="edit_is_marker">
-                                            <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
-                                        </label>
+                                <div class="form-group mb-0">
+                                    <label for="edit_warna" class="form-label">Warna</label>
+                                    <div class="color-picker-widget">
+                                        <div class="color-swatch-list" id="edit_colorSwatches">
+                                            <button type="button" class="color-swatch" data-color="#007bff"
+                                                style="background-color:#007bff" title="#007bff"></button>
+                                            <button type="button" class="color-swatch" data-color="#28a745"
+                                                style="background-color:#28a745" title="#28a745"></button>
+                                            <button type="button" class="color-swatch" data-color="#dc3545"
+                                                style="background-color:#dc3545" title="#dc3545"></button>
+                                            <button type="button" class="color-swatch" data-color="#ffc107"
+                                                style="background-color:#ffc107" title="#ffc107"></button>
+                                            <button type="button" class="color-swatch" data-color="#17a2b8"
+                                                style="background-color:#17a2b8" title="#17a2b8"></button>
+                                            <button type="button" class="color-swatch" data-color="#6f42c1"
+                                                style="background-color:#6f42c1" title="#6f42c1"></button>
+                                            <button type="button" class="color-swatch" data-color="#fd7e14"
+                                                style="background-color:#fd7e14" title="#fd7e14"></button>
+                                            <button type="button" class="color-swatch" data-color="#20c997"
+                                                style="background-color:#20c997" title="#20c997"></button>
+                                            <button type="button" class="color-swatch" data-color="#6c757d"
+                                                style="background-color:#6c757d" title="#6c757d"></button>
+                                            <button type="button" class="color-swatch" data-color="#212529"
+                                                style="background-color:#212529" title="#212529"></button>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color"
+                                                id="edit_warna" name="warna" value="#007bff">
+                                            <input type="text" class="form-control text-uppercase" id="edit_warnaHex"
+                                                maxlength="7" placeholder="#RRGGBB" autocomplete="off"
+                                                value="#007BFF">
+                                        </div>
+                                        <div class="invalid-feedback"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group mb-3" id="edit_iconContainer" style="display: none;">
-                            <label for="edit_icon" class="form-label">
-                                <i class="mdi mdi-map-marker me-1"></i> Ikon Marker
-                            </label>
-                            <select class="form-select" id="edit_icon" name="icon">
-                                <option value="">-- Pilih Ikon --</option>
-                                @include('backend.partials.icon-options')
-                            </select>
-                            <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point)</div>
-                            <div id="edit_iconPreview" class="mt-2 icon-preview-container">
-                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
-                            </div>
-                        </div>
+                        <!-- ICON MARKER PICKER (1 column, full width) -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group mb-0" id="edit_iconContainer" style="display: none;">
+                                    <label class="form-label">
+                                        <i class="mdi mdi-map-marker me-1"></i> Ikon Marker
+                                    </label>
 
-                        <div class="form-group mb-3">
-                            <label for="edit_deskripsi" class="form-label">Deskripsi</label>
-                            <textarea class="form-control" id="edit_deskripsi" name="deskripsi" rows="3"></textarea>
-                            <div class="invalid-feedback"></div>
+                                    <!-- Hidden select acts as the source of truth & data source for the picker -->
+                                    <select id="edit_icon" name="icon" class="d-none">
+                                        <option value="">-- Pilih Ikon --</option>
+                                        @include('backend.partials.icon-options')
+                                    </select>
+
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-7">
+                                            <div class="icon-picker-search h-100">
+                                                <div class="input-group input-group-sm h-100">
+                                                    <span class="input-group-text"><i
+                                                            class="mdi mdi-magnify"></i></span>
+                                                    <input type="text" class="form-control" id="edit_iconSearch"
+                                                        placeholder="Cari ikon berdasarkan nama atau class...">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div id="edit_iconPreview"
+                                                class="icon-preview-container icon-preview-inline">
+                                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="icon-picker-grid" id="edit_iconGrid"></div>
+
+                                    <div class="form-text">Ikon hanya berlaku untuk kategori marker (Point). Klik
+                                        salah satu ikon di atas untuk memilih.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1143,6 +1243,215 @@
             border-top: 1px solid #dee2e6;
         }
 
+        .image-preview-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+            padding: 12px;
+            text-align: center;
+            border: 1px dashed #ced4da;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .image-preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: #adb5bd;
+        }
+
+        .image-preview-placeholder i {
+            font-size: 2.2rem;
+        }
+
+        .image-preview-placeholder span {
+            font-size: 0.8rem;
+        }
+
+        .image-preview-content {
+            width: 100%;
+        }
+
+        .image-preview-content img {
+            max-width: 100%;
+            max-height: 160px;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+
+        /* ===========================================
+                                                                                                                                                                               ICON PICKER
+                                                                                                                                                                            =========================================== */
+        .icon-picker-grid {
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+
+        .icon-picker-group-title {
+            margin: 12px 0 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9aa4af;
+        }
+
+        .icon-picker-group-title:first-child {
+            margin-top: 0;
+        }
+
+        .icon-picker-items {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        @media (max-width: 576px) {
+            .icon-picker-items {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .icon-picker-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 4px;
+            padding: 10px 4px;
+            border: 1px solid #eef2f7;
+            border-radius: 6px;
+            background: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .icon-picker-item:hover {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.06);
+        }
+
+        .icon-picker-item.active {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.12);
+            box-shadow: 0 0 0 1px #007bff inset;
+        }
+
+        .icon-picker-glyph {
+            font-size: 1.9rem;
+            line-height: 1;
+            color: #495057;
+        }
+
+        .icon-picker-item.active .icon-picker-glyph {
+            color: #007bff;
+        }
+
+        .icon-picker-name {
+            display: -webkit-box;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #343a40;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .icon-picker-class {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.58rem;
+            color: #868e96;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .icon-picker-empty {
+            padding: 20px 0;
+            color: #adb5bd;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* ===========================================
+                                                                                                                                                                               COLOR PICKER WIDGET
+                                                                                                                                                                            =========================================== */
+        .color-picker-widget {
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .color-swatch-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 0.65rem;
+        }
+
+        .color-swatch {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #dee2e6;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.12);
+        }
+
+        .color-swatch.active {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+        }
+
+        .color-picker-widget .input-group .form-control-color {
+            max-width: 50px;
+        }
+
+        .settings-switch-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            padding: 0.65rem 0.85rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .settings-switch-group .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 0;
+            margin: 0;
+            min-height: auto;
+        }
+
+        .settings-switch-group .form-check-input {
+            flex-shrink: 0;
+            float: none;
+            margin: 0;
+        }
+
+        .settings-switch-group .form-check-label {
+            margin: 0;
+        }
+
         /* ===========================================
                                                                                                                                                                                ICON PREVIEW STYLING
                                                                                                                                                                             =========================================== */
@@ -1195,6 +1504,34 @@
             font-family: 'Courier New', monospace;
             font-size: 0.8em;
             color: #d63384;
+        }
+
+        /* Compact variant used when the preview sits beside the icon search box */
+        .icon-preview-inline {
+            min-height: 31px;
+            padding: 4px 10px;
+        }
+
+        .icon-preview-inline span.text-muted {
+            font-size: 0.72rem;
+        }
+
+        .icon-preview-inline .icon-preview-icon {
+            font-size: 1.4em;
+            margin-right: 8px;
+        }
+
+        .icon-preview-inline .icon-preview-details h6 {
+            display: none;
+        }
+
+        .icon-preview-inline .icon-preview-details small {
+            font-size: 0.72em;
+        }
+
+        .icon-preview-inline .icon-preview-code {
+            font-size: 0.68em;
+            padding: 1px 4px;
         }
 
         /* ===========================================
@@ -1439,12 +1776,21 @@
             preview.style.display = 'none';
             previewImg.src = '';
 
-            // Show current image again (for edit modal)
+            // Show current image again (for edit modal) if one exists, otherwise fall
+            // back to the "no image" placeholder
+            let hasCurrentImage = false;
             if (type === 'edit') {
                 const currentImageDiv = document.getElementById('edit_currentImage');
+                const currentImg = document.getElementById('edit_currentImg');
+                hasCurrentImage = !!(currentImg && currentImg.getAttribute('src'));
                 if (currentImageDiv) {
-                    currentImageDiv.style.display = 'block';
+                    currentImageDiv.style.display = hasCurrentImage ? 'block' : 'none';
                 }
+            }
+
+            const placeholder = document.getElementById(`${type}_imagePreviewPlaceholder`);
+            if (placeholder) {
+                placeholder.style.display = hasCurrentImage ? 'none' : 'flex';
             }
         }
 
@@ -1769,6 +2115,86 @@
                 }
             }
 
+            // Build a visual icon picker (icon + name + class) from a hidden <select>'s options
+            function buildIconPicker(selectId, gridId) {
+                const $select = $(selectId);
+                const $grid = $(gridId);
+                $grid.empty();
+
+                let $itemsWrap = null;
+
+                $select.children('option, optgroup').each(function() {
+                    if (this.tagName === 'OPTGROUP') {
+                        $grid.append(
+                            `<div class="icon-picker-group-title">${$(this).attr('label')}</div>`
+                        );
+                        $itemsWrap = $('<div class="icon-picker-items"></div>');
+                        $grid.append($itemsWrap);
+                        $(this).children('option').each(function() {
+                            appendIconItem($itemsWrap, $(this));
+                        });
+                    } else {
+                        const value = $(this).val();
+                        if (!value) return; // skip the placeholder option
+                        if (!$itemsWrap) {
+                            $itemsWrap = $('<div class="icon-picker-items"></div>');
+                            $grid.append($itemsWrap);
+                        }
+                        appendIconItem($itemsWrap, $(this));
+                    }
+                });
+
+                if ($grid.find('.icon-picker-item').length === 0) {
+                    $grid.html('<div class="icon-picker-empty">Tidak ada ikon tersedia</div>');
+                }
+            }
+
+            function appendIconItem($container, $option) {
+                const value = $option.val();
+                const label = $option.text().trim();
+                const searchText = (label + ' ' + value).toLowerCase();
+
+                $container.append(`
+                    <div class="icon-picker-item" data-icon-value="${value}" data-search="${searchText}">
+                        <i class="${value} icon-picker-glyph"></i>
+                        <span class="icon-picker-name">${label}</span>
+                        <code class="icon-picker-class">${value}</code>
+                    </div>
+                `);
+            }
+
+            buildIconPicker('#add_icon', '#add_iconGrid');
+            buildIconPicker('#edit_icon', '#edit_iconGrid');
+
+            // Select an icon from the picker (works for both add & edit grids)
+            $(document).on('click', '.icon-picker-grid .icon-picker-item', function() {
+                const iconValue = $(this).data('icon-value');
+                const $grid = $(this).closest('.icon-picker-grid');
+                const prefix = $grid.attr('id').replace('_iconGrid', '');
+
+                $grid.find('.icon-picker-item').removeClass('active');
+                $(this).addClass('active');
+                $(`#${prefix}_icon`).val(iconValue).trigger('change');
+            });
+
+            // Filter the icon picker by name or class (works for both add & edit)
+            $(document).on('input', '#add_iconSearch, #edit_iconSearch', function() {
+                const prefix = this.id.replace('_iconSearch', '');
+                const $grid = $(`#${prefix}_iconGrid`);
+                const query = $(this).val().trim().toLowerCase();
+
+                $grid.find('.icon-picker-item').each(function() {
+                    const matches = !query || $(this).data('search').toString().includes(query);
+                    $(this).toggle(matches);
+                });
+
+                $grid.find('.icon-picker-items').each(function() {
+                    const hasVisible = $(this).find('.icon-picker-item:visible').length > 0;
+                    $(this).toggle(hasVisible);
+                    $(this).prev('.icon-picker-group-title').toggle(hasVisible);
+                });
+            });
+
             // Icon preview dengan styling yang lebih baik
             $('#add_icon, #edit_icon').on('change', function() {
                 const iconClass = $(this).val();
@@ -1780,32 +2206,52 @@
                 updateIconPreview(iconClass, previewElementId, colorValue);
             });
 
-            // Color preview updates with icon color sync
-            $('#add_warna').on('change input', function() {
-                const newColor = $(this).val();
-                $('#add_colorPreview').css('background-color', newColor);
+            // Apply a color to the native picker, hex field, swatches & icon preview.
+            // `prefix` is "add" or "edit" — shared by both modals' color-picker widgets.
+            function applyColor(prefix, newColor) {
+                $(`#${prefix}_warna`).val(newColor);
+                $(`#${prefix}_warnaHex`).val(newColor.toUpperCase());
+                $(`#${prefix}_colorSwatches .color-swatch`).removeClass('active');
+                $(`#${prefix}_colorSwatches .color-swatch[data-color="${newColor.toLowerCase()}"]`)
+                    .addClass('active');
 
-                // Update icon color if preview exists
-                const iconElement = $('#add_iconPreview .icon-preview-icon');
+                const iconElement = $(`#${prefix}_iconPreview .icon-preview-icon`);
                 if (iconElement.length) {
                     iconElement.css('color', newColor);
+                }
+            }
+
+            // Native color picker change
+            $('#add_warna, #edit_warna').on('change input', function() {
+                const prefix = this.id.replace('_warna', '');
+                applyColor(prefix, $(this).val());
+            });
+
+            // Hex text field: only apply once it's a valid #RRGGBB value
+            $('#add_warnaHex, #edit_warnaHex').on('input', function() {
+                const prefix = this.id.replace('_warnaHex', '');
+                let value = $(this).val().trim();
+                if (value && value[0] !== '#') {
+                    value = '#' + value;
+                }
+                $(this).val(value.toUpperCase());
+
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    applyColor(prefix, value);
                 }
             });
 
-            $('#edit_warna').on('change input', function() {
-                const newColor = $(this).val();
-                $('#edit_colorPreview').css('background-color', newColor);
-
-                // Update icon color if preview exists
-                const iconElement = $('#edit_iconPreview .icon-preview-icon');
-                if (iconElement.length) {
-                    iconElement.css('color', newColor);
-                }
+            // Quick color swatches
+            $(document).on('click', '.color-swatch-list .color-swatch', function() {
+                const prefix = $(this).closest('.color-swatch-list').attr('id').replace(
+                    '_colorSwatches', '');
+                applyColor(prefix, $(this).data('color'));
             });
 
             // Marker checkbox functionality
             $('#add_is_marker, #edit_is_marker').on('change', function() {
                 const isAdd = $(this).attr('id') === 'add_is_marker';
+                const prefix = isAdd ? 'add' : 'edit';
                 const iconContainer = isAdd ? '#add_iconContainer' : '#edit_iconContainer';
                 const iconSelect = isAdd ? '#add_icon' : '#edit_icon';
                 const iconPreview = isAdd ? '#add_iconPreview' : '#edit_iconPreview';
@@ -1818,6 +2264,11 @@
                     $(iconPreview).html(
                             '<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>')
                         .removeClass('has-icon');
+
+                    $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active').show();
+                    $(`#${prefix}_iconGrid .icon-picker-items, #${prefix}_iconGrid .icon-picker-group-title`)
+                        .show();
+                    $(`#${prefix}_iconSearch`).val('');
                 }
             });
 
@@ -1838,15 +2289,21 @@
                 const form = $('#addForm');
                 form[0].reset();
                 clearFormErrors(form);
-                $('#add_colorPreview').css('background-color', '#007bff');
+                applyColor('add', '#007bff');
                 $('#add_iconContainer').hide();
                 $('#add_iconPreview').html(
                     '<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>').removeClass(
                     'has-icon');
 
+                // Reset icon picker selection & search
+                $('#add_iconGrid .icon-picker-item').removeClass('active').show();
+                $('#add_iconGrid .icon-picker-items, #add_iconGrid .icon-picker-group-title').show();
+                $('#add_iconSearch').val('');
+
                 // Reset image preview
                 $('#add_imagePreview').hide();
                 $('#add_previewImg').attr('src', '');
+                $('#add_imagePreviewPlaceholder').show();
 
                 // Set default values
                 $('#add_is_active').prop('checked', false); // Default to active
@@ -1908,9 +2365,8 @@
                 $('#edit_id').val(id);
                 $('#edit_nama').val($(this).data('nama'));
                 $('#edit_type').val($(this).data('type'));
-                $('#edit_warna').val($(this).data('warna') || '#007bff');
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
-                $('#edit_colorPreview').css('background-color', $(this).data('warna') || '#007bff');
+                applyColor('edit', $(this).data('warna') || '#007bff');
 
                 // Handle is_active checkbox
                 const isActive = $(this).data('is-active');
@@ -1920,12 +2376,19 @@
                 const isMarker = $(this).data('is-marker');
                 $('#edit_is_marker').prop('checked', isMarker);
 
+                // Reset icon picker selection & search
+                $('#edit_iconGrid .icon-picker-item').removeClass('active').show();
+                $('#edit_iconGrid .icon-picker-items, #edit_iconGrid .icon-picker-group-title').show();
+                $('#edit_iconSearch').val('');
+
                 if (isMarker) {
                     $('#edit_iconContainer').show();
                     const iconClass = $(this).data('icon');
                     $('#edit_icon').val(iconClass);
                     const colorValue = $(this).data('warna') || '#007bff';
                     updateIconPreview(iconClass, '#edit_iconPreview', colorValue);
+                    $(`#edit_iconGrid .icon-picker-item[data-icon-value="${iconClass}"]`).addClass(
+                        'active');
                 } else {
                     $('#edit_iconContainer').hide();
                     $('#edit_icon').val('');
@@ -1939,8 +2402,10 @@
                 if (currentImage) {
                     $('#edit_currentImage').show();
                     $('#edit_currentImg').attr('src', `{{ asset('storage/') }}/${currentImage}`);
+                    $('#edit_imagePreviewPlaceholder').hide();
                 } else {
                     $('#edit_currentImage').hide();
+                    $('#edit_imagePreviewPlaceholder').show();
                 }
 
                 // Reset new image preview
