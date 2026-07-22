@@ -1878,6 +1878,69 @@ class DataSpatialController extends Controller
     }
 
     /**
+     * Bulk add/edit/delete a single DBF attribute key across the selected records.
+     */
+    public function bulkUpdateAttribute(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'action' => 'required|in:set,remove',
+            'key' => ['required', 'string', 'regex:/^[A-Za-z_][A-Za-z0-9_]*$/'],
+            'value' => 'required_if:action,set|nullable|string|max:1000',
+        ], [
+            'ids.required' => 'Tidak ada data yang dipilih.',
+            'key.regex' => 'Nama atribut hanya boleh huruf, angka, dan underscore, tidak diawali angka.',
+            'value.required_if' => 'Nilai atribut harus diisi.',
+        ]);
+
+        $key = trim($validated['key']);
+
+        $query = DataSpatial::whereIn('id', $validated['ids']);
+
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            $query->where('user_id', $user->id);
+        }
+
+        $items = $query->get();
+
+        if ($items->isEmpty()) {
+            return redirect()->back()
+                ->with('error', 'Data yang dipilih tidak ditemukan atau Anda tidak memiliki izin untuk mengubahnya.');
+        }
+
+        DB::transaction(function () use ($items, $validated, $key) {
+            foreach ($items as $item) {
+                $attributes = $item->dbf_attributes ?? [];
+                if ($validated['action'] === 'set') {
+                    $attributes[$key] = $validated['value'];
+                } else {
+                    unset($attributes[$key]);
+                }
+                $item->dbf_attributes = $attributes;
+                $item->save();
+            }
+        });
+
+        $updatedCount = $items->count();
+        $message = $validated['action'] === 'set'
+            ? "Berhasil mengatur atribut \"{$key}\" untuk {$updatedCount} data."
+            : "Berhasil menghapus atribut \"{$key}\" dari {$updatedCount} data.";
+
+        Log::info('Bulk DBF attribute update completed', [
+            'ids' => $items->pluck('id')->toArray(),
+            'action' => $validated['action'],
+            'key' => $key,
+            'user_id' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    /**
      * Show details for a specific data spatial item (for AJAX)
      *
      * @param string $uuid

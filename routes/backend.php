@@ -97,6 +97,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
         Route::post('/bulk-update-category', [DataSpatialController::class, 'bulkUpdateCategory'])->name('bulk-update-category');
+        Route::post('/bulk-update-attribute', [DataSpatialController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute');
 
 
         // Debug routes for file uploads
@@ -337,6 +338,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
         // Categories
         Route::get('/categories', [DataSpatialController::class, 'getCategories'])->name('categories');
+
+        // DBF attribute columns (for bulk attribute editor autocomplete)
+        Route::get('/dbf-columns', [DataSpatialController::class, 'getDbfColumns'])->name('dbf-columns');
         Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd');
 
         // Data Spatial Details

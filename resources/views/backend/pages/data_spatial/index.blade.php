@@ -247,6 +247,11 @@
                                         <i class="mdi mdi-shape-outline me-1"></i>
                                         Ubah Kategori/Layer
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                        onclick="bulkManageDbfAttribute()">
+                                        <i class="mdi mdi-table-edit me-1"></i>
+                                        Kelola Atribut DBF
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
                                         <i class="mdi mdi-trash-can-outline me-1"></i>
                                         Hapus Terpilih
@@ -523,6 +528,73 @@
         @csrf
         <div id="bulkCategoryIds"></div>
         <input type="hidden" name="kategori_id" id="bulkCategoryKategoriId">
+    </form>
+
+    <!-- Bulk Manage DBF Attribute Modal -->
+    <div class="modal fade" id="bulkDbfModal" tabindex="-1" aria-labelledby="bulkDbfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="bulkDbfModalLabel">
+                        <i class="mdi mdi-table-edit me-2"></i>Kelola Atribut DBF
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Terapkan perubahan atribut untuk <strong id="bulkDbfCount">0</strong> data yang dipilih.
+                    </p>
+
+                    <label class="form-label fw-semibold d-block">Aksi</label>
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <input type="radio" class="btn-check" name="bulkDbfAction" id="bulkDbfActionSet" value="set"
+                            checked>
+                        <label class="btn btn-outline-primary" for="bulkDbfActionSet">
+                            <i class="mdi mdi-plus-box me-1"></i>Tambah / Ubah Nilai
+                        </label>
+
+                        <input type="radio" class="btn-check" name="bulkDbfAction" id="bulkDbfActionRemove"
+                            value="remove">
+                        <label class="btn btn-outline-danger" for="bulkDbfActionRemove">
+                            <i class="mdi mdi-minus-box me-1"></i>Hapus Atribut
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bulkDbfKey" class="form-label fw-semibold">Nama Atribut</label>
+                        <input type="text" class="form-control" id="bulkDbfKey" list="dbfColumnsList"
+                            placeholder="Contoh: NAMA_PPK">
+                        <datalist id="dbfColumnsList"></datalist>
+                        <div class="form-text">Huruf, angka, dan underscore saja, tidak diawali angka.</div>
+                    </div>
+
+                    <div class="mb-3" id="bulkDbfValueWrapper">
+                        <label for="bulkDbfValue" class="form-label fw-semibold">Nilai Baru</label>
+                        <input type="text" class="form-control" id="bulkDbfValue" placeholder="Masukkan nilai baru">
+                    </div>
+
+                    <div id="bulkDbfError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-info text-white" id="confirmBulkDbf">
+                        <i class="mdi mdi-check me-1"></i>Terapkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Manage DBF Attribute Form (Hidden) -->
+    <form id="bulkDbfForm" method="POST" action="{{ route('data-spatial.bulk-update-attribute') }}"
+        style="display: none;">
+        @csrf
+        <div id="bulkDbfIds"></div>
+        <input type="hidden" name="action" id="bulkDbfActionInput">
+        <input type="hidden" name="key" id="bulkDbfKeyInput">
+        <input type="hidden" name="value" id="bulkDbfValueInput">
     </form>
 @endsection
 
@@ -978,6 +1050,125 @@
 
             // Submit the form
             document.getElementById('bulkCategoryForm').submit();
+        });
+
+        // Bulk manage DBF attribute functionality
+        const bulkDbfDataType = '{{ $type }}';
+        const bulkDbfSubType = '{{ $subType ?? '' }}';
+        const bulkDbfKeyRegex = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+        function bulkManageDbfAttribute() {
+            if (selectedItems.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak ada data terpilih',
+                    text: 'Silakan pilih data yang akan dikelola atributnya terlebih dahulu',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            document.getElementById('bulkDbfCount').textContent = selectedItems.length;
+            document.getElementById('bulkDbfKey').value = '';
+            document.getElementById('bulkDbfValue').value = '';
+            document.getElementById('bulkDbfActionSet').checked = true;
+            toggleBulkDbfValueField();
+
+            const errorBox = document.getElementById('bulkDbfError');
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+
+            loadDbfColumnsDatalist();
+
+            const modal = new bootstrap.Modal(document.getElementById('bulkDbfModal'));
+            modal.show();
+        }
+
+        function toggleBulkDbfValueField() {
+            const isRemove = document.getElementById('bulkDbfActionRemove').checked;
+            const wrapper = document.getElementById('bulkDbfValueWrapper');
+            wrapper.style.display = isRemove ? 'none' : 'block';
+        }
+
+        document.getElementById('bulkDbfActionSet').addEventListener('change', toggleBulkDbfValueField);
+        document.getElementById('bulkDbfActionRemove').addEventListener('change', toggleBulkDbfValueField);
+
+        function loadDbfColumnsDatalist() {
+            const params = new URLSearchParams();
+            if (bulkDbfDataType) params.set('data_type', bulkDbfDataType);
+            if (bulkDbfSubType) params.set('sub_type', bulkDbfSubType);
+
+            fetch(`/dashboard/api/dbf-columns?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    const datalist = document.getElementById('dbfColumnsList');
+                    datalist.innerHTML = '';
+                    if (data.success && Array.isArray(data.columns)) {
+                        data.columns.forEach(column => {
+                            const option = document.createElement('option');
+                            option.value = column;
+                            datalist.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Gagal memuat daftar atribut DBF:', error));
+        }
+
+        // Confirm bulk DBF attribute update
+        document.getElementById('confirmBulkDbf').addEventListener('click', function() {
+            const errorBox = document.getElementById('bulkDbfError');
+            const action = document.getElementById('bulkDbfActionRemove').checked ? 'remove' : 'set';
+            const key = document.getElementById('bulkDbfKey').value.trim();
+            const value = document.getElementById('bulkDbfValue').value;
+
+            if (selectedItems.length === 0) {
+                errorBox.textContent = 'Tidak ada data yang dipilih untuk diubah.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            if (!key) {
+                errorBox.textContent = 'Nama atribut wajib diisi.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            if (!bulkDbfKeyRegex.test(key)) {
+                errorBox.textContent = 'Nama atribut hanya boleh huruf, angka, dan underscore, tidak diawali angka.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            if (action === 'set' && !value) {
+                errorBox.textContent = 'Nilai atribut wajib diisi.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            errorBox.classList.add('d-none');
+
+            // Show loading state
+            this.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Menyimpan...';
+            this.disabled = true;
+
+            // Create hidden inputs for selected IDs
+            const bulkDbfIds = document.getElementById('bulkDbfIds');
+            bulkDbfIds.innerHTML = '';
+
+            selectedItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                bulkDbfIds.appendChild(input);
+            });
+
+            document.getElementById('bulkDbfActionInput').value = action;
+            document.getElementById('bulkDbfKeyInput').value = key;
+            document.getElementById('bulkDbfValueInput').value = value;
+
+            // Submit the form
+            document.getElementById('bulkDbfForm').submit();
         });
 
         // Show details function with improved UX
