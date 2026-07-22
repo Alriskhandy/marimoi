@@ -188,7 +188,7 @@
                                         <tr class="border-b border-slate-200">
                                             <th class="py-3 px-4 text-left font-semibold text-slate-700 bg-slate-50">
                                                 DESKRIPSI</th>
-                                            <td class="py-3 px-4 text-slate-600">{{ $project->deskripsi }}</td>
+                                            <td class="py-3 px-4 text-slate-600">{!! \App\Support\HtmlSanitizer::clean($project->deskripsi) !!}</td>
                                         </tr>
                                         @if (isset($project->dbf_attributes))
                                             @php
@@ -202,7 +202,7 @@
                                                         <th
                                                             class="py-3 px-4 text-left font-semibold text-slate-700 bg-slate-50">
                                                             {{ ucwords(str_replace('_', ' ', $key)) }}</th>
-                                                        <td class="py-3 px-4 text-slate-600">{!! $value !!}</td>
+                                                        <td class="py-3 px-4 text-slate-600">{!! \App\Support\HtmlSanitizer::clean($value) !!}</td>
                                                     </tr>
                                                 @endif
                                             @endforeach
