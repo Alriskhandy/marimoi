@@ -242,6 +242,11 @@
                                     <span id="selectedCount">0</span> item dipilih
                                 </div>
                                 <div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="bulkUpdateCategory()">
+                                        <i class="mdi mdi-shape-outline me-1"></i>
+                                        Ubah Kategori/Layer
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
                                         <i class="mdi mdi-trash-can-outline me-1"></i>
                                         Hapus Terpilih
@@ -467,6 +472,57 @@
         <!-- Debug input -->
         <input type="hidden" name="debug_source" value="bulk_delete_form">
         <input type="hidden" name="current_url" value="{{ request()->fullUrl() }}">
+    </form>
+
+    <!-- Bulk Update Category Modal -->
+    <div class="modal fade" id="bulkCategoryModal" tabindex="-1" aria-labelledby="bulkCategoryModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="bulkCategoryModalLabel">
+                        <i class="mdi mdi-shape-outline me-2"></i>Ubah Kategori/Layer
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Mengubah kategori/layer untuk <strong id="bulkCategoryCount">0</strong> data yang dipilih.
+                    </p>
+                    <label for="bulkCategorySelect" class="form-label fw-semibold">Kategori/Layer Baru</label>
+                    <select class="form-select" id="bulkCategorySelect">
+                        <option value="">-- Pilih Kategori/Layer --</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->nama }}</option>
+                            @foreach ($category->children as $child)
+                                <option value="{{ $child->id }}">&nbsp;&nbsp;↳ {{ $child->nama }}</option>
+                                @foreach ($child->children as $grandchild)
+                                    <option value="{{ $grandchild->id }}">&nbsp;&nbsp;&nbsp;&nbsp;↳
+                                        {{ $grandchild->nama }}</option>
+                                @endforeach
+                            @endforeach
+                        @endforeach
+                    </select>
+                    <div id="bulkCategoryError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkCategory">
+                        <i class="mdi mdi-check me-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Update Category Form (Hidden) -->
+    <form id="bulkCategoryForm" method="POST" action="{{ route('data-spatial.bulk-update-category') }}"
+        style="display: none;">
+        @csrf
+        <div id="bulkCategoryIds"></div>
+        <input type="hidden" name="kategori_id" id="bulkCategoryKategoriId">
     </form>
 @endsection
 
@@ -859,6 +915,69 @@
 
             // Submit the form
             document.getElementById('bulkDeleteForm').submit();
+        });
+
+        // Bulk update category/layer functionality
+        function bulkUpdateCategory() {
+            if (selectedItems.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak ada data terpilih',
+                    text: 'Silakan pilih data yang akan diubah kategori/layernya terlebih dahulu',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            document.getElementById('bulkCategoryCount').textContent = selectedItems.length;
+            document.getElementById('bulkCategorySelect').value = '';
+            const errorBox = document.getElementById('bulkCategoryError');
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('bulkCategoryModal'));
+            modal.show();
+        }
+
+        // Confirm bulk category update
+        document.getElementById('confirmBulkCategory').addEventListener('click', function() {
+            const select = document.getElementById('bulkCategorySelect');
+            const errorBox = document.getElementById('bulkCategoryError');
+
+            if (selectedItems.length === 0) {
+                errorBox.textContent = 'Tidak ada data yang dipilih untuk diubah.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            if (!select.value) {
+                errorBox.textContent = 'Silakan pilih kategori/layer tujuan.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            errorBox.classList.add('d-none');
+
+            // Show loading state
+            this.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Menyimpan...';
+            this.disabled = true;
+
+            // Create hidden inputs for selected IDs
+            const bulkCategoryIds = document.getElementById('bulkCategoryIds');
+            bulkCategoryIds.innerHTML = '';
+
+            selectedItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                bulkCategoryIds.appendChild(input);
+            });
+
+            document.getElementById('bulkCategoryKategoriId').value = select.value;
+
+            // Submit the form
+            document.getElementById('bulkCategoryForm').submit();
         });
 
         // Show details function with improved UX

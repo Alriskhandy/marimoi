@@ -1823,8 +1823,63 @@ class DataSpatialController extends Controller
     }
 
     /**
+     * Bulk update kategori/layer for the selected data spatial records.
+     */
+    public function bulkUpdateCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'kategori_id' => 'required|exists:categories,id',
+        ], [
+            'ids.required' => 'Tidak ada data yang dipilih.',
+            'kategori_id.required' => 'Kategori/layer tujuan harus dipilih.',
+            'kategori_id.exists' => 'Kategori/layer tidak valid.',
+        ]);
+
+        $category = Category::findOrFail($validated['kategori_id']);
+
+        $query = DataSpatial::whereIn('id', $validated['ids']);
+
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+
+        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            $query->where('user_id', $user->id);
+        }
+
+        $items = $query->get();
+
+        if ($items->isEmpty()) {
+            return redirect()->back()
+                ->with('error', 'Data yang dipilih tidak ditemukan atau Anda tidak memiliki izin untuk mengubahnya.');
+        }
+
+        // Pastikan kategori/layer tujuan sesuai dengan tipe data yang dipilih
+        foreach ($items as $item) {
+            $expectedType = $this->getCategoryTypeByDataType($item->data_type, $item->sub_type);
+            if ($category->type !== $expectedType) {
+                return redirect()->back()
+                    ->with('error', "Kategori/layer \"{$category->nama}\" tidak sesuai dengan tipe data pada data yang dipilih.");
+            }
+        }
+
+        $updatedCount = DataSpatial::whereIn('id', $items->pluck('id'))
+            ->update(['kategori_id' => $category->id]);
+
+        Log::info('Bulk category update completed', [
+            'ids' => $items->pluck('id')->toArray(),
+            'kategori_id' => $category->id,
+            'user_id' => $user->id,
+        ]);
+
+        return redirect()->back()
+            ->with('success', "Berhasil mengubah kategori/layer untuk {$updatedCount} data.");
+    }
+
+    /**
      * Show details for a specific data spatial item (for AJAX)
-     * 
+     *
      * @param string $uuid
      * @return \Illuminate\Http\JsonResponse
      */

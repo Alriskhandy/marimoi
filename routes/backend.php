@@ -96,6 +96,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
         Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
         Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
+        Route::post('/bulk-update-category', [DataSpatialController::class, 'bulkUpdateCategory'])->name('bulk-update-category');
 
 
         // Debug routes for file uploads
