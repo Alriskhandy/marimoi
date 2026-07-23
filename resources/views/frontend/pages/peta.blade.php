@@ -391,6 +391,6 @@
         </script>
     @endif
 
-    <script src="{{ asset('frontend/js/map-cache.js') }}"></script>
-    <script src="{{ asset('frontend/js/map.js') }}"></script>
+    <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}"></script>
+    <script src="{{ asset('frontend/js/map.js') }}?v={{ filemtime(public_path('frontend/js/map.js')) }}"></script>
 @endpush
