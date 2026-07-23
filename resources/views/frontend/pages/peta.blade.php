@@ -199,6 +199,25 @@
                     </div>
 
                     <div class="mb-3 w-full">
+                        <label for="layer-search" class="sr-only">Cari Layer/Kategori</label>
+                        <div
+                            class="flex items-center gap-2 w-full px-3 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
+                            <i class="bi bi-search text-gray-400 text-sm shrink-0"></i>
+                            <input type="text" id="layer-search" name="layer-search" autocomplete="off"
+                                spellcheck="false" maxlength="100"
+                                class="flex-1 min-w-0 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 py-2 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
+                                placeholder="Cari layer atau kategori...">
+                            <button type="button" id="layer-search-clear"
+                                class="hidden shrink-0 text-gray-400 hover:text-gray-600" aria-label="Hapus pencarian">
+                                <i class="bi bi-x-circle-fill text-sm"></i>
+                            </button>
+                        </div>
+                        <p id="layer-search-empty" class="hidden text-xs text-gray-500 mt-2 px-1">
+                            Tidak ada layer/kategori yang cocok.
+                        </p>
+                    </div>
+
+                    <div class="mb-3 w-full">
                         <label for="transparency" class="form-label text-sm">Transparansi Layer</label>
                         <input type="range" class="form-range" min="0" max="100" value="100"
                             id="transparency">
@@ -358,13 +377,13 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{{ asset('frontend/js/leaflet.extra-markers.min.js') }}"></script>
 
-    @if(session('selectedCategory'))
-    <script>
-        // Pass selected category from session to JavaScript
-        window.MARIMOI_SELECTED_CATEGORY = @json(session('selectedCategory'));
-    </script>
+    @if (session('selectedCategory'))
+        <script>
+            // Pass selected category from session to JavaScript
+            window.MARIMOI_SELECTED_CATEGORY = @json(session('selectedCategory'));
+        </script>
     @endif
-    
+
     <script src="{{ asset('frontend/js/map-cache.js') }}"></script>
     <script src="{{ asset('frontend/js/map.js') }}"></script>
 @endpush

@@ -481,23 +481,34 @@ function generateLegend() {
                     kategoriWarnaMap[rootName] || 
                     "#ccc";
 
+                const legendItem = document.createElement('div');
+                legendItem.className = 'flex items-center mb-2 w-full';
+
+                const iconWrap = document.createElement('div');
+                iconWrap.style.cssText = 'width: 14px; height: 14px; margin-right: 8px;';
+
                 if (icon) {
-                    legendContainer.innerHTML += `
-                        <div class="flex items-center mb-2 w-full">
-                            <div class="custom-fa-icon flex-shrink-0 flex items-center justify-center" style="width: 14px; height: 14px; background: transparent; border: none; margin-right: 8px;">
-                                <i class="${icon} text-[${color}]" style="font-size: 12px; color: ${color}; line-height: 1;"></i>
-                            </div>
-                            <span class="flex-1" style="font-size: 0.85rem;">${thirdName}</span>
-                        </div>
-                    `;
+                    iconWrap.className = 'custom-fa-icon flex-shrink-0 flex items-center justify-center';
+                    iconWrap.style.cssText += 'background: transparent; border: none;';
+
+                    const iconEl = document.createElement('i');
+                    iconEl.className = `${icon} text-[${color}]`;
+                    iconEl.style.cssText = `font-size: 12px; color: ${color}; line-height: 1;`;
+                    iconWrap.appendChild(iconEl);
                 } else {
-                    legendContainer.innerHTML += `
-                        <div class="flex items-center mb-2 w-full">
-                            <div class="flex-shrink-0" style="width: 14px; height: 14px; background-color: ${color}; border: 1px solid #333; margin-right: 8px;"></div>
-                            <span class="flex-1" style="font-size: 0.85rem;">${thirdName}</span>
-                        </div>
-                    `;
+                    iconWrap.className = 'flex-shrink-0';
+                    iconWrap.style.cssText += `background-color: ${color}; border: 1px solid #333;`;
                 }
+
+                const labelEl = document.createElement('span');
+                labelEl.className = 'flex-1';
+                labelEl.style.fontSize = '0.85rem';
+                labelEl.textContent = thirdName;
+
+                legendItem.appendChild(iconWrap);
+                legendItem.appendChild(labelEl);
+                legendContainer.appendChild(legendItem);
+
                 added.add(thirdName);
             });
         });
@@ -1235,7 +1246,8 @@ function updateLayerList() {
 
         // Root label - directly in the left section without a checkbox
         const rootLabel = document.createElement("div");
-        rootLabel.className = "font-semibold text-gray-900 text-sm";
+        rootLabel.className = "font-semibold text-gray-900 text-sm layer-label";
+        rootLabel.dataset.layerLevel = "1";
         rootLabel.textContent = rootName;
 
         // Count badge for root
@@ -1253,14 +1265,14 @@ function updateLayerList() {
 
         // Create container for second level items
         const secondLevelContainer = document.createElement("div");
-        secondLevelContainer.className = "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 rounded-lg hidden";
+        secondLevelContainer.className = "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 rounded-lg hidden layer-root-children";
         secondLevelContainer.id = `${rootId}-children`;
         
         // Process each second level category (Level 2)
         Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
             const secondId = `second-${rootName}-${secondName}`.replace(/\s+/g, "-");
             const secondItemRow = document.createElement("div");
-            secondItemRow.className = "px-2 py-1";
+            secondItemRow.className = "px-2 py-1 layer-second-row";
             
             // Create second level header
             const secondHeader = document.createElement("div");
@@ -1286,7 +1298,8 @@ function updateLayerList() {
             
             // Second level label
             const secondLabel = document.createElement("label");
-            secondLabel.className = "text-sm text-gray-700 cursor-pointer";
+            secondLabel.className = "text-sm text-gray-700 cursor-pointer layer-label";
+            secondLabel.dataset.layerLevel = "2";
             secondLabel.htmlFor = secondId;
             secondLabel.textContent = secondName;
             
@@ -1306,7 +1319,7 @@ function updateLayerList() {
             
             // Create container for third level items
             const thirdLevelContainer = document.createElement("div");
-            thirdLevelContainer.className = "pl-4 ml-5 border-l border-gray-200 mt-1 hidden";
+            thirdLevelContainer.className = "pl-4 ml-5 border-l border-gray-200 mt-1 hidden layer-third-children";
             thirdLevelContainer.id = `${secondId}-children`;
             
             // Second level checkbox controls all children
@@ -1359,7 +1372,7 @@ function updateLayerList() {
                 
                 const thirdId = `third-${rootName}-${secondName}-${thirdName}`.replace(/\s+/g, "-");
                 const thirdRow = document.createElement("div");
-                thirdRow.className = "flex items-center py-2 hover:bg-gray-100 transition-colors duration-150 rounded px-2 mt-1"; // Added vertical spacing
+                thirdRow.className = "flex items-center py-2 hover:bg-gray-100 transition-colors duration-150 rounded px-2 mt-1 layer-third-row"; // Added vertical spacing
                 
                 // Third level checkbox - with consistent size
                 const thirdCheckbox = document.createElement("input");
@@ -1373,7 +1386,8 @@ function updateLayerList() {
                 
                 // Third level label
                 const thirdLabel = document.createElement("label");
-                thirdLabel.className = "text-xs text-gray-600 cursor-pointer flex-1 leading-tight";
+                thirdLabel.className = "text-xs text-gray-600 cursor-pointer flex-1 leading-tight layer-label";
+                thirdLabel.dataset.layerLevel = "3";
                 thirdLabel.htmlFor = thirdId;
                 thirdLabel.textContent = thirdName;
                 
@@ -2193,72 +2207,100 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Search (debounce)
     const layerSearchInput = document.getElementById("layer-search");
+    const layerSearchClear = document.getElementById("layer-search-clear");
+    const layerSearchEmpty = document.getElementById("layer-search-empty");
     let searchTimeout;
-    layerSearchInput?.addEventListener("input", (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const term = e.target.value.toLowerCase();
-            
-            // In 3-level hierarchy, we need to handle all levels
-            const rootWrappers = document.querySelectorAll("#layer-list > .mb-3");
-            
-            rootWrappers.forEach((rootWrapper) => {
+
+    function applyLayerSearch(rawTerm) {
+        const term = rawTerm.trim().toLowerCase();
+        const showAll = term === "";
+
+        // Strict substring match (equivalent to SQL LIKE '%term%'): a row is only
+        // ever shown if its OWN label literally contains the term, or it is an
+        // ancestor of a row that does — non-matching siblings stay hidden even when
+        // a parent/child in the same branch matches. Matching/navigation below relies
+        // only on stable classes (.layer-label, .layer-root-children, .layer-second-row,
+        // .layer-third-row, .layer-third-children) added in updateLayerList() — no
+        // selectors are ever built from category-name-derived strings, so there is
+        // nothing here for an unusual category name to break.
+        const rootWrappers = document.querySelectorAll("#layer-list > .mb-3");
+        let resultCount = 0;
+
+        const isMatch = (label) => showAll || (label?.textContent.toLowerCase().includes(term) ?? false);
+
+        rootWrappers.forEach((rootWrapper) => {
+            try {
                 const rootHeader = rootWrapper.querySelector(".flex.items-center.justify-between");
-                const rootLabel = rootHeader?.querySelector("label");
-                const rootLabelText = rootLabel?.textContent.toLowerCase() || "";
-                
-                const secondLevelItems = rootWrapper.querySelectorAll('[data-level="2"]');
-                const thirdLevelItems = rootWrapper.querySelectorAll('[data-level="3"]');
-                
-                // Check if root matches
-                const matchesRoot = rootLabelText.includes(term);
-                
-                // Check if any second level matches
-                const matchesSecondLevel = Array.from(secondLevelItems).some(item => {
-                    const label = document.querySelector(`label[for="${item.id}"]`);
-                    return label && label.textContent.toLowerCase().includes(term);
-                });
-                
-                // Check if any third level matches
-                const matchesThirdLevel = Array.from(thirdLevelItems).some(item => {
-                    const label = document.querySelector(`label[for="${item.id}"]`);
-                    return label && label.textContent.toLowerCase().includes(term);
-                });
-                
-                // Show or hide based on matches
-                const shouldShow = matchesRoot || matchesSecondLevel || matchesThirdLevel || term === "";
-                rootWrapper.style.display = shouldShow ? "block" : "none";
-                
-                // If showing and term is not empty, expand to show matches
-                if (shouldShow && term !== "") {
-                    // Expand root level
-                    const rootContainer = rootWrapper.querySelector(`.border-l.border-r.border-b`);
-                    if (rootContainer && rootContainer.classList.contains("hidden")) {
-                        rootHeader.click();
+                const rootLabelEl = rootWrapper.querySelector('.layer-label[data-layer-level="1"]');
+                const rootOwnMatch = isMatch(rootLabelEl);
+
+                let rootHasVisibleChild = false;
+
+                rootWrapper.querySelectorAll('.layer-second-row').forEach((secondRow) => {
+                    const secondLabelEl = secondRow.querySelector('.layer-label[data-layer-level="2"]');
+                    const secondOwnMatch = isMatch(secondLabelEl);
+                    if (secondOwnMatch) resultCount++;
+
+                    let secondHasVisibleChild = false;
+
+                    secondRow.querySelectorAll('.layer-third-row').forEach((thirdRow) => {
+                        const thirdLabelEl = thirdRow.querySelector('.layer-label[data-layer-level="3"]');
+                        const thirdOwnMatch = isMatch(thirdLabelEl);
+                        if (thirdOwnMatch) resultCount++;
+
+                        thirdRow.style.display = thirdOwnMatch ? "" : "none";
+                        if (thirdOwnMatch) secondHasVisibleChild = true;
+                    });
+
+                    const secondVisible = secondOwnMatch || secondHasVisibleChild;
+                    secondRow.style.display = secondVisible ? "" : "none";
+                    if (secondVisible) rootHasVisibleChild = true;
+
+                    // Auto-expand this branch so a matching third-level child is visible
+                    if (!showAll && secondHasVisibleChild) {
+                        const thirdChildren = secondRow.querySelector('.layer-third-children');
+                        const secondHeader = secondRow.querySelector('.flex.items-center.justify-between');
+                        if (secondHeader && thirdChildren && thirdChildren.classList.contains('hidden')) {
+                            secondHeader.click();
+                        }
                     }
-                    
-                    // Expand second level if third level matches
-                    if (matchesThirdLevel) {
-                        thirdLevelItems.forEach(item => {
-                            if (document.querySelector(`label[for="${item.id}"]`)?.textContent.toLowerCase().includes(term)) {
-                                // Find and expand parent
-                                const parentId = item.getAttribute('data-parent');
-                                const grandparentId = item.getAttribute('data-grandparent');
-                                if (parentId && grandparentId) {
-                                    const secondId = `second-${grandparentId}-${parentId}`.replace(/\s+/g, "-");
-                                    const secondHeader = document.querySelector(`#${secondId}`)?.closest('.flex.items-center.justify-between');
-                                    const secondContainer = document.getElementById(`${secondId}-children`);
-                                    
-                                    if (secondHeader && secondContainer && secondContainer.classList.contains('hidden')) {
-                                        secondHeader.click();
-                                    }
-                                }
-                            }
-                        });
+                });
+
+                const rootVisible = rootOwnMatch || rootHasVisibleChild;
+                rootWrapper.style.display = rootVisible ? "block" : "none";
+
+                // Auto-expand the root so a matching branch/leaf underneath is visible
+                if (!showAll && rootVisible && rootHasVisibleChild) {
+                    const rootChildren = rootWrapper.querySelector('.layer-root-children');
+                    if (rootChildren && rootChildren.classList.contains("hidden")) {
+                        rootHeader?.click();
                     }
                 }
-            });
-        }, 300);
+            } catch (err) {
+                console.warn('Layer search: gagal memproses root wrapper', err);
+            }
+        });
+
+        if (layerSearchEmpty) {
+            layerSearchEmpty.classList.toggle('hidden', showAll || resultCount > 0);
+        }
+        if (layerSearchClear) {
+            layerSearchClear.classList.toggle('hidden', rawTerm === "");
+        }
+    }
+
+    layerSearchInput?.addEventListener("input", (e) => {
+        clearTimeout(searchTimeout);
+        const value = e.target.value;
+        searchTimeout = setTimeout(() => applyLayerSearch(value), 300);
+    });
+
+    layerSearchClear?.addEventListener("click", () => {
+        if (!layerSearchInput) return;
+        layerSearchInput.value = "";
+        layerSearchInput.focus();
+        clearTimeout(searchTimeout);
+        applyLayerSearch("");
     });
 });
 
