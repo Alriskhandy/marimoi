@@ -137,6 +137,37 @@ const LeftControlButtons = L.Control.extend({
 });
 map.addControl(new LeftControlButtons());
 
+/**
+ * Tombol toggle panel "Layer Tools", dirender sebagai Leaflet control 'topleft'
+ * terpisah supaya otomatis menyambung tepat di bawah tombol Fullscreen/Home
+ * dengan spacing yang sama seperti antar-control Leaflet lainnya.
+ */
+const LayerToolsControl = L.Control.extend({
+    options: { position: "topleft" },
+    onAdd: function () {
+        const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+
+        const toolsBtn = L.DomUtil.create("a", "", container);
+        toolsBtn.id = "btn-toggle-layer-tools";
+        toolsBtn.href = "#";
+        toolsBtn.title = "Layer Tools";
+        toolsBtn.setAttribute("role", "button");
+        toolsBtn.setAttribute("aria-label", "Layer Tools");
+        toolsBtn.innerHTML = '<i class="bi bi-sliders"></i>';
+
+        L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        return container;
+    },
+});
+map.addControl(new LayerToolsControl());
+
+// Menyimpan opacity per layer aktif (key: nama kategori level-3) agar tetap
+// konsisten saat panel Layer Tools dibuka/ditutup atau layer lain diaktifkan.
+const layerOpacityState = new Map();
+
 // Update layerGroups structure to support 3 levels
 let layerGroups = {};
 let currentBaseMap = null;
@@ -563,6 +594,203 @@ function generateLegend() {
 }
 
 /**
+ * Baca opacity yang SEDANG dirender pada sebuah layerGroup (bukan asumsi
+ * default 100%) — dipakai supaya nilai awal slider di Layer Tools selalu
+ * sinkron dengan tampilan layer yang sebenarnya. Polygon dan garis punya
+ * default opacity berbeda-beda (lihat getStyleForCategory).
+ *
+ * Setiap feature ditambahkan lewat `L.geoJSON(feature, {...}).addTo(targetLayer)`,
+ * jadi anak langsung dari layerGroup adalah WRAPPER L.GeoJSON (FeatureGroup) —
+ * options-nya cuma menyimpan referensi fungsi `style` yang dipakai, BUKAN angka
+ * fillOpacity/opacity hasil resolusinya. Nilai numerik yang sebenarnya ada satu
+ * level lebih dalam, di layer Path/Marker asli. Makanya di sini turun rekursif
+ * lewat setiap eachLayer() sampai ketemu layer yang benar-benar punya opsi
+ * numerik tsb.
+ */
+function getLayerGroupOpacity(layerGroup) {
+    let opacity = null;
+
+    function visit(layer) {
+        if (opacity !== null) return;
+
+        if (layer.eachLayer) {
+            layer.eachLayer(visit);
+            return;
+        }
+
+        if (layer.options) {
+            if (typeof layer.options.fillOpacity === "number") {
+                opacity = layer.options.fillOpacity;
+            } else if (typeof layer.options.opacity === "number") {
+                opacity = layer.options.opacity;
+            }
+        }
+    }
+
+    if (layerGroup.eachLayer) {
+        layerGroup.eachLayer(visit);
+    }
+
+    return opacity ?? 1;
+}
+
+/**
+ * Resolusi warna representatif sebuah layer, sama persis dengan urutan
+ * fallback yang dipakai generateLegend() supaya warna slider di Layer Tools
+ * konsisten dengan warna swatch di Legenda.
+ */
+function getLayerColor(rootName, secondName, thirdName) {
+    return (
+        kategoriWarnaMap[thirdName] ||
+        kategoriWarnaMap[secondName] ||
+        kategoriWarnaMap[rootName] ||
+        "#9ca3af"
+    );
+}
+
+/**
+ * Isi ulang panel "Layer Tools": satu slider transparansi per layer yang
+ * sedang aktif di peta (bukan satu slider global untuk semua layer).
+ *
+ * Layer kategori point/marker (is_marker) dikecualikan: feature-nya dirender
+ * sebagai L.marker (icon), bukan Path, jadi tidak punya .setStyle() sama
+ * sekali — slider transparansi tidak akan berefek apa-apa padanya. Ditandai
+ * lewat `iconMap`, flag yang sama yang sudah dipakai generateLegend() untuk
+ * membedakan kategori marker dari kategori vector (lihat loadCategoriesMetadata).
+ */
+function updateLayerToolsPanel() {
+    const content = document.getElementById("layer-tools-content");
+    if (!content) return;
+
+    const activeEntries = [];
+    Object.entries(layerGroups).forEach(([rootName, secondLevel]) => {
+        Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
+            Object.entries(thirdLevel).forEach(([thirdName, layerGroup]) => {
+                if (iconMap[thirdName]) return; // layer point/marker, tidak ditampilkan
+
+                if (
+                    map.hasLayer(layerGroup) &&
+                    layerGroup.getLayers &&
+                    layerGroup.getLayers().length > 0
+                ) {
+                    activeEntries.push({ rootName, secondName, thirdName, layerGroup });
+                }
+            });
+        });
+    });
+
+    content.innerHTML = "";
+
+    if (activeEntries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "text-center py-8 px-4";
+        empty.innerHTML = `
+            <i class="bi bi-layers text-4xl text-gray-300 mb-3 block"></i>
+            <p class="text-sm font-semibold text-gray-700 mb-1">Tidak ada layer aktif</p>
+            <p class="text-xs text-gray-400">Aktifkan layer dari panel Layer untuk menggunakan alat ini.</p>
+        `;
+        content.appendChild(empty);
+        return;
+    }
+
+    activeEntries.forEach(({ rootName, secondName, thirdName, layerGroup }) => {
+        // Nilai awal: pakai yang pernah diset user di sesi ini (jika ada),
+        // kalau belum pernah sama sekali baca opacity ASLI dari layer yang
+        // sedang dirender supaya value slider = tampilan layer sebenarnya.
+        if (!layerOpacityState.has(thirdName)) {
+            layerOpacityState.set(thirdName, getLayerGroupOpacity(layerGroup));
+        }
+        const opacity = layerOpacityState.get(thirdName);
+        const color = getLayerColor(rootName, secondName, thirdName);
+
+        const row = document.createElement("div");
+        row.className = "px-4 py-3 border-b border-gray-200 last:border-b-0";
+
+        const labelRow = document.createElement("div");
+        labelRow.className = "flex items-center justify-between mb-2 gap-2";
+
+        const labelWrap = document.createElement("span");
+        labelWrap.className = "flex items-center gap-2 min-w-0";
+
+        const colorDot = document.createElement("span");
+        colorDot.className = "inline-block w-2.5 h-2.5 rounded-full shrink-0";
+        colorDot.style.backgroundColor = color;
+
+        const label = document.createElement("span");
+        label.className = "text-sm text-gray-700 truncate";
+        label.textContent = thirdName;
+
+        labelWrap.appendChild(colorDot);
+        labelWrap.appendChild(label);
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "text-xs text-gray-400 shrink-0";
+        valueLabel.textContent = `${Math.round(opacity * 100)}%`;
+
+        labelRow.appendChild(labelWrap);
+        labelRow.appendChild(valueLabel);
+
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = "0";
+        slider.max = "100";
+        slider.value = String(Math.round(opacity * 100));
+        slider.className = "range range-sm w-full";
+        slider.style.accentColor = color;
+        slider.setAttribute("aria-label", `Transparansi ${thirdName}`);
+
+        slider.addEventListener("input", (e) => {
+            const val = Number(e.target.value) / 100;
+            layerOpacityState.set(thirdName, val);
+            valueLabel.textContent = `${e.target.value}%`;
+
+            if (layerGroup.eachLayer) {
+                layerGroup.eachLayer((layer) => {
+                    if (layer.setStyle) {
+                        layer.setStyle({ opacity: val, fillOpacity: val });
+                    }
+                });
+            }
+        });
+
+        row.appendChild(labelRow);
+        row.appendChild(slider);
+        content.appendChild(row);
+    });
+}
+
+/**
+ * Posisikan panel Layer Tools tepat di bawah kolom tombol Leaflet (zoom,
+ * fullscreen/home, layer tools) di sisi kiri peta, dihitung dari posisi
+ * render sebenarnya supaya tetap presisi walau ukuran tombol Leaflet
+ * berubah (mis. saat mode leaflet-touch aktif). max-height konten dihitung
+ * dari sisa ruang yang benar-benar tersedia sampai tepi bawah peta, supaya
+ * daftar layer aktif selalu bisa di-scroll alih-alih meluber keluar peta.
+ */
+function positionLayerToolsPanel() {
+    const panel = document.getElementById("sidebar-layer-tools");
+    const header = document.getElementById("layer-tools-header");
+    const content = document.getElementById("layer-tools-content");
+    const leftControls = document.querySelector("#map .leaflet-top.leaflet-left");
+    const mapEl = document.getElementById("map");
+    if (!panel || !leftControls || !mapEl) return;
+
+    const mapRect = mapEl.getBoundingClientRect();
+    const controlsRect = leftControls.getBoundingClientRect();
+
+    const top = controlsRect.bottom - mapRect.top + 8;
+    panel.style.top = `${top}px`;
+    panel.style.left = `${controlsRect.left - mapRect.left}px`;
+
+    if (content) {
+        const headerHeight = header?.getBoundingClientRect().height || 40;
+        const bottomMargin = 16;
+        const available = mapRect.height - top - headerHeight - bottomMargin;
+        content.style.maxHeight = `${Math.max(120, available)}px`;
+    }
+}
+
+/**
  * Membuat dan mengikat konten popup pada setiap fitur peta.
  */
 function bindPopupContent(feature, layer, urlPath) {
@@ -921,6 +1149,7 @@ async function loadCategoriesMetadata() {
 
         updateLayerList();
         generateLegend();
+        updateLayerToolsPanel();
 
         // Tutup loading toast manual
         if (loadingToast) hideToast(loadingToast);
@@ -1393,8 +1622,9 @@ function updateLayerList() {
                             }
                         }
                     }
-                    
+
                     generateLegend();
+                    updateLayerToolsPanel();
                 } finally {
                     secondCheckbox.disabled = false;
                     secondCheckbox.className = secondCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
@@ -1456,9 +1686,10 @@ function updateLayerList() {
                         
                         // Update second level checkbox state based on third level checkboxes
                         updateSecondLevelCheckboxState(secondCheckbox, thirdLevelContainer);
-                        
-                        // Update legend
+
+                        // Update legend & layer tools panel
                         generateLegend();
+                        updateLayerToolsPanel();
                     } finally {
                         thirdCheckbox.disabled = false;
                         thirdCheckbox.className = thirdCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
@@ -1677,34 +1908,6 @@ function generatePreviewUrl(basemap) {
  * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll) - Tailwind version
  */
 function setupUI() {
-    const transparencySlider = document.getElementById("transparency");
-    if (transparencySlider) {
-        // Add Tailwind classes to slider if not already present
-        if (!transparencySlider.classList.contains("range")) {
-            transparencySlider.className = "range range-primary w-full";
-        }
-
-        transparencySlider.addEventListener("input", (e) => {
-            const val = e.target.value / 100;
-            Object.values(layerGroups).forEach((secondLevel) => {
-                Object.values(secondLevel).forEach((thirdLevel) => {
-                    Object.values(thirdLevel).forEach((layerGroup) => {
-                        if (layerGroup.eachLayer) {
-                            layerGroup.eachLayer((layer) => {
-                                if (layer.setStyle) {
-                                    layer.setStyle({
-                                        fillOpacity: val,
-                                        opacity: val,
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-            });
-        });
-    }
-
     const basemapList = document.getElementById("basemap-list");
     if (basemapList) {
         basemapList.innerHTML = "";
@@ -2222,6 +2425,40 @@ document.addEventListener("DOMContentLoaded", async () => {
             closeBtn.addEventListener("click", () => {
                 sidebarElements[type].classList.add("hidden");
             });
+        }
+    });
+
+    // Layer Tools panel (independen dari sidebar lain: boleh dibuka bersamaan
+    // dengan panel Layer, karena isinya bergantung pada layer yang sedang aktif)
+    const layerToolsPanel = document.getElementById("sidebar-layer-tools");
+    const btnToggleLayerTools = document.getElementById("btn-toggle-layer-tools");
+    const btnCloseLayerTools = document.getElementById("btn-close-sidebar-layer-tools");
+
+    function openLayerToolsPanel() {
+        if (!layerToolsPanel) return;
+        positionLayerToolsPanel();
+        updateLayerToolsPanel();
+        layerToolsPanel.classList.remove("hidden");
+        btnToggleLayerTools?.classList.add("bg-blue-50", "text-blue-600");
+    }
+
+    function closeLayerToolsPanel() {
+        if (!layerToolsPanel) return;
+        layerToolsPanel.classList.add("hidden");
+        btnToggleLayerTools?.classList.remove("bg-blue-50", "text-blue-600");
+    }
+
+    btnToggleLayerTools?.addEventListener("click", () => {
+        if (!layerToolsPanel) return;
+        const isHidden = layerToolsPanel.classList.contains("hidden");
+        isHidden ? openLayerToolsPanel() : closeLayerToolsPanel();
+    });
+
+    btnCloseLayerTools?.addEventListener("click", closeLayerToolsPanel);
+
+    window.addEventListener("resize", () => {
+        if (layerToolsPanel && !layerToolsPanel.classList.contains("hidden")) {
+            positionLayerToolsPanel();
         }
     });
 
