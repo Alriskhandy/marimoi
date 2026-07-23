@@ -348,19 +348,10 @@
                         title="Unduh Data/Informasi" data-tooltip="Download Peta">
                         <i class="bi bi-file-earmark-arrow-down-fill"></i>
                     </button>
-
-                    <button id="btn-fullscreen" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Tampilan Penuh" data-tooltip="Tampilan Penuh">
-                        <i class="bi bi-arrows-fullscreen"></i>
-                    </button>
-
-                    <button id="btn-default-zoom" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Default Zoom" data-tooltip="Default Zoom">
-                        <i class="bi bi-house-door-fill"></i>
-                    </button>
                 </div>
+
+                <!-- Tombol Fullscreen & Home dirender oleh Leaflet sebagai control 'topleft',
+                     langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
 
                 <!-- Map -->
                 <div id="map" class="relative z-10 h-full w-full bg-gray-200 flex items-center justify-center">

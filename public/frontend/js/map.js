@@ -101,6 +101,42 @@ const map = L.map("map", {
     attributionControl: true,
 }).setView(mapConfig.center, mapConfig.zoom);
 
+/**
+ * Tombol Fullscreen & Home, dirender sebagai Leaflet control 'topleft' (bukan div
+ * absolute custom) supaya otomatis memakai class/ukuran/spacing yang persis sama
+ * dengan tombol zoom in/out bawaan Leaflet di atasnya (termasuk saat leaflet-touch
+ * mode aktif dan tombol zoom membesar ke 30px) — tanpa perlu hardcode pixel manual.
+ */
+const LeftControlButtons = L.Control.extend({
+    options: { position: "topleft" },
+    onAdd: function () {
+        const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+
+        const fullscreenBtn = L.DomUtil.create("a", "", container);
+        fullscreenBtn.id = "btn-fullscreen";
+        fullscreenBtn.href = "#";
+        fullscreenBtn.title = "Tampilan Penuh";
+        fullscreenBtn.setAttribute("role", "button");
+        fullscreenBtn.setAttribute("aria-label", "Tampilan Penuh");
+        fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+
+        const homeBtn = L.DomUtil.create("a", "", container);
+        homeBtn.id = "btn-default-zoom";
+        homeBtn.href = "#";
+        homeBtn.title = "Default Zoom";
+        homeBtn.setAttribute("role", "button");
+        homeBtn.setAttribute("aria-label", "Default Zoom");
+        homeBtn.innerHTML = '<i class="bi bi-house-door-fill"></i>';
+
+        L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        return container;
+    },
+});
+map.addControl(new LeftControlButtons());
+
 // Update layerGroups structure to support 3 levels
 let layerGroups = {};
 let currentBaseMap = null;
