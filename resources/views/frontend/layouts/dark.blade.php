@@ -7,10 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $title ?? 'MARIMOI - Sistem Informasi Manajemen Akselerasi Infrastruktur' }}</title>
     <meta name="google-site-verification" content="6RZF3ryk7c1bQytWoY25iwHocGbgi7eHi5j9-Y0u0E8" />
-    
+
     <!-- Primary Meta Tags -->
-    <meta name="title"
-        content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
+    <meta name="title" content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta name="description"
         content="MARIMOI adalah sistem digital terpadu berbasi web yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktru daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.">
     <meta name="keywords"
@@ -30,7 +29,8 @@
     <meta property="og:image" content="{{ asset('frontend/img/index-marimoi.png') }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
+    <meta property="og:image:alt"
+        content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:locale" content="id_ID">
 
@@ -38,7 +38,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MalukuUtaraProv">
     <meta name="twitter:creator" content="@MalukuUtaraProv">
-    <meta name="twitter:title" content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
+    <meta name="twitter:title"
+        content="MARIMOI - Manajemen Akselerasi Infrastruktur Untuk Monitoring dan Integrasi wilayah">
     <meta name="twitter:description"
         content="MARIMOI adalah sistem digital terpadu berbasi web yang dikembangkan untuk mendukung perencanaan, pelaksanaan, pemantauan, dan evaluasi pembangunan infrastruktru daerah secara lebih efektif, partisipatif, dan terintegrasi. Sistem ini menyasar penguatan sinergi lintas sektor dan wilayah dalam mendukung pembangunan wilayah Provinsi Maluku Utara.">
     <meta name="twitter:image" content="{{ asset('frontend/img/index-marimoi.png') }}">
@@ -163,7 +164,9 @@
                     <li><a href="{{ route('tampil.prioritas') }}"
                             class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah
                             2025-2029</a></li>
-                    <li class="dropdown">
+                    <li><a href="{{ route('tampil.musrenbang') }}"
+                            class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a></li>
+                    {{-- <li class="dropdown">
                         @php
                             $isDropdownActive =
                                 request()->routeIs('tampil.musrenbang') || request()->routeIs('coming_soon');
@@ -187,7 +190,7 @@
                                 </a>
                             </li>
                         </ul>
-                    </li>
+                    </li> --}}
 
                     <li><a href="{{ route('tampil.pokir') }}"
                             class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir

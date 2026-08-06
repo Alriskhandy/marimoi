@@ -422,6 +422,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         return view('backend.cooming_soon');
     })->name('coming_soon');
 });
-Route::get('/coming-soon', function () {
-    return view('coming_soon');
-})->name('coming_soon_public');
+// Route::get('/coming-soon', function () {
+//     return view('coming_soon');
+// })->name('coming_soon_public');
