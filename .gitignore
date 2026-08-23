@@ -44,3 +44,12 @@ Homestead.yaml
 
 # dokumen analisis
 /docs
+
+# Laravel Boost
+.mcp.json
+AGENTS.md
+boost.json
+CLAUDE.md
+/.claude
+/.github
+/.ai
