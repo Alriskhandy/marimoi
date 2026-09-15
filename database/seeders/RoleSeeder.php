@@ -26,8 +26,8 @@ class RoleSeeder extends Seeder
                 'description' => 'Administrator untuk OPD tertentu',
             ],
             [
-                'name' => 'Publik',
-                'slug' => 'publik',
+                'name' => 'User',
+                'slug' => 'user',
                 'description' => 'Pengguna publik hasil login Google',
             ],
         ];

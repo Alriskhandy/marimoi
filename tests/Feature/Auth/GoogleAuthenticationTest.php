@@ -25,9 +25,9 @@ class GoogleAuthenticationTest extends TestCase
         ]);
     }
 
-    public function test_new_google_user_is_provisioned_with_publik_role(): void
+    public function test_new_google_user_is_provisioned_with_user_role(): void
     {
-        Role::create(['name' => 'Publik', 'slug' => 'publik', 'description' => null]);
+        Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
         Socialite::fake('google', $this->fakeGoogleUser('google-1', 'warga@example.com'));
 
         $response = $this->get('/login/google/callback');
@@ -79,10 +79,10 @@ class GoogleAuthenticationTest extends TestCase
 
     public function test_disabled_account_cannot_login_with_google(): void
     {
-        $publikRole = Role::create(['name' => 'Publik', 'slug' => 'publik', 'description' => null]);
+        $userRole = Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
         $user = User::factory()->create([
             'email' => 'nonaktif@example.com',
-            'role_id' => $publikRole->id,
+            'role_id' => $userRole->id,
             'is_active' => false,
         ]);
         Socialite::fake('google', $this->fakeGoogleUser('google-3', 'nonaktif@example.com'));
@@ -100,7 +100,7 @@ class GoogleAuthenticationTest extends TestCase
 
     public function test_returning_google_user_reuses_the_same_identity(): void
     {
-        Role::create(['name' => 'Publik', 'slug' => 'publik', 'description' => null]);
+        Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
         Socialite::fake('google', $this->fakeGoogleUser('google-4', 'ulang@example.com'));
 
         $this->get('/login/google/callback');
@@ -112,5 +112,17 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertSame(1, User::where('email', 'ulang@example.com')->count());
         $this->assertSame(1, UserIdentity::where('provider_subject', 'google-4')->count());
         $this->assertSame(2, AuthenticationLog::where('event', 'login')->count());
+    }
+
+    public function test_new_google_user_login_fails_clearly_when_user_role_is_missing(): void
+    {
+        // Tidak ada role 'user' yang dibuat, mensimulasikan database yang belum di-seed.
+        Socialite::fake('google', $this->fakeGoogleUser('google-5', 'tanpa-role@example.com'));
+
+        $response = $this->get('/login/google/callback');
+
+        $this->assertGuest();
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseMissing('users', ['email' => 'tanpa-role@example.com']);
     }
 }

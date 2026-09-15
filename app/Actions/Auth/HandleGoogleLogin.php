@@ -63,11 +63,17 @@ class HandleGoogleLogin
         $user = User::where('email', $googleUser->getEmail())->first();
 
         if (! $user) {
+            $userRoleId = Role::where('slug', 'user')->value('id');
+
+            if (! $userRoleId) {
+                throw new GoogleLoginException('Role "user" belum tersedia. Hubungi Admin Sistem untuk membuat role tersebut sebelum login Google dapat digunakan.');
+            }
+
             $user = User::create([
                 'name' => $googleUser->getName() ?: $googleUser->getEmail(),
                 'email' => $googleUser->getEmail(),
                 'password' => null,
-                'role_id' => Role::where('slug', 'publik')->value('id'),
+                'role_id' => $userRoleId,
                 'is_active' => true,
                 'email_verified_at' => now(),
             ]);

@@ -145,7 +145,7 @@ class User extends Authenticatable
      */
     public function isPublik()
     {
-        return $this->hasRole('publik');
+        return $this->hasRole('user');
     }
 
     /**

@@ -623,7 +623,8 @@
             </li>
 
             @php
-                $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
+                $isSystemActive =
+                    request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('settings.*');
             @endphp
             <!-- Sistem & Pengguna -->
             <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
@@ -639,6 +640,11 @@
                         <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('users.index') }}">
                                 <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('roles.index') }}">
+                                <i class="mdi mdi-shield-crown me-2"></i>Manajemen Role
                             </a>
                         </li>
                         <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">

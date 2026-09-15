@@ -30,7 +30,7 @@ class FrontendNavbarAuthTest extends TestCase
 
     public function test_authenticated_public_user_sees_profile_menu_and_logout(): void
     {
-        $role = Role::create(['name' => 'Publik', 'slug' => 'publik', 'description' => null]);
+        $role = Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
         $user = User::factory()->create(['name' => 'Warga Marimoi', 'role_id' => $role->id]);
 
         $response = $this->actingAs($user)->get('/');

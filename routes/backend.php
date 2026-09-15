@@ -2,19 +2,20 @@
 
 use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataSpatialController;
+use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\KategoriAspirasiController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LogController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VisitorsController;
+use App\Models\DataSpatial;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,8 +36,6 @@ use Illuminate\Support\Facades\Route;
 | Dashboard Routes
 |--------------------------------------------------------------------------
 */
-
-
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -99,18 +98,18 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::post('/bulk-update-category', [DataSpatialController::class, 'bulkUpdateCategory'])->name('bulk-update-category');
         Route::post('/bulk-update-attribute', [DataSpatialController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute');
 
-
         // Debug routes for file uploads
         Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
         Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz');
 
         // Detail endpoint for modal
         Route::get('/{uuid}/details', function ($uuid) {
-            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            $data = DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+
             return response()->json([
                 'success' => $data ? true : false,
                 'data' => $data,
-                'message' => $data ? 'Data found' : 'Data not found'
+                'message' => $data ? 'Data found' : 'Data not found',
             ]);
         })->name('details');
     });
@@ -124,7 +123,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('tematik')->name('tematik.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=tematik';
+            return redirect()->route('data-spatial.create').'?type=tematik';
         })->name('create');
         Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
@@ -146,7 +145,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('usulan-musrenbang')->name('usulan-musrenbang.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexUsulanmusrenbang'])->name('index');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=usulan_musrenbang';
+            return redirect()->route('data-spatial.create').'?type=usulan_musrenbang';
         })->name('create');
         Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
@@ -168,7 +167,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('pokir-dprd')->name('pokir-dprd.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexPokirDprd'])->name('index');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=pokir_dprd';
+            return redirect()->route('data-spatial.create').'?type=pokir_dprd';
         })->name('create');
         Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
@@ -190,13 +189,13 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('proyek-strategis-daerah')->name('psd.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('index');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psd';
+            return redirect()->route('data-spatial.create').'?type=proyek_strategis&sub_type=psd';
         })->name('create');
 
         // Routes berdasarkan tahun
         Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('tahun.show');
         Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psd&year={$year}";
+            return redirect()->route('data-spatial.create')."?type=proyek_strategis&sub_type=psd&year={$year}";
         })->name('tahun.create');
     });
 
@@ -209,13 +208,13 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('proyek-strategis-nasional')->name('psn.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('index');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psn';
+            return redirect()->route('data-spatial.create').'?type=proyek_strategis&sub_type=psn';
         })->name('create');
 
         // Routes berdasarkan tahun
         Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('tahun.show');
         Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psn&year={$year}";
+            return redirect()->route('data-spatial.create')."?type=proyek_strategis&sub_type=psn&year={$year}";
         })->name('tahun.create');
     });
 
@@ -299,11 +298,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
     Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
 
-
     // Bulk operations - also before resource routes
     Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
-
-
 
     // Kategori Aspirasi Management
     Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
@@ -327,6 +323,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
+    // Role Management - hanya Super Admin
+    Route::middleware(['auth', 'role:super-admin'])->group(function () {
+        Route::resource('roles', RoleController::class)->except(['create', 'edit']);
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -345,15 +345,15 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
         // Data Spatial Details
         Route::get('/data-spatial/{uuid}/details', function ($uuid) {
-            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            $data = DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+
             return response()->json([
                 'success' => $data ? true : false,
                 'data' => $data,
-                'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan'
+                'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan',
             ]);
         })->name('data-spatial.details');
     });
-
 
     /*
     |--------------------------------------------------------------------------
