@@ -62,7 +62,7 @@
     <!-- Structured Data for Government Organization -->
     <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
+  "@@context": "https://schema.org",
   "@type": "GovernmentOrganization",
   "name": "MARIMOI",
   "alternateName": "Sistem Informasi Manajemen Akselerasi Infrastruktur",
@@ -199,6 +199,34 @@
                             class="{{ request()->routeIs('tampil.publikasi') ? 'active' : '' }}">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}"
                             class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a></li>
+                    @auth
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-trigger" aria-haspopup="true" aria-expanded="false"
+                                role="button">
+                                <i class="bi bi-person-circle me-1"></i>
+                                {{ auth()->user()->name }}
+                                <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
+                            </a>
+                            <ul class="dropdown-menu" role="menu" aria-label="Menu Profil">
+                                @if (auth()->user()->isAdmin())
+                                    <li role="none"><a href="{{ route('dashboard') }}" role="menuitem"><i
+                                                class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                @endif
+                                <li role="none">
+                                    <a href="{{ route('logout') }}" role="menuitem"
+                                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Keluar
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" hidden>
+                            @csrf
+                        </form>
+                    @else
+                        <li><a href="{{ route('login') }}" class="nav-login-btn"><i
+                                    class="bi bi-box-arrow-in-right me-2"></i>Masuk</a></li>
+                    @endauth
                 </ul>
             </div>
         </div>

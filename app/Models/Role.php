@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Role extends Model
 {
     use HasFactory;
-protected $table = 'roles';
-    // protected $fillable = [
-    //     'name',
-    //     'description',
-    //     'is_active'
-    // ];
+
+    protected $table = 'roles';
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'is_active',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -30,6 +33,4 @@ protected $table = 'roles';
     {
         return $query->where('is_active', true);
     }
-
-    
 }

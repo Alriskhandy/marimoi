@@ -263,10 +263,60 @@
             .login-container {
                 max-width: 380px;
             }
-            
+
             .login-card {
                 padding: 25px;
             }
+        }
+
+        .divider-or {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--default-color);
+            opacity: 0.6;
+            font-size: 13px;
+        }
+
+        .divider-or::before,
+        .divider-or::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        .divider-or span {
+            padding: 0 12px;
+        }
+
+        .google-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 11px;
+            background: #ffffff;
+            color: var(--heading-color);
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .google-btn:hover {
+            background: #f8f9fa;
+            border-color: rgba(0, 0, 0, 0.25);
+            color: var(--heading-color);
+            transform: translateY(-2px);
+        }
+
+        .google-btn i {
+            color: #ea4335;
+            font-size: 17px;
         }
     </style>
 </head>
@@ -328,6 +378,15 @@
                     Masuk
                 </button>
             </form>
+
+            <div class="divider-or">
+                <span>atau</span>
+            </div>
+
+            <a href="{{ route('login.google') }}" class="google-btn">
+                <i class="bi bi-google"></i>
+                Masuk dengan Google
+            </a>
 
             <div class="login-footer">
                 <p class="mb-1">@2025 Bappeda Provinsi Maluku Utara</p>

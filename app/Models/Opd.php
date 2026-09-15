@@ -4,10 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use SebastianBergmann\CodeCoverage\Report\Xml\Project;
 
 class Opd extends Model
 {
@@ -35,6 +33,7 @@ class Opd extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -56,8 +55,8 @@ class Opd extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', '%' . $search . '%')
-              ->orWhere('singkatan', 'like', '%' . $search . '%');
+            $q->where('name', 'like', '%'.$search.'%')
+                ->orWhere('singkatan', 'like', '%'.$search.'%');
         });
     }
 
@@ -101,7 +100,7 @@ class Opd extends Model
     public function getLogoUrlAttribute()
     {
         if ($this->logo && Storage::disk('public')->exists($this->logo)) {
-            return asset('storage/' . $this->logo);
+            return asset('storage/'.$this->logo);
         }
 
         return null;
@@ -112,7 +111,7 @@ class Opd extends Model
      */
     public function getHasContactAttribute()
     {
-        return !empty($this->email) || !empty($this->telepon);
+        return ! empty($this->email) || ! empty($this->telepon);
     }
 
     /**
@@ -120,7 +119,7 @@ class Opd extends Model
      */
     public function getDisplayNameAttribute()
     {
-        return $this->singkatan . ' - ' . $this->name;
+        return $this->singkatan.' - '.$this->name;
     }
 
     /**
@@ -175,13 +174,13 @@ class Opd extends Model
         // Event setelah OPD dibuat
         static::created(function ($opd) {
             // Log atau aksi lain setelah OPD dibuat
-            Log::info('OPD baru ditambahkan: ' . $opd->name . ' (' . $opd->singkatan . ')');
+            Log::info('OPD baru ditambahkan: '.$opd->name.' ('.$opd->singkatan.')');
         });
 
         // Event setelah OPD diupdate
         static::updated(function ($opd) {
             // Log atau aksi lain setelah OPD diupdate
-            Log::info('OPD diperbarui: ' . $opd->name . ' (' . $opd->singkatan . ')');
+            Log::info('OPD diperbarui: '.$opd->name.' ('.$opd->singkatan.')');
         });
     }
 
@@ -199,25 +198,27 @@ class Opd extends Model
             'tanpa_kontak' => self::whereNull('email')->whereNull('telepon')->count(),
         ];
     }
- public function projectFeedback()
+
+    public function projectFeedback()
     {
         return $this->belongsTo(ProjectFeedback::class, 'opd_id');
     }
+
     /**
      * Method untuk format telepon
      */
     public function getFormattedTeleponAttribute()
     {
-        if (!$this->telepon) {
+        if (! $this->telepon) {
             return null;
         }
 
         // Format telepon sederhana
         $telepon = preg_replace('/[^0-9]/', '', $this->telepon);
-        
+
         // Jika dimulai dengan 0, ganti dengan +62
         if (substr($telepon, 0, 1) === '0') {
-            $telepon = '+62' . substr($telepon, 1);
+            $telepon = '+62'.substr($telepon, 1);
         }
 
         return $telepon;
@@ -249,5 +250,4 @@ class Opd extends Model
             'Diubah Pada' => $this->updated_at->format('d/m/Y H:i'),
         ];
     }
-
 }

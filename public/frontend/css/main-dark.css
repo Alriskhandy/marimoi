@@ -178,6 +178,27 @@ body {
     width: 100%;
 }
 
+/* Navbar auth: login button (guest) */
+.nav-login-btn {
+    display: inline-flex !important;
+    align-items: center;
+    background: var(--primary);
+    color: var(--text-primary) !important;
+    padding: 0.5rem 1.25rem !important;
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.nav-login-btn::after {
+    display: none;
+}
+
+.nav-login-btn:hover {
+    background: var(--primary-dark);
+    color: var(--text-primary) !important;
+}
+
 /* Mobile Menu Button */
 .mobile-menu-button {
     display: none;

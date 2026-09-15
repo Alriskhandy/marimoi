@@ -22,6 +22,8 @@ class User extends Authenticatable
         'password',
         'role_id',
         'opd_id',
+        'is_active',
+        'email_verified_at',
     ];
 
     /**
@@ -44,6 +46,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'last_login_at' => 'datetime',
+            'disabled_at' => 'datetime',
         ];
     }
 
@@ -61,6 +66,38 @@ class User extends Authenticatable
     public function opd()
     {
         return $this->belongsTo(Opd::class);
+    }
+
+    /**
+     * Get the OAuth identities linked to the user (e.g. Google).
+     */
+    public function identities()
+    {
+        return $this->hasMany(UserIdentity::class);
+    }
+
+    /**
+     * Get the history of role/OPD assignments received by the user.
+     */
+    public function roleAssignments()
+    {
+        return $this->hasMany(UserRoleAssignment::class);
+    }
+
+    /**
+     * Get the authentication log entries recorded for the user.
+     */
+    public function authenticationLogs()
+    {
+        return $this->hasMany(AuthenticationLog::class);
+    }
+
+    /**
+     * Scope a query to only include active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     /**
@@ -104,11 +141,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is a public user (Google login)
+     */
+    public function isPublik()
+    {
+        return $this->hasRole('publik');
+    }
+
+    /**
      * Get user's full name with email
      */
     public function getFullNameWithEmailAttribute()
     {
-        return $this->name . ' (' . $this->email . ')';
+        return $this->name.' ('.$this->email.')';
     }
 
     /**
@@ -118,13 +163,13 @@ class User extends Authenticatable
     {
         $words = explode(' ', $this->name);
         $initials = '';
-        
+
         foreach ($words as $word) {
-            if (!empty($word)) {
+            if (! empty($word)) {
                 $initials .= strtoupper(substr($word, 0, 1));
             }
         }
-        
+
         return substr($initials, 0, 2); // Maximum 2 characters
     }
 
@@ -136,7 +181,7 @@ class User extends Authenticatable
         if ($this->isSuperAdmin()) {
             return 'Super Admin';
         }
-        
+
         return $this->is_active ? 'Aktif' : 'Nonaktif';
     }
 
