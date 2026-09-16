@@ -90,6 +90,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'index'])->name('index');
+        Route::get('/geojson', [DataSpatialController::class, 'geojson'])->name('geojson');
         Route::get('/create', [DataSpatialController::class, 'create'])->name('create');
         Route::post('/store', [DataSpatialController::class, 'store'])->name('store');
         Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');

@@ -1498,7 +1498,8 @@ function updateLayerList() {
 
         // Create root header (Level 1) - no checkbox, just a clickable header
         const rootHeader = document.createElement("div");
-        rootHeader.className = 
+        rootHeader.id = rootId;
+        rootHeader.className =
             "flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200";
 
         const rootLeftSection = document.createElement("div");
@@ -2024,6 +2025,42 @@ function setupUI() {
 }
 
 /**
+ * Terapkan state dari link share (kombinasi beberapa layer + viewport) ke peta.
+ * Dipicu saat halaman dibuka lewat /peta-tematik/share/{slug} dan server
+ * sudah menaruh state-nya di window.MARIMOI_SHARED_STATE (lihat peta.blade.php).
+ */
+async function applySharedMapState() {
+    const state = window.MARIMOI_SHARED_STATE;
+
+    if (!state || !Array.isArray(state.layers) || state.layers.length === 0) {
+        return;
+    }
+
+    for (const categoryName of state.layers) {
+        const checkbox = findCheckboxForCategory(categoryName);
+
+        if (!checkbox) {
+            showAlert(`Layer "${categoryName}" dari link share tidak ditemukan.`, "warning");
+            continue;
+        }
+
+        await expandParentGroupIfNeeded(checkbox);
+
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+            // Beri jeda supaya pemuatan data tiap layer tidak saling tabrakan
+            await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+    }
+
+    const viewport = state.viewport;
+    if (viewport && typeof viewport.lat === "number" && typeof viewport.lng === "number") {
+        map.setView([viewport.lat, viewport.lng], viewport.zoom || mapConfig.zoom);
+    }
+}
+
+/**
  * Get selected category from session/server
  */
 function getSelectedCategoryFromSession() {
@@ -2268,6 +2305,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     changeBaseMap("osm");
     setupUI();
 
+    // Beri tahu pengguna jika mereka datang dari link share yang tidak valid/kedaluwarsa
+    if (window.MARIMOI_SHARE_ERROR) {
+        showAlert(window.MARIMOI_SHARE_ERROR, "warning");
+    }
+
     // Show loading spinner for layer list
     const layerListContainer = document.getElementById("layer-list");
     if (layerListContainer) {
@@ -2289,6 +2331,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         setTimeout(async () => {
             // Auto-click checkbox untuk kategori yang dipilih dari session
             await autoClickCategoryFromSession();
+
+            // Terapkan state dari link share (multi-layer + viewport), jika ada
+            await applySharedMapState();
         }, 1000); // 1 detik delay untuk memastikan UI siap
 
     } catch (error) {
@@ -2574,6 +2619,175 @@ document.addEventListener("DOMContentLoaded", async () => {
         layerSearchInput.focus();
         clearTimeout(searchTimeout);
         applyLayerSearch("");
+    });
+
+    // ==================== SHARE PETA ====================
+    const shareModal = document.getElementById("shareMapModal");
+    const shareMapLinkInput = document.getElementById("shareMapLink");
+    const shareMapLinkSpinner = document.getElementById("shareMapLinkSpinner");
+    const shareMapContent = document.getElementById("shareMapContent");
+    const shareMapEmptyState = document.getElementById("shareMapEmptyState");
+    const btnShareMap = document.getElementById("btn-share-map");
+    const btnCloseShareModal = document.getElementById("btn-close-share-modal");
+    const btnCopyShareLink = document.getElementById("btn-copy-share-link");
+    const btnCopyShareIcon = document.getElementById("btn-copy-share-icon");
+    const btnCopyShareLabel = document.getElementById("btn-copy-share-label");
+    const shareQuickButtons = document.querySelectorAll(".share-quick-btn");
+    let copyFeedbackTimeout = null;
+
+    function getCheckedLayerNames() {
+        const checked = document.querySelectorAll(
+            '#layer-list input[type="checkbox"]:checked'
+        );
+        const names = new Set();
+
+        checked.forEach((checkbox) => {
+            const name = checkbox.getAttribute("data-category");
+            if (name) names.add(name);
+        });
+
+        return Array.from(names);
+    }
+
+    function openShareModal() {
+        shareModal?.classList.remove("hidden");
+        shareModal?.classList.add("flex");
+    }
+
+    function closeShareModal() {
+        shareModal?.classList.add("hidden");
+        shareModal?.classList.remove("flex");
+    }
+
+    function setShareLinkLoading(isLoading) {
+        shareMapLinkSpinner?.classList.toggle("hidden", !isLoading);
+
+        if (btnCopyShareLink) {
+            btnCopyShareLink.disabled = isLoading;
+        }
+
+        shareQuickButtons.forEach((btn) => {
+            btn.classList.toggle("pointer-events-none", isLoading);
+            btn.classList.toggle("opacity-40", isLoading);
+        });
+    }
+
+    btnShareMap?.addEventListener("click", async () => {
+        const layers = getCheckedLayerNames();
+
+        if (layers.length === 0) {
+            shareMapEmptyState?.classList.remove("hidden");
+            shareMapContent?.classList.add("hidden");
+            openShareModal();
+            return;
+        }
+
+        shareMapEmptyState?.classList.add("hidden");
+        shareMapContent?.classList.remove("hidden");
+
+        if (shareMapLinkInput) {
+            shareMapLinkInput.value = "";
+            shareMapLinkInput.placeholder = "Membuat link...";
+        }
+
+        setShareLinkLoading(true);
+        openShareModal();
+
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const tipeLayer = getDataType(urlPath);
+
+        try {
+            const response = await fetch(window.MARIMOI_SHARE_STORE_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": window.MARIMOI_CSRF_TOKEN,
+                },
+                body: JSON.stringify({
+                    layers,
+                    viewport: { lat: center.lat, lng: center.lng, zoom },
+                    data_type: tipeLayer.type,
+                    sub_type: tipeLayer.sub_type,
+                    year: tipeLayer.year,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            const shareUrl = result.url;
+
+            if (shareMapLinkInput) shareMapLinkInput.value = shareUrl;
+
+            const encodedUrl = encodeURIComponent(shareUrl);
+            const shareText = encodeURIComponent(`Lihat peta tematik ini: ${shareUrl}`);
+
+            const waLink = document.getElementById("share-whatsapp");
+            const tgLink = document.getElementById("share-telegram");
+            const mailLink = document.getElementById("share-email");
+
+            if (waLink) waLink.href = `https://wa.me/?text=${shareText}`;
+            if (tgLink) tgLink.href = `https://t.me/share/url?url=${encodedUrl}`;
+            if (mailLink) {
+                mailLink.href = `mailto:?subject=${encodeURIComponent("Peta Tematik MARIMOI")}&body=${shareText}`;
+            }
+
+            setShareLinkLoading(false);
+        } catch (error) {
+            console.error("Gagal membuat link share:", error);
+            if (shareMapLinkInput) shareMapLinkInput.placeholder = "Gagal membuat link";
+            shareMapLinkSpinner?.classList.add("hidden");
+            showAlert("Gagal membuat link share. Silakan coba lagi.", "danger");
+        }
+    });
+
+    btnCloseShareModal?.addEventListener("click", closeShareModal);
+
+    function showCopyFeedback() {
+        if (!btnCopyShareLink || !btnCopyShareIcon || !btnCopyShareLabel) return;
+
+        clearTimeout(copyFeedbackTimeout);
+
+        btnCopyShareIcon.className = "bi bi-check-lg";
+        btnCopyShareLabel.textContent = "Tersalin!";
+        btnCopyShareLink.classList.remove("bg-blue-500", "hover:bg-blue-600");
+        btnCopyShareLink.classList.add("bg-green-500", "hover:bg-green-600");
+
+        if (shareMapLinkInput) {
+            shareMapLinkInput.style.borderColor = "#4ade80";
+            shareMapLinkInput.style.backgroundColor = "#f0fdf4";
+        }
+
+        copyFeedbackTimeout = setTimeout(() => {
+            btnCopyShareIcon.className = "bi bi-clipboard";
+            btnCopyShareLabel.textContent = "Copy Link";
+            btnCopyShareLink.classList.remove("bg-green-500", "hover:bg-green-600");
+            btnCopyShareLink.classList.add("bg-blue-500", "hover:bg-blue-600");
+
+            if (shareMapLinkInput) {
+                shareMapLinkInput.style.borderColor = "";
+                shareMapLinkInput.style.backgroundColor = "";
+            }
+        }, 2000);
+    }
+
+    btnCopyShareLink?.addEventListener("click", async () => {
+        if (!shareMapLinkInput?.value) return;
+
+        try {
+            await navigator.clipboard.writeText(shareMapLinkInput.value);
+        } catch (error) {
+            shareMapLinkInput.select();
+            document.execCommand("copy");
+        }
+
+        showCopyFeedback();
+        showAlert("Link berhasil disalin.", "success");
     });
 });
 

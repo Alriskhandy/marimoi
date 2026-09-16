@@ -2087,7 +2087,8 @@
                 selectElement.append('<option value="">-- Pilih Parent (Opsional) --</option>');
 
                 // Get categories by type via AJAX
-                $.get(`{{ route('categories.api.options', '') }}/${type}`, function(response) {
+                const optionsUrl = `{{ route('categories.api.options', ':type') }}`.replace(':type', type);
+                $.get(optionsUrl, function(response) {
                     if (response.success) {
                         $.each(response.data, function(index, kategori) {
                             if (excludeId && kategori.id == excludeId) return;

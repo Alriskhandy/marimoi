@@ -185,6 +185,55 @@
                     </div>
                 </div>
 
+                {{-- Tailwind safelist: kelas berikut hanya ditoggle lewat map.js (file di public/,
+                     di luar cakupan `content` tailwind.config.js), jadi ditulis literal di sini
+                     supaya tetap ikut ter-compile. Div ini tidak pernah ditampilkan. --}}
+                <div class="hidden hover:bg-green-600"></div>
+
+                <!-- Modal Share Peta -->
+                <div id="shareMapModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+                    <div class="mx-3 bg-white text-gray-700 relative self-center rounded-lg shadow-lg w-full max-w-lg">
+                        <!-- Header -->
+                        <div class="px-4 py-3 border-b border-b-gray-400 flex justify-between items-center">
+                            <h5 class="text-lg font-semibold">Bagikan Peta</h5>
+                            <button id="btn-close-share-modal" class="text-gray-500 hover:text-gray-700">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="px-4 py-5 text-sm">
+                            <p id="shareMapEmptyState" class="hidden text-gray-500">
+                                Pilih minimal satu layer di panel Layer sebelum membagikan peta.
+                            </p>
+
+                            <div id="shareMapContent">
+                                <p class="text-gray-600 mb-3">
+                                    Link ini akan menampilkan layer dan posisi peta yang sama seperti saat ini.
+                                </p>
+
+                                <div class="flex items-center gap-2 mb-5">
+                                    <div class="relative flex-1 min-w-0">
+                                        <input type="text" id="shareMapLink" readonly
+                                            class="w-full text-sm text-gray-900 bg-gray-100 border border-gray-300 rounded-lg pl-3 pr-9 py-2.5 outline-none transition-colors duration-300 focus:border-blue-400"
+                                            placeholder="Membuat link...">
+                                        <i id="shareMapLinkSpinner"
+                                            class="bi bi-arrow-repeat animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                    <button id="btn-copy-share-link" type="button" disabled
+                                        class="shrink-0 w-[118px] bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5">
+                                        <i id="btn-copy-share-icon" class="bi bi-clipboard"></i>
+                                        <span id="btn-copy-share-label">Copy Link</span>
+                                    </button>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sidebar Layer -->
                 <div id="sidebar-layer"
                     class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
@@ -263,7 +312,7 @@
                 </div>
 
                 <!-- Panel Layer Tools (slider transparansi per layer aktif, posisi diatur oleh JS
-                     agar selalu menyambung tepat di bawah kolom tombol Leaflet sisi kiri) -->
+                                 agar selalu menyambung tepat di bawah kolom tombol Leaflet sisi kiri) -->
                 <div id="sidebar-layer-tools"
                     class="absolute w-[280px] md:w-[300px] bg-slate-50 border border-gray-300 rounded-lg shadow-lg z-[101] text-gray-900 hidden">
                     <!-- Header with gradient background -->
@@ -364,10 +413,16 @@
                         title="Unduh Data/Informasi" data-tooltip="Download Peta">
                         <i class="bi bi-file-earmark-arrow-down-fill"></i>
                     </button>
+
+                    <button id="btn-share-map" type="button"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Share Peta" data-tooltip="Share Peta">
+                        <i class="bi bi-share-fill"></i>
+                    </button>
                 </div>
 
                 <!-- Tombol Fullscreen & Home dirender oleh Leaflet sebagai control 'topleft',
-                     langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
+                                 langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
 
                 <!-- Map -->
                 <div id="map" class="relative z-10 h-full w-full bg-gray-200 flex items-center justify-center">
@@ -391,6 +446,21 @@
         </script>
     @endif
 
-    <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}"></script>
+    <script>
+        window.MARIMOI_CSRF_TOKEN = @json(csrf_token());
+        window.MARIMOI_SHARE_STORE_URL = @json(route('tematik.share.store'));
+        window.MARIMOI_SHARE_SHOW_URL_TEMPLATE = @json(route('tematik.share.show', ':slug'));
+
+        @if (isset($sharedMapState))
+            window.MARIMOI_SHARED_STATE = @json($sharedMapState);
+        @endif
+
+        @if (isset($sharedMapError))
+            window.MARIMOI_SHARE_ERROR = @json($sharedMapError);
+        @endif
+    </script>
+
+    <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}">
+    </script>
     <script src="{{ asset('frontend/js/map.js') }}?v={{ filemtime(public_path('frontend/js/map.js')) }}"></script>
 @endpush

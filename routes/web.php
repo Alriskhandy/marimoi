@@ -21,6 +21,10 @@ Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->nam
 
 Route::post('/peta-tematik/load/{id}', [FrontendController::class, 'lihatTematik'])->name('post.tematik');
 
+// SHARE PETA (link unik untuk kombinasi layer + viewport peta) //
+Route::post('/peta-tematik/share', [FrontendController::class, 'createSharedMap'])->name('tematik.share.store');
+Route::get('/peta-tematik/share/{slug}', [FrontendController::class, 'showSharedMap'])->name('tematik.share.show');
+
 // HALAMAN DETAIL //
 Route::get('/proyek-strategis-daerah/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psd');
 Route::get('/proyek-strategis-nasional/{id}', [FrontendController::class, 'detailPeta'])->name('detail.psn');
@@ -38,7 +42,6 @@ Route::get('/syarat-ketentuan', function () {
     return view('frontend.pages.syarat_ketentuan');
 })->name('syarat_ketentuan');
 
-
 Route::get('/kebijakan-privasi', function () {
     return view('frontend.pages.kebijakan_privasi');
 })->name('kebijakan_privasi');
@@ -51,7 +54,6 @@ Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore']
 
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
-
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 
@@ -68,5 +70,5 @@ Route::prefix('dokumen-publikasi')->group(function () {
 //     Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
 // });
 
-require __DIR__ . '/auth.php';
-require __DIR__ . '/backend.php';
+require __DIR__.'/auth.php';
+require __DIR__.'/backend.php';

@@ -10,6 +10,7 @@ use App\Models\DataSpatial;
 use App\Models\Dokumen;
 use App\Models\KategoriAspirasi;
 use App\Models\ProjectFeedback;
+use App\Models\SharedMap;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
@@ -108,6 +109,7 @@ class FrontendController extends Controller
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();
+
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
 
@@ -115,12 +117,14 @@ class FrontendController extends Controller
     public function psd()
     {
         $documents = Dokumen::all();
+
         return view('frontend.pages.peta', compact('documents'));
     }
 
     public function psn()
     {
         $documents = Dokumen::all();
+
         return view('frontend.pages.peta', compact('documents'));
     }
 
@@ -147,22 +151,82 @@ class FrontendController extends Controller
 
             return redirect()->route('tampil.tematik');
         } catch (\Exception $e) {
-            Log::error('Error in lihatTematik: ' . $e->getMessage());
+            Log::error('Error in lihatTematik: '.$e->getMessage());
 
             return redirect()->route('tampil.tematik')
                 ->with('error', 'Kategori peta tidak ditemukan.');
         }
     }
 
+    /**
+     * Generate slug unik untuk membagikan kombinasi layer + viewport peta tematik.
+     */
+    public function createSharedMap(Request $request)
+    {
+        $validated = $request->validate([
+            'layers' => 'required|array|min:1',
+            'layers.*' => 'string|max:255',
+            'viewport' => 'nullable|array',
+            'viewport.lat' => 'nullable|numeric',
+            'viewport.lng' => 'nullable|numeric',
+            'viewport.zoom' => 'nullable|numeric',
+            'data_type' => 'nullable|string|max:50',
+            'sub_type' => 'nullable|string|max:50',
+            'year' => 'nullable|integer',
+        ]);
+
+        do {
+            $slug = Str::random(8);
+        } while (SharedMap::where('slug', $slug)->exists());
+
+        $sharedMap = SharedMap::create([
+            'slug' => $slug,
+            'layers' => $validated['layers'],
+            'viewport' => $validated['viewport'] ?? null,
+            'data_type' => $validated['data_type'] ?? 'tematik',
+            'sub_type' => $validated['sub_type'] ?? null,
+            'year' => $validated['year'] ?? null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'slug' => $sharedMap->slug,
+            'url' => route('tematik.share.show', $sharedMap->slug),
+        ]);
+    }
+
+    /**
+     * Muat halaman peta tematik dengan state layer + viewport dari link share.
+     */
+    public function showSharedMap(string $slug)
+    {
+        $documents = Dokumen::all();
+
+        $sharedMap = SharedMap::where('slug', $slug)->first();
+
+        if (! $sharedMap || $sharedMap->isExpired()) {
+            return view('frontend.pages.peta', compact('documents'))
+                ->with('sharedMapError', 'Link share tidak valid atau sudah kedaluwarsa.');
+        }
+
+        return view('frontend.pages.peta', compact('documents'))
+            ->with('sharedMapState', [
+                'layers' => $sharedMap->layers,
+                'viewport' => $sharedMap->viewport,
+            ]);
+    }
+
     public function pokir()
     {
         $documents = Dokumen::all();
+
         return view('frontend.pages.peta', compact('documents'));
     }
 
     public function musrenbang()
     {
         $documents = Dokumen::all();
+
         return view('frontend.pages.peta', compact('documents'));
     }
 
@@ -170,6 +234,7 @@ class FrontendController extends Controller
     public function prioritas()
     {
         $documents = Dokumen::all();
+
         return view('frontend.pages.prioritas', compact('documents'));
     }
 
@@ -211,7 +276,7 @@ class FrontendController extends Controller
                 $query->addSelect(DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson'));
             } catch (\Exception $e) {
                 // If ST_AsGeoJSON fails, fall back to simple geometry selection
-                Log::warning('ST_AsGeoJSON failed, using alternative method: ' . $e->getMessage());
+                Log::warning('ST_AsGeoJSON failed, using alternative method: '.$e->getMessage());
                 $query->addSelect('data_spatial.geom as geojson');
             }
 
@@ -229,17 +294,17 @@ class FrontendController extends Controller
             }
 
             // Filter by specific categories (untuk on-demand loading)
-            if ($request->has('kategori') && !empty($request->kategori)) {
+            if ($request->has('kategori') && ! empty($request->kategori)) {
                 $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
                 // Sanitize category names
                 $categories = array_filter(array_map('trim', $categories));
-                if (!empty($categories)) {
+                if (! empty($categories)) {
                     $query->whereIn('categories.nama', $categories);
                 }
             }
 
             // Bounding box filter dengan validasi koordinat
-            if ($request->has('bbox') && !empty($request->bbox)) {
+            if ($request->has('bbox') && ! empty($request->bbox)) {
                 $bbox = explode(',', $request->bbox);
                 if (count($bbox) === 4) {
                     $bbox = array_map('floatval', $bbox);
@@ -251,16 +316,16 @@ class FrontendController extends Controller
                         $bbox[3] >= -90 && $bbox[3] <= 90
                     ) {
                         try {
-                            $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+                            $query->whereRaw('ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))', $bbox);
                         } catch (\Exception $e) {
-                            Log::warning('Bounding box filter failed: ' . $e->getMessage());
+                            Log::warning('Bounding box filter failed: '.$e->getMessage());
                         }
                     }
                 }
             }
 
             // Search filter dengan sanitasi
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $search = trim($request->search);
                 if (strlen($search) > 0) {
                     $query->where(function ($q) use ($search) {
@@ -269,22 +334,22 @@ class FrontendController extends Controller
 
                         // Only add JSON search if dbf_attributes column exists
                         try {
-                            $q->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+                            $q->orWhereRaw('dbf_attributes::text ILIKE ?', ["%{$search}%"]);
                         } catch (\Exception $e) {
-                            Log::debug('DBF attributes search skipped: ' . $e->getMessage());
+                            Log::debug('DBF attributes search skipped: '.$e->getMessage());
                         }
                     });
                 }
             }
 
             // DBF attribute filter dengan validasi JSON
-            if ($request->has('dbf_filter') && !empty($request->dbf_filter) && is_array($request->dbf_filter)) {
+            if ($request->has('dbf_filter') && ! empty($request->dbf_filter) && is_array($request->dbf_filter)) {
                 foreach ($request->dbf_filter as $attribute => $value) {
-                    if (is_string($attribute) && !empty($attribute)) {
+                    if (is_string($attribute) && ! empty($attribute)) {
                         try {
-                            $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+                            $query->whereRaw('dbf_attributes->? = ?', [$attribute, json_encode($value)]);
                         } catch (\Exception $e) {
-                            Log::warning("DBF filter failed for {$attribute}: " . $e->getMessage());
+                            Log::warning("DBF filter failed for {$attribute}: ".$e->getMessage());
                         }
                     }
                 }
@@ -305,7 +370,7 @@ class FrontendController extends Controller
             $lokasis = $query->get();
             $queryTime = microtime(true) - $startTime;
 
-            Log::info("Query executed in {$queryTime} seconds, returned " . $lokasis->count() . " records");
+            Log::info("Query executed in {$queryTime} seconds, returned ".$lokasis->count().' records');
 
             // Check if query took too long
             if ($queryTime > 30) {
@@ -319,7 +384,7 @@ class FrontendController extends Controller
                 try {
                     // Safely decode DBF attributes
                     $dbfAttributes = [];
-                    if (!empty($lokasi->dbf_attributes)) {
+                    if (! empty($lokasi->dbf_attributes)) {
                         if (is_string($lokasi->dbf_attributes)) {
                             $decoded = json_decode($lokasi->dbf_attributes, true);
                             if (is_array($decoded)) {
@@ -332,7 +397,7 @@ class FrontendController extends Controller
 
                     // Handle geometry safely
                     $geometry = null;
-                    if (!empty($lokasi->geojson)) {
+                    if (! empty($lokasi->geojson)) {
                         if (is_string($lokasi->geojson)) {
                             $geometry = json_decode($lokasi->geojson);
                         } else {
@@ -347,7 +412,7 @@ class FrontendController extends Controller
                             'uuid' => $lokasi->uuid,
                             'data_type' => $lokasi->data_type,
                             'sub_type' => $lokasi->sub_type,
-                            'gambar' => $lokasi->gambar ? asset('storage/' . $lokasi->gambar) : null,
+                            'gambar' => $lokasi->gambar ? asset('storage/'.$lokasi->gambar) : null,
                             'kategori_id' => $lokasi->kategori_id,
                             'kategori' => $lokasi->kategori,
                             'tahun' => $lokasi->tahun,
@@ -362,7 +427,8 @@ class FrontendController extends Controller
                     $features[] = $feature;
                     $processedCount++;
                 } catch (\Exception $featureError) {
-                    Log::error("Error processing feature {$lokasi->id}: " . $featureError->getMessage());
+                    Log::error("Error processing feature {$lokasi->id}: ".$featureError->getMessage());
+
                     // Continue processing other features
                     continue;
                 }
@@ -388,7 +454,7 @@ class FrontendController extends Controller
                     ->orderBy('nama')
                     ->get();
             } catch (\Exception $e) {
-                Log::warning('Failed to load categories: ' . $e->getMessage());
+                Log::warning('Failed to load categories: '.$e->getMessage());
             }
 
             $response = [
@@ -409,15 +475,15 @@ class FrontendController extends Controller
                     'query_time' => round($queryTime, 3),
                     'processed_count' => $processedCount,
                     'max_limit' => 3000,
-                    'generated_at' => now()->toISOString()
-                ]
+                    'generated_at' => now()->toISOString(),
+                ],
             ];
 
             return response()->json($response);
         } catch (\Exception $e) {
-            Log::error('Error in getGeojsonByDataType: ' . $e->getMessage(), [
+            Log::error('Error in getGeojsonByDataType: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'request_params' => $request->all()
+                'request_params' => $request->all(),
             ]);
 
             return response()->json([
@@ -427,8 +493,8 @@ class FrontendController extends Controller
                 'meta' => [
                     'limit' => 3000,
                     'max_limit' => 3000,
-                    'generated_at' => now()->toISOString()
-                ]
+                    'generated_at' => now()->toISOString(),
+                ],
             ], 500);
         }
     }
@@ -478,15 +544,16 @@ class FrontendController extends Controller
                     'category_type' => $categoryType,
                     'total_root_categories' => $rootCategories->count(),
                     'total_categories' => $allCategories->count(),
-                    'generated_at' => now()->toISOString()
-                ]
+                    'generated_at' => now()->toISOString(),
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in getCategoriesMetadata: ' . $e->getMessage());
+            Log::error('Error in getCategoriesMetadata: '.$e->getMessage());
+
             return response()->json([
                 'error' => 'Internal Server Error',
                 'message' => 'Gagal memuat metadata kategori.',
-                'details' => config('app.debug') ? $e->getMessage() : null
+                'details' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -551,7 +618,7 @@ class FrontendController extends Controller
             'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'h-captcha-response' => ['required', new ValidHCaptcha()],
+            'h-captcha-response' => ['required', new ValidHCaptcha],
         ];
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada file
@@ -584,7 +651,7 @@ class FrontendController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -592,10 +659,10 @@ class FrontendController extends Controller
             // Validate that the project exists using dynamic resolution
             $dataSpatialExists = DataSpatial::find($request->data_spatial_id);
 
-            if (!$dataSpatialExists) {
+            if (! $dataSpatialExists) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Proyek yang dipilih tidak ditemukan'
+                    'message' => 'Proyek yang dipilih tidak ditemukan',
                 ], 404);
             }
 
@@ -613,7 +680,7 @@ class FrontendController extends Controller
                 'email',
                 'phone',
                 'latitude',
-                'longitude'
+                'longitude',
             ]);
 
             // Tambahkan data status = pending (default);
@@ -629,7 +696,7 @@ class FrontendController extends Controller
                     $timestamp = now()->timestamp;
                     $randomString = Str::random(13);
                     $extension = $file->getClientOriginalExtension();
-                    $filename = $timestamp . '_' . $randomString . '.' . $extension;
+                    $filename = $timestamp.'_'.$randomString.'.'.$extension;
 
                     // Store file
                     $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
@@ -640,7 +707,7 @@ class FrontendController extends Controller
                         Log::info('File uploaded', [
                             'original' => $file->getClientOriginalName(),
                             'saved' => $filename,
-                            'size' => $file->getSize()
+                            'size' => $file->getSize(),
                         ]);
                     }
                 }
@@ -650,21 +717,21 @@ class FrontendController extends Controller
 
             // Data untuk user
             $userData = [
-                'nama'      => $request->nama_pemberi_aspirasi,
-                'email'     => $request->email,
+                'nama' => $request->nama_pemberi_aspirasi,
+                'email' => $request->email,
                 'tanggapan' => $request->tanggapan,
-                'tanggal'   => now()->format('d-m-Y H:i'),
+                'tanggal' => now()->format('d-m-Y H:i'),
             ];
 
             // Data untuk admin
             $adminData = [
-                'nama'      =>  $request->nama_pemberi_aspirasi,
-                'email'     =>  $request->email,
+                'nama' => $request->nama_pemberi_aspirasi,
+                'email' => $request->email,
                 'tanggapan' => $request->tanggapan,
-                'tanggal'   => now()->format('d-m-Y H:i'),
+                'tanggal' => now()->format('d-m-Y H:i'),
                 'nama_proyek' => $request->nama_proyek,
                 'kabupaten_kota' => $request->kabupaten_kota,
-                'kecamatan'     => $request->kecamatan,
+                'kecamatan' => $request->kecamatan,
                 'jenis_tanggapan' => $request->jenis_tanggapan,
             ];
 
@@ -682,10 +749,11 @@ class FrontendController extends Controller
                 'message' => 'Tanggapan berhasil ditambahkan',
             ]);
         } catch (\Exception $e) {
-            Log::error('Error storing feedback: ' . $e->getMessage());
+            Log::error('Error storing feedback: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -702,7 +770,7 @@ class FrontendController extends Controller
             'judul_aspirasi' => 'required|string|min:5|max:150',
             'isi_aspirasi' => 'required|string|min:10|max:1000',
             'agreement' => 'required|accepted',
-            'h-captcha-response' => ['required', new ValidHCaptcha()],
+            'h-captcha-response' => ['required', new ValidHCaptcha],
         ];
 
         // Validasi berdasarkan jenis aspirasi
@@ -762,7 +830,7 @@ class FrontendController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal. Periksa kembali data Anda.',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -775,7 +843,7 @@ class FrontendController extends Controller
                 'alamat',
                 'jenis_aspirasi',
                 'judul_aspirasi',
-                'isi_aspirasi'
+                'isi_aspirasi',
             ]);
 
             // Set default status ke pending;
@@ -812,7 +880,7 @@ class FrontendController extends Controller
                         $timestamp = now()->timestamp;
                         $randomString = Str::random(13);
                         $extension = $file->getClientOriginalExtension();
-                        $filename = $timestamp . '_' . $randomString . '.' . $extension;
+                        $filename = $timestamp.'_'.$randomString.'.'.$extension;
 
                         // Store file
                         $path = $file->storeAs('aspirasi_lampiran', $filename, 'public');
@@ -822,13 +890,13 @@ class FrontendController extends Controller
                             Log::info('Lampiran uploaded', [
                                 'original' => $file->getClientOriginalName(),
                                 'saved' => $filename,
-                                'size' => $file->getSize()
+                                'size' => $file->getSize(),
                             ]);
                         } else {
                             Log::error('Failed to store file');
                         }
                     } catch (\Exception $e) {
-                        Log::error('File upload error: ' . $e->getMessage());
+                        Log::error('File upload error: '.$e->getMessage());
                     }
                 }
             }
@@ -849,36 +917,36 @@ class FrontendController extends Controller
                 'isi_aspirasi' => $data['isi_aspirasi'],
                 'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
                 'kategori_aspirasi' => $opdData ? $opdData->nama_kategori : 'N/A',
-                'opd_terkait' => ($opdData && $opdData->opd) ? $opdData->opd->singkatan : 'N/A'
+                'opd_terkait' => ($opdData && $opdData->opd) ? $opdData->opd->singkatan : 'N/A',
             ];
 
             // 1. Kirim email konfirmasi ke user (masyarakat)
             if ($request->filled('email')) {
                 try {
                     Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
-                    Log::info('Confirmation email queued for user: ' . $request->email);
+                    Log::info('Confirmation email queued for user: '.$request->email);
                 } catch (\Exception $e) {
-                    Log::error('Failed to queue user email: ' . $e->getMessage());
+                    Log::error('Failed to queue user email: '.$e->getMessage());
                 }
             }
 
             // 2. Kirim email notifikasi ke admin sistem
-            if ($adminData && !empty($adminData->email)) {
+            if ($adminData && ! empty($adminData->email)) {
                 try {
                     Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
-                    Log::info('Admin notification email queued for: ' . $adminData->email);
+                    Log::info('Admin notification email queued for: '.$adminData->email);
                 } catch (\Exception $e) {
-                    Log::error('Failed to queue admin email: ' . $e->getMessage());
+                    Log::error('Failed to queue admin email: '.$e->getMessage());
                 }
             }
 
             // 3. Kirim email notifikasi ke OPD terkait (hanya untuk usulan)
-            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && !empty($opdData->opd->email)) {
+            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && ! empty($opdData->opd->email)) {
                 try {
                     Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
-                    Log::info('OPD notification email queued for: ' . $opdData->opd->email);
+                    Log::info('OPD notification email queued for: '.$opdData->opd->email);
                 } catch (\Exception $e) {
-                    Log::error('Failed to queue OPD email: ' . $e->getMessage());
+                    Log::error('Failed to queue OPD email: '.$e->getMessage());
                 }
             }
 
@@ -886,7 +954,7 @@ class FrontendController extends Controller
             Log::info('Aspirasi created successfully', [
                 'id' => $aspirasi->id,
                 'jenis' => $data['jenis_aspirasi'],
-                'pengirim' => $data['nama_pengirim']
+                'pengirim' => $data['nama_pengirim'],
             ]);
 
             return response()->json([
@@ -895,20 +963,20 @@ class FrontendController extends Controller
                 'data' => [
                     'id' => $aspirasi->id,
                     'nomor_tiket' => $aspirasi->nomor_tiket,
-                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s')
-                ]
+                    'tanggal' => $aspirasi->created_at->format('d-m-Y H:i:s'),
+                ],
             ], 201);
         } catch (\Exception $e) {
             Log::error('Error storing aspirasi', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi admin jika masalah berlanjut.'
+                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi admin jika masalah berlanjut.',
             ], 500);
         }
     }
@@ -919,18 +987,20 @@ class FrontendController extends Controller
     private function handleLampiranUpload($file)
     {
         try {
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
             // Ensure directory exists
             $uploadPath = storage_path('app/public/aspirasi_lampiran');
-            if (!file_exists($uploadPath)) {
+            if (! file_exists($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
 
             $file->storeAs('public/aspirasi_lampiran', $fileName);
+
             return $fileName;
         } catch (\Exception $e) {
-            Log::error('Error uploading lampiran: ' . $e->getMessage());
+            Log::error('Error uploading lampiran: '.$e->getMessage());
+
             return null;
         }
     }
@@ -941,18 +1011,20 @@ class FrontendController extends Controller
     private function handleImageUpload($image)
     {
         try {
-            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imageName = time().'_'.uniqid().'.'.$image->getClientOriginalExtension();
 
             // Ensure directory exists
             $uploadPath = storage_path('app/public/feedback_images');
-            if (!file_exists($uploadPath)) {
+            if (! file_exists($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
 
             $image->storeAs('public/feedback_images', $imageName);
+
             return $imageName;
         } catch (\Exception $e) {
-            Log::error('Error uploading image: ' . $e->getMessage());
+            Log::error('Error uploading image: '.$e->getMessage());
+
             return null;
         }
     }
@@ -996,5 +1068,4 @@ class FrontendController extends Controller
 
         return 'all'; // Default to show all
     }
-
 }

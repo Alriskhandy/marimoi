@@ -123,7 +123,19 @@
                                     Kelola dan pantau data spasial untuk mendukung perencanaan pembangunan daerah
                                 </p>
                             </div>
-                            <div>
+                            <div class="d-flex align-items-center">
+                                @if ($type === 'tematik')
+                                    <div class="btn-group me-2" role="group" aria-label="Ganti tampilan">
+                                        <button type="button" id="btnViewTable"
+                                            class="btn btn-outline-primary active" onclick="switchDataView('table')">
+                                            <i class="mdi mdi-table"></i> Tabel
+                                        </button>
+                                        <button type="button" id="btnViewMap" class="btn btn-outline-primary"
+                                            onclick="switchDataView('map')">
+                                            <i class="mdi mdi-map"></i> Peta
+                                        </button>
+                                    </div>
+                                @endif
                                 <a href="{{ $createUrl }}" class="btn btn-gradient-primary btn-rounded btn-fw me-2">
                                     <i class="mdi mdi-map-marker-plus"></i> {{ $label }}
                                 </a>
@@ -408,6 +420,55 @@
         </div>
     </div>
 
+    @if ($type === 'tematik')
+        <!-- Map View -->
+        <div id="mapView" class="d-none">
+            <div class="page-header">
+                <h3 class="page-title">
+                    <span class="page-title-icon bg-gradient-primary text-white me-2">
+                        <i class="mdi mdi-map-marker-multiple"></i>
+                    </span>
+                    Peta Tematik
+                </h3>
+                <div class="btn-group" role="group" aria-label="Ganti tampilan">
+                    <button type="button" id="btnViewTableMap" class="btn btn-outline-primary"
+                        onclick="switchDataView('table')">
+                        <i class="mdi mdi-table"></i> Tabel
+                    </button>
+                    <button type="button" class="btn btn-outline-primary active" disabled>
+                        <i class="mdi mdi-map"></i> Peta
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-3 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="mdi mdi-layers-outline me-1"></i>Layer Kategori
+                            </h6>
+                            <p class="text-muted small mb-3">
+                                Centang kategori untuk menampilkan datanya di peta.
+                            </p>
+                            <div id="mapLayerList" style="max-height: 550px; overflow-y: auto;">
+                                @include('backend.pages.data_spatial._map_layer_checklist', ['categories' => $categories])
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-9 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="mapTruncatedNotice" class="alert alert-warning d-none"></div>
+                            <div id="dataSpasialMap" style="height: 600px; border-radius: 8px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Detail Modal -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
@@ -599,6 +660,25 @@
 @endsection
 
 @push('styles')
+    @if ($type === 'tematik')
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+        <style>
+            .leaflet-popup-content {
+                min-width: 220px;
+            }
+
+            .map-popup-title {
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            .map-popup-actions {
+                display: flex;
+                gap: 6px;
+                margin-top: 8px;
+            }
+        </style>
+    @endif
     <style>
         /* Search and filter styling */
         .form-label {
@@ -1328,4 +1408,240 @@
             });
         });
     </script>
+
+    @if ($type === 'tematik')
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script>
+            const csrfToken = '{{ csrf_token() }}';
+            const geojsonUrl = '{{ route('data-spatial.geojson') }}';
+            const editUrlTemplate = '{{ route('data-spatial.edit', ':uuid') }}';
+            const destroyUrlTemplate = '{{ route('data-spatial.destroy', ':uuid') }}';
+
+            let dataSpasialMap = null;
+            const mapLayerGroups = {}; // categoryId -> L.layerGroup
+            const loadedMapLayers = new Set(); // categoryId yang datanya sudah pernah di-fetch
+
+            function switchDataView(view) {
+                const tableView = document.getElementById('tableView');
+                const mapView = document.getElementById('mapView');
+
+                if (view === 'map') {
+                    tableView.classList.add('d-none');
+                    mapView.classList.remove('d-none');
+                    document.getElementById('btnViewTable')?.classList.remove('active');
+                    document.getElementById('btnViewMap')?.classList.add('active');
+
+                    if (!dataSpasialMap) {
+                        initDataSpasialMap();
+                    } else {
+                        setTimeout(() => dataSpasialMap.invalidateSize(), 50);
+                    }
+                } else {
+                    mapView.classList.add('d-none');
+                    tableView.classList.remove('d-none');
+                    document.getElementById('btnViewMap')?.classList.remove('active');
+                    document.getElementById('btnViewTable')?.classList.add('active');
+                }
+            }
+
+            function initDataSpasialMap() {
+                dataSpasialMap = L.map('dataSpasialMap').setView([1.5, 127.5], 8);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(dataSpasialMap);
+
+                document.querySelectorAll('.map-layer-checkbox').forEach((checkbox) => {
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            showMapLayer(this.value);
+                        } else {
+                            hideMapLayer(this.value);
+                        }
+                    });
+                });
+            }
+
+            function getMapLayerGroup(categoryId) {
+                if (!mapLayerGroups[categoryId]) {
+                    mapLayerGroups[categoryId] = L.layerGroup();
+                }
+
+                return mapLayerGroups[categoryId];
+            }
+
+            function hideMapLayer(categoryId) {
+                if (mapLayerGroups[categoryId]) {
+                    dataSpasialMap.removeLayer(mapLayerGroups[categoryId]);
+                }
+            }
+
+            function showMapLayer(categoryId, forceReload = false) {
+                const layerGroup = getMapLayerGroup(categoryId);
+                layerGroup.addTo(dataSpasialMap);
+
+                if (loadedMapLayers.has(categoryId) && !forceReload) {
+                    return;
+                }
+
+                layerGroup.clearLayers();
+
+                const params = new URLSearchParams(window.location.search);
+                params.delete('type');
+                params.set('data_type', 'tematik');
+                params.set('category_id', categoryId);
+
+                const notice = document.getElementById('mapTruncatedNotice');
+
+                fetch(`${geojsonUrl}?${params.toString()}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(result => {
+                        loadedMapLayers.add(categoryId);
+
+                        if (result.meta && result.meta.truncated) {
+                            notice.textContent =
+                                `Salah satu layer punya ${result.meta.total_matching} data, hanya ${result.meta.total_features} yang ditampilkan. Gunakan pencarian di tampilan tabel untuk mempersempit.`;
+                            notice.classList.remove('d-none', 'alert-danger');
+                            notice.classList.add('alert-warning');
+                        }
+
+                        if (!result.features || result.features.length === 0) {
+                            return;
+                        }
+
+                        const geoJsonLayer = L.geoJSON(result, {
+                            pointToLayer: (feature, latlng) => {
+                                return L.circleMarker(latlng, {
+                                    radius: 8,
+                                    fillColor: feature.properties.warna || '#0d6efd',
+                                    color: '#ffffff',
+                                    weight: 2,
+                                    fillOpacity: 0.9
+                                });
+                            },
+                            style: (feature) => ({
+                                color: feature.properties.warna || '#0d6efd',
+                                weight: 2,
+                                fillOpacity: 0.3
+                            }),
+                            onEachFeature: (feature, layer) => {
+                                layer.bindPopup(buildMapPopup(feature.properties));
+                            }
+                        });
+
+                        geoJsonLayer.addTo(layerGroup);
+
+                        if (geoJsonLayer.getBounds().isValid()) {
+                            dataSpasialMap.fitBounds(geoJsonLayer.getBounds(), {
+                                padding: [30, 30]
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Gagal memuat layer peta:', error);
+
+                        document.getElementById(`layer-cat-${categoryId}`).checked = false;
+                        dataSpasialMap.removeLayer(layerGroup);
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal memuat layer',
+                            text: error.message
+                        });
+                    });
+            }
+
+            function buildMapPopup(props) {
+                const title = props.deskripsi || props.kategori || 'Tanpa Nama';
+                const editUrl = editUrlTemplate.replace(':uuid', props.uuid);
+
+                const container = document.createElement('div');
+
+                const titleEl = document.createElement('div');
+                titleEl.className = 'map-popup-title';
+                titleEl.textContent = title;
+                container.appendChild(titleEl);
+
+                const kategoriEl = document.createElement('div');
+                kategoriEl.className = 'text-muted small';
+                kategoriEl.textContent = 'Kategori: ' + (props.kategori || '-');
+                container.appendChild(kategoriEl);
+
+                const actions = document.createElement('div');
+                actions.className = 'map-popup-actions';
+
+                const detailBtn = document.createElement('button');
+                detailBtn.className = 'btn btn-sm btn-outline-info';
+                detailBtn.innerHTML = '<i class="mdi mdi-eye"></i> Detail';
+                detailBtn.addEventListener('click', () => showDetails(props.uuid));
+                actions.appendChild(detailBtn);
+
+                const editBtn = document.createElement('a');
+                editBtn.className = 'btn btn-sm btn-outline-warning';
+                editBtn.href = editUrl;
+                editBtn.innerHTML = '<i class="mdi mdi-pencil"></i> Edit';
+                actions.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-outline-danger';
+                deleteBtn.innerHTML = '<i class="mdi mdi-trash-can-outline"></i> Hapus';
+                deleteBtn.addEventListener('click', () => deleteMapFeature(props.uuid, props.kategori_id));
+                actions.appendChild(deleteBtn);
+
+                container.appendChild(actions);
+
+                return container;
+            }
+
+            function deleteMapFeature(uuid, categoryId) {
+                Swal.fire({
+                    title: 'Konfirmasi Hapus',
+                    text: 'Apakah Anda yakin ingin menghapus data ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Hapus',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+
+                    fetch(destroyUrlTemplate.replace(':uuid', uuid), {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Gagal menghapus data');
+
+                            dataSpasialMap.closePopup();
+                            loadedMapLayers.delete(categoryId);
+                            showMapLayer(categoryId, true);
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil dihapus',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal menghapus',
+                                text: error.message
+                            });
+                        });
+                });
+            }
+        </script>
+    @endif
 @endpush
