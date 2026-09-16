@@ -413,15 +413,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/prune-old', [LogController::class, 'pruneOld'])->name('prune-old');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Utility Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/coming-soon', function () {
-        return view('backend.cooming_soon');
-    })->name('coming_soon');
 });
 // Route::get('/coming-soon', function () {
 //     return view('coming_soon');

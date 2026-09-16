@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -520,17 +521,27 @@ class FrontendController extends Controller
                 ->orderBy('nama')
                 ->get();
 
-            // Hitung jumlah data per kategori (optional, bisa di-comment jika lambat)
+            // Hitung jumlah data per kategori (optional, bisa di-comment jika lambat).
+            // category_versions dipakai frontend (map-cache.js) untuk membuat cache key
+            // ikut berubah begitu ada data yang ditambah/diedit/dihapus, supaya IndexedDB
+            // cache di browser tidak menampilkan data basi.
             $categoryCounts = [];
+            $categoryVersions = [];
             foreach ($allCategories as $category) {
-                $count = DataSpatial::where('kategori_id', $category->id);
+                $baseQuery = DataSpatial::where('kategori_id', $category->id);
                 if ($dataType) {
-                    $count->where('data_type', $dataType);
+                    $baseQuery->where('data_type', $dataType);
                 }
                 if ($subType) {
-                    $count->where('sub_type', $subType);
+                    $baseQuery->where('sub_type', $subType);
                 }
-                $categoryCounts[$category->nama] = $count->count();
+
+                $categoryCounts[$category->nama] = (clone $baseQuery)->count();
+
+                $maxUpdatedAt = (clone $baseQuery)->max('updated_at');
+                $categoryVersions[$category->nama] = $maxUpdatedAt
+                    ? Carbon::parse($maxUpdatedAt)->timestamp
+                    : 0;
             }
 
             return response()->json([
@@ -538,6 +549,7 @@ class FrontendController extends Controller
                 'root_categories' => $rootCategories,
                 'all_categories' => $allCategories,
                 'category_counts' => $categoryCounts,
+                'category_versions' => $categoryVersions,
                 'meta' => [
                     'data_type' => $dataType,
                     'sub_type' => $subType,
