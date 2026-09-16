@@ -39,17 +39,17 @@ Homestead.yaml
 .DS_Store
 **/.DS_Store
 
-# api docs
-/api docs
+# # api docs
+# /api docs
 
-# dokumen analisis
-/docs
+# # dokumen analisis
+# /docs
 
-# Laravel Boost
-.mcp.json
-AGENTS.md
-boost.json
-CLAUDE.md
-/.claude
-/.github
-/.ai
+# # Laravel Boost
+# .mcp.json
+# AGENTS.md
+# boost.json
+# CLAUDE.md
+# /.claude
+# /.github
+# /.ai
