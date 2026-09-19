@@ -1,289 +1,198 @@
 @extends('frontend.layouts.spatial', ['title' => 'Dokumen Publikasi - MARIMOI', 'heroTitle' => 'Dokumen Publikasi'])
 
-@push('styles')
-    <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    <!-- Tailwind CSS via Vite -->
-    @vite(['resources/css/app.css'])
-    <style>
-        /* Typography Fonts */
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            font-family: 'Poppins', sans-serif;
+@section('subtitle', 'Dokumen perencanaan dan publikasi resmi MARIMOI yang dapat diunduh.')
+
+@php
+    $search = trim((string) request('search'));
+    $activeCategory = (string) request('category');
+    $hasFilter = $search !== '' || $activeCategory !== '';
+    $chip = 'inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold transition duration-300';
+    $chipIdle = 'border-slate-900/10 bg-white text-slate-600 hover:border-ocean/40 hover:text-ocean';
+    $chipActive = 'border-ocean bg-ocean text-white shadow-[0_8px_20px_-10px_rgba(10,132,255,.8)]';
+    $input = 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 transition focus:border-ocean focus:ring-4 focus:ring-ocean/15';
+    $formatSize = function ($bytes) {
+        $bytes = (int) $bytes;
+        if ($bytes <= 0) {
+            return 'N/A';
         }
 
-        p,
-        body,
-        ul,
-        li {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .container {
-            max-width: 1200px;
-        }
-
-        /* publikasi section white gradient overlay */
-        .publikasi-section {
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Gradient: solid white at top until ~55%, then fade to transparent toward bottom */
-        .publikasi-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background: linear-gradient(to bottom,
-                    rgba(241, 245, 249, 0.90) 0%,
-                    rgba(241, 245, 249, 1) 20%,
-                    rgba(241, 245, 249, 1) 80%,
-                    rgba(241, 245, 249, 0.90) 100%);
-        }
-
-        /* Ensure content appears above the overlay */
-        .publikasi-section .z-above-overlay {
-            position: relative;
-            z-index: 10;
-        }
-
-        /* Aspect ratio helper for 156 x 220.5 px (height/width = 220.5/156 ~= 1.41346 => padding-top: 141.346%) */
-        .ratio-156-220 {
-            position: relative;
-            width: 100%;
-            padding-top: 141.3461538%;
-            /* height as percentage of width */
-            overflow: hidden;
-            border-radius: 0.5rem;
-            /* match rounded-lg */
-        }
-
-        .ratio-156-220 img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* Reduce input size and padding in download modal for more compact form */
-        #downloadModal .p-6 input[type="text"],
-        #downloadModal .p-6 input[type="email"],
-        #downloadModal .p-6 input[type="tel"],
-        #downloadModal .p-6 textarea,
-        #downloadModal .p-6 select {
-            font-size: 0.875rem;
-            /* 14px */
-            line-height: 1.25;
-            padding: 0.5rem 0.625rem;
-            /* 8px 10px */
-            border-radius: 0.375rem;
-        }
-
-        /* Slightly smaller labels/icons to match compact inputs */
-        #downloadModal .p-6 label {
-            font-size: 0.875rem;
-        }
-
-        #downloadModal .p-6 .bi {
-            font-size: 0.95rem;
-            margin-right: 0.35rem;
-        }
-
-        /* Mobile: make inputs a bit tighter */
-        @media (max-width: 640px) {
-            #downloadModal .p-6 {
-                padding: 0.75rem;
-            }
-
-            #downloadModal .p-6 input[type="text"],
-            #downloadModal .p-6 input[type="email"],
-            #downloadModal .p-6 input[type="tel"],
-            #downloadModal .p-6 textarea {
-                font-size: 0.825rem;
-                padding: 0.45rem 0.5rem;
-            }
-        }
-    </style>
-@endpush
-
-@section('subtitle', 'Dokumen perencanaan dan publikasi resmi MARIMOI.')
+        return $bytes >= 1048576 ? number_format($bytes / 1048576, 1, ',', '.').' MB' : number_format($bytes / 1024, 0, ',', '.').' KB';
+    };
+@endphp
 
 @section('main')
-    <!-- Publikasi Section -->
-    <section class="publikasi-section min-h-auto mt-0 pt-0 pb-8 bg-slate-100"
-        style="background: url('{{ asset('frontend/img/cv/bg.svg') }}') repeat;">
-        <div class="pt-8"></div>
-
-
-        <div class="container mx-auto px-4 z-above-overlay">
-            <!-- Publications Grid: 3 columns desktop, 2 columns tablet, 1 column mobile -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="publikasiList">
-
-                @foreach ($publications as $doc)
-                    <article class="bg-white rounded-2xl shadow-md p-4 flex items-center gap-4">
-                        <!-- Left: thumbnail (fixed width) -->
-                        <div class="w-1/3 lg:w-1/3 flex-shrink-0">
-                            <button type="button" class="open-download-modal w-full p-0 block text-left ratio-156-220"
-                                data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
-                                data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                data-thumbnail="{{ asset('/storage/' . $doc->cover) ?? $thumbFallback }}">
-                                <img src="{{ asset('/storage/' . $doc->cover) ?? $thumbFallback }}"
-                                    alt="{{ $doc->title }}" class="rounded-lg border">
-                            </button>
-                        </div>
-
-                        <!-- Right: details -->
-                        <div class="flex-1">
-                            <h3 class="text-md font-semibold text-slate-800">
-                                <button type="button"
-                                    class="open-download-modal inline-block text-left p-0 leading-tight text-slate-800 hover:text-blue-600"
-                                    data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
-                                    data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                    data-thumbnail="{{ asset('/storage/' . $doc->cover) ?? $thumbFallback }}">{{ $doc->title }}</button>
-                            </h3>
-                            <div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
-                                <div class="flex items-center gap-1 text-slate-600">
-                                    <i class="bi bi-download text-lg text-slate-700"></i>
-                                    <span class="text-slate-600 font-medium">{{ $doc->download_count ?? 0 }}</span>
-                                </div>
-                                <div class="flex items-center gap-1 text-slate-600">
-                                    <i class="bi bi-file-earmark-binary text-lg text-slate-700"></i>
-                                    <span
-                                        class="text-slate-600 font-medium">{{ number_format($doc->file_size / 1024 / 1024, 2) . ' MB' ?? 'N/A' }}</span>
-                                </div>
-                                <div class="flex items-center gap-1 text-slate-600">
-                                    <i class="bi bi-file-earmark-pdf text-lg text-slate-700"></i>
-                                    <span class="text-slate-600 font-medium">{{ $doc->file_type ?? 'N/A' }}</span>
-                                </div>
-                            </div>
-
-                            <div class="mt-4">
-                                <button data-id="{{ $doc->id }}" data-path="{{ $doc->path }}"
-                                    data-title="{{ htmlspecialchars($doc->title, ENT_QUOTES) }}"
-                                    data-thumbnail="{{ asset('/storage/' . $doc->cover) ?? $thumbFallback }}"
-                                    class="open-download-modal inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
-                                    <i class="bi bi-download"></i> Unduh Dokumen
-                                </button>
-                            </div>
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-
-    </section><!-- Publikasi Section -->
-
-    <!-- Download Modal (improved) -->
-    <div id="downloadModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50 px-4">
-        <div
-            class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto grid grid-cols-1 lg:grid-cols-2">
-            <!-- Left: preview -->
-            <div id="previewThumb" class="p-6 bg-slate-50 border-r hidden lg:flex items-center justify-center">
-            </div>
-
-            <!-- Right: form -->
-            <div class="p-6">
-                <div class="flex items-start justify-between text-gray-800 mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold">Form Unduh Dokumen</h3>
-                        <p class="text-sm text-slate-500 mt-1">Lengkapi data untuk mengunduh dokumen</p>
+    <section class="bg-mist py-14 md:py-20">
+        <div class="mx-auto w-full max-w-[1180px] px-6">
+            {{-- Pencarian + kategori --}}
+            <div class="reveal mb-10 grid gap-5 md:mb-14" data-reveal>
+                <form method="GET" action="{{ route('tampil.publikasi') }}" class="flex flex-col gap-3 sm:flex-row" role="search">
+                    @if ($activeCategory !== '')
+                        <input type="hidden" name="category" value="{{ $activeCategory }}">
+                    @endif
+                    <div class="relative flex-1">
+                        <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                        <input type="search" name="search" value="{{ $search }}" placeholder="Cari judul atau deskripsi dokumen" aria-label="Cari dokumen" class="{{ $input }} pl-11">
                     </div>
-                    <button id="downloadModalClose"
-                        class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                    <button type="submit" class="rounded-xl bg-ocean px-7 py-3 text-[15px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 hover:-translate-y-0.5">Cari</button>
+                </form>
+
+                @if ($categories->isNotEmpty())
+                    <div class="flex flex-wrap items-center gap-2" aria-label="Kategori dokumen">
+                        <a href="{{ route('tampil.publikasi', array_filter(['search' => $search])) }}" class="{{ $chip }} {{ $activeCategory === '' ? $chipActive : $chipIdle }}">Semua</a>
+                        @foreach ($categories as $category)
+                            <a href="{{ route('tampil.publikasi', array_filter(['search' => $search, 'category' => $category])) }}"
+                                class="{{ $chip }} {{ $activeCategory === $category ? $chipActive : $chipIdle }}">{{ $category }}</a>
+                        @endforeach
+                    </div>
+                @endif
+
+                <p class="font-grotesk text-xs uppercase tracking-widest text-slate-500">
+                    {{ number_format($publications->total(), 0, ',', '.') }} dokumen
+                    @if ($hasFilter)
+                        <a href="{{ route('tampil.publikasi') }}" class="ml-3 text-ocean underline decoration-ocean/30 underline-offset-4 hover:decoration-ocean">Hapus filter</a>
+                    @endif
+                </p>
+            </div>
+
+            @if ($publications->isEmpty())
+                <div class="reveal rounded-3xl border border-dashed border-slate-900/15 bg-white px-6 py-16 text-center" data-reveal>
+                    <p class="text-xl font-bold text-navy">Dokumen tidak ditemukan</p>
+                    <p class="mx-auto mt-2 max-w-md text-slate-600">Coba kata kunci lain atau tampilkan semua dokumen.</p>
+                    <a href="{{ route('tampil.publikasi') }}" class="mt-6 inline-flex rounded-full bg-ocean px-6 py-3 text-sm font-bold text-white transition duration-300 hover:-translate-y-0.5">Lihat semua dokumen</a>
+                </div>
+            @else
+                <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" id="publikasiList">
+                    @foreach ($publications as $doc)
+                        @php
+                            $cover = $doc->cover ? asset('storage/'.$doc->cover) : null;
+                            $attrs = 'data-id="'.$doc->id.'" data-path="'.e($doc->path).'" data-title="'.e($doc->title).'" data-thumbnail="'.e($cover ?? '').'"';
+                        @endphp
+                        <article class="group reveal flex flex-col overflow-hidden rounded-3xl border border-slate-900/10 bg-white transition duration-300 hover:-translate-y-2 hover:border-ocean/30 hover:shadow-[0_30px_60px_-30px_rgba(7,26,45,.35)]" data-reveal>
+                            <button type="button" {!! $attrs !!} aria-label="Unduh {{ $doc->title }}"
+                                class="open-download-modal relative block min-h-[14rem] w-full overflow-hidden bg-gradient-to-br from-navy to-deep">
+                                <span class="absolute inset-0 grid place-items-center text-aqua/50" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" class="h-14 w-14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>
+                                </span>
+                                @if ($cover)
+                                    <img src="{{ $cover }}" alt="Sampul {{ $doc->title }}" loading="lazy" onerror="this.remove()"
+                                        class="relative block h-auto w-full transition duration-700 group-hover:scale-[1.03]">
+                                @endif
+                                                                @if ($doc->category)
+                                    <span class="absolute left-4 top-4 rounded-full bg-deep/75 px-3 py-1 font-grotesk text-[11px] uppercase tracking-widest text-white backdrop-blur-md">{{ $doc->category }}</span>
+                                @endif
+                                @if ($doc->file_type)
+                                    <span class="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 font-grotesk text-[11px] uppercase tracking-widest text-navy">{{ $doc->file_type }}</span>
+                                @endif
+                            </button>
+
+                            <div class="flex flex-1 flex-col p-6">
+                                <h3 class="text-lg font-bold leading-snug tracking-tight text-navy">
+                                    <button type="button" {!! $attrs !!} class="open-download-modal text-left transition-colors hover:text-ocean">{{ $doc->title }}</button>
+                                </h3>
+                                @if ($doc->description)
+                                    <p class="mt-2 line-clamp-3 text-[15px] leading-relaxed text-slate-600">{{ $doc->description }}</p>
+                                @endif
+
+                                <dl class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-grotesk text-xs text-slate-500">
+                                    <div class="flex items-center gap-1.5"><dt class="sr-only">Ukuran</dt><dd>{{ $formatSize($doc->file_size) }}</dd></div>
+                                    <div class="flex items-center gap-1.5"><dt class="sr-only">Diunduh</dt><dd>{{ number_format($doc->download_count ?? 0, 0, ',', '.') }}x diunduh</dd></div>
+                                    @if ($doc->created_at)
+                                        <div class="flex items-center gap-1.5"><dt class="sr-only">Tanggal</dt><dd>{{ $doc->created_at->locale('id')->translatedFormat('d M Y') }}</dd></div>
+                                    @endif
+                                </dl>
+
+                                <div class="mt-auto pt-6">
+                                <button type="button" {!! $attrs !!}
+                                    class="open-download-modal inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ocean px-5 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-14px_rgba(10,132,255,.8)] transition duration-300 hover:bg-[#0a72e0] hover:shadow-[0_14px_38px_-12px_rgba(32,217,255,.7)]">
+                                    <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
+                                    Unduh Dokumen
+                                </button>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
 
-                <form id="downloadForm" method="post" action="#" class="space-y-4 text-gray-800 text-sm">
+                @if ($publications->hasPages())
+                    <div class="mt-12">{{ $publications->withQueryString()->links() }}</div>
+                @endif
+            @endif
+        </div>
+    </section>
+
+    {{-- Modal unduh --}}
+    <div id="downloadModal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="downloadTitle" aria-hidden="true"
+        class="invisible fixed inset-0 z-[1200] grid place-items-center bg-slate-950/80 p-4 opacity-0 backdrop-blur-sm transition duration-300 data-[open=true]:visible data-[open=true]:opacity-100">
+        <div class="grid max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl lg:grid-cols-[2fr_3fr]">
+            <div class="relative hidden flex-col items-center justify-center gap-4 overflow-hidden bg-gradient-to-br from-navy to-deep p-4 lg:flex">
+                <svg class="contours pointer-events-none absolute inset-0 h-full w-full opacity-60 [&_path]:fill-none [&_path]:stroke-aqua/10 [&_path]:[vector-effect:non-scaling-stroke]" aria-hidden="true"></svg>
+                <img id="previewImg" src="" alt="" class="relative hidden max-h-[calc(92vh-7rem)] w-full rounded-xl object-contain shadow-2xl" decoding="async" onerror="this.classList.add('hidden')">
+                <p id="previewTitle" class="relative text-center text-sm font-semibold leading-snug text-white/85"></p>
+            </div>
+
+            <div class="p-6 md:p-8">
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 id="downloadTitle" class="text-xl font-extrabold tracking-tight text-navy">Form Unduh Dokumen</h3>
+                        <p class="mt-1 text-sm text-slate-500">Lengkapi data berikut untuk mengunduh dokumen.</p>
+                    </div>
+                    <button id="downloadModalClose" type="button" aria-label="Tutup" class="-mr-2 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </div>
+
+                <form id="downloadForm" method="post" action="#" class="space-y-4 text-sm" novalidate>
                     @csrf
                     <input type="hidden" name="doc_id" id="docIdInput">
                     <input type="hidden" name="doc_path" id="docPathInput">
 
-                    <div id="formAlert" class="hidden"></div>
+                    <div id="formAlert" data-type="" role="alert"
+                        class="hidden rounded-xl border px-4 py-3 text-sm data-[type=error]:block data-[type=error]:border-red-200 data-[type=error]:bg-red-50 data-[type=error]:text-red-700 data-[type=success]:block data-[type=success]:border-emerald-200 data-[type=success]:bg-emerald-50 data-[type=success]:text-emerald-800"></div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-person me-2"></i>Nama Lengkap <span class="text-red-500">*</span>
-                            </label>
-                            <input required name="name" type="text"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Masukkan nama lengkap" />
+                            <label for="dl-name" class="mb-1.5 block font-semibold text-navy">Nama lengkap <span class="text-red-500">*</span></label>
+                            <input id="dl-name" required name="name" type="text" autocomplete="name" placeholder="Masukkan nama lengkap" class="{{ $input }}">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-envelope me-2"></i>Email <span class="text-red-500">*</span>
-                            </label>
-                            <input required name="email" type="email"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="contoh@email.com" />
+                            <label for="dl-email" class="mb-1.5 block font-semibold text-navy">Email <span class="text-red-500">*</span></label>
+                            <input id="dl-email" required name="email" type="email" autocomplete="email" placeholder="contoh@email.com" class="{{ $input }}">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-phone me-2"></i>Nomor Telepon
-                            </label>
-                            <input name="phone" type="tel"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="08xxxxxxxxxx" />
+                            <label for="dl-phone" class="mb-1.5 block font-semibold text-navy">Nomor telepon</label>
+                            <input id="dl-phone" name="phone" type="tel" autocomplete="tel" placeholder="08xxxxxxxxxx" class="{{ $input }}">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-building me-2"></i>Organisasi/Instansi
-                            </label>
-                            <input name="organization" type="text"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Nama organisasi/instansi" />
+                            <label for="dl-org" class="mb-1.5 block font-semibold text-navy">Organisasi/instansi</label>
+                            <input id="dl-org" name="organization" type="text" autocomplete="organization" placeholder="Nama organisasi atau instansi" class="{{ $input }}">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-briefcase me-2"></i>Posisi/Jabatan
-                            </label>
-                            <input name="position" type="text"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Jabatan atau posisi Anda" />
+                            <label for="dl-position" class="mb-1.5 block font-semibold text-navy">Posisi/jabatan</label>
+                            <input id="dl-position" name="position" type="text" autocomplete="organization-title" placeholder="Jabatan atau posisi Anda" class="{{ $input }}">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                <i class="bi bi-clipboard me-2"></i>Tujuan Penggunaan <span class="text-red-500">*</span>
-                            </label>
-                            <textarea required name="purpose" rows="3"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Jelaskan tujuan penggunaan dokumen ini..."></textarea>
+                            <label for="dl-purpose" class="mb-1.5 block font-semibold text-navy">Tujuan penggunaan <span class="text-red-500">*</span></label>
+                            <textarea id="dl-purpose" required name="purpose" rows="3" placeholder="Jelaskan tujuan penggunaan dokumen ini..." class="{{ $input }}"></textarea>
                         </div>
                     </div>
 
-                    <!-- hCaptcha container -->
                     <div id="hcaptchaContainer" class="flex justify-center"></div>
 
-                    <div class="flex items-center justify-end gap-3 pt-4 border-t">
-                        <button type="button" id="downloadCancel"
-                            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition">
-                            Batal
-                        </button>
-                        <button type="submit" id="downloadSubmit"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50">
-                            <i class="bi bi-download me-2"></i>Kirim & Unduh
+                    <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+                        <button type="button" id="downloadCancel" class="rounded-xl border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 transition-colors hover:bg-slate-50">Batal</button>
+                        <button type="submit" id="downloadSubmit" class="inline-flex items-center gap-2 rounded-xl bg-ocean px-6 py-2.5 font-bold text-white shadow-[0_10px_30px_-14px_rgba(10,132,255,.8)] transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
+                            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
+                            <span data-label>Kirim &amp; Unduh</span>
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
-    <!-- Footer Section -->
 @endsection
 
 @push('scripts')
-    <!-- Vite JavaScript -->
-    @vite(['resources/js/app.js'])
-    <!-- hCaptcha (load only when publikasi page is used) -->
     <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('downloadModal');
@@ -291,16 +200,17 @@
             const cancelBtn = document.getElementById('downloadCancel');
             const docIdInput = document.getElementById('docIdInput');
             const docPathInput = document.getElementById('docPathInput');
-            const downloadButtons = document.querySelectorAll('.open-download-modal');
             const downloadForm = document.getElementById('downloadForm');
-
-            // hCaptcha render
+            const formAlert = document.getElementById('formAlert');
+            const previewImg = document.getElementById('previewImg');
+            const previewTitle = document.getElementById('previewTitle');
+            const submitBtn = document.getElementById('downloadSubmit');
+            const submitLabel = submitBtn.querySelector('[data-label]');
             let hcaptchaWidgetId = null;
+            let lastTrigger = null;
 
             function renderHCaptcha() {
-                if (typeof hcaptcha === 'undefined') return;
-                if (hcaptchaWidgetId !== null) return;
-
+                if (typeof hcaptcha === 'undefined' || hcaptchaWidgetId !== null) return;
                 try {
                     hcaptchaWidgetId = hcaptcha.render('hcaptchaContainer', {
                         sitekey: '{{ config('services.hcaptcha.sitekey') ?? env('HCAPTCHA_SITEKEY', '') }}'
@@ -310,138 +220,83 @@
                 }
             }
 
-            const previewThumb = document.getElementById('previewThumb');
-            const formAlert = document.getElementById('formAlert');
-
             function setFormAlert(message = '', type = 'error') {
-                if (!formAlert) return;
-                if (!message) {
-                    formAlert.classList.add('hidden');
-                    formAlert.textContent = '';
-                    return;
-                }
-                formAlert.classList.remove('hidden');
                 formAlert.textContent = message;
-                formAlert.className = type === 'error' ?
-                    'mb-4 text-sm text-red-600' :
-                    'mb-4 text-sm text-green-600';
+                formAlert.dataset.type = message ? type : '';
+            }
+
+            function resetCaptcha() {
+                if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
+                    try { hcaptcha.reset(hcaptchaWidgetId); } catch (e) {}
+                }
             }
 
             function resetFormOnError() {
-                try {
-                    // Do NOT reset the whole form so user's inputs are preserved.
-                    // Only reset hCaptcha widget (so user can retry) and focus first invalid field.
-                    if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
-                        try {
-                            hcaptcha.reset(hcaptchaWidgetId);
-                        } catch (e) {}
-                    }
-
-                    // focus first invalid input for better UX
-                    if (downloadForm) {
-                        const firstInvalid = downloadForm.querySelector(':invalid');
-                        if (firstInvalid && typeof firstInvalid.focus === 'function') {
-                            firstInvalid.focus();
-                        }
-                    }
-                } catch (err) {
-                    console.warn('Reset form on error handler failed', err);
-                }
+                resetCaptcha();
+                const firstInvalid = downloadForm.querySelector(':invalid');
+                if (firstInvalid && typeof firstInvalid.focus === 'function') firstInvalid.focus();
             }
 
-            function openModal(docId, docPath, title = '', thumbnail = '') {
-                // Set hidden inputs
+            function openModal(docId, docPath, title, thumbnail, trigger) {
+                lastTrigger = trigger;
                 docIdInput.value = docId || '';
                 docPathInput.value = docPath || '';
-
-                // Set form action - perbaikan: gunakan route yang benar
-                if (downloadForm && docId) {
+                if (docId) {
                     downloadForm.action = `{{ url('dokumen-publikasi') }}/${encodeURIComponent(docId)}/download`;
                 }
-
-                // Set preview
-                if (previewThumb && thumbnail) {
-                    previewThumb.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <div class="w-full">
-                            <img src="${thumbnail}" alt="${title}" class="rounded-lg border object-cover w-full h-full"
-                                loading="lazy" decoding="async">
-                        </div>
-                    </div>
-                    `;
+                previewTitle.textContent = title || '';
+                previewImg.classList.add('hidden');
+                if (thumbnail) {
+                    previewImg.alt = title || '';
+                    previewImg.onload = () => previewImg.classList.remove('hidden');
+                    previewImg.src = thumbnail;
+                } else {
+                    previewImg.removeAttribute('src');
                 }
-
-                setFormAlert(); // Clear alerts
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-
-                // Render hCaptcha setelah modal terbuka
+                setFormAlert();
+                modal.dataset.open = 'true';
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
                 setTimeout(renderHCaptcha, 100);
+                setTimeout(() => document.getElementById('dl-name').focus(), 150);
             }
 
             function closeModal() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-
-                // Reset form
+                modal.dataset.open = 'false';
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
                 downloadForm.reset();
                 setFormAlert();
-
-                // Reset hCaptcha
-                if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
-                    try {
-                        hcaptcha.reset(hcaptchaWidgetId);
-                    } catch (err) {
-                        console.warn('hCaptcha reset failed', err);
-                    }
-                }
+                resetCaptcha();
+                if (lastTrigger) lastTrigger.focus();
             }
 
-            // Event listeners
-            downloadButtons.forEach(btn => {
+            document.querySelectorAll('.open-download-modal').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const id = btn.getAttribute('data-id');
-                    const path = btn.getAttribute('data-path');
-                    const title = btn.getAttribute('data-title') || '';
-                    const thumbnail = btn.getAttribute('data-thumbnail') || '';
-                    openModal(id, path, title, thumbnail);
+                    openModal(btn.dataset.id, btn.dataset.path, btn.dataset.title || '', btn.dataset.thumbnail || '', btn);
                 });
             });
-
             closeBtn.addEventListener('click', closeModal);
             cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.dataset.open === 'true') closeModal(); });
 
-            // Close modal when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
-            });
-
-            // Submit handler - PERBAIKAN UTAMA
             downloadForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
+                const originalText = submitLabel.textContent;
 
-                const submitBtn = document.getElementById('downloadSubmit');
-                const originalText = submitBtn.textContent;
-
-                // Validasi client-side
                 const formData = new FormData(downloadForm);
-                if (!formData.get('name')?.trim() || !formData.get('email')?.trim() || !formData.get(
-                        'purpose')?.trim()) {
+                if (!formData.get('name')?.trim() || !formData.get('email')?.trim() || !formData.get('purpose')?.trim()) {
                     setFormAlert('Nama, Email, dan Tujuan wajib diisi.', 'error');
                     resetFormOnError();
                     return;
                 }
-
-                // Validasi email format
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(formData.get('email'))) {
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.get('email'))) {
                     setFormAlert('Format email tidak valid.', 'error');
                     resetFormOnError();
                     return;
                 }
-
-                // Include hCaptcha response
                 if (typeof hcaptcha !== 'undefined' && hcaptchaWidgetId !== null) {
                     const token = hcaptcha.getResponse(hcaptchaWidgetId);
                     if (!token) {
@@ -451,18 +306,14 @@
                     }
                     formData.append('h-captcha-response', token);
                 }
-
-                // Additional data
-                const additionalData = {
+                formData.append('additional_data', JSON.stringify({
                     user_agent: navigator.userAgent || '',
                     doc_id: docIdInput.value || '',
                     timestamp: new Date().toISOString()
-                };
-                formData.append('additional_data', JSON.stringify(additionalData));
+                }));
 
-                // Disable submit button
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Memproses...';
+                submitLabel.textContent = 'Memproses...';
                 setFormAlert();
 
                 try {
@@ -474,85 +325,61 @@
                         },
                         body: formData
                     });
-
                     const contentType = response.headers.get('content-type') || '';
 
-                    // Handle JSON response (errors atau redirect)
                     if (contentType.includes('application/json')) {
                         const data = await response.json();
-
                         if (response.ok) {
                             if (data.download_url) {
                                 setFormAlert('Download akan dimulai...', 'success');
-                                setTimeout(() => {
-                                    window.open(data.download_url, '_blank');
-                                    closeModal();
-                                }, 1000);
+                                setTimeout(() => { window.open(data.download_url, '_blank'); closeModal(); }, 1000);
                             } else if (data.success) {
                                 setFormAlert(data.message || 'Berhasil diproses.', 'success');
                                 setTimeout(closeModal, 1500);
                             }
                         } else {
-                            // Handle validation errors or other JSON errors
                             if (data.errors) {
-                                const errorMessages = Object.values(data.errors).flat();
-                                setFormAlert(errorMessages.join(' '), 'error');
+                                setFormAlert(Object.values(data.errors).flat().join(' '), 'error');
                             } else {
                                 setFormAlert(data.message || 'Gagal memproses permintaan.', 'error');
                             }
-                            // reset form on any server-side error
                             resetFormOnError();
                         }
                         return;
                     }
 
-                    // Handle file download response
                     if (response.ok) {
                         const blob = await response.blob();
-
-                        // Extract filename from Content-Disposition header
                         let filename = 'dokumen.pdf';
                         const disposition = response.headers.get('content-disposition');
                         if (disposition) {
-                            const filenameMatch = disposition.match(
-                                /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                            if (filenameMatch && filenameMatch[1]) {
-                                filename = filenameMatch[1].replace(/['"]/g, '');
-                            }
+                            const m = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                            if (m && m[1]) filename = m[1].replace(/['"]/g, '');
                         }
-
-                        // Create download link
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.style.display = 'none';
                         a.href = url;
                         a.download = filename;
-
                         document.body.appendChild(a);
                         a.click();
-
-                        // Cleanup
                         window.URL.revokeObjectURL(url);
                         document.body.removeChild(a);
-
                         setFormAlert('Download berhasil!', 'success');
                         setTimeout(closeModal, 1500);
                         return;
                     }
 
-                    // Handle error responses (non-JSON)
                     const errorText = await response.text();
                     setFormAlert(errorText || `Error: ${response.status}`, 'error');
                     resetFormOnError();
-
                 } catch (error) {
                     console.error('Download error:', error);
                     setFormAlert('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
                     resetFormOnError();
                 } finally {
-                    // Re-enable submit button
                     submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
+                    submitLabel.textContent = originalText;
                 }
             });
         });
