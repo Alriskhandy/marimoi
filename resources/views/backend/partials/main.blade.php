@@ -1,42 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{{ ($title ?? 'Dashboard') . ' - MARIMOI' }}</title>
 
-    <!-- container-scroller -->
-
-    <!-- plugins:css -->
+    <link rel="stylesheet" href="{{ asset('backend_baru/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('backend_baru/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/vendors/mdi/css/materialdesignicons.min.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/vendors/ti-icons/css/themify-icons.css') }}">
-    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/css/vendor.bundle.base.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/assets/vendors/font-awesome/css/font-awesome.min.css') }}">
-    <!-- endinject -->
-
-    <!-- Plugin css for this page -->
-    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/font-awesome/css/font-awesome.min.css') }}" />
     <link rel="stylesheet"
         href="{{ asset('backend/assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.css') }}">
-    <!-- End plugin css for this page -->
-
-    <!-- Layout styles -->
-    <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('backend/DataTables/datatables.js') }}"> --}}
-    <!-- End layout styles -->
+    <link rel="stylesheet" href="{{ asset('backend_baru/assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('backend_baru/assets/css/compat.css') }}">
     <link rel="stylesheet" href="{{ asset('backend/datatables/datatables.min.css') }}">
     <link rel="shortcut icon" href="{{ asset('frontend/img/logo/logo-white.png') }}" />
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('adminHMD.colorTheme');
+                if (t !== 'dark' && t !== 'light') {
+                    t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.setAttribute('data-bs-theme', t);
+            } catch (e) {}
+        })();
+    </script>
     @stack('styles')
     <style>
-        .nav .nav-item .nav-link,
-        .nav .nav-item .sub-menu .nav-link {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: unset !important;
-        }
-
         #rowsPerPageSelect:focus {
             box-shadow: none;
             border-color: #764ba2;
@@ -77,47 +71,60 @@
 </head>
 
 <body>
-    <div class="container-scroller">
-        <!-- partial:partials/_navbar.html -->
-        @include('backend.partials.navbar')
+    <div class="admin-shell">
+        <div class="sidebar-backdrop" data-sidebar-close></div>
 
-        <!-- partial -->
-        <div class="container-fluid page-body-wrapper">
-            <!-- partial:partials/_sidebar.html -->
-            @include('backend.partials.sidebar')
-            <!-- partial -->
-            <div class="main-panel">
-                <div class="content-wrapper">
+        @include('backend.partials.sidebar')
+
+        <div class="admin-main">
+            @include('backend.partials.navbar')
+
+            <main class="dashboard-content">
+                <div class="container-fluid px-3 px-lg-4 py-4 content-wrapper">
                     @yield('main')
-
                 </div>
-                <!-- content-wrapper ends -->
                 @include('backend.partials.footer')
-                <!-- partial -->
-            </div>
-            <!-- main-panel ends -->
+            </main>
         </div>
-        <!-- page-body-wrapper ends -->
     </div>
-    <!-- container-scroller -->
 
-    <!-- plugins:js -->
-    <script src="{{ asset('backend/assets/vendors/js/vendor.bundle.base.js') }}"></script>
-    <!-- endinject -->
-
-    <!-- Plugin js for this page -->
+    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('backend_baru/assets/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('backend/assets/vendors/chart.js/chart.umd.js') }}"></script>
     <script src="{{ asset('backend/assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.js') }}"></script>
-    <!-- End plugin js for this page -->
-
-    <!-- inject:js -->
-    <script src="{{ asset('backend/assets/js/off-canvas.js') }}"></script>
-    <script src="{{ asset('backend/assets/js/misc.js') }}"></script>
-    <script src="{{ asset('backend/assets/js/settings.js') }}"></script>
-    <script src="{{ asset('backend/assets/js/todolist.js') }}"></script>
     <script src="{{ asset('backend/assets/js/jquery.cookie.js') }}"></script>
-
-    <!-- endinject -->
+    <script src="{{ asset('backend_baru/assets/js/main.js') }}"></script>
+    <script>
+        (function() {
+            function applyChartTheme() {
+                if (typeof Chart === 'undefined') {
+                    return;
+                }
+                var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                Chart.defaults.color = dark ? '#9aa8bd' : '#666';
+                Chart.defaults.borderColor = dark ? 'rgba(154, 168, 189, 0.18)' : 'rgba(0, 0, 0, 0.1)';
+            }
+            applyChartTheme();
+            document.querySelectorAll('[data-theme-toggle]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    setTimeout(function() {
+                        applyChartTheme();
+                        if (typeof Chart !== 'undefined' && Chart.instances) {
+                            Object.values(Chart.instances).forEach(function(chart) {
+                                chart.options.scales && Object.values(chart.options.scales).forEach(function(scale) {
+                                    scale.ticks = scale.ticks || {};
+                                    scale.ticks.color = Chart.defaults.color;
+                                    scale.grid = scale.grid || {};
+                                    scale.grid.color = Chart.defaults.borderColor;
+                                });
+                                chart.update();
+                            });
+                        }
+                    }, 0);
+                });
+            });
+        })();
+    </script>
 
     {{-- <script src="{{ asset('/assets/js/sweetalert/sweetalert2.all.min.js') }}"></script> --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -166,13 +173,9 @@
         });
     </script>
 
-    <script src="{{ asset('backend/assets/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('backend/datatables/datatables.min.js') }}"></script>
 
 
-    <!-- Custom js for this page -->
-    <script src="{{ asset('backend/assets/js/dashboard.js') }}"></script>
-    <!-- End custom js for this page -->
     @yield('scripts')
     @stack('scripts')
 </body>

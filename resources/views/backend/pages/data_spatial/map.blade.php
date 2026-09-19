@@ -657,6 +657,60 @@
             display: none;
         }
 
+        /* Dark mode */
+        html[data-theme="dark"] .map-toolbar,
+        html[data-theme="dark"] .measure-panel,
+        html[data-theme="dark"] .basemap-switcher {
+            background: var(--admin-surface);
+            color: var(--admin-text);
+            border: 1px solid var(--admin-border);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+        }
+
+        html[data-theme="dark"] .map-tool,
+        html[data-theme="dark"] .basemap-btn {
+            background: transparent;
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .map-tool:hover,
+        html[data-theme="dark"] .basemap-btn:hover {
+            background: var(--admin-surface-soft);
+        }
+
+        html[data-theme="dark"] .map-tool.active,
+        html[data-theme="dark"] .basemap-btn.active {
+            background: var(--admin-primary-dark);
+            color: #fff;
+        }
+
+        html[data-theme="dark"] .map-tool-sep {
+            background: var(--admin-border);
+        }
+
+        html[data-theme="dark"] .measure-panel .text-muted {
+            color: var(--admin-muted) !important;
+        }
+
+        html[data-theme="dark"] .measure-value {
+            color: var(--admin-primary);
+        }
+
+        html[data-theme="dark"] .measure-panel .btn-outline-secondary {
+            color: var(--admin-text);
+            border-color: var(--admin-border);
+        }
+
+        html[data-theme="dark"] .measure-panel .btn-outline-primary {
+            color: var(--admin-primary);
+            border-color: var(--admin-primary);
+        }
+
+        html[data-theme="dark"] .measure-panel .btn-outline-primary:hover:not(:disabled) {
+            background: var(--admin-primary-dark);
+            color: #fff;
+        }
+
         @media (max-width: 767px) {
             .basemap-switcher {
                 flex-wrap: wrap;

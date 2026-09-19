@@ -447,6 +447,7 @@
             $('#addModal').on('show.bs.modal', function() {
                 const form = $('#addForm');
                 form[0].reset();
+                form.find('#add_opd_id').trigger('change.select2');
                 clearFormErrors(form);
             });
 
@@ -520,7 +521,7 @@
 
                 $('#edit_id').val(id);
                 $('#edit_nama_kategori').val($(this).data('nama'));
-                $('#edit_opd_id').val($(this).data('opd-id'));
+                $('#edit_opd_id').val($(this).data('opd-id')).trigger('change.select2');
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
 
                 clearFormErrors(form);
@@ -789,7 +790,7 @@
 
             function resetAllFilters() {
                 $('#searchInput').val('');
-                $('#filterOPD').val('');
+                $('#filterOPD').val('').trigger('change.select2');
                 $('#filterDeskripsi').val('');
                 performSearch();
             }
@@ -1606,3 +1607,26 @@
         }
     </style>
 @endsection
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
+@endpush
+
+@push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
+    <script>
+        $(function() {
+            const opdSelect2 = {
+                width: '100%',
+                language: {
+                    noResults: () => 'OPD tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            };
+
+            $('#filterOPD').select2(opdSelect2);
+            $('#add_opd_id').select2({ ...opdSelect2, dropdownParent: $('#addModal') });
+            $('#edit_opd_id').select2({ ...opdSelect2, dropdownParent: $('#editModal') });
+        });
+    </script>
+@endpush

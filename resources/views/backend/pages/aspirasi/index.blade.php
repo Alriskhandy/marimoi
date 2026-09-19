@@ -1458,7 +1458,7 @@
                 $btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
 
                 $.ajax({
-                    url: `{{ route('aspirasi.show', '') }}/${id}`,
+                    url: "{{ route('aspirasi.show', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                     type: 'GET',
                     headers: {
                         'Accept': 'application/json',
@@ -2001,7 +2001,7 @@
                 };
 
                 $.ajax({
-                    url: `{{ route('aspirasi.updateStatus', '') }}/${id}`,
+                    url: "{{ route('aspirasi.updateStatus', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                     type: 'POST',
                     data: formData,
                     headers: {
@@ -2063,7 +2063,7 @@
                         });
 
                         $.ajax({
-                            url: `{{ route('aspirasi.destroy', '') }}/${id}`,
+                            url: "{{ route('aspirasi.destroy', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                             type: 'POST',
                             data: {
                                 _method: 'DELETE',

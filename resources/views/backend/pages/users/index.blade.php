@@ -692,6 +692,7 @@
             $('#addModal').on('show.bs.modal', function() {
                 const form = $('#addForm');
                 form[0].reset();
+                form.find('#add_opd_id, #edit_opd_id').trigger('change.select2');
                 clearFormErrors(form);
             });
 
@@ -757,7 +758,7 @@
                 $('#edit_name').val($(this).data('name'));
                 $('#edit_email').val($(this).data('email'));
                 $('#edit_role_id').val($(this).data('role-id'));
-                $('#edit_opd_id').val($(this).data('opd-id'));
+                $('#edit_opd_id').val($(this).data('opd-id')).trigger('change.select2');
 
                 // Clear password fields
                 $('#edit_password').val('');
@@ -1021,7 +1022,7 @@
             function resetAllFilters() {
                 $('#searchInput').val('');
                 $('#filterRole').val('');
-                $('#filterOpd').val('');
+                $('#filterOpd').val('').trigger('change.select2');
                 performSearch();
             }
 
@@ -1437,3 +1438,60 @@
         }
     </style>
 @endsection
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
+    <style>
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            border: 1px solid var(--admin-border, #dee2e6);
+            border-radius: 0.375rem;
+            background: var(--admin-surface, #fff);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: calc(1.5em + 0.75rem);
+            color: var(--admin-text, #212529);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem);
+        }
+        .select2-dropdown {
+            background: var(--admin-surface, #fff);
+            color: var(--admin-text, #212529);
+            border-color: var(--admin-border, #dee2e6);
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background: var(--admin-surface-soft, #fff);
+            color: var(--admin-text, #212529);
+            border-color: var(--admin-border, #dee2e6);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background: var(--admin-primary, #2563eb);
+            color: #fff;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background: var(--admin-surface-soft, #eee);
+            color: var(--admin-text, #212529);
+        }
+    </style>
+@endpush
+
+@push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
+    <script>
+        $(function() {
+            const opdSelect2 = {
+                width: '100%',
+                language: {
+                    noResults: () => 'OPD tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            };
+
+            $('#filterOpd').select2(opdSelect2);
+            $('#add_opd_id').select2({ ...opdSelect2, dropdownParent: $('#addModal') });
+            $('#edit_opd_id').select2({ ...opdSelect2, dropdownParent: $('#editModal') });
+        });
+    </script>
+@endpush

@@ -178,8 +178,7 @@
                                         <label for="category_id" class="form-label fw-semibold mb-1">
                                             <i class="mdi mdi-shape me-1"></i>Filter Kategori
                                         </label>
-                                        <select class="form-select filter-control" id="category_id" name="category_id"
-                                            onchange="this.form.submit()">
+                                        <select class="form-select filter-control" id="category_id" name="category_id">
                                             <option value="">-- Semua Kategori --</option>
                                             @foreach ($categories as $category)
                                                 <option value="{{ $category->id }}"
@@ -585,6 +584,41 @@
 @endsection
 
 @push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
+    <style>
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            border: 1px solid var(--admin-border, #dee2e6);
+            border-radius: 0.375rem;
+            background: var(--admin-surface, #fff);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: calc(1.5em + 0.75rem);
+            color: var(--admin-text, #212529);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem);
+        }
+        .select2-dropdown {
+            background: var(--admin-surface, #fff);
+            color: var(--admin-text, #212529);
+            border-color: var(--admin-border, #dee2e6);
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background: var(--admin-surface-soft, #fff);
+            color: var(--admin-text, #212529);
+            border-color: var(--admin-border, #dee2e6);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background: var(--admin-primary, #2563eb);
+            color: #fff;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background: var(--admin-surface-soft, #eee);
+            color: var(--admin-text, #212529);
+        }
+    </style>
     <style>
         /* Search and filter styling */
         .form-label {
@@ -836,8 +870,20 @@
 @endpush
 
 @push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
     <script>
         $(document).ready(function() {
+            $('#category_id').select2({
+                placeholder: '-- Semua Kategori --',
+                width: '100%',
+                language: {
+                    noResults: () => 'Kategori tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            }).on('change', function() {
+                this.form.submit();
+            });
+
             // Initialize checkbox events directly
             initializeCheckboxEvents();
 

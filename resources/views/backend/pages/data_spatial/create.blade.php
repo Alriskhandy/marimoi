@@ -1,6 +1,7 @@
 @extends('backend.partials.main', ['title' => 'Input Data Spasial'])
 
 @push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
     <style>
         .upload-area {
             border: 2px dashed #dee2e6;
@@ -400,6 +401,98 @@
             margin-bottom: 20px;
             color: #212529;
             /* teks gelap agar mudah dibaca */
+        }
+
+        /* Dark mode */
+        html[data-theme="dark"] .upload-area,
+        html[data-theme="dark"] .preview-section,
+        html[data-theme="dark"] .input-type-selector,
+        html[data-theme="dark"] .coord-input-group,
+        html[data-theme="dark"] .summary-card {
+            background: var(--admin-surface-soft);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .upload-area:hover,
+        html[data-theme="dark"] .upload-area.dragover {
+            background: rgba(96, 165, 250, .12);
+            border-color: var(--admin-primary);
+        }
+
+        html[data-theme="dark"] .upload-area.uploaded {
+            background: rgba(45, 212, 191, .12);
+            border-color: var(--admin-success);
+        }
+
+        html[data-theme="dark"] .file-info {
+            background: var(--admin-surface);
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .step {
+            background: var(--admin-border);
+            color: var(--admin-muted);
+        }
+
+        html[data-theme="dark"] .step.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+        }
+
+        html[data-theme="dark"] .step.completed {
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            color: #fff;
+        }
+
+        html[data-theme="dark"] .step-connector {
+            background-color: var(--admin-border);
+        }
+
+        html[data-theme="dark"] .input-option {
+            background: var(--admin-surface);
+            border-color: var(--admin-border);
+        }
+
+        html[data-theme="dark"] .input-option.selected {
+            background: rgba(96, 165, 250, .15);
+            border-color: var(--admin-primary);
+        }
+
+        html[data-theme="dark"] .input-option .option-icon,
+        html[data-theme="dark"] .input-option .option-description,
+        html[data-theme="dark"] .file-upload-icon,
+        html[data-theme="dark"] .upload-text {
+            color: var(--admin-muted);
+        }
+
+        html[data-theme="dark"] .input-option .option-title,
+        html[data-theme="dark"] .step-title {
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .input-option:hover,
+        html[data-theme="dark"] .input-option:hover .option-icon,
+        html[data-theme="dark"] .input-option:hover .option-title {
+            border-color: var(--admin-primary);
+            color: var(--admin-primary);
+        }
+
+        html[data-theme="dark"] .alert-info-custom {
+            background: rgba(96, 165, 250, .12);
+            border-color: rgba(96, 165, 250, .35);
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .year-input-group {
+            background: var(--admin-surface);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+        }
+
+        html[data-theme="dark"] .summary-card strong,
+        html[data-theme="dark"] .preview-section h6 {
+            color: var(--admin-text);
         }
     </style>
 @endpush
@@ -1663,3 +1756,19 @@
         }
     </script>
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
+    <script>
+        $(function() {
+            $('#kategori').select2({
+                placeholder: '-- Pilih Kategori --',
+                width: '100%',
+                language: {
+                    noResults: () => 'Kategori tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            });
+        });
+    </script>
+@endpush
