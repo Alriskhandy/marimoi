@@ -1,411 +1,172 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MARIMOI - Login</title>
-
-    <!-- Favicons -->
-    <link href="{{ asset('frontend/favicon_io/favicon.ico') }}" rel="icon" type="image/webp">
+    <title>Masuk - MARIMOI</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#061522">
+    <link href="{{ asset('frontend/favicon_io/favicon.ico') }}" rel="icon">
     <link href="{{ asset('frontend/favicon_io/apple-touch-icon.png') }}" rel="apple-touch-icon">
-    <link href="{{ asset('frontend/favicon_io/favicon-32x32.png') }}" rel="icon" sizes="32x32">
-    <link href="{{ asset('frontend/favicon_io/favicon-16x16.png') }}" rel="icon" sizes="16x16">
-    <link href="{{ asset('frontend/favicon_io/android-chrome-192x192.png') }}" rel="icon" sizes="192x192">
-    <link href="{{ asset('frontend/favicon_io/android-chrome-512x512.png') }}" rel="icon" sizes="512x512">
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500&display=swap"
         rel="stylesheet">
-
-    <!-- Bootstrap Icon -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <!-- Fontawesome Icon -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-    <!-- Vendor CSS Files -->
-    <link href="{{ asset('frontend/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    <link href="{{ asset('frontend/vendor/aos/aos.css') }}" rel="stylesheet">
-
+    @vite(['resources/css/spatial.css', 'resources/js/spatial.js'])
     <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
-
-    <!-- Main CSS File -->
-    <link href="{{ asset('frontend/css/main.css') }}" rel="stylesheet">
-
-    @php
-        $i = Arr::random([1, 2, 3, 4, 5]);
-    @endphp
-
-    <style>
-        :root {
-            --accent-color: #12c8ff;
-            --gradient-purple: linear-gradient(90deg, #007BF6, #0051a2);
-            --heading-color: #2e2e4d;
-            --default-color: #151c31;
-            --surface-color: #ffffff;
-        }
-
-        body {
-            font-family: "Poppins", sans-serif;
-            background: url('{{ asset('frontend/img/parallax/'. $i .'.jpg') }}') no-repeat center center / cover;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.6) 100%);
-            z-index: 1;
-        }
-
-        .login-container {
-            position: relative;
-            z-index: 2;
-            max-width: 420px;
-            width: 100%;
-            margin: 15px;
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .login-logo {
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .login-logo img {
-            height: 60px;
-            margin-bottom: 5px;
-        }
-
-        .login-title {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .login-title h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--heading-color);
-            margin-bottom: 5px;
-        }
-
-        .login-title p {
-            color: var(--default-color);
-            font-size: 14px;
-            opacity: 0.8;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: var(--heading-color);
-            font-size: 13px;
-        }
-
-        .input-group {
-            position: relative;
-        }
-
-        .input-group .form-control {
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            width: 100%;
-            padding: 12px 16px 12px 45px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        .input-group .form-control:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
-            background: #fff;
-        }
-
-        .input-group .input-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--accent-color);
-            font-size: 16px;
-            z-index: 10;
-        }
-
-        .form-check {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .form-check-input {
-            margin-right: 10px;
-            accent-color: var(--accent-color);
-        }
-
-        .form-check-label {
-            font-size: 14px;
-            color: var(--default-color);
-        }
-
-        .forgot-password {
-            font-size: 14px;
-            color: var(--accent-color);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-password:hover {
-            color: color-mix(in srgb, var(--accent-color), transparent 20%);
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--gradient-purple);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px var(--accent-color)
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .login-footer p {
-            font-size: 13px;
-            color: var(--default-color);
-            opacity: 0.7;
-            margin-bottom: 5px;
-        }
-
-        .form-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        @media (max-width: 576px) {
-            .login-card {
-                padding: 20px 15px;
-            }
-
-            .login-title h2 {
-                font-size: 22px;
-            }
-            
-            .login-logo img {
-                height: 50px;
-            }
-            
-            .form-group {
-                margin-bottom: 15px;
-            }
-            
-            .input-group .form-control {
-                padding: 10px 15px 10px 40px;
-                font-size: 14px;
-            }
-            
-            .input-group .input-icon {
-                font-size: 15px;
-            }
-            
-            .login-btn {
-                padding: 10px;
-                font-size: 14px;
-            }
-        }
-        
-        @media (min-width: 992px) {
-            .login-container {
-                max-width: 380px;
-            }
-
-            .login-card {
-                padding: 25px;
-            }
-        }
-
-        .divider-or {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 20px 0;
-            color: var(--default-color);
-            opacity: 0.6;
-            font-size: 13px;
-        }
-
-        .divider-or::before,
-        .divider-or::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-        }
-
-        .divider-or span {
-            padding: 0 12px;
-        }
-
-        .google-btn {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 11px;
-            background: #ffffff;
-            color: var(--heading-color);
-            border: 1px solid rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .google-btn:hover {
-            background: #f8f9fa;
-            border-color: rgba(0, 0, 0, 0.25);
-            color: var(--heading-color);
-            transform: translateY(-2px);
-        }
-
-        .google-btn i {
-            color: #ea4335;
-            font-size: 17px;
-        }
-    </style>
 </head>
 
-<body>
-    <div class="login-container">
-        <div class="login-card" data-aos="fade-up">
-            <div class="login-logo">
-                <img src="{{ asset('frontend/img/logo/logo-dark.png') }}" alt="MARIMOI Logo">
+@php
+    $inputBase = 'block w-full rounded-xl border bg-white py-3 pl-11 text-[15px] text-slate-900 placeholder:text-slate-400 transition focus:border-ocean focus:ring-4 focus:ring-ocean/15';
+    $emailError = $errors->first('email');
+    $passwordError = $errors->first('password');
+    $captchaError = $errors->first('h-captcha-response');
+@endphp
+
+<body class="bg-mist font-manrope text-slate-900 antialiased">
+    <main class="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+        {{-- Panel merek --}}
+        <aside class="relative isolate flex flex-col justify-between overflow-hidden bg-deep px-6 py-8 text-white sm:px-10 lg:p-14">
+            <div class="pointer-events-none absolute inset-x-0 -inset-y-[8%] opacity-70" aria-hidden="true">
+                <svg class="contours h-full w-full [&_path]:fill-none [&_path]:stroke-aqua/10 [&_path]:[vector-effect:non-scaling-stroke]"></svg>
             </div>
+            <div class="pointer-events-none absolute -left-24 top-1/3 h-[520px] w-[520px] bg-[radial-gradient(closest-side,rgba(10,132,255,.22),transparent)]" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(32,217,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(32,217,255,.07)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:radial-gradient(ellipse_at_30%_50%,#000_20%,transparent_75%)]" aria-hidden="true"></div>
 
-            <div class="login-title">
-                <h2>Selamat Datang</h2>
-                <p>Harap mengisi kredensial sebelum dapat masuk</p>
-            </div>
-
-            <form action="{{ route('login') }}" method="POST">
-                @csrf
-
-                <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <div class="input-group">
-                        <i class="bi bi-envelope input-icon"></i>
-                        <input type="email" class="form-control" id="email" name="email"
-                            placeholder="Masukkan email Anda" required autofocus value="{{ old('email') }}"
-                            autocomplete="username">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <div class="input-group">
-                        <i class="bi bi-lock input-icon"></i>
-                        <input type="password" class="form-control" id="password" name="password"
-                            placeholder="Masukkan password Anda" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                        <label class="form-check-label" for="remember">
-                            Ingat Saya
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-row justify-content-center">
-                    <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}">
-                    </div>
-                </div>
-                @error('h-captcha-response')
-                    <div class="invalid-feedback d-block text-center">
-                        {{ $message }}
-                    </div>
-                @enderror
-
-                <button type="submit" class="login-btn">
-                    Masuk
-                </button>
-            </form>
-
-            <div class="divider-or">
-                <span>atau</span>
-            </div>
-
-            <a href="{{ route('login.google') }}" class="google-btn">
-                <i class="bi bi-google"></i>
-                Masuk dengan Google
+            <a href="{{ route('beranda') }}" class="relative inline-flex w-fit items-center gap-3 text-lg font-extrabold tracking-wider" aria-label="Kembali ke beranda MARIMOI">
+                <img src="{{ asset('frontend/img/logo/logo-white.png') }}" alt="" class="h-9 w-auto">
+                MARIMOI
             </a>
 
-            <div class="login-footer">
-                <p class="mb-1">@2025 Bappeda Provinsi Maluku Utara</p>
-                <p class="mb-0">Sistem Informasi MARIMOI</p>
-            </div>
-        </div>
-    </div>
+            <div class="relative my-10 max-lg:my-8 lg:my-0">
+                <p class="reveal mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-aqua before:h-px before:w-7 before:bg-current" data-reveal>Spatial Intelligence Platform</p>
+                <h1 class="reveal delay-100 max-w-[14ch] text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl" data-reveal>
+                    Memetakan Masa Depan <span class="text-aqua">Maluku Utara.</span>
+                </h1>
+                <p class="reveal mt-6 hidden max-w-md text-lg text-white/70 delay-200 sm:block" data-reveal>Masuk untuk mengelola data spasial, memantau pembangunan, dan menindaklanjuti aspirasi masyarakat.</p>
 
-    <!-- Vendor JS Files -->
-    <script src="{{ asset('frontend/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('frontend/vendor/aos/aos.js') }}"></script>
-    <script src="{{ asset('frontend/js/main.js') }}"></script>
+                <ul class="reveal mt-8 hidden gap-3 text-[15px] text-white/80 delay-300 lg:grid" data-reveal>
+                    @foreach (['Data spasial dan tematik terpadu', 'Pemantauan pembangunan berbasis peta', 'Tindak lanjut aspirasi masyarakat'] as $item)
+                        <li class="flex items-center gap-3">
+                            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-aqua/40 bg-aqua/10 text-aqua">
+                                <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>
+                            </span>
+                            {{ $item }}
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <p class="relative hidden text-sm text-white/45 lg:block">&copy; {{ date('Y') }} BAPPEDA Provinsi Maluku Utara</p>
+        </aside>
+
+        {{-- Formulir --}}
+        <section class="flex items-center justify-center px-6 py-12 sm:px-10 lg:p-14">
+            <div class="reveal w-full max-w-md" data-reveal>
+                <h2 class="text-3xl font-extrabold tracking-tight text-navy">Selamat datang</h2>
+                <p class="mt-2 text-slate-600">Harap mengisi kredensial sebelum dapat masuk.</p>
+
+                @if (session('status'))
+                    <p class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('status') }}</p>
+                @endif
+
+                @if ($emailError)
+                    <p class="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                        <svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                        <span>{{ $emailError }}</span>
+                    </p>
+                @endif
+
+                <form id="loginForm" action="{{ route('login') }}" method="POST" class="mt-8 space-y-5" novalidate>
+                    @csrf
+
+                    <div>
+                        <label for="email" class="mb-2 block text-sm font-semibold text-navy">Email</label>
+                        <div class="relative">
+                            <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 5 8-5"/></svg>
+                            <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                                placeholder="nama@instansi.go.id"
+                                class="{{ $inputBase }} pr-4 {{ $emailError ? 'border-red-300' : 'border-slate-300' }}">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="mb-2 block text-sm font-semibold text-navy">Password</label>
+                        <div class="relative">
+                            <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                            <input type="password" id="password" name="password" required autocomplete="current-password"
+                                placeholder="Masukkan password Anda"
+                                class="{{ $inputBase }} pr-12 {{ $passwordError ? 'border-red-300' : 'border-slate-300' }}">
+                            <button type="button" id="togglePassword" aria-label="Tampilkan password" aria-pressed="false"
+                                class="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition-colors hover:text-ocean">
+                                <svg data-eye viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg data-eye-off viewBox="0 0 24 24" class="hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A16.5 16.5 0 0 0 2 12s3.5 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                            </button>
+                        </div>
+                        @if ($passwordError)
+                            <p class="mt-2 text-sm text-red-600">{{ $passwordError }}</p>
+                        @endif
+                    </div>
+
+                    <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-600">
+                        <input type="checkbox" id="remember" name="remember" class="h-4 w-4 rounded border-slate-300 text-ocean focus:ring-ocean/30">
+                        Ingat saya
+                    </label>
+
+                    <div>
+                        <div class="flex justify-center overflow-hidden">
+                            <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                        </div>
+                        @if ($captchaError)
+                            <p class="mt-2 text-center text-sm text-red-600" role="alert">{{ $captchaError }}</p>
+                        @endif
+                    </div>
+
+                    <button type="submit" id="loginSubmit"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl bg-ocean px-6 py-3.5 text-[15px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_38px_-10px_rgba(32,217,255,.75)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0">
+                        <span data-label>Masuk</span>
+                    </button>
+                </form>
+
+                <div class="my-7 flex items-center gap-4 text-xs uppercase tracking-widest text-slate-400 before:h-px before:flex-1 before:bg-slate-300 after:h-px after:flex-1 after:bg-slate-300">atau</div>
+
+                <a href="{{ route('login.google') }}"
+                    class="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-[15px] font-semibold text-slate-800 transition duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md">
+                    <svg viewBox="0 0 48 48" class="h-5 w-5" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6Z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1Z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48Z"/></svg>
+                    Masuk dengan Google
+                </a>
+
+                <p class="mt-8 text-center text-sm text-slate-500">
+                    <a href="{{ route('beranda') }}" class="inline-flex items-center gap-1.5 font-semibold text-ocean underline decoration-ocean/30 underline-offset-4 transition-colors hover:decoration-ocean">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                        Kembali ke beranda
+                    </a>
+                </p>
+                <p class="mt-6 text-center text-xs text-slate-400 lg:hidden">&copy; {{ date('Y') }} BAPPEDA Provinsi Maluku Utara</p>
+            </div>
+        </section>
+    </main>
 
     <script>
-        AOS.init({
-            duration: 1000,
-            easing: 'ease-in-out',
-            once: true
-        });
+        (function () {
+            var input = document.getElementById('password');
+            var toggle = document.getElementById('togglePassword');
+            toggle.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', show ? 'true' : 'false');
+                toggle.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+                toggle.querySelector('[data-eye]').classList.toggle('hidden', show);
+                toggle.querySelector('[data-eye-off]').classList.toggle('hidden', !show);
+            });
+            document.getElementById('loginForm').addEventListener('submit', function () {
+                var btn = document.getElementById('loginSubmit');
+                btn.disabled = true;
+                btn.querySelector('[data-label]').textContent = 'Memproses…';
+            });
+        })();
     </script>
 </body>
 
