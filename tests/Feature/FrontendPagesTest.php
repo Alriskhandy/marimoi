@@ -2,11 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\DataSpatial;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class FrontendPagesTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * @return array<string, array{0: string, 1: bool}>
      */
@@ -87,5 +94,47 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="sidebar-layer"', false)
             ->assertSee('id="btn-toggle-sidebar-basemap"', false)
             ->assertSee('id="btn-share-map"', false);
+    }
+
+    public function test_detail_map_reprojects_legacy_web_mercator_geometry_to_lon_lat(): void
+    {
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kawasan Uji', 'warna' => '#0d6efd']);
+        $user = User::factory()->create();
+
+        // Poligon dalam meter (Web Mercator) yang tersimpan berlabel 4326, seperti data lama.
+        $data = DataSpatial::factory()->create([
+            'user_id' => $user->id,
+            'kategori_id' => $category->id,
+            'geom' => DB::raw("ST_SetSRID(ST_GeomFromText('MULTIPOLYGON(((14422913 100000, 14423913 100000, 14423913 101000, 14422913 100000)))'), 4326)"),
+        ]);
+
+        $response = $this->get(route('detail.tematik', $data->uuid));
+
+        $response->assertOk();
+        $geometry = $response->viewData('project')->geojson;
+        $this->assertSame('MultiPolygon', $geometry->type);
+
+        [$lon, $lat] = $geometry->coordinates[0][0][0];
+        $this->assertEqualsWithDelta(129.56, $lon, 0.05);
+        $this->assertEqualsWithDelta(0.9, $lat, 0.05);
+    }
+
+    public function test_detail_pages_render_the_shared_detail_layout_with_map_and_attributes(): void
+    {
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Uji', 'warna' => '#ff0000']);
+        $user = User::factory()->create();
+        $data = DataSpatial::factory()->create([
+            'user_id' => $user->id,
+            'kategori_id' => $category->id,
+            'dbf_attributes' => ['ANGGARAN' => 'Rp. 1.500.000.000', 'ID' => 5],
+        ]);
+
+        $this->get(route('detail.tematik', $data->uuid))
+            ->assertOk()
+            ->assertSee('id="map-detail"', false)
+            ->assertSee('Fasilitas Uji')
+            ->assertSee('ANGGARAN')
+            ->assertSee('Rp. 1.500.000.000')
+            ->assertDontSee('>ID<', false);
     }
 }

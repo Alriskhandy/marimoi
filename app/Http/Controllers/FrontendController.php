@@ -649,9 +649,20 @@ class FrontendController extends Controller
     }
 
     // DETAIL LOKASI //
+    /**
+     * Ekspresi SQL GeoJSON untuk halaman detail. Sebagian data lama tersimpan dalam meter
+     * (Web Mercator) padahal berlabel SRID 4326; koordinat di luar rentang derajat
+     * dikonversi kembali supaya peta detail mengarah ke lokasi yang benar.
+     */
+    private function geojsonSelectSql(): string
+    {
+        return 'ST_AsGeoJSON(CASE WHEN ST_XMin(geom) < -180 OR ST_XMax(geom) > 180 OR ST_YMin(geom) < -90 OR ST_YMax(geom) > 90
+                THEN ST_Transform(ST_SetSRID(geom, 3857), 4326) ELSE geom END) as geojson';
+    }
+
     public function detailPeta(Request $request, $uuid)
     {
-        $project = DataSpatial::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        $project = DataSpatial::select('*', DB::raw($this->geojsonSelectSql()))
             ->where('uuid', $uuid)
             ->firstOrFail();
 
@@ -666,7 +677,7 @@ class FrontendController extends Controller
 
     public function detailPetaTematik(Request $request, $uuid)
     {
-        $project = DataSpatial::select('*', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        $project = DataSpatial::select('*', DB::raw($this->geojsonSelectSql()))
             ->where('uuid', $uuid)
             ->firstOrFail();
 
