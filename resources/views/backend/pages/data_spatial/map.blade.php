@@ -1847,17 +1847,21 @@
             detailBtn.addEventListener('click', () => showDetails(props.uuid));
             actions.appendChild(detailBtn);
 
+            @can('data-spatial.edit')
             const editBtn = document.createElement('a');
             editBtn.className = 'btn btn-sm btn-outline-warning';
             editBtn.href = editUrl;
             editBtn.innerHTML = '<i class="mdi mdi-pencil"></i> Edit';
             actions.appendChild(editBtn);
+            @endcan
 
+            @can('data-spatial.delete')
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'btn btn-sm btn-outline-danger';
             deleteBtn.innerHTML = '<i class="mdi mdi-trash-can-outline"></i> Hapus';
             deleteBtn.addEventListener('click', () => deleteMapFeature(props.uuid, props.kategori_id));
             actions.appendChild(deleteBtn);
+            @endcan
 
             container.appendChild(actions);
 

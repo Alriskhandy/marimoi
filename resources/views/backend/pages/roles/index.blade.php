@@ -101,6 +101,7 @@
                                     <th class="text-dark" style="min-width: 200px;">Nama & Slug</th>
                                     <th class="text-dark d-none d-lg-table-cell">Deskripsi</th>
                                     <th class="text-dark text-center" style="width: 100px;">Pengguna</th>
+                                    <th class="text-dark text-center" style="width: 190px;">Hak Akses</th>
                                     <th class="text-dark text-center" style="width: 100px;">Status</th>
                                     <th class="text-dark text-center" style="width: 120px;">Aksi</th>
                                 </tr>
@@ -129,6 +130,15 @@
                                             <span class="badge bg-info">{{ $role->users_count }}</span>
                                         </td>
                                         <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-primary btn-permissions"
+                                                data-id="{{ $role->id }}" data-name="{{ $role->name }}"
+                                                title="Atur hak akses role ini">
+                                                <i class="mdi mdi-shield-key me-1"></i>
+                                                {{ $role->slug === 'super-admin' ? 'Semua' : $role->permissions_count }}
+                                                hak akses
+                                            </button>
+                                        </td>
+                                        <td class="text-center">
                                             @if ($role->is_active)
                                                 <span class="badge bg-success">Aktif</span>
                                             @else
@@ -136,6 +146,7 @@
                                             @endif
                                         </td>
                                         <td class="text-center" style="white-space: nowrap;">
+                                            @can('roles.edit')
                                             <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                 data-id="{{ $role->id }}" data-name="{{ $role->name }}"
                                                 data-slug="{{ $role->slug }}"
@@ -144,17 +155,20 @@
                                                 data-bs-target="#editModal" title="Edit">
                                                 <i class="mdi mdi-pencil"></i>
                                             </button>
+                                            @endcan
                                             @unless ($isReserved)
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                                                    onclick="deleteRole({{ $role->id }})" title="Hapus">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
+                                                @can('roles.delete')
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
+                                                        onclick="deleteRole({{ $role->id }})" title="Hapus">
+                                                        <i class="mdi mdi-delete"></i>
+                                                    </button>
+                                                @endcan
                                             @endunless
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="7" class="text-center">
                                             <div class="py-4">
                                                 <i class="mdi mdi-shield-crown-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada data role</p>
@@ -284,6 +298,38 @@
             </form>
         </div>
     </div>
+<div class="modal fade" id="permissionModal" tabindex="-1" aria-labelledby="permissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="permissionModalLabel">
+                    <i class="mdi mdi-shield-key me-1"></i>Hak Akses: <span id="permissionRoleName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div id="permissionLocked" class="alert alert-info d-none">
+                    Super Admin selalu memiliki seluruh hak akses dan tidak dapat diubah.
+                </div>
+                <div id="permissionLoading" class="text-center text-muted py-4">Memuat hak akses...</div>
+                <div id="permissionModules" class="row g-3"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="me-auto">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="permissionCheckAll">Pilih semua</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="permissionUncheckAll">Kosongkan</button>
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                @can('roles.edit')
+                    <button type="button" class="btn btn-primary" id="permissionSave">
+                        <i class="mdi mdi-content-save"></i> Simpan
+                    </button>
+                @endcan
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -513,3 +559,98 @@
         }
     </style>
 @endsection
+
+@push('scripts')
+    <script>
+        $(function() {
+            const permissionsUrl = "{{ route('roles.permissions', ['role' => '__ID__']) }}";
+            const syncUrl = "{{ route('roles.permissions.sync', ['role' => '__ID__']) }}";
+            const csrf = $('meta[name="csrf-token"]').attr('content');
+            let currentRoleId = null;
+            let locked = false;
+
+            function renderModules(modules) {
+                const html = modules.map(function(m) {
+                    const items = m.actions.map(function(a) {
+                        const id = 'perm-' + a.name.replace(/[^a-z0-9]/gi, '-');
+                        return '<div class="form-check">' +
+                            '<input class="form-check-input perm-check" type="checkbox" id="' + id + '" value="' + a.name + '"' +
+                            (a.granted ? ' checked' : '') + (locked ? ' disabled' : '') + '>' +
+                            '<label class="form-check-label" for="' + id + '">' + a.label + '</label></div>';
+                    }).join('');
+                    return '<div class="col-md-6"><div class="card h-100"><div class="card-body py-3">' +
+                        '<h6 class="mb-2">' + m.label + '</h6>' + items + '</div></div></div>';
+                }).join('');
+                $('#permissionModules').html(html);
+            }
+
+            $(document).on('click', '.btn-permissions', function() {
+                currentRoleId = $(this).data('id');
+                $('#permissionRoleName').text($(this).data('name'));
+                $('#permissionModules').empty();
+                $('#permissionLocked').addClass('d-none');
+                $('#permissionLoading').removeClass('d-none');
+                new bootstrap.Modal(document.getElementById('permissionModal')).show();
+
+                $.getJSON(permissionsUrl.replace('__ID__', currentRoleId), function(res) {
+                    locked = res.data.locked;
+                    $('#permissionLocked').toggleClass('d-none', !locked);
+                    $('#permissionSave, #permissionCheckAll, #permissionUncheckAll').prop('disabled', locked);
+                    renderModules(res.data.modules);
+                }).fail(function() {
+                    $('#permissionModules').html('<div class="col-12 text-danger">Gagal memuat hak akses.</div>');
+                }).always(function() {
+                    $('#permissionLoading').addClass('d-none');
+                });
+            });
+
+            $('#permissionCheckAll').on('click', function() {
+                $('.perm-check').prop('checked', true);
+            });
+            $('#permissionUncheckAll').on('click', function() {
+                $('.perm-check').prop('checked', false);
+            });
+
+            $('#permissionSave').on('click', function() {
+                const btn = $(this);
+                const permissions = $('.perm-check:checked').map(function() {
+                    return this.value;
+                }).get();
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: syncUrl.replace('__ID__', currentRoleId),
+                    type: 'PUT',
+                    data: {
+                        permissions: permissions
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': csrf
+                    },
+                    success: function(res) {
+                        $('.btn-permissions[data-id="' + currentRoleId + '"]').html(
+                            '<i class="mdi mdi-shield-key me-1"></i>' + permissions.length + ' hak akses');
+                        bootstrap.Modal.getInstance(document.getElementById('permissionModal')).hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: (xhr.responseJSON && xhr.responseJSON.message) || 'Terjadi kesalahan.'
+                        });
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

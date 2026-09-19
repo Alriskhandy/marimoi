@@ -51,9 +51,11 @@
                                 data-bs-target="#exportModal">
                                 <i class="mdi mdi-file-excel"></i> Export
                             </button>
+@can('visitors.delete')
                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkDelete()">
                                 <i class="mdi mdi-delete"></i> Hapus Data Lama
                             </button>
+@endcan
                         </div>
                     </div>
                 </div>
@@ -293,11 +295,13 @@
                                 <span id="selectedCount">0</span> data dipilih
                             </div>
                             <div>
+@can('visitors.delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger"
                                     onclick="bulkDeleteSelected()">
                                     <i class="mdi mdi-trash-can-outline me-1"></i>
                                     Hapus Terpilih
                                 </button>
+@endcan
                                 <button type="button" class="btn btn-sm btn-outline-secondary"
                                     onclick="clearSelection()">
                                     <i class="mdi mdi-close me-1"></i>
@@ -443,11 +447,13 @@
                                                         <i class="mdi mdi-map-marker"></i>
                                                     </a>
                                                 @endif
+@can('visitors.delete')
                                                 <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
                                                     data-id="{{ $visitor->id }}"
                                                     onclick="deleteVisitor({{ $visitor->id }})" title="Hapus">
                                                     <i class="mdi mdi-delete"></i>
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>

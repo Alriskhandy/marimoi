@@ -243,11 +243,13 @@
                                         </button>
 
                                         <!-- Delete Button -->
+@can('publications.delete')
                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                             data-id="{{ $download->id }}" data-name="{{ $download->name }}"
                                             title="Hapus">
                                             <i class="mdi mdi-delete"></i>
                                         </button>
+@endcan
                                     </div>
                                 </td>
 

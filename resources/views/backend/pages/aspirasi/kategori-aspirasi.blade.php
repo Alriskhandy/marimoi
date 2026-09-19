@@ -83,10 +83,12 @@
                             Daftar Kategori Aspirasi
                         </h4>
                         <div>
+@can('kategori-aspirasi.create')
                             <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                 data-bs-target="#addModal">
                                 <i class="mdi mdi-plus"></i> Tambah Kategori
                             </button>
+@endcan
                         </div>
                     </div>
 
@@ -192,6 +194,7 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 @if ($kategori->id != 1)
+@can('kategori-aspirasi.edit')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-success btn-edit me-1"
                                                         data-id="{{ $kategori->id }}"
@@ -204,12 +207,15 @@
                                                         title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
+@endcan
+@can('kategori-aspirasi.delete')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-danger btn-delete"
                                                         data-id="{{ $kategori->id }}"
                                                         onclick="deleteKategori({{ $kategori->id }})" title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
+@endcan
                                                 @endif
                                             </div>
                                         </td>
@@ -220,10 +226,12 @@
                                             <div class="py-4">
                                                 <i class="mdi mdi-tag-multiple-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada kategori aspirasi</p>
+@can('kategori-aspirasi.create')
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                     data-bs-target="#addModal">
                                                     <i class="mdi mdi-plus"></i> Tambah Kategori Pertama
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>

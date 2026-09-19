@@ -259,7 +259,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    @if (in_array($userRole, ['super-admin', 'admin-bappeda']))
+                                                    @if (in_array($userRole, ['super-admin', 'admin-bappeda']) && auth()->user()->can('project-feedbacks.respond'))
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
                                                             data-id="{{ $feedback->id }}"
@@ -350,11 +350,13 @@
                                                     data-bs-target="#showModal" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
+@can('project-feedbacks.delete')
                                                 <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
                                                     data-id="{{ $feedback->id }}"
                                                     onclick="deleteFeedback({{ $feedback->id }})" title="Hapus">
                                                     <i class="mdi mdi-delete"></i>
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -805,11 +807,13 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="mdi mdi-close"></i> Tutup
                         </button>
+@can('project-feedbacks.respond')
                         <button type="button"
                             class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} btn-respond"
                             id="btnRespond">
                             <i class="mdi mdi-reply"></i> Beri Response
                         </button>
+@endcan
                     </div>
                 </div>
             </div>
@@ -1687,12 +1691,14 @@
                         </div>
                     </div>
                 </div>
+@can('project-feedbacks.respond')
                 <button type="button" class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
                         data-id="${feedbackId}" 
                         data-current-opd="${opdData.id}" 
                         title="Ubah OPD">
                     <i class="mdi mdi-pencil"></i>
                 </button>
+@endcan
             </div>
         `;
                 }

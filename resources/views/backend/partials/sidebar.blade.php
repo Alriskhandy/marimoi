@@ -22,6 +22,11 @@
         request()->routeIs('visitors.*') ||
         request()->routeIs('logs.*');
 
+    $canPetaTematik = $user?->canAny(['data-spatial.view', 'categories.view', 'project-feedbacks.view']);
+    $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
+    $canPublikasi = $user?->can('publications.view');
+    $canSistem = $user?->canAny(['users.view', 'roles.view', 'opd.view', 'visitors.view', 'logs.view']);
+
     $hasOpdLogo = $slug === 'admin-opd' && $user?->opd && $user->opd->logo;
     $logoPath = $user->opd?->logo ? storage_path('app/public/' . $user->opd->logo) : null;
 
@@ -45,14 +50,19 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-            <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-            <span class="nav-text">Dashboard</span>
-        </a>
+        @can('dashboard.view')
+            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+        @endcan
 
-        <div class="nav-section-label">Master Data</div>
+        @if ($canPetaTematik || $canAspirasi || ($slug != 'admin-opd' && $user?->can('dokumen.view')))
+            <div class="nav-section-label">Master Data</div>
+        @endif
 
         {{-- Peta Tematik --}}
+        @if ($canPetaTematik)
         <a class="nav-link {{ $isPetaTematikActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#petaTematikMenu"
             role="button" aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}"
             aria-controls="petaTematikMenu">
@@ -62,27 +72,37 @@
         </a>
         <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
             <div class="sidebar-submenu">
-                <a class="nav-link {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
+                @can('data-spatial.view')
+<a class="nav-link {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                     href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
                     <span class="nav-text">Data Peta Tematik</span>
                 </a>
-                <a class="nav-link {{ request()->routeIs('data-spatial.map') ? 'active' : '' }}"
+@endcan
+                @can('data-spatial.view')
+<a class="nav-link {{ request()->routeIs('data-spatial.map') ? 'active' : '' }}"
                     href="{{ route('data-spatial.map') }}">
                     <span class="nav-text">Tampilan Peta</span>
                 </a>
-                <a class="nav-link {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}"
+@endcan
+                @can('categories.view')
+<a class="nav-link {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}"
                     href="{{ route('categories.index', ['type' => 'tematik']) }}">
                     <span class="nav-text">Kategori Peta Tematik</span>
                 </a>
-                <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
+@endcan
+                @can('project-feedbacks.view')
+<a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                     href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
                     <span class="nav-text">Feedback Peta Tematik</span>
                 </a>
+@endcan
             </div>
         </div>
 
+        @endif
+
         {{-- Upload Dokumen --}}
-        @if ($slug != 'admin-opd' && Route::has('dokumen.index'))
+        @if ($slug != 'admin-opd' && Route::has('dokumen.index') && $user?->can('dokumen.view'))
             <a class="nav-link {{ $isDokumenActive ? 'active' : '' }}" href="{{ route('dokumen.index') }}">
                 <span class="nav-icon"><i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i></span>
                 <span class="nav-text">Upload Dokumen</span>
@@ -90,6 +110,7 @@
         @endif
 
         {{-- Aspirasi --}}
+        @if ($canAspirasi)
         <a class="nav-link {{ $isAspirasiMenuActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#aspirasiMenu"
             role="button" aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}" aria-controls="aspirasiMenu">
             <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
@@ -98,22 +119,27 @@
         </a>
         <div class="collapse {{ $isAspirasiMenuActive ? 'show' : '' }}" id="aspirasiMenu">
             <div class="sidebar-submenu">
-                <a class="nav-link {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}"
+                @can('aspirasi.view')
+<a class="nav-link {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}"
                     href="{{ route('aspirasi.index') }}">
                     <span class="nav-text">Data Aspirasi</span>
                 </a>
-                @if ($isSuperAdmin)
+@endcan
+                @can('kategori-aspirasi.view')
                     <a class="nav-link {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}"
                         href="{{ route('kategori-aspirasi.index') }}">
                         <span class="nav-text">Kategori Aspirasi</span>
                     </a>
-                @endif
+                @endcan
             </div>
         </div>
+        @endif
 
-        @if ($isSuperAdmin)
+        @if ($canPublikasi || $canSistem)
             <div class="nav-section-label">Sistem</div>
+        @endif
 
+        @if ($canPublikasi)
             {{-- Publikasi --}}
             <a class="nav-link {{ $isPublicationActive ? 'active' : '' }}" data-bs-toggle="collapse"
                 href="#publicationMenu" role="button" aria-expanded="{{ $isPublicationActive ? 'true' : 'false' }}"
@@ -135,6 +161,9 @@
                 </div>
             </div>
 
+        @endif
+
+        @if ($canSistem)
             {{-- Sistem & Pengguna --}}
             <a class="nav-link {{ $isSystemActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemMenu"
                 role="button" aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
@@ -144,16 +173,16 @@
             </a>
             <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
                 <div class="sidebar-submenu">
-                    <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
-                        href="{{ route('users.index') }}"><span class="nav-text">Manajemen Pengguna</span></a>
-                    <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
-                        href="{{ route('roles.index') }}"><span class="nav-text">Manajemen Role</span></a>
-                    <a class="nav-link {{ request()->routeIs('opd.*') ? 'active' : '' }}"
-                        href="{{ route('opd.index') }}"><span class="nav-text">Manajemen OPD</span></a>
-                    <a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
-                        href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>
-                    <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
-                        href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>
+                    @can('users.view')<a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                        href="{{ route('users.index') }}"><span class="nav-text">Manajemen Pengguna</span></a>@endcan
+                    @can('roles.view')<a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
+                        href="{{ route('roles.index') }}"><span class="nav-text">Manajemen Role</span></a>@endcan
+                    @can('opd.view')<a class="nav-link {{ request()->routeIs('opd.*') ? 'active' : '' }}"
+                        href="{{ route('opd.index') }}"><span class="nav-text">Manajemen OPD</span></a>@endcan
+                    @can('visitors.view')<a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
+                        href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>@endcan
+                    @can('logs.view')<a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
+                        href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>@endcan
                 </div>
             </div>
         @endif

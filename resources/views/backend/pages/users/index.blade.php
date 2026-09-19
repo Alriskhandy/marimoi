@@ -84,10 +84,12 @@
                             Daftar Pengguna
                         </h4>
                         <div>
+@can('users.create')
                             <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                 data-bs-target="#addModal">
                                 <i class="mdi mdi-plus"></i> Tambah Pengguna
                             </button>
+@endcan
                         </div>
                     </div>
 
@@ -221,6 +223,7 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 <div class="btn-group" role="group">
+@can('users.edit')
                                                     <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                         data-id="{{ $user->id }}" data-name="{{ $user->name }}"
                                                         data-email="{{ $user->email }}"
@@ -229,13 +232,16 @@
                                                         data-bs-target="#editModal" title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
+@endcan
                                                     @if ($user->id !== 1)
+@can('users.delete')
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger btn-delete"
                                                             data-id="{{ $user->id }}"
                                                             onclick="deleteUser({{ $user->id }})" title="Hapus">
                                                             <i class="mdi mdi-delete"></i>
                                                         </button>
+@endcan
                                                     @endif
                                                 </div>
                                             </div>
@@ -246,6 +252,7 @@
                                                         data-id="{{ $user->id }}" title="Lihat Detail">
                                                         <i class="mdi mdi-eye"></i>
                                                     </button>
+@can('users.edit')
                                                     <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                         data-id="{{ $user->id }}" data-name="{{ $user->name }}"
                                                         data-email="{{ $user->email }}"
@@ -254,12 +261,15 @@
                                                         data-bs-target="#editModal" title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
+@endcan
+@can('users.delete')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-danger btn-delete"
                                                         data-id="{{ $user->id }}"
                                                         onclick="deleteUser({{ $user->id }})" title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
+@endcan
                                                 @endif
                                             </div>
                                         </td>
@@ -270,10 +280,12 @@
                                             <div class="py-4">
                                                 <i class="mdi mdi-account-multiple-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada data pengguna</p>
+@can('users.create')
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                     data-bs-target="#addModal">
                                                     <i class="mdi mdi-plus"></i> Tambah Pengguna Pertama
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>

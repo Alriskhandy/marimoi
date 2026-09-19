@@ -6,10 +6,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
+    use HasRoles {
+        hasRole as protected spatieHasRole;
+    }
+
+    /**
+     * Jaga model_has_roles (spatie) tetap sinkron dengan kolom role_id.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            if ($user->wasRecentlyCreated || $user->wasChanged('role_id')) {
+                $user->syncRoles($user->role_id ? [(int) $user->role_id] : []);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -101,11 +117,17 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has a specific role by slug
+     * Cek role berdasarkan slug (dipakai seluruh kode aplikasi). Pemanggilan
+     * lain (mis. dari spatie/laravel-permission dengan koleksi/id role) tetap
+     * diteruskan ke implementasi paket.
      */
-    public function hasRole($roleSlug)
+    public function hasRole($roles, ?string $guard = null): bool
     {
-        return $this->role && $this->role->slug === $roleSlug;
+        if (is_string($roles) && $this->role && $this->role->slug === $roles) {
+            return true;
+        }
+
+        return $this->spatieHasRole($roles, $guard);
     }
 
     /**

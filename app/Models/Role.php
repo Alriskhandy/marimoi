@@ -3,32 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class Role extends Model
+class Role extends SpatieRole
 {
     use HasFactory;
-
-    protected $table = 'roles';
 
     protected $fillable = [
         'name',
         'slug',
         'description',
         'is_active',
+        'guard_name',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    // Relationships
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
-
-    // Scopes
+    /**
+     * Scope a query to only include active roles.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

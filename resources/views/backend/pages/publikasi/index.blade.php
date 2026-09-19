@@ -26,10 +26,12 @@
                     <i class="mdi mdi-file-document-multiple text-primary me-2"></i>
                     Daftar Publikasi
                 </h4>
+@can('publications.create')
                 <button type="button" class="btn btn-gradient-primary btn-rounded" data-bs-toggle="modal"
                     data-bs-target="#addModal">
                     <i class="mdi mdi-plus me-1"></i>Tambah Publikasi
                 </button>
+@endcan
             </div>
 
             @if (session('success'))
@@ -239,17 +241,21 @@
                                             <i class="mdi mdi-information"></i>
                                         </button>
 
+@can('publications.edit')
                                         <button type="button" class="btn btn-sm btn-outline-warning"
                                             data-bs-toggle="modal" data-bs-target="#editModal{{ $publication->id }}"
                                             title="Edit">
                                             <i class="mdi mdi-pencil"></i>
                                         </button>
+@endcan
 
+@can('publications.delete')
                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                             data-id="{{ $publication->id }}" data-title="{{ $publication->title }}"
                                             title="Hapus">
                                             <i class="mdi mdi-delete"></i>
                                         </button>
+@endcan
                                     </div>
                                 </td>
                             </tr>
@@ -796,10 +802,12 @@
                                             style="font-size: 4rem; opacity: 0.3;"></i>
                                         <h5 class="mt-3 mb-2">Belum ada publikasi</h5>
                                         <p>Mulai dengan menambahkan publikasi pertama Anda.</p>
+@can('publications.create')
                                         <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                             data-bs-target="#addModal">
                                             <i class="mdi mdi-plus me-1"></i>Tambah Publikasi
                                         </button>
+@endcan
                                     </div>
                                 </td>
                             </tr>

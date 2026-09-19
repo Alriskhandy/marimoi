@@ -37,10 +37,12 @@
                                 </select>
                             </div>
                             <div>
+@can('categories.create')
                                 <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                     data-bs-target="#addModal">
                                     <i class="mdi mdi-plus"></i> Tambah Kategori
                                 </button>
+@endcan
                             </div>
                         </div>
                     </div>
@@ -118,10 +120,12 @@
                         <h4 class="card-title">Daftar Kategori</h4>
                         @if (request()->get('type'))
                             <div>
+@can('categories.create')
                                 <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                     data-bs-target="#addModal">
                                     <i class="mdi mdi-plus"></i> Tambah Kategori
                                 </button>
+@endcan
                             </div>
                         @endif
                     </div>
@@ -470,6 +474,7 @@
                                                 $kategori->user_id === $user->id
                                             ) {
                                                 $output .= '<div class="btn-group" role="group">';
+                                                if ($user->can('categories.edit')) {
                                                 $output .=
                                                     '<button type="button" class="btn btn-sm btn-outline-success btn-edit" ';
                                                 $output .= 'data-id="' . $kategori->id . '" ';
@@ -487,7 +492,9 @@
                                                     'data-bs-toggle="modal" data-bs-target="#editModal" title="Edit">';
                                                 $output .= '<i class="mdi mdi-pencil"></i>';
                                                 $output .= '</button>';
+                                                }
 
+                                                if ($user->can('categories.delete')) {
                                                 $output .=
                                                     '<form action="' .
                                                     route('categories.destroy', $kategori->id) .
@@ -501,6 +508,7 @@
                                                 $output .= '<i class="fa fa-trash"></i>';
                                                 $output .= '</button>';
                                                 $output .= '</form>';
+                                                }
                                                 $output .= '</div>';
                                             }
                                             $output .= '</td>';
@@ -534,10 +542,12 @@
                                             <i class="mdi mdi-tag-multiple mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada kategori yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Kategori" untuk memulai</p>
+@can('categories.create')
                                             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                 data-bs-target="#addModal">
                                                 <i class="mdi mdi-plus"></i> Tambah Kategori Pertama
                                             </button>
+@endcan
                                         </td>
                                     </tr>
                                 @endif

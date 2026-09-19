@@ -135,9 +135,11 @@
                                         </a>
                                     </div>
                                 @endif
+@can('data-spatial.create')
                                 <a href="{{ $createUrl }}" class="btn btn-gradient-primary btn-rounded btn-fw me-2">
                                     <i class="mdi mdi-map-marker-plus"></i> {{ $label }}
                                 </a>
+@endcan
                             </div>
                         </div>
 
@@ -252,20 +254,26 @@
                                     <span id="selectedCount">0</span> item dipilih
                                 </div>
                                 <div>
+@can('data-spatial.edit')
                                     <button type="button" class="btn btn-sm btn-outline-primary"
                                         onclick="bulkUpdateCategory()">
                                         <i class="mdi mdi-shape-outline me-1"></i>
                                         Ubah Kategori/Layer
                                     </button>
+@endcan
+@can('data-spatial.edit')
                                     <button type="button" class="btn btn-sm btn-outline-info"
                                         onclick="bulkManageDbfAttribute()">
                                         <i class="mdi mdi-table-edit me-1"></i>
                                         Kelola Atribut DBF
                                     </button>
+@endcan
+@can('data-spatial.delete')
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
                                         <i class="mdi mdi-trash-can-outline me-1"></i>
                                         Hapus Terpilih
                                     </button>
+@endcan
                                     <button type="button" class="btn btn-sm btn-outline-secondary"
                                         onclick="clearSelection()">
                                         <i class="mdi mdi-close me-1"></i>
@@ -337,16 +345,19 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-2">
+@can('data-spatial.edit')
                                                     <a href="{{ route('data-spatial.edit', $item->uuid) }}"
                                                         class="btn btn-sm btn-outline-warning" title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </a>
+@endcan
 
                                                     <button type="button" class="btn btn-sm btn-outline-info"
                                                         onclick="showDetails('{{ $item->uuid }}')" title="Detail">
                                                         <i class="mdi mdi-eye"></i>
                                                     </button>
 
+@can('data-spatial.delete')
                                                     <form action="{{ route('data-spatial.destroy', $item->uuid) }}"
                                                         method="POST" style="display:inline-block;"
                                                         data-confirm="delete">
@@ -356,6 +367,7 @@
                                                             <i class="fa fa-trash"></i>
                                                         </button>
                                                     </form>
+@endcan
                                                 </div>
                                             </td>
                                         </tr>

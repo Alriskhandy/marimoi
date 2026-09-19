@@ -23,9 +23,11 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="card-title">Daftar Dokumen</h4>
+@can('dokumen.create')
                 <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal" data-bs-target="#addModal">
                     <i class="mdi mdi-plus"></i> Tambah Dokumen
                 </button>
+@endcan
             </div>
 
             @if (session('success'))
@@ -57,9 +59,12 @@
                                 <td>{{ $dokumen->nama }}</td>
                                 <td>
                                     <!-- Edit Button triggers modal -->
+@can('dokumen.edit')
                                     <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $dokumen->id }}" title="Edit">
                                         <i class="mdi mdi-pencil"></i>
                                     </button>
+@endcan
+@can('dokumen.delete')
                                     <form action="{{ route('dokumen.destroy', $dokumen->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus dokumen ini?')">
                                         @csrf
                                         @method('DELETE')
@@ -67,6 +72,7 @@
                                             <i class="mdi mdi-delete"></i>
                                         </button>
                                     </form>
+@endcan
                                     <a href="{{ asset('storage/' . $dokumen->file) }}" class="btn btn-sm btn-outline-info" title="Download" download><i class="mdi mdi-download"></i></a>
                                 </td>
                             </tr>

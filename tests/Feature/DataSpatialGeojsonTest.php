@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,6 +126,7 @@ class DataSpatialGeojsonTest extends TestCase
     public function test_non_admin_only_sees_their_own_data_on_the_map(): void
     {
         $role = Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::create(['name' => 'data-spatial.view']));
         $owner = User::factory()->create(['role_id' => $role->id]);
         $otherUser = User::factory()->create(['role_id' => $role->id]);
         $category = $this->category();

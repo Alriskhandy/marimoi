@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +19,7 @@ class RoleController extends Controller
 
     public function index()
     {
-        $roleList = Role::withCount('users')->orderBy('name')->get();
+        $roleList = Role::withCount(['users', 'permissions'])->orderBy('name')->get();
 
         $stats = [
             'total' => $roleList->count(),
@@ -126,6 +127,63 @@ class RoleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Role berhasil dihapus',
+        ]);
+    }
+
+    /**
+     * Daftar permission per modul beserta status centang untuk role ini.
+     */
+    public function permissions(Role $role)
+    {
+        $granted = $role->permissions()->pluck('name')->all();
+
+        $modules = [];
+        foreach (Permission::CATALOG as $module => $definition) {
+            $actions = [];
+            foreach ($definition['actions'] as $action => $label) {
+                $name = "{$module}.{$action}";
+                $actions[] = [
+                    'name' => $name,
+                    'label' => $label,
+                    'granted' => in_array($name, $granted, true),
+                ];
+            }
+
+            $modules[] = ['module' => $module, 'label' => $definition['label'], 'actions' => $actions];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'role' => $role->only(['id', 'name', 'slug']),
+                'locked' => $role->slug === 'super-admin',
+                'modules' => $modules,
+            ],
+        ]);
+    }
+
+    /**
+     * Simpan hak akses (permission) untuk sebuah role.
+     */
+    public function syncPermissions(Request $request, Role $role)
+    {
+        if ($role->slug === 'super-admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super Admin selalu memiliki seluruh hak akses dan tidak dapat diubah.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'permissions' => 'nullable|array',
+            'permissions.*' => ['string', Rule::in(Permission::catalogNames())],
+        ]);
+
+        $role->syncPermissions($validated['permissions'] ?? []);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hak akses role berhasil diperbarui',
         ]);
     }
 }
