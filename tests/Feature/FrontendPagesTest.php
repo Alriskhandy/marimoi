@@ -55,6 +55,8 @@ class FrontendPagesTest extends TestCase
         $this->get(route('tampil.tentang'))
             ->assertOk()
             ->assertSee('Filosofi logo')
+            ->assertSee('Kenali MARIMOI dalam video')
+            ->assertSee('data-video-id="rxI6vk7dFGw"', false)
             ->assertSee('Enam prinsip')
             ->assertSee('Dukungan Terhadap MARIMOI')
             ->assertSee('data-video-id="cWA8hBj4PcE"', false)

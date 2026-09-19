@@ -576,7 +576,7 @@ function initMap() {
     let query = '';
     (DATA.layers || []).forEach((l) => { layers[l.id] = l; active[l.id] = true; });
 
-    const map = L.map(mapEl, { zoomControl: false, preferCanvas: true, minZoom: 5, maxZoom: 16, scrollWheelZoom: false });
+    const map = L.map(mapEl, { zoomControl: false, attributionControl: false, preferCanvas: true, minZoom: 5, maxZoom: 16, scrollWheelZoom: false });
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors', maxNativeZoom: 16, maxZoom: 16,
     }).addTo(map);

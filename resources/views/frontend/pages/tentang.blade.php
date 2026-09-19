@@ -50,6 +50,34 @@
         </div>
     </section>
 
+    {{-- Video profil MARIMOI --}}
+    <section id="video" class="border-t border-slate-900/10 bg-white py-20 md:py-28">
+        <div class="mx-auto w-full max-w-[1180px] px-6">
+            <div class="mb-12 max-w-2xl">
+                <p class="reveal {{ $kicker }}" data-reveal>Video</p>
+                <h2 class="reveal delay-100 {{ $h2 }}" data-reveal>Kenali MARIMOI dalam video.</h2>
+                <p class="reveal text-lg text-slate-600 delay-200" data-reveal>Tonton pengenalan singkat tentang MARIMOI dan bagaimana platform ini mendukung perencanaan pembangunan Maluku Utara.</p>
+            </div>
+
+            <button type="button" data-video-id="rxI6vk7dFGw" data-video-title="Video profil MARIMOI" aria-label="Putar video profil MARIMOI"
+                class="group reveal-blur relative block aspect-video w-full overflow-hidden rounded-3xl bg-navy text-left shadow-[0_40px_80px_-40px_rgba(7,26,45,.6)]" data-reveal>
+                <img src="https://img.youtube.com/vi/rxI6vk7dFGw/maxresdefault.jpg" alt="" loading="lazy"
+                    class="h-full w-full object-cover transition duration-700 group-hover:scale-105">
+                <span class="absolute inset-0 bg-gradient-to-t from-deep/70 via-transparent to-transparent" aria-hidden="true"></span>
+                <span class="absolute inset-0 grid place-items-center">
+                    <span class="relative grid h-20 w-20 place-items-center rounded-full border border-white/30 bg-slate-950/40 backdrop-blur-md transition duration-300 group-hover:scale-110 group-hover:bg-ocean md:h-24 md:w-24">
+                        <span class="absolute inset-0 rounded-full border border-white/40 motion-safe:animate-ring" aria-hidden="true"></span>
+                        <svg viewBox="0 0 24 24" class="ml-1 h-8 w-8 text-white md:h-9 md:w-9" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7L8 5Z"/></svg>
+                    </span>
+                </span>
+                <span class="absolute bottom-5 left-6 right-6 flex items-center justify-between gap-4 text-white">
+                    <span class="text-lg font-bold md:text-xl">Video profil MARIMOI</span>
+                    <span class="font-grotesk text-xs uppercase tracking-widest text-white/70">YouTube</span>
+                </span>
+            </button>
+        </div>
+    </section>
+
     {{-- Pendekatan --}}
     <section class="relative overflow-hidden bg-deep py-20 text-white md:py-28">
         <div data-parallax="0.06" class="pointer-events-none absolute inset-x-0 -inset-y-[8%] opacity-50 will-change-transform" aria-hidden="true">

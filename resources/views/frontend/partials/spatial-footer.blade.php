@@ -57,8 +57,13 @@
                 <span class="mx-1 text-white/25">·</span>
                 <a href="{{ route('syarat_ketentuan') }}" class="{{ $footUnderline }} hover:text-white">Syarat &amp; Ketentuan</a>
             </span>
-            <span class="inline-flex items-center gap-3">Developed by
-                <img src="{{ asset('frontend/img/logo_heartware_putih.png') }}" alt="Heartware Digital" class="h-6 w-auto opacity-90" loading="lazy"></span>
+            <span class="inline-flex items-center gap-2">Developed by
+                <a href="https://www.instagram.com/heartware_digital?igsh=MWdoM3A1a3p1bXFkMg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 font-semibold text-white/90 transition-colors hover:text-aqua">
+                    Heartware Digital
+                    <img src="{{ asset('frontend/img/logo_heartware_putih.png') }}" alt="" class="h-5 w-auto opacity-90" loading="lazy">
+                </a>
+            </span>
         </div>
     </div>
 </footer>
