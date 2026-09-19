@@ -1,7 +1,7 @@
 @extends('frontend.layouts.spatial', ['title' => 'MARIMOI - Peta Interaktif'])
 
 @push('styles')
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/css/peta.css'])
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -115,15 +115,15 @@
                 <div id="toast-container" class="fixed top-20 right-3 space-y-2"></div>
 
                 <!-- Modal Panduan Awal -->
-                <div id="guideModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
-                    <div class="mx-3 bg-white text-gray-700 relative self-center rounded-lg shadow-lg w-full max-w-lg">
+                <div id="guideModal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+                    <div class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
                         <!-- Header -->
-                        <div class="px-4 py-3 border-b border-b-gray-400">
-                            <h5 class="text-lg font-semibold">Panduan Penggunaan</h5>
+                        <div class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white">
+                            <h5 class="text-lg font-bold tracking-tight">Panduan Penggunaan</h5>
                         </div>
 
                         <!-- Body -->
-                        <div class="px-4 py-5 text-sm text-justify">
+                        <div class="px-6 py-6 text-sm leading-relaxed">
                             <div class="guide-step" data-step="1">
                                 <p>Selamat datang di WebGIS Perencanaan! Gunakan tombol-tombol kontrol untuk
                                     mengatur tampilan peta.</p>
@@ -176,14 +176,14 @@
                         </div>
 
                         <!-- Footer -->
-                        <div class="flex justify-end gap-2 px-4 py-3 border-t border-t-gray-400">
+                        <div class="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
                             <button id="btnSkip"
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Skip</button>
+                                class="rounded-full border border-slate-300 bg-white px-4 py-1.5 font-semibold text-slate-600 transition-colors hover:bg-slate-100">Skip</button>
                             <button id="btnPrev"
-                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded disabled:opacity-50"
+                                class="rounded-full border border-slate-300 bg-white px-4 py-1.5 font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
                                 disabled>Prev</button>
                             <button id="btnNext"
-                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Next</button>
+                                class="rounded-full bg-[#0a84ff] px-5 py-1.5 font-bold text-white transition-colors hover:bg-[#0a72e0]">Next</button>
                         </div>
                     </div>
                 </div>
@@ -194,12 +194,12 @@
                 <div class="hidden hover:bg-green-600"></div>
 
                 <!-- Modal Share Peta -->
-                <div id="shareMapModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
-                    <div class="mx-3 bg-white text-gray-700 relative self-center rounded-lg shadow-lg w-full max-w-lg">
+                <div id="shareMapModal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+                    <div class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
                         <!-- Header -->
-                        <div class="px-4 py-3 border-b border-b-gray-400 flex justify-between items-center">
-                            <h5 class="text-lg font-semibold">Bagikan Peta</h5>
-                            <button id="btn-close-share-modal" class="text-gray-500 hover:text-gray-700">
+                        <div class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white flex justify-between items-center">
+                            <h5 class="text-lg font-bold tracking-tight">Bagikan Peta</h5>
+                            <button id="btn-close-share-modal" class="text-white/70 hover:text-white">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                         </div>
@@ -427,6 +427,9 @@
                 <!-- Tombol Fullscreen & Home dirender oleh Leaflet sebagai control 'topleft',
                                  langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
 
+                <!-- HUD koordinat & zoom (diisi oleh skrip di bawah) -->
+                <div id="map-hud" aria-hidden="true"><span>Lat <b id="hud-lat">-</b></span><i></i><span>Lng <b id="hud-lng">-</b></span><i></i><span>Zoom <b id="hud-zoom">-</b></span></div>
+
                 <!-- Map -->
                 <div id="map" class="relative z-10 h-full w-full bg-gray-200 flex items-center justify-center">
                 </div>
@@ -466,4 +469,37 @@
     <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map.js') }}?v={{ filemtime(public_path('frontend/js/map.js')) }}"></script>
+
+    {{-- HUD koordinat/zoom + skala. `map` adalah konstanta global yang dibuat map.js. --}}
+    <script>
+        (function () {
+            if (typeof map === 'undefined' || typeof L === 'undefined') { return; }
+            var lat = document.getElementById('hud-lat');
+            var lng = document.getElementById('hud-lng');
+            var zoom = document.getElementById('hud-zoom');
+            var pending = null;
+            L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+            function showZoom() { zoom.textContent = map.getZoom(); }
+            function showCenter() {
+                var c = map.getCenter();
+                lat.textContent = c.lat.toFixed(4);
+                lng.textContent = c.lng.toFixed(4);
+            }
+            map.on('mousemove', function (e) {
+                pending = e.latlng;
+                if (pending && !map._hudRaf) {
+                    map._hudRaf = requestAnimationFrame(function () {
+                        lat.textContent = pending.lat.toFixed(4);
+                        lng.textContent = pending.lng.toFixed(4);
+                        map._hudRaf = 0;
+                    });
+                }
+            });
+            map.on('mouseout', showCenter);
+            map.on('zoomend', showZoom);
+            map.on('moveend', showCenter);
+            showZoom();
+            showCenter();
+        })();
+    </script>
 @endpush

@@ -144,4 +144,54 @@ class DataSpatialGeojsonTest extends TestCase
         $this->assertCount(1, $features);
         $this->assertSame($ownData->uuid, $features[0]['properties']['uuid']);
     }
+
+    public function test_guest_cannot_access_geojson_version_endpoint(): void
+    {
+        $this->get(route('data-spatial.geojson-version'))->assertRedirect(route('login'));
+    }
+
+    public function test_geojson_version_reports_total_and_changes_when_layer_data_changes(): void
+    {
+        $admin = $this->superAdmin();
+        $category = $this->category();
+        $url = fn () => route('data-spatial.geojson-version', ['data_type' => 'tematik', 'category_id' => $category->id]);
+
+        $item = DataSpatial::factory()->create(['user_id' => $admin->id, 'kategori_id' => $category->id]);
+
+        $first = $this->actingAs($admin)->getJson($url())->assertOk()->assertJsonPath('total', 1)->json('version');
+        $this->assertSame($first, $this->actingAs($admin)->getJson($url())->json('version'), 'versi harus stabil bila data tidak berubah');
+
+        $this->travel(2)->seconds();
+        DataSpatial::factory()->create(['user_id' => $admin->id, 'kategori_id' => $category->id]);
+        $afterAdd = $this->actingAs($admin)->getJson($url())->assertJsonPath('total', 2)->json('version');
+        $this->assertNotSame($first, $afterAdd);
+
+        $this->travel(2)->seconds();
+        $category->update(['nama' => 'Fasilitas Umum Baru']);
+        $afterRename = $this->actingAs($admin)->getJson($url())->json('version');
+        $this->assertNotSame($afterAdd, $afterRename);
+
+        $this->travel(2)->seconds();
+        $item->delete();
+        $afterDelete = $this->actingAs($admin)->getJson($url())->assertJsonPath('total', 1)->json('version');
+        $this->assertNotSame($afterRename, $afterDelete);
+    }
+
+    public function test_geojson_version_only_counts_own_data_for_non_admin_roles(): void
+    {
+        $role = Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'data-spatial.view', 'guard_name' => 'web']));
+        $opd = User::factory()->create(['role_id' => $role->id]);
+        $other = User::factory()->create(['role_id' => $role->id]);
+        $category = $this->category();
+
+        DataSpatial::factory()->create(['user_id' => $opd->id, 'kategori_id' => $category->id]);
+        DataSpatial::factory()->count(2)->create(['user_id' => $other->id, 'kategori_id' => $category->id]);
+
+        $this->actingAs($opd)
+            ->getJson(route('data-spatial.geojson-version', ['category_id' => $category->id]))
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('user', $opd->id);
+    }
 }

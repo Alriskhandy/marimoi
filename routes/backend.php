@@ -93,6 +93,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/', [DataSpatialController::class, 'index'])->name('index')->middleware('permission:data-spatial.view');
         Route::get('/peta', [DataSpatialController::class, 'map'])->name('map')->middleware('permission:data-spatial.view');
         Route::get('/geojson', [DataSpatialController::class, 'geojson'])->name('geojson')->middleware('permission:data-spatial.view');
+        Route::get('/geojson-version', [DataSpatialController::class, 'geojsonVersion'])->name('geojson-version')->middleware('permission:data-spatial.view');
         Route::post('/export-drawings', [DataSpatialController::class, 'exportDrawings'])->name('export-drawings')->middleware('permission:data-spatial.view');
         Route::get('/create', [DataSpatialController::class, 'create'])->name('create')->middleware('permission:data-spatial.create');
         Route::post('/store', [DataSpatialController::class, 'store'])->name('store')->middleware('permission:data-spatial.create');

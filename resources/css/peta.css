@@ -1,0 +1,315 @@
+/* Peta Tematik: tampilan "spatial intelligence" untuk halaman peta.
+ * Hanya mengubah kulit visual (warna, bentuk, posisi). ID, struktur DOM, dan class yang
+ * dipakai frontend/js/map.js tidak diubah, jadi seluruh fungsi peta tetap berjalan. */
+
+#map-section {
+    --peta-deep: #061522;
+    --peta-navy: #071a2d;
+    --peta-ocean: #0a84ff;
+    --peta-aqua: #20d9ff;
+    --peta-glass: rgba(6, 21, 34, .78);
+    --peta-glass-line: rgba(255, 255, 255, .12);
+    --peta-panel: rgba(255, 255, 255, .9);
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+#map-section #map {
+    background: var(--peta-navy);
+}
+
+/* ---------- Kontrol Leaflet (zoom, layar penuh, home, layer tools) ---------- */
+#map-section .leaflet-bar {
+    overflow: hidden;
+    border: 1px solid var(--peta-glass-line) !important;
+    border-radius: 16px !important;
+    background: var(--peta-glass);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .6) !important;
+}
+
+#map-section .leaflet-bar a,
+#map-section .leaflet-bar a:hover {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08) !important;
+    background: transparent;
+    color: #fff;
+    font-size: 16px;
+    transition: background-color .25s, color .25s;
+}
+
+#map-section .leaflet-bar a:last-child {
+    border-bottom: 0 !important;
+}
+
+#map-section .leaflet-bar a:hover {
+    background: rgba(32, 217, 255, .16);
+    color: var(--peta-aqua);
+}
+
+#map-section .leaflet-bar a.leaflet-disabled {
+    color: rgba(255, 255, 255, .3);
+    background: transparent;
+}
+
+#map-section .leaflet-top.leaflet-left {
+    top: 8px;
+    left: 8px;
+}
+
+#map-section .leaflet-top.leaflet-left .leaflet-control {
+    margin-top: 10px;
+    margin-left: 4px;
+}
+
+/* ---------- Tombol samping kanan ---------- */
+#map-section #sidebar-control-buttons,
+#map-section #nav-control-buttons {
+    right: 14px;
+    overflow: visible;
+    border: 1px solid var(--peta-glass-line);
+    border-radius: 16px;
+    background: var(--peta-glass);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .6);
+}
+
+#map-section #sidebar-control-buttons { top: 14px; z-index: 102; }
+#map-section #nav-control-buttons { bottom: 36px; z-index: 102; }
+
+#map-section #sidebar-control-buttons button,
+#map-section #nav-control-buttons button {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    background: transparent;
+    color: #fff;
+    font-size: 16px;
+    transition: background-color .25s, color .25s;
+}
+
+#map-section #sidebar-control-buttons button:first-child,
+#map-section #nav-control-buttons button:first-child { border-radius: 16px 16px 0 0; }
+#map-section #sidebar-control-buttons button:last-child,
+#map-section #nav-control-buttons button:last-child { border-bottom: 0; border-radius: 0 0 16px 16px; }
+
+#map-section #sidebar-control-buttons button:hover,
+#map-section #nav-control-buttons button:hover {
+    background: rgba(32, 217, 255, .16);
+    color: var(--peta-aqua);
+}
+
+/* Tooltip dari atribut data-tooltip */
+#map-section #sidebar-control-buttons button[data-tooltip]:hover::after,
+#map-section #nav-control-buttons button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 12px;
+    border: 1px solid var(--peta-glass-line);
+    border-radius: 10px;
+    background: var(--peta-glass);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ---------- Panel samping (layer, basemap, legenda, unduh) ---------- */
+#map-section #sidebar-layer,
+#map-section #sidebar-basemap,
+#map-section #sidebar-legend,
+#map-section #sidebar-download {
+    top: 14px;
+    right: 76px;
+    bottom: 36px;
+    height: auto;
+    border: 1px solid rgba(255, 255, 255, .5);
+    border-radius: 22px;
+    background: var(--peta-panel);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    box-shadow: 0 30px 60px -24px rgba(6, 21, 34, .55);
+    overflow: hidden;
+}
+
+#map-section #sidebar-layer-tools {
+    border: 1px solid rgba(255, 255, 255, .5);
+    border-radius: 22px;
+    background: var(--peta-panel);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    box-shadow: 0 30px 60px -24px rgba(6, 21, 34, .55);
+    overflow: hidden;
+}
+
+/* Kepala panel: gradasi navy dengan aksen aqua */
+#map-section #sidebar-layer > div:first-child,
+#map-section #sidebar-basemap > div:first-child,
+#map-section #sidebar-legend > div:first-child,
+#map-section #sidebar-download > div:first-child,
+#map-section #layer-tools-header {
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--peta-navy), #0b3a66) !important;
+    box-shadow: inset 0 -2px 0 rgba(32, 217, 255, .55);
+    padding: 8px 12px !important;
+}
+
+#map-section #layer-tools-header {
+    border-radius: 0;
+    margin: 0;
+}
+
+#map-section [id^='sidebar-'] h6 {
+    letter-spacing: .04em;
+    font-family: 'Space Grotesk', 'Manrope', sans-serif;
+    text-transform: uppercase;
+    font-size: 12px !important;
+}
+
+#map-section #layer-search {
+    font-family: inherit;
+}
+
+/* Scrollbar tipis */
+#map-section #layer-list,
+#map-section #basemap-list,
+#map-section #legend-content,
+#map-section #download-content,
+#map-section #layer-tools-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(10, 132, 255, .45) transparent;
+}
+
+/* ---------- Popup ---------- */
+#map-section .tailwind-popup .leaflet-popup-content-wrapper {
+    overflow: hidden;
+    border: 1px solid rgba(6, 21, 34, .08);
+    border-top: 3px solid var(--peta-ocean);
+    border-radius: 16px !important;
+    box-shadow: 0 24px 48px -18px rgba(6, 21, 34, .55) !important;
+}
+
+/* ---------- Skala + HUD koordinat ---------- */
+#map-section .leaflet-control-scale-line {
+    border-color: rgba(255, 255, 255, .7);
+    background: var(--peta-glass);
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    text-shadow: none;
+}
+
+#map-hud {
+    position: absolute;
+    left: 14px;
+    bottom: 60px;
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 14px;
+    border: 1px solid var(--peta-glass-line);
+    border-radius: 14px;
+    background: var(--peta-glass);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    color: rgba(255, 255, 255, .85);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+#map-hud b {
+    color: var(--peta-aqua);
+    font-weight: 500;
+}
+
+#map-hud i {
+    display: inline-block;
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, .25);
+}
+
+/* ---------- Klaster marker ---------- */
+#map-section .marker-cluster-small,
+#map-section .marker-cluster-medium,
+#map-section .marker-cluster-large {
+    background-color: rgba(10, 132, 255, .25);
+}
+
+#map-section .marker-cluster-small div,
+#map-section .marker-cluster-medium div,
+#map-section .marker-cluster-large div {
+    background-color: rgba(10, 132, 255, .85);
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    box-shadow: 0 0 18px rgba(32, 217, 255, .55);
+}
+
+/* ---------- Layar muat (dibuat oleh map.js dengan style inline) ---------- */
+#map-section #map-loading-overlay {
+    background: rgba(6, 21, 34, .72) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-family: 'Manrope', sans-serif !important;
+}
+
+#map-section #map-loading-overlay .loading-spinner {
+    border-color: rgba(255, 255, 255, .15) !important;
+    border-top-color: var(--peta-aqua) !important;
+    box-shadow: 0 0 30px rgba(32, 217, 255, .35);
+}
+
+#map-section #loading-bar-container {
+    background: rgba(255, 255, 255, .15) !important;
+}
+
+#map-section #loading-bar {
+    background: linear-gradient(90deg, var(--peta-ocean), var(--peta-aqua)) !important;
+    box-shadow: 0 0 14px rgba(32, 217, 255, .7);
+}
+
+/* ---------- Ponsel ---------- */
+@media (max-width: 767px) {
+    #map-section #sidebar-layer,
+    #map-section #sidebar-basemap,
+    #map-section #sidebar-legend,
+    #map-section #sidebar-download {
+        left: 12px;
+        right: 70px;
+        width: auto;
+        bottom: 84px;
+    }
+
+    #map-hud {
+        display: none;
+    }
+}
+
+@media (hover: none) {
+    #map-section #sidebar-control-buttons button[data-tooltip]:hover::after,
+    #map-section #nav-control-buttons button[data-tooltip]:hover::after {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #map-section * {
+        transition-duration: .01ms !important;
+    }
+}

@@ -445,6 +445,46 @@ KML;
 
     // === GEOJSON METHODS ===
 
+    /**
+     * Versi data sebuah layer peta. Berubah setiap kali ada data yang ditambah, diubah, dihapus,
+     * dipindah kategori, atau kategorinya diubah (nama/warna/ikon), sehingga klien dapat memakai
+     * cache dengan aman: cache hanya dipakai bila versinya masih sama.
+     */
+    public function geojsonVersion(Request $request)
+    {
+        $user = Auth::user();
+
+        $query = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+            ->whereNotNull('data_spatial.geom');
+
+        // Cakupan yang sama dengan geojson(): selain admin, hanya data milik sendiri.
+        if (! in_array($user->role->slug ?? null, ['super-admin', 'admin-bappeda'])) {
+            $query->where('data_spatial.user_id', $user->id);
+        }
+
+        if ($request->filled('data_type')) {
+            $query->where('data_spatial.data_type', $request->get('data_type'));
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('data_spatial.kategori_id', $request->get('category_id'));
+        }
+
+        $row = $query->selectRaw(
+            'count(data_spatial.id) as total,
+             max(data_spatial.updated_at) as data_updated,
+             max(categories.updated_at) as category_updated,
+             coalesce(sum(data_spatial.kategori_id), 0) as category_sum'
+        )->first();
+
+        return response()->json([
+            'user' => $user->id,
+            'total' => (int) $row->total,
+            'version' => md5(json_encode($row)),
+        ]);
+    }
+
     public function geojson(Request $request)
     {
         $dataType = $request->get('data_type');

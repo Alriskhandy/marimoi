@@ -1,11 +1,16 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-BWsvhJKS.css",
+    "file": "assets/app-Xk0NSrBk.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/peta.css": {
+    "file": "assets/peta-BPYX9mfm.css",
+    "src": "resources/css/peta.css",
+    "isEntry": true
+  },
   "resources/css/spatial.css": {
-    "file": "assets/spatial-DLwgjlsI.css",
+    "file": "assets/spatial-fKUklJSw.css",
     "src": "resources/css/spatial.css",
     "isEntry": true
   },

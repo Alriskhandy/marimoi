@@ -77,4 +77,15 @@ class FrontendPagesTest extends TestCase
             ->assertSee('data-cv-open', false)
             ->assertDontSee('Mangga Dua');
     }
+
+    public function test_thematic_map_page_keeps_map_controls_and_shows_hud(): void
+    {
+        $this->get(route('tampil.tematik'))
+            ->assertOk()
+            ->assertSee('id="map"', false)
+            ->assertSee('id="map-hud"', false)
+            ->assertSee('id="sidebar-layer"', false)
+            ->assertSee('id="btn-toggle-sidebar-basemap"', false)
+            ->assertSee('id="btn-share-map"', false);
+    }
 }

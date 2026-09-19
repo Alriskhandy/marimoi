@@ -13,7 +13,8 @@ class MapDataStore {
             window.location.hostname === "localhost" ||
             window.location.hostname === "127.0.0.1";
 
-        this.init();
+        // `ready` menunggu IndexedDB terbuka, supaya baca/tulis cache pertama tidak gagal karena balapan.
+        this.ready = this.init();
     }
 
     async init() {
@@ -74,6 +75,7 @@ class MapDataStore {
     }
 
     async getCachedData(cacheKey) {
+        await this.ready;
         if (!this.db) return null;
 
         try {
@@ -113,6 +115,7 @@ class MapDataStore {
     }
 
     async setCachedData(cacheKey, data, category) {
+        await this.ready;
         if (!this.db) return;
 
         try {
@@ -139,6 +142,51 @@ class MapDataStore {
                 );
         } catch (error) {
             console.warn("Error writing to cache:", error);
+        }
+    }
+
+    /**
+     * Cache metadata (daftar kategori). Memakai TTL yang sama dengan data GeoJSON.
+     */
+    async getCachedMetadata(key) {
+        await this.ready;
+        if (!this.db) return null;
+
+        try {
+            const store = this.db
+                .transaction(["metadata_cache"], "readonly")
+                .objectStore("metadata_cache");
+            const request = store.get(key);
+
+            return await new Promise((resolve) => {
+                request.onsuccess = () => {
+                    const result = request.result;
+                    if (!result || Date.now() - result.timestamp > this.TTL) {
+                        resolve(null);
+                        return;
+                    }
+                    if (this.debug) console.log(`Metadata cache HIT for ${key}`);
+                    resolve(result.data);
+                };
+                request.onerror = () => resolve(null);
+            });
+        } catch (error) {
+            console.warn("Error reading metadata cache:", error);
+            return null;
+        }
+    }
+
+    async setCachedMetadata(key, data) {
+        await this.ready;
+        if (!this.db) return;
+
+        try {
+            const store = this.db
+                .transaction(["metadata_cache"], "readwrite")
+                .objectStore("metadata_cache");
+            store.put({ key, data, timestamp: Date.now() });
+        } catch (error) {
+            console.warn("Error writing metadata cache:", error);
         }
     }
 

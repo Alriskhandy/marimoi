@@ -1035,13 +1035,6 @@ function createCategoryLayerGroup(catObj) {
  */
 async function loadCategoriesMetadata() {
     try {
-        // tampilkan loading toast (persistent)
-        const loadingToast = showAlert(
-            "Memuat daftar kategori...",
-            "info",
-            true
-        );
-
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
         const dataType = tipeLayer.type;
@@ -1053,13 +1046,35 @@ async function loadCategoriesMetadata() {
         if (subType) queryString += `&sub_type=${subType}`;
         if (year) queryString += `&year=${year}`;
 
-        const response = await fetch(`/geojson${queryString}`);
+        const metaKey = `metadata_${dataType || "default"}_${subType || "none"}_${year || "all"}`;
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const fetchMetadata = async () => {
+            const response = await fetch(`/geojson${queryString}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return response.json();
+        };
+
+        // Cache-first: daftar kategori yang sudah pernah dimuat langsung dipakai tanpa loading.
+        // Di latar belakang cache diperbarui untuk kunjungan berikutnya.
+        let data = mapDataStore ? await mapDataStore.getCachedMetadata(metaKey) : null;
+        const fromCache = Boolean(data);
+        let loadingToast = null;
+
+        if (fromCache) {
+            fetchMetadata()
+                .then((fresh) => mapDataStore.setCachedMetadata(metaKey, fresh))
+                .catch(() => {});
+        } else {
+            loadingToast = showAlert("Memuat daftar kategori...", "info", true);
+            data = await fetchMetadata();
+            if (mapDataStore) {
+                await mapDataStore.setCachedMetadata(metaKey, data);
+            }
         }
-
-        const data = await response.json();
 
         // Build kategoriWarnaMap dan iconMap
         kategoriWarnaMap = {};
@@ -1154,11 +1169,13 @@ async function loadCategoriesMetadata() {
         // Tutup loading toast manual
         if (loadingToast) hideToast(loadingToast);
 
-        // Tampilkan pesan sukses
-        showAlert(
-            "Kategori berhasil dimuat. Pilih layer untuk memuat data.",
-            "success"
-        );
+        // Tampilkan pesan sukses (dilewati bila daftar kategori berasal dari cache)
+        if (!fromCache) {
+            showAlert(
+                "Kategori berhasil dimuat. Pilih layer untuk memuat data.",
+                "success"
+            );
+        }
     } catch (error) {
         console.error("Error loading categories metadata:", error);
         showAlert(`Gagal memuat kategori: ${error.message}`, "danger");
@@ -1176,6 +1193,117 @@ async function loadCategoriesMetadata() {
 }
 
 /**
+ * Buat ikon marker untuk kategori bertipe marker (dipakai jalur jaringan dan jalur cache).
+ */
+function buildMarkerOptions(geoJsonData, categoryName) {
+    const catObj = geoJsonData.all_categories?.find((c) => c.nama === categoryName);
+    if (!(catObj?.is_marker && catObj.icon)) {
+        return null;
+    }
+
+    return L.ExtraMarkers.icon({
+        icon: catObj.icon,
+        prefix: "fa",
+        svg: true,
+        markerColor: catObj.warna || "blue",
+        iconColor: "white",
+        shape: "circle",
+        html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
+    });
+}
+
+/**
+ * Tambahkan satu feature ke layer. Mengembalikan true bila feature valid dan ditambahkan.
+ */
+function addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath) {
+    if (!feature || !feature.geometry) {
+        return false;
+    }
+
+    L.geoJSON(feature, {
+        pointToLayer: (f, latlng) =>
+            markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
+        style: getStyleForCategory(categoryName),
+        onEachFeature: (f, l) => {
+            try {
+                bindPopupContent(f, l, urlPath);
+            } catch (popupError) {
+                // Silently handle popup binding errors
+            }
+        },
+    }).addTo(targetLayer);
+
+    return true;
+}
+
+/**
+ * Baca seluruh potongan (chunk) data kategori dari cache IndexedDB.
+ * Mengembalikan array chunk bila SEMUA potongan ada di cache, atau null bila ada yang kurang
+ * (mis. belum pernah dimuat) sehingga pemanggil harus memakai jalur jaringan.
+ */
+async function readAllCachedChunks(baseParams, maxRecords, chunkSize) {
+    if (!mapDataStore) return null;
+
+    const chunks = [];
+    let offset = 0;
+    let totalLoaded = 0;
+
+    while (totalLoaded < maxRecords) {
+        const key = mapDataStore.generateCacheKey({
+            ...baseParams,
+            limit: Math.min(chunkSize, maxRecords - totalLoaded),
+            offset,
+        });
+        const chunk = await mapDataStore.getCachedData(key);
+
+        if (!chunk) return null;
+        chunks.push(chunk);
+
+        const valid = (chunk.features || []).filter((f) => f && f.geometry).length;
+        totalLoaded += valid;
+
+        const hasMore = chunk.meta?.has_more === true && totalLoaded < maxRecords && valid > 0;
+        if (!hasMore) break;
+
+        offset += chunkSize;
+    }
+
+    return chunks.length ? chunks : null;
+}
+
+/**
+ * Render chunk dari cache ke layer secara bertahap (per irisan kecil) agar UI tetap responsif
+ * tanpa layar loading. Mengembalikan jumlah feature yang ditambahkan.
+ */
+async function renderCachedChunks(chunks, targetLayer, categoryName, urlPath) {
+    const markerOptions = buildMarkerOptions(chunks[0], categoryName);
+    const slice = 200;
+    let added = 0;
+
+    for (const chunk of chunks) {
+        const features = chunk.features || [];
+
+        for (let i = 0; i < features.length; i += slice) {
+            features.slice(i, i + slice).forEach((feature) => {
+                try {
+                    if (addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath)) {
+                        added++;
+                    }
+                } catch (featureError) {
+                    // Silently handle individual feature errors
+                }
+            });
+
+            if (i + slice < features.length) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+        }
+    }
+
+    return added;
+}
+
+/**
  * Enhanced loadCategoryData with cache integration
  */
 async function loadCategoryData(categoryName, parentName = null, grandparentName = null) {
@@ -1188,16 +1316,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
     try {
         isLoadingData = true;
-
-        // Show loading overlay
-        showLoadingOverlay(categoryName);
-        updateCheckboxLoadingState(categoryName, true);
-
-        loadingToast = showAlert(
-            `Memuat data untuk ${categoryName}...`,
-            "info",
-            true
-        );
 
         const urlPath = window.location.pathname.replace(/\/$/, "");
         const tipeLayer = getDataType(urlPath);
@@ -1228,13 +1346,39 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
             throw new Error(`Layer group for ${categoryName} not found`);
         }
 
+        const maxRecords = 3000;
+        const chunkSize = 500;
+
+        // Jalur cepat: bila seluruh data kategori sudah tersimpan di cache, tampilkan langsung
+        // tanpa layar loading, toast, maupun jeda buatan.
+        updateCheckboxLoadingState(categoryName, true);
+        const cachedChunks = await readAllCachedChunks(
+            { type: dataType, sub_type: subType, year: year, category: categoryName },
+            maxRecords,
+            chunkSize
+        );
+
+        if (cachedChunks) {
+            targetLayer.clearLayers();
+            await renderCachedChunks(cachedChunks, targetLayer, categoryName, urlPath);
+            loadedCategories.add(categoryName);
+            updateCheckboxLoadingState(categoryName, false);
+            return;
+        }
+
+        // Belum (sepenuhnya) ada di cache: tampilkan layar loading seperti biasa.
+        showLoadingOverlay(categoryName);
+        loadingToast = showAlert(
+            `Memuat data untuk ${categoryName}...`,
+            "info",
+            true
+        );
+
         targetLayer.clearLayers();
 
         let offset = 0;
         let totalLoaded = 0;
         let hasMore = true;
-        const maxRecords = 3000;
-        const chunkSize = 500;
         let estimatedTotal = maxRecords;
 
         // Load data in chunks with cache check
@@ -1302,7 +1446,7 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
                     geoJsonData = await response.json();
 
                     // Cache the result
-                    if (mapDataStore && cacheKey && geoJsonData?.features?.length) {
+                    if (mapDataStore && cacheKey && Array.isArray(geoJsonData?.features)) {
                         await mapDataStore.setCachedData(cacheKey, geoJsonData, categoryName);
                     }
                 }
@@ -1320,42 +1464,16 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
                 // Determine marker options (only need to do this once)
                 let markerOptions = null;
                 if (offset === 0) {
-                    const catObj = geoJsonData.all_categories?.find((c) => c.nama === categoryName);
-                    if (catObj?.is_marker && catObj.icon) {
-                        markerOptions = L.ExtraMarkers.icon({
-                            icon: catObj.icon,
-                            prefix: "fa",
-                            svg: true,
-                            markerColor: catObj.warna || "blue",
-                            iconColor: "white",
-                            shape: "circle",
-                            html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
-                        });
-                    }
+                    markerOptions = buildMarkerOptions(geoJsonData, categoryName);
                 }
 
                 // Add features to layer with error handling
                 let featuresAdded = 0;
                 geoJsonData.features.forEach((feature, index) => {
                     try {
-                        if (!feature || !feature.geometry) {
+                        if (!addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath)) {
                             return;
                         }
-
-                        L.geoJSON(feature, {
-                            pointToLayer: (feature, latlng) =>
-                                markerOptions
-                                    ? L.marker(latlng, { icon: markerOptions })
-                                    : L.marker(latlng),
-                            style: getStyleForCategory(categoryName),
-                            onEachFeature: (f, l) => {
-                                try {
-                                    bindPopupContent(f, l, urlPath);
-                                } catch (popupError) {
-                                    // Silently handle popup binding errors
-                                }
-                            },
-                        }).addTo(targetLayer);
 
                         featuresAdded++;
 

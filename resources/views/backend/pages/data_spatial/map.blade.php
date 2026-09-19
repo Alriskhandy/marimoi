@@ -722,9 +722,11 @@
 
 @push('scripts')
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}"></script>
     <script>
         const csrfToken = '{{ csrf_token() }}';
         const geojsonUrl = '{{ route('data-spatial.geojson') }}';
+        const geojsonVersionUrl = '{{ route('data-spatial.geojson-version') }}';
         const editUrlTemplate = '{{ route('data-spatial.edit', ':uuid') }}';
         const destroyUrlTemplate = '{{ route('data-spatial.destroy', ':uuid') }}';
 
@@ -742,11 +744,25 @@
         // ---------- Efek loading ----------
         let pendingLoads = 0;
         let initialTilesLoaded = false;
+        let loadingOverlayTimer = null;
 
-        function showMapLoading(text) {
+        // delay > 0: overlay baru muncul bila pemuatan belum selesai setelah `delay` ms, jadi layer
+        // yang datanya sudah ada di cache tampil tanpa kilatan layar loading.
+        function showMapLoading(text, delay = 0) {
             pendingLoads++;
             document.getElementById('mapLoadingText').textContent = text;
-            document.getElementById('mapLoading').classList.remove('hidden');
+
+            const overlay = document.getElementById('mapLoading');
+            if (delay <= 0) {
+                clearTimeout(loadingOverlayTimer);
+                loadingOverlayTimer = null;
+                overlay.classList.remove('hidden');
+            } else if (overlay.classList.contains('hidden') && !loadingOverlayTimer) {
+                loadingOverlayTimer = setTimeout(() => {
+                    loadingOverlayTimer = null;
+                    if (pendingLoads > 0) overlay.classList.remove('hidden');
+                }, delay);
+            }
         }
 
         function updateMapLoadingText(text) {
@@ -757,6 +773,8 @@
             pendingLoads = Math.max(0, pendingLoads - 1);
 
             if (pendingLoads === 0) {
+                clearTimeout(loadingOverlayTimer);
+                loadingOverlayTimer = null;
                 document.getElementById('mapLoading').classList.add('hidden');
             }
         }
@@ -1733,10 +1751,36 @@
             }
         }
 
+        // Cache IndexedDB (dibagi dengan peta publik). Cache hanya dipakai bila versi data di server
+        // sama, jadi perubahan data (tambah/ubah/hapus) langsung terlihat tanpa menunggu kedaluwarsa.
+        const adminMapCache = window.MapDataStore ? new window.MapDataStore() : null;
+
+        async function fetchLayerVersion(categoryId) {
+            try {
+                const params = new URLSearchParams({
+                    data_type: 'tematik',
+                    category_id: categoryId
+                });
+                const response = await fetch(`${geojsonVersionUrl}?${params.toString()}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                return data.version ? `${data.user}_${data.version}` : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
         // Ambil data per 500 fitur sampai habis agar semua data tampil tanpa membebani sekaligus.
         async function loadLayerInBatches(categoryId, layerGroup, token) {
             let offset = 0;
             let total = null;
+            const version = adminMapCache ? await fetchLayerVersion(categoryId) : null;
 
             while (true) {
                 const params = new URLSearchParams({
@@ -1746,12 +1790,21 @@
                     offset
                 });
 
-                const response = await fetch(`${geojsonUrl}?${params.toString()}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const cacheKey = version ? `admin_${version}_${categoryId}_${LAYER_BATCH_SIZE}_${offset}` : null;
+                let result = cacheKey ? await adminMapCache.getCachedData(cacheKey) : null;
 
-                const result = await response.json();
+                if (!result) {
+                    const response = await fetch(`${geojsonUrl}?${params.toString()}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    result = await response.json();
+
+                    if (cacheKey && Array.isArray(result.features)) {
+                        await adminMapCache.setCachedData(cacheKey, result, `admin_${categoryId}`);
+                    }
+                }
 
                 // Layer sudah dimuat ulang atau dihapus centangnya: hentikan pemuatan lama.
                 if (layerLoadTokens[categoryId] !== token) {
@@ -1792,7 +1845,7 @@
             layerGroup.clearLayers();
             featureIndex[categoryId] = [];
             setLayerLoading(categoryId, true);
-            showMapLoading('Memuat data layer...');
+            showMapLoading('Memuat data layer...', 250);
 
             loadLayerInBatches(categoryId, layerGroup, token)
                 .then(completed => {
