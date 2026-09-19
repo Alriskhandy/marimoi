@@ -626,19 +626,6 @@ function initMap() {
             else if (group.hasLayer(m.mk)) { group.removeLayer(m.mk); }
         });
         $('#mapCount').textContent = fmt(shown);
-        const legend = $('#mapLegend');
-        const items = (DATA.layers || []).filter((l) => active[l.id]);
-        legend.replaceChildren(...items.slice(0, 6).map((l) => {
-            const el = fromTemplate('tplLegendItem');
-            $('.js-dot', el).style.backgroundColor = l.warna;
-            $('.js-name', el).textContent = l.nama;
-            return el;
-        }));
-        if (items.length > 6) {
-            const more = document.createElement('span');
-            more.textContent = `+${items.length - 6} lainnya`;
-            legend.appendChild(more);
-        }
     }
 
     const list = $('#layerList');

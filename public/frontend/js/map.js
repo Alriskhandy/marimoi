@@ -2419,6 +2419,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Cache dua skenario: TTL 24 jam (di MapDataStore) dan pembuangan saat data/kategori berubah.
+    // Versi data dicek sebelum daftar kategori dibaca dari cache.
+    if (mapDataStore && window.MARIMOI_MAP_VERSION_URL) {
+        await mapDataStore.syncVersion(window.MARIMOI_MAP_VERSION_URL);
+    }
+
     // Init map
     changeBaseMap("osm");
     setupUI();

@@ -454,6 +454,7 @@
 
     <script>
         window.MARIMOI_CSRF_TOKEN = @json(csrf_token());
+        window.MARIMOI_MAP_VERSION_URL = @json(route('tematik.version'));
         window.MARIMOI_SHARE_STORE_URL = @json(route('tematik.share.store'));
         window.MARIMOI_SHARE_SHOW_URL_TEMPLATE = @json(route('tematik.share.show', ':slug'));
 

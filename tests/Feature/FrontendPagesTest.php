@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\User;
+use App\Support\MapDataVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -136,5 +137,61 @@ class FrontendPagesTest extends TestCase
             ->assertSee('ANGGARAN')
             ->assertSee('Rp. 1.500.000.000')
             ->assertDontSee('>ID<', false);
+    }
+
+    public function test_tematik_map_version_is_public_and_stable_until_data_or_category_changes(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kawasan A', 'warna' => '#0d6efd']);
+        $item = DataSpatial::factory()->create(['user_id' => $user->id, 'kategori_id' => $category->id]);
+
+        $version = fn () => $this->getJson(route('tematik.version'))->assertOk()->json('version');
+
+        $first = $version();
+        $this->assertNotEmpty($first);
+        $this->assertSame($first, $version(), 'versi stabil bila tidak ada perubahan');
+
+        $this->travel(2)->seconds();
+        $item->update(['deskripsi' => 'Diubah']);
+        $afterUpdate = $version();
+        $this->assertNotSame($first, $afterUpdate, 'ubah data mengubah versi');
+
+        $this->travel(2)->seconds();
+        $category->update(['nama' => 'Kawasan A (baru)']);
+        $afterCategory = $version();
+        $this->assertNotSame($afterUpdate, $afterCategory, 'ubah kategori mengubah versi');
+
+        $this->travel(2)->seconds();
+        DataSpatial::factory()->create(['user_id' => $user->id, 'kategori_id' => $category->id]);
+        $afterAdd = $version();
+        $this->assertNotSame($afterCategory, $afterAdd, 'tambah data mengubah versi');
+
+        $item->delete();
+        $this->assertNotSame($afterAdd, $version(), 'hapus data mengubah versi');
+    }
+
+    public function test_tematik_map_version_changes_after_bulk_query_operations(): void
+    {
+        $user = User::factory()->create();
+        $a = Category::create(['type' => 'tematik', 'nama' => 'A', 'warna' => '#111111']);
+        $b = Category::create(['type' => 'tematik', 'nama' => 'B', 'warna' => '#222222']);
+        DataSpatial::factory()->count(2)->create(['user_id' => $user->id, 'kategori_id' => $a->id]);
+
+        $before = $this->getJson(route('tematik.version'))->json('version');
+
+        // Query massal (tanpa event model), seperti "Ubah Kategori/Layer" pada aksi bulk.
+        DB::table('data_spatial')->update(['kategori_id' => $b->id]);
+        MapDataVersion::forget();
+
+        $this->assertNotSame($before, $this->getJson(route('tematik.version'))->json('version'));
+    }
+
+    public function test_tematik_map_version_ignores_non_tematik_categories(): void
+    {
+        $before = $this->getJson(route('tematik.version'))->json('version');
+
+        Category::create(['type' => 'pokir_dprd', 'nama' => 'Bukan tematik', 'warna' => '#333333']);
+
+        $this->assertSame($before, $this->getJson(route('tematik.version'))->json('version'));
     }
 }

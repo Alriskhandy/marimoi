@@ -51,6 +51,7 @@ Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore']
 
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
+Route::get('/geojson/version', [FrontendController::class, 'tematikVersion'])->name('tematik.version');
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 

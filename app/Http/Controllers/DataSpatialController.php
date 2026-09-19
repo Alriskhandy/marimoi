@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Support\MapDataVersion;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Http\JsonResponse;
@@ -1745,6 +1746,7 @@ KML;
             ]);
 
             $deletedCount = DataSpatial::whereIn('id', $idsToDelete)->delete();
+            MapDataVersion::forget();
 
             Log::info('Bulk delete completed', [
                 'deleted_count' => $deletedCount,
@@ -1878,6 +1880,9 @@ KML;
 
         $updatedCount = DataSpatial::whereIn('id', $items->pluck('id'))
             ->update(['kategori_id' => $category->id]);
+
+        // Query massal tidak memicu event model: buang versi peta secara eksplisit.
+        MapDataVersion::forget();
 
         Log::info('Bulk category update completed', [
             'ids' => $items->pluck('id')->toArray(),

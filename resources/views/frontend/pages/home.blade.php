@@ -232,8 +232,7 @@
                     <button id="zoomOut" type="button" aria-label="Perkecil" class="h-10 w-10 border-t border-white/10 text-xl transition-colors hover:text-aqua">−</button>
                 </div>
 
-                {{-- Legend + count --}}
-                <div id="mapLegend" class="absolute bottom-4 left-4 z-[800] hidden max-w-[calc(100%-32rem)] md:left-[19.5rem] flex-wrap gap-x-4 gap-y-1.5 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs text-white/80 backdrop-blur-xl md:flex" aria-label="Legenda"></div>
+                {{-- Jumlah titik --}}
                 <div class="absolute bottom-4 right-4 z-[800] hidden rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 font-grotesk text-[11px] uppercase tracking-widest text-white backdrop-blur-xl md:block">
                     <b id="mapCount" class="font-medium text-aqua">0</b> titik ditampilkan
                 </div>
@@ -308,9 +307,6 @@
             <span class="js-name"></span>
             <em class="js-count ml-auto font-grotesk text-[11px] not-italic text-white/50"></em>
         </button>
-    </template>
-    <template id="tplLegendItem">
-        <span class="inline-flex items-center gap-2"><i class="js-dot h-2 w-2 rounded-full"></i><span class="js-name"></span></span>
     </template>
     <template id="tplPulse">
         <div class="relative h-[22px] w-[22px]">

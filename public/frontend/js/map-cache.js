@@ -9,6 +9,7 @@ class MapDataStore {
         this.db = null;
         // this.TTL = 10 * 1000; // 24 jam dalam ms
         this.TTL = 24 * 60 * 60 * 1000; // 24 jam dalam ms
+        this.VERSION_KEY = "__map_data_version__";
         this.debug =
             window.location.hostname === "localhost" ||
             window.location.hostname === "127.0.0.1";
@@ -277,16 +278,67 @@ class MapDataStore {
         }
     }
 
+    /**
+     * Sinkronkan cache dengan versi data di server (skenario "data berubah").
+     * Bila versi berbeda dengan yang tersimpan, seluruh cache (GeoJSON + metadata kategori)
+     * dibuang. TTL 24 jam tetap berlaku sebagai skenario kedua. Bila server tidak terjangkau,
+     * cache yang ada dipakai apa adanya. Mengembalikan true bila cache dibuang.
+     */
+    async syncVersion(url) {
+        await this.ready;
+        if (!this.db || !url) return false;
+
+        let version = null;
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 4000);
+            const response = await fetch(url, {
+                cache: "no-store",
+                signal: controller.signal,
+                headers: { Accept: "application/json" },
+            });
+            clearTimeout(timer);
+
+            if (response.ok) {
+                version = (await response.json())?.version || null;
+            }
+        } catch (error) {
+            return false;
+        }
+
+        if (!version) return false;
+
+        const stored = await this.getCachedMetadata(this.VERSION_KEY);
+        if (stored === version) {
+            // Segarkan penanda agar tidak kedaluwarsa lebih cepat dari data yang di-cache.
+            await this.setCachedMetadata(this.VERSION_KEY, version);
+            return false;
+        }
+
+        // Versi berbeda (atau belum pernah tercatat): buang cache lama lalu catat versi baru.
+        await this.clearAllCache();
+        await this.setCachedMetadata(this.VERSION_KEY, version);
+
+        if (this.debug) console.log(`Cache dibuang: versi data berubah (${stored} -> ${version})`);
+        return stored !== null;
+    }
+
     async clearAllCache() {
+        await this.ready;
         if (!this.db) return;
 
         try {
             const transaction = this.db.transaction(
-                ["geojson_cache"],
+                ["geojson_cache", "metadata_cache"],
                 "readwrite"
             );
-            const store = transaction.objectStore("geojson_cache");
-            await store.clear();
+            transaction.objectStore("geojson_cache").clear();
+            transaction.objectStore("metadata_cache").clear();
+            await new Promise((resolve) => {
+                transaction.oncomplete = resolve;
+                transaction.onerror = resolve;
+                transaction.onabort = resolve;
+            });
             if (this.debug) console.log("All cache cleared");
         } catch (error) {
             console.warn("Error clearing cache:", error);

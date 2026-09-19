@@ -15,6 +15,7 @@ use App\Models\SharedMap;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
+use App\Support\MapDataVersion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -307,6 +308,17 @@ class FrontendController extends Controller
     }
 
     // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE - OPTIMIZED VERSION //
+    /**
+     * Versi data Peta Tematik. Klien membandingkannya dengan versi yang tersimpan bersama cache
+     * peta di browser; bila berbeda, cache dibuang (selain kedaluwarsa 24 jam bawaan).
+     */
+    public function tematikVersion()
+    {
+        return response()
+            ->json(['version' => MapDataVersion::current()])
+            ->header('Cache-Control', 'no-store');
+    }
+
     public function getGeojsonByDataType(Request $request)
     {
         try {
