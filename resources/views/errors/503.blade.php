@@ -2,5 +2,10 @@
 
 @php
     $code = 503;
-    $message = 'Layanan Tidak Tersedia. Silakan coba lagi nanti.';
+    $icon = 'tool';
+    $accent = 'slate';
+    $title = 'Sedang Dalam Pemeliharaan';
+    $message = 'Layanan sementara tidak tersedia.';
+    $description = 'Kami sedang melakukan pemeliharaan. Silakan coba lagi nanti.';
+    $canReload = true;
 @endphp
