@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 class Category extends Model
 {
     protected $table = 'categories';
+
     protected $fillable = [
         'type',
         'nama',
@@ -34,12 +35,36 @@ class Category extends Model
 
         $clearCache = function () {
             foreach (['', '.tematik', '.usulan_musrenbang', '.pokir_dprd', '.psd', '.psn'] as $suffix) {
-                Cache::forget('api.v1.layers.tree' . $suffix);
+                Cache::forget('api.v1.layers.tree'.$suffix);
             }
         };
 
         static::saved($clearCache);
         static::deleted($clearCache);
+    }
+
+    /**
+     * ID kategori ini beserta seluruh turunannya (anak, cucu, dst.). Data spasial umumnya
+     * disimpan pada kategori paling bawah, sehingga memfilter kategori induk harus ikut
+     * mencakup turunannya.
+     *
+     * @return array<int, int>
+     */
+    public static function selfAndDescendantIds(int $id): array
+    {
+        $ids = [$id];
+        $frontier = [$id];
+
+        while ($frontier !== []) {
+            $frontier = static::whereIn('parent_id', $frontier)
+                ->whereNotIn('id', $ids)
+                ->pluck('id')
+                ->all();
+
+            $ids = array_merge($ids, $frontier);
+        }
+
+        return $ids;
     }
 
     // Relasi hierarki

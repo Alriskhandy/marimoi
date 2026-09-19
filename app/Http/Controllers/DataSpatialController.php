@@ -71,7 +71,7 @@ class DataSpatialController extends Controller
 
         // Filter by category if provided
         if ($categoryId) {
-            $query->where('kategori_id', $categoryId);
+            $query->whereIn('kategori_id', Category::selfAndDescendantIds((int) $categoryId));
         }
 
         // Search functionality
@@ -120,7 +120,7 @@ class DataSpatialController extends Controller
 
     public function map(Request $request)
     {
-        $categories = Category::with(['children.children'])
+        $categories = Category::with(['children.children.children'])
             ->roots()
             ->where('type', 'tematik')
             ->orderBy('nama')
@@ -469,7 +469,7 @@ KML;
         }
 
         if ($request->filled('category_id')) {
-            $query->where('data_spatial.kategori_id', $request->get('category_id'));
+            $query->whereIn('data_spatial.kategori_id', Category::selfAndDescendantIds((int) $request->get('category_id')));
         }
 
         $row = $query->selectRaw(
@@ -541,7 +541,7 @@ KML;
 
         // Filter kategori (berdasarkan id), konsisten dengan filter di index()
         if ($request->filled('category_id')) {
-            $query->where('data_spatial.kategori_id', $request->category_id);
+            $query->whereIn('data_spatial.kategori_id', Category::selfAndDescendantIds((int) $request->category_id));
         }
 
         // Filter atribut DBF

@@ -194,4 +194,59 @@ class DataSpatialGeojsonTest extends TestCase
             ->assertJsonPath('total', 1)
             ->assertJsonPath('user', $opd->id);
     }
+
+    public function test_filtering_by_parent_category_includes_data_from_its_descendants(): void
+    {
+        $admin = $this->superAdmin();
+        $parent = Category::create(['type' => 'tematik', 'nama' => 'Batas Administrasi', 'warna' => '#111111']);
+        $childA = Category::create(['type' => 'tematik', 'nama' => 'Kota Ternate', 'warna' => '#222222', 'parent_id' => $parent->id]);
+        $childB = Category::create(['type' => 'tematik', 'nama' => 'Pulau Morotai', 'warna' => '#333333', 'parent_id' => $parent->id]);
+        $grandchild = Category::create(['type' => 'tematik', 'nama' => 'Kecamatan', 'warna' => '#444444', 'parent_id' => $childA->id]);
+        $other = Category::create(['type' => 'tematik', 'nama' => 'Lainnya', 'warna' => '#555555']);
+
+        foreach ([$childA, $childB, $grandchild] as $category) {
+            DataSpatial::factory()->create(['user_id' => $admin->id, 'kategori_id' => $category->id]);
+        }
+        DataSpatial::factory()->create(['user_id' => $admin->id, 'kategori_id' => $other->id]);
+
+        $this->assertEqualsCanonicalizing(
+            [$parent->id, $childA->id, $childB->id, $grandchild->id],
+            Category::selfAndDescendantIds($parent->id)
+        );
+
+        $this->actingAs($admin)
+            ->getJson(route('data-spatial.geojson', ['data_type' => 'tematik', 'category_id' => $parent->id]))
+            ->assertOk()
+            ->assertJsonCount(3, 'features');
+
+        $this->actingAs($admin)
+            ->getJson(route('data-spatial.geojson', ['data_type' => 'tematik', 'category_id' => $childB->id]))
+            ->assertJsonCount(1, 'features');
+
+        $this->actingAs($admin)
+            ->get(route('data-spatial.index', ['type' => 'tematik', 'category_id' => $parent->id]))
+            ->assertOk()
+            ->assertViewHas('data', fn ($paginator) => $paginator->total() === 3);
+    }
+
+    public function test_map_layer_list_hides_checkbox_for_parents_whose_children_have_children(): void
+    {
+        $admin = $this->superAdmin();
+        $mk = fn (string $nama, ?int $parent = null) => Category::create(['type' => 'tematik', 'nama' => $nama, 'warna' => '#0d6efd', 'parent_id' => $parent]);
+
+        $group = $mk('Induk Bertingkat');
+        $middle = $mk('Tengah', $group->id);
+        $leaf = $mk('Daun', $middle->id);
+        $twoLevel = $mk('Induk Dua Tingkat');
+        $child = $mk('Anak Saja', $twoLevel->id);
+
+        $html = $this->actingAs($admin)->get(route('data-spatial.map'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('id="layer-cat-'.$group->id.'"', $html, 'induk bertingkat tidak boleh punya checkbox');
+        $this->assertStringContainsString('layer-label-group', $html);
+
+        foreach ([$middle, $leaf, $twoLevel, $child] as $category) {
+            $this->assertStringContainsString('id="layer-cat-'.$category->id.'"', $html);
+        }
+    }
 }

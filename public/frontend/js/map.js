@@ -1628,11 +1628,39 @@ function updateLayerList() {
         rootToggleBtn.className = "mr-2 transition-transform duration-300 ease-in-out";
         rootToggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-600"></i>`;
 
-        // Root label - directly in the left section without a checkbox
-        const rootLabel = document.createElement("div");
+        // Induk hanya boleh dicentang bila tidak ada sub kategorinya yang masih punya sub kategori
+        // lagi (aturan yang sama dengan peta admin). Induk bertingkat hanya berfungsi sebagai grup.
+        const isRootCheckable = Object.entries(secondLevel).every(([secondName, thirdLevel]) => {
+            const thirdNames = Object.keys(thirdLevel);
+            return thirdNames.length === 1 && thirdNames[0] === secondName;
+        });
+
+        // Induk tanpa sub kategori sungguhan (hanya placeholder bernama sama dengan dirinya):
+        // cukup satu baris dengan checkbox, tanpa daftar turunan yang menggandakan nama.
+        const isLeafRoot = Object.entries(secondLevel).every(([secondName, thirdLevel]) => {
+            const thirdNames = Object.keys(thirdLevel);
+            return secondName === rootName && thirdNames.length === 1 && thirdNames[0] === rootName;
+        });
+
+        let rootCheckbox = null;
+        if (isRootCheckable) {
+            rootCheckbox = document.createElement("input");
+            rootCheckbox.type = "checkbox";
+            rootCheckbox.className = "mr-2 h-4 w-4 text-blue-500 focus:ring-blue-400 border-2 border-gray-400 rounded";
+            rootCheckbox.id = rootId + "-checkbox";
+            rootCheckbox.setAttribute("data-level", "1");
+            rootCheckbox.setAttribute("data-category", rootName);
+        }
+
+        // Root label (memakai <label> bila induk punya checkbox)
+        const rootLabel = document.createElement(isRootCheckable ? "label" : "div");
         rootLabel.className = "font-semibold text-gray-900 text-sm layer-label";
         rootLabel.dataset.layerLevel = "1";
         rootLabel.textContent = rootName;
+        if (isRootCheckable) {
+            rootLabel.htmlFor = rootCheckbox.id;
+            rootLabel.classList.add("cursor-pointer");
+        }
 
         // Count badge for root
         const secondLevelCount = Object.keys(secondLevel).length;
@@ -1641,9 +1669,16 @@ function updateLayerList() {
         rootBadge.textContent = secondLevelCount;
 
         // Add root elements to header
+        if (isLeafRoot) {
+            // Tetap ada agar lebar sejajar dengan induk lain, tapi tidak terlihat.
+            rootToggleBtn.classList.add("invisible");
+            rootHeader.classList.remove("cursor-pointer");
+        }
+
         rootLeftSection.appendChild(rootToggleBtn);
+        if (rootCheckbox) rootLeftSection.appendChild(rootCheckbox);
         rootLeftSection.appendChild(rootLabel);
-        rootLeftSection.appendChild(rootBadge);
+        if (!isLeafRoot) rootLeftSection.appendChild(rootBadge);
         rootHeader.appendChild(rootLeftSection);
         rootWrapper.appendChild(rootHeader);
 
@@ -1693,11 +1728,20 @@ function updateLayerList() {
             secondBadge.className = "ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full";
             secondBadge.textContent = thirdLevelCount;
             
+            // Sub kategori tanpa turunan sungguhan (hanya placeholder bernama sama): berperilaku
+            // sebagai daun, jadi tidak ada panah/hitungan dan tidak menampilkan baris duplikat.
+            const thirdNamesOfSecond = Object.keys(thirdLevel);
+            const isPlaceholderOnly = thirdNamesOfSecond.length === 1 && thirdNamesOfSecond[0] === secondName;
+            if (isPlaceholderOnly) {
+                secondToggleBtn.classList.add("invisible");
+                secondHeader.classList.remove("cursor-pointer");
+            }
+
             // Add second level elements to header
             secondLeftSection.appendChild(secondToggleBtn);
             secondLeftSection.appendChild(secondCheckbox);
             secondLeftSection.appendChild(secondLabel);
-            secondLeftSection.appendChild(secondBadge);
+            if (!isPlaceholderOnly) secondLeftSection.appendChild(secondBadge);
             secondHeader.appendChild(secondLeftSection);
             secondItemRow.appendChild(secondHeader);
             
@@ -1707,7 +1751,7 @@ function updateLayerList() {
             thirdLevelContainer.id = `${secondId}-children`;
             
             // Second level checkbox controls all children
-            secondCheckbox.addEventListener("change", async () => {
+            const applySecondLevelChange = async () => {
                 const isChecked = secondCheckbox.checked;
                 
                 // Disable checkbox during loading
@@ -1742,13 +1786,17 @@ function updateLayerList() {
                         }
                     }
 
+                    updateRootCheckboxState(rootCheckbox, secondLevelContainer);
                     generateLegend();
                     updateLayerToolsPanel();
                 } finally {
                     secondCheckbox.disabled = false;
                     secondCheckbox.className = secondCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
                 }
-            });
+            };
+            secondCheckbox.addEventListener("change", applySecondLevelChange);
+            // Dipakai checkbox induk agar tiap sub kategori dimuat berurutan (loadCategoryData tidak paralel).
+            secondCheckbox._applyChange = applySecondLevelChange;
             
             // Process third level categories (Level 3)
             Object.keys(thirdLevel).forEach((thirdName) => {
@@ -1805,6 +1853,7 @@ function updateLayerList() {
                         
                         // Update second level checkbox state based on third level checkboxes
                         updateSecondLevelCheckboxState(secondCheckbox, thirdLevelContainer);
+                        updateRootCheckboxState(rootCheckbox, secondLevelContainer);
 
                         // Update legend & layer tools panel
                         generateLegend();
@@ -1818,6 +1867,8 @@ function updateLayerList() {
             
             // Toggle functionality for second level
             secondHeader.addEventListener("click", (e) => {
+                if (isPlaceholderOnly) return;
+
                 // Ignore clicks on checkbox and label
                 if (e.target !== secondCheckbox && e.target !== secondLabel) {
                     const isVisible = !thirdLevelContainer.classList.contains("hidden");
@@ -1839,8 +1890,42 @@ function updateLayerList() {
             secondLevelContainer.appendChild(secondItemRow);
         });
         
-        // Toggle functionality for root level - modified to not reference checkbox
-        rootHeader.addEventListener("click", () => {
+        // Checkbox induk: centang/hapus centang seluruh sub kategori (berurutan).
+        if (rootCheckbox) {
+            rootCheckbox.addEventListener("change", async () => {
+                const isChecked = rootCheckbox.checked;
+                rootCheckbox.indeterminate = false;
+                rootCheckbox.disabled = true;
+                rootCheckbox.classList.add("opacity-50", "cursor-not-allowed");
+
+                try {
+                    const secondCheckboxes = secondLevelContainer.querySelectorAll('input[data-level="2"]');
+
+                    for (const cb of secondCheckboxes) {
+                        if (cb.checked !== isChecked && cb._applyChange) {
+                            cb.checked = isChecked;
+                            await cb._applyChange();
+                        }
+                    }
+
+                    if (isChecked && !isLeafRoot) {
+                        secondLevelContainer.classList.remove("hidden");
+                        rootToggleBtn.innerHTML = `<i class="bi bi-chevron-down text-gray-600"></i>`;
+                        rootToggleBtn.classList.add("rotate-90");
+                    }
+                } finally {
+                    rootCheckbox.disabled = false;
+                    rootCheckbox.classList.remove("opacity-50", "cursor-not-allowed");
+                    updateRootCheckboxState(rootCheckbox, secondLevelContainer);
+                }
+            });
+        }
+
+        // Toggle functionality for root level (klik pada checkbox/label tidak ikut membuka/menutup)
+        rootHeader.addEventListener("click", (e) => {
+            if (isLeafRoot) return;
+            if (rootCheckbox && (e.target === rootCheckbox || e.target === rootLabel)) return;
+
             const isVisible = !secondLevelContainer.classList.contains("hidden");
             
             if (isVisible) {
@@ -1858,6 +1943,20 @@ function updateLayerList() {
         rootWrapper.appendChild(secondLevelContainer);
         container.appendChild(rootWrapper);
     });
+}
+
+/**
+ * Sinkronkan checkbox induk dengan status checkbox sub kategorinya (centang penuh / sebagian).
+ */
+function updateRootCheckboxState(rootCheckbox, secondLevelContainer) {
+    if (!rootCheckbox) return;
+
+    const children = secondLevelContainer.querySelectorAll('input[data-level="2"]');
+    if (children.length === 0) return;
+
+    const checkedCount = Array.from(children).filter((cb) => cb.checked).length;
+    rootCheckbox.checked = checkedCount === children.length;
+    rootCheckbox.indeterminate = checkedCount > 0 && checkedCount < children.length;
 }
 
 /**

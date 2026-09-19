@@ -266,7 +266,7 @@
             top: 80px;
             left: 54px;
             z-index: 1001;
-            width: 310px;
+            width: 340px;
             max-width: calc(100% - 130px);
             max-height: calc(100% - 175px);
             display: flex;
@@ -449,6 +449,11 @@
             color: #1f2937;
         }
 
+        .layer-label-group {
+            font-weight: 600;
+            user-select: none;
+        }
+
         .layer-depth-0 .layer-label {
             font-weight: 600;
             font-size: 14px;
@@ -475,10 +480,12 @@
             border: 1px solid rgba(0, 0, 0, .25);
         }
 
+        /* Nama layer ditampilkan utuh: teks panjang turun ke baris berikutnya, tidak dipotong. */
         .layer-name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.3;
         }
 
         .layer-badge {
@@ -923,11 +930,24 @@
                 });
             });
 
+            function toggleLayerNode(node) {
+                const open = node.classList.toggle('open');
+                node.querySelector(':scope > .layer-children').classList.toggle('d-none', !open);
+            }
+
             document.querySelectorAll('.layer-toggle:not(.layer-toggle-empty)').forEach((toggle) => {
-                toggle.addEventListener('click', () => {
-                    const node = toggle.closest('.layer-node');
-                    const open = node.classList.toggle('open');
-                    node.querySelector(':scope > .layer-children').classList.toggle('d-none', !open);
+                toggle.addEventListener('click', () => toggleLayerNode(toggle.closest('.layer-node')));
+            });
+
+            // Induk tanpa checkbox (hanya pengelompokan): klik namanya untuk membuka/menutup.
+            document.querySelectorAll('.layer-label-group').forEach((label) => {
+                const toggle = () => toggleLayerNode(label.closest('.layer-node'));
+                label.addEventListener('click', toggle);
+                label.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggle();
+                    }
                 });
             });
 
@@ -1740,17 +1760,6 @@
             applyOpacityToAll();
         }
 
-        function fitToLayerGroup(layerGroup) {
-            const bounds = L.latLngBounds([]);
-            layerGroup.eachLayer(l => l.getBounds && bounds.extend(l.getBounds()));
-
-            if (bounds.isValid()) {
-                dataSpasialMap.fitBounds(bounds, {
-                    padding: [30, 30]
-                });
-            }
-        }
-
         // Cache IndexedDB (dibagi dengan peta publik). Cache hanya dipakai bila versi data di server
         // sama, jadi perubahan data (tambah/ubah/hapus) langsung terlihat tanpa menunggu kedaluwarsa.
         const adminMapCache = window.MapDataStore ? new window.MapDataStore() : null;
@@ -1851,8 +1860,9 @@
                 .then(completed => {
                     if (!completed) return;
 
+                    // Peta sengaja tidak digeser/di-zoom otomatis saat data selesai dimuat;
+                    // gunakan tombol "Zoom ke layer" bila ingin memfokuskan ke datanya.
                     loadedMapLayers.add(categoryId);
-                    fitToLayerGroup(layerGroup);
                 })
                 .catch(error => {
                     console.error('Gagal memuat layer peta:', error);
