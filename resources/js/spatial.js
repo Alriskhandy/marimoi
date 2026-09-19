@@ -136,7 +136,11 @@ let nodes = [];
 const edges = [];
 
 (function build() {
-    let pts = DATA.points || [];
+    // Jaring pengaman: buang titik di luar selubung peta (data lama bisa berkoordinat rusak).
+    let pts = (DATA.points || []).filter((p) => (
+        Number.isFinite(p.x) && Number.isFinite(p.y)
+        && p.x >= BOUNDS.x0 - 1 && p.x <= BOUNDS.x1 + 1 && p.y >= BOUNDS.y0 - 1 && p.y <= BOUNDS.y1 + 1
+    ));
     if (isMobile && pts.length > 170) { pts = pts.filter((_, i) => i % 2 === 0); }
     nodes = pts.map((p, i) => ({
         nx: (p.x - BOUNDS.x0) / (BOUNDS.x1 - BOUNDS.x0),
@@ -158,6 +162,27 @@ const edges = [];
             if (!seen.has(key)) { seen.add(key); edges.push({ a: i, b: n.j }); }
         });
     }
+})();
+
+/* Bentuk wilayah Maluku Utara (batas administrasi nyata) sebagai Path2D berkoordinat ternormalisasi 0..1,
+ * memakai proyeksi yang sama dengan titik-titik lokasi. Dibangun sekali, digambar dengan transformasi. */
+const regionPath = (function () {
+    const shapes = DATA.shapes || [];
+    if (!shapes.length || typeof Path2D === 'undefined') { return null; }
+    const path = new Path2D();
+    let any = false;
+    shapes.forEach((polygon) => {
+        (polygon || []).forEach((ring) => {
+            let started = false;
+            (ring || []).forEach((pt) => {
+                const nx = (pt[0] - BOUNDS.x0) / (BOUNDS.x1 - BOUNDS.x0);
+                const ny = 1 - (pt[1] - BOUNDS.y0) / (BOUNDS.y1 - BOUNDS.y0);
+                if (!started) { path.moveTo(nx, ny); started = true; any = true; } else { path.lineTo(nx, ny); }
+            });
+            if (started) { path.closePath(); }
+        });
+    });
+    return any ? path : null;
 })();
 
 class Scene {
@@ -248,6 +273,24 @@ class Scene {
             const n = nodes[i];
             px[i] = cx - size / 2 + n.nx * size + m.x * 34 * n.d;
             py[i] = cy - size / 2 + n.ny * size + m.y * 24 * n.d;
+        }
+
+        // Siluet Maluku Utara di belakang jaringan titik: muncul bersama kemunculan titik.
+        if (regionPath) {
+            const alpha = clamp(this.reveal * 2.2, 0, 1);
+            if (alpha > 0) {
+                ctx.save();
+                ctx.translate(cx - size / 2 + m.x * 10, cy - size / 2 + m.y * 7);
+                ctx.scale(size, size);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = 'rgba(32,217,255,.07)';
+                ctx.fill(regionPath, 'evenodd');
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = 1.2 / size;
+                ctx.strokeStyle = 'rgba(32,217,255,.38)';
+                ctx.stroke(regionPath);
+                ctx.restore();
+            }
         }
 
         ctx.lineWidth = 1;

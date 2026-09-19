@@ -111,6 +111,56 @@ class FrontendController extends Controller
      *
      * @return array{total: int, categories: int, top: array<int, object>, layers: array<int, object>, points: array<int, array<string, mixed>>}
      */
+    /**
+     * Bentuk wilayah Maluku Utara untuk latar visual beranda, diambil dari data nyata "Batas
+     * Administrasi" (seluruh turunannya), disederhanakan agar ringan (sekitar 12 KB).
+     * Poligon berkoordinat di luar selubung dibuang (data lama yang tersimpan dalam meter).
+     *
+     * @return array<int, mixed> daftar poligon; tiap poligon = daftar ring [lon, lat]
+     */
+    private function homeRegionShapes(): array
+    {
+        $category = Category::where('type', 'tematik')->where('nama', 'Batas Administrasi')->first();
+
+        if (! $category) {
+            return [];
+        }
+
+        $ids = implode(',', array_map('intval', Category::selfAndDescendantIds($category->id)));
+
+        $rows = DB::select(
+            "select ST_AsGeoJSON(g, 3) as geojson
+             from (
+                 select ST_SimplifyPreserveTopology(p.geom, 0.02) as g
+                 from (
+                     select (ST_Dump(ST_Force2D(geom))).geom as geom
+                     from data_spatial
+                     where kategori_id in ({$ids})
+                       and GeometryType(geom) in ('POLYGON', 'MULTIPOLYGON')
+                       and ST_XMin(geom) > ? and ST_XMax(geom) < ? and ST_YMin(geom) > ? and ST_YMax(geom) < ?
+                 ) p
+                 where ST_Area(p.geom) > 0.0002
+             ) t
+             where g is not null and not ST_IsEmpty(g)",
+            [self::HOME_LON_MIN, self::HOME_LON_MAX, self::HOME_LAT_MIN, self::HOME_LAT_MAX]
+        );
+
+        return collect($rows)
+            ->map(fn ($row) => json_decode($row->geojson, true)['coordinates'] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /** Selubung koordinat (derajat) wilayah Maluku Utara beserta margin. */
+    private const HOME_LON_MIN = 123.0;
+
+    private const HOME_LON_MAX = 131.5;
+
+    private const HOME_LAT_MIN = -4.5;
+
+    private const HOME_LAT_MAX = 5.5;
+
     private function homeSpatialSummary(): array
     {
         return Cache::remember('home.spatial-summary', 3600, function () {
@@ -120,18 +170,30 @@ class FrontendController extends Controller
                  group by c.id, c.nama, c.warna order by total desc limit 7'
             );
 
+            // Hanya titik dengan koordinat derajat yang masuk akal untuk wilayah Maluku Utara. Data
+            // yang tersimpan dalam satuan lain (mis. meter/Mercator) atau tanpa koordinat valid
+            // dibuang agar tidak tergambar di luar kanvas atau menambah hitungan yang menyesatkan.
+            // ST_X/ST_Y hanya boleh dipanggil pada POINT, jadi dibungkus CASE di subquery
+            // (PostgreSQL tidak menjamin urutan evaluasi kondisi AND).
+            $pointSource = "select d.id, d.kategori_id, d.deskripsi, d.tahun,
+                        case when GeometryType(d.geom) = 'POINT' then ST_X(d.geom) end as px,
+                        case when GeometryType(d.geom) = 'POINT' then ST_Y(d.geom) end as py
+                 from data_spatial d";
+            $pointBindings = [self::HOME_LON_MIN, self::HOME_LON_MAX, self::HOME_LAT_MIN, self::HOME_LAT_MAX];
+            $inRange = 'p.px between ? and ? and p.py between ? and ?';
+
             $layers = DB::select(
-                'select c.id, c.nama, c.warna, count(d.id) as total
-                 from data_spatial d join categories c on c.id = d.kategori_id
-                 where GeometryType(d.geom) = ? group by c.id, c.nama, c.warna order by total desc',
-                ['POINT']
+                'select c.id, c.nama, c.warna, count(p.id) as total
+                 from ('.$pointSource.') p join categories c on c.id = p.kategori_id
+                 where '.$inRange.' group by c.id, c.nama, c.warna order by total desc',
+                $pointBindings
             );
 
             $points = collect(DB::select(
-                'select d.id, d.kategori_id as k, d.deskripsi as d, d.tahun as t,
-                        round(ST_X(d.geom)::numeric, 5) as x, round(ST_Y(d.geom)::numeric, 5) as y
-                 from data_spatial d where GeometryType(d.geom) = ? and ST_SRID(d.geom) = 4326',
-                ['POINT']
+                'select p.id, p.kategori_id as k, p.deskripsi as d, p.tahun as t,
+                        round(p.px::numeric, 5) as x, round(p.py::numeric, 5) as y
+                 from ('.$pointSource.') p where '.$inRange,
+                $pointBindings
             ))->map(fn ($row) => [
                 'id' => $row->id,
                 'k' => $row->k,
@@ -147,6 +209,7 @@ class FrontendController extends Controller
                 'top' => $top,
                 'layers' => $layers,
                 'points' => $points,
+                'shapes' => $this->homeRegionShapes(),
             ];
         });
     }
