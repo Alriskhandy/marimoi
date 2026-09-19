@@ -76,34 +76,10 @@
                 @php
                     $cards = [
                         [
-                            'img' => 'daerah.png',
-                            'route' => 'tampil.psd',
-                            'title' => 'Proyek Strategis Daerah',
-                            'desc' => 'Pemantauan proyek penting di tingkat daerah.',
-                        ],
-                        [
-                            'img' => 'nasional.jpg',
-                            'route' => 'tampil.psn',
-                            'title' => 'Proyek Strategis Nasional',
-                            'desc' => 'Koordinasi proyek nasional secara terpadu.',
-                        ],
-                        [
                             'img' => 'wilayah.jpg',
                             'route' => 'tampil.prioritas',
                             'title' => 'Prioritas Daerah 2025-2029',
                             'desc' => 'Fokus pembangunan wilayah 2025–2029.',
-                        ],
-                        [
-                            'img' => 'musyawarah.jpg',
-                            'route' => 'tampil.musrenbang',
-                            'title' => 'Usulan Musrenbang',
-                            'desc' => 'Hasil usulan masyarakat dalam Musrenbang.',
-                        ],
-                        [
-                            'img' => 'pokok-pikiran.jpg',
-                            'route' => 'tampil.pokir',
-                            'title' => 'Pokir DPRD',
-                            'desc' => 'Pokok pikiran DPRD untuk pengembangan wilayah.',
                         ],
                         [
                             'img' => 'aspirasi.jpg',

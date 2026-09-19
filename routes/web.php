@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Route;
 // HALAMAN //
 Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
 Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');
-Route::get('/proyek-strategis-daerah', [FrontendController::class, 'psd'])->name('tampil.psd');
-Route::get('/proyek-strategis-nasional', [FrontendController::class, 'psn'])->name('tampil.psn');
+// Halaman lama digabung ke Peta Tematik //
+foreach (['proyek-strategis-daerah', 'proyek-strategis-nasional', 'usulan-musrenbang', 'pokir-dprd'] as $halamanLama) {
+    Route::redirect('/'.$halamanLama, '/peta-tematik', 301);
+}
 Route::get('/prioritas-daerah', [FrontendController::class, 'prioritas'])->name('tampil.prioritas');
 Route::get('/peta-tematik', [FrontendController::class, 'tematik'])->name('tampil.tematik');
-Route::get('/usulan-musrenbang', [FrontendController::class, 'musrenbang'])->name('tampil.musrenbang');
-Route::get('/pokir-dprd', [FrontendController::class, 'pokir'])->name('tampil.pokir');
 Route::get('/dokumen-publikasi', [FrontendController::class, 'publikasi'])->name('tampil.publikasi');
 Route::get('/aspirasi-masyarakat', [FrontendController::class, 'aspirasi'])->name('tampil.aspirasi');
 

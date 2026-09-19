@@ -34,19 +34,6 @@
                                     <option value="tematik" {{ request('type') == 'tematik' ? 'selected' : '' }}>
                                         Tematik (Lokasi)
                                     </option>
-                                    <option value="psd" {{ request('type') == 'psd' ? 'selected' : '' }}>
-                                        PSD (Proyek Strategis Daerah)
-                                    </option>
-                                    <option value="psn" {{ request('type') == 'psn' ? 'selected' : '' }}>
-                                        PSN (Proyek Strategis Nasional)
-                                    </option>
-                                    <option value="pokir_dprd" {{ request('type') == 'pokir_dprd' ? 'selected' : '' }}>
-                                        Pokir DPRD
-                                    </option>
-                                    <option value="usulan_musrenbang"
-                                        {{ request('type') == 'usulan_musrenbang' ? 'selected' : '' }}>
-                                        Musrenbang (Usulan Musrenbang)
-                                    </option>
                                 </select>
                             </div>
                             <div>
@@ -602,20 +589,6 @@
                                         <option value="tematik" {{ request('type') == 'tematik' ? 'selected' : '' }}>
                                             Peta Tematik
                                         </option>
-                                        <option value="psd" {{ request('type') == 'psd' ? 'selected' : '' }}>
-                                            PSD (Proyek Strategis Daerah)
-                                        </option>
-                                        <option value="psn" {{ request('type') == 'psn' ? 'selected' : '' }}>
-                                            PSN (Proyek Strategis Nasional)
-                                        </option>
-                                        <option value="pokir_dprd"
-                                            {{ request('type') == 'pokir_dprd' ? 'selected' : '' }}>
-                                            Pokir DPRD
-                                        </option>
-                                        <option value="usulan_musrenbang"
-                                            {{ request('type') == 'usulan_musrenbang' ? 'selected' : '' }}>
-                                            Musrenbang (Usulan Musrenbang)
-                                        </option>
                                     </select>
 
                                     @if (request('type'))
@@ -815,10 +788,6 @@
                                     <select class="form-control" id="edit_type" name="type" required>
                                         <option value="">-- Pilih Tipe --</option>
                                         <option value="tematik">Peta Tematik</option>
-                                        <option value="psd">PSD (Proyek Strategis Daerah)</option>
-                                        <option value="psn">PSN (Proyek Strategis Nasional)</option>
-                                        <option value="pokir_dprd">Pokir DPRD</option>
-                                        <option value="usulan_musrenbang">Musrenbang (Usulan Musrenbang)</option>
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>

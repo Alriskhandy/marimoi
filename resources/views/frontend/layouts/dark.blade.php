@@ -143,29 +143,9 @@
                     <li><a href="{{ route('tampil.tematik') }}"
                             class="{{ request()->routeIs('tampil.tematik') ? 'active' : '' }}">Peta
                             Tematik</a></li>
-                    <li class="dropdown">
-                        @php
-                            $isDropdownActive = request()->routeIs('tampil.psd') || request()->routeIs('tampil.psn');
-                        @endphp
-                        <a href="#" class="dropdown-trigger {{ $isDropdownActive ? 'active' : '' }}"
-                            aria-haspopup="true" aria-expanded="false" role="button">
-                            Proyek Strategis
-                            <span class="arrow"><i class="bi bi-chevron-down ms-2"></i></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu" aria-label="Proyek Strategis Menu">
-                            <li role="none"><a href="{{ route('tampil.psd') }}" role="menuitem"
-                                    class="{{ request()->routeIs('tampil.psd') ? 'active' : '' }}">Proyek Strategis
-                                    Daerah</a></li>
-                            <li role="none"><a href="{{ route('tampil.psn') }}" role="menuitem"
-                                    class="{{ request()->routeIs('tampil.psn') ? 'active' : '' }}">Proyek Strategis
-                                    Nasional</a></li>
-                        </ul>
-                    </li>
                     <li><a href="{{ route('tampil.prioritas') }}"
                             class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah
                             2025-2029</a></li>
-                    <li><a href="{{ route('tampil.musrenbang') }}"
-                            class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a></li>
                     {{-- <li class="dropdown">
                         @php
                             $isDropdownActive =
@@ -192,9 +172,6 @@
                         </ul>
                     </li> --}}
 
-                    <li><a href="{{ route('tampil.pokir') }}"
-                            class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir
-                            DPRD</a></li>
                     <li><a href="{{ route('tampil.publikasi') }}"
                             class="{{ request()->routeIs('tampil.publikasi') ? 'active' : '' }}">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}"

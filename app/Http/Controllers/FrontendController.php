@@ -115,20 +115,6 @@ class FrontendController extends Controller
     }
 
     // TAMPILAN PETA //
-    public function psd()
-    {
-        $documents = Dokumen::all();
-
-        return view('frontend.pages.peta', compact('documents'));
-    }
-
-    public function psn()
-    {
-        $documents = Dokumen::all();
-
-        return view('frontend.pages.peta', compact('documents'));
-    }
-
     public function tematik()
     {
         $documents = Dokumen::all();
@@ -215,20 +201,6 @@ class FrontendController extends Controller
                 'layers' => $sharedMap->layers,
                 'viewport' => $sharedMap->viewport,
             ]);
-    }
-
-    public function pokir()
-    {
-        $documents = Dokumen::all();
-
-        return view('frontend.pages.peta', compact('documents'));
-    }
-
-    public function musrenbang()
-    {
-        $documents = Dokumen::all();
-
-        return view('frontend.pages.peta', compact('documents'));
     }
 
     // NANTINYA DIISI PETA RPJMD //

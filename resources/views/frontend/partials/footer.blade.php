@@ -51,16 +51,7 @@
                 <h5>Kategori Proyek</h5>
                 <ul class="list-unstyled">
                     <li class="mb-2">
-                        <a href="#">Proyek Strategis Daerah</a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="#">Proyek Strategis Nasional</a>
-                    </li>
-                    <li class="mb-2">
                         <a href="#">Prioritas Daerah</a>
-                    </li>
-                    <li class="mb-2">
-                        <a href="#">Usulan Musrenbang</a>
                     </li>
                 </ul>
             </div>

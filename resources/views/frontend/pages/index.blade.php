@@ -20,31 +20,7 @@
             </div>
 
             <div class="features-grid">
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">
-                        <i class="fas fa-map-marked-alt"></i>
-                    </div>
-                    <h4>Proyek Strategis Daerah</h4>
-                    <p>
-                        Pemetaan proyek strategis daerah.
-                    </p>
-                    <a href="/proyek-strategis-daerah" class="feature-link">
-                        Lihat Detail <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">
-                        <i class="fas fa-flag"></i>
-                    </div>
-                    <h4>Proyek Strategis Nasional</h4>
-                    <p>
-                        Pemetaan proyek nasional di Maluku Utara.
-                    </p>
-                    <a href="/proyek-strategis-nasional" class="feature-link">
-                        Lihat Detail <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
                 <div class="feature-card animate-on-scroll">
                     <div class="feature-icon">
@@ -59,31 +35,7 @@
                     </a>
                 </div>
 
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h4>Usulan Musrenbang</h4>
-                    <p>
-                        Pemetaan usulan pembangunan hasil Musrenbang.
-                    </p>
-                    <a href="/usulan-musrenbang" class="feature-link">
-                        Lihat Detail <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">
-                        <i class="fas fa-gavel"></i>
-                    </div>
-                    <h4>Pokir DPRD</h4>
-                    <p>
-                        Pemetaan usulan pembangunan pokok pikiran DPRD.
-                    </p>
-                    <a href="/pokir-dprd" class="feature-link">
-                        Lihat Detail <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
                 <div class="feature-card animate-on-scroll">
                     <div class="feature-icon">

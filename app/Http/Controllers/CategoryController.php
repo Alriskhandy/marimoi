@@ -17,10 +17,10 @@ class CategoryController extends Controller
         $type = $request->get('type');
 
         // Daftar tipe yang diperbolehkan
-        $validTypes = ['tematik', 'psd', 'psn', 'pokir_dprd', 'usulan_musrenbang'];
+        $validTypes = ['tematik'];
 
         // Cek jika type ada dan tidak valid
-        if ($type && !in_array($type, $validTypes)) {
+        if ($type && ! in_array($type, $validTypes)) {
             return redirect()->back();
         }
 
@@ -39,10 +39,6 @@ class CategoryController extends Controller
         // Label yang akan ditampilkan
         $typeLabels = [
             'tematik' => 'Peta Tematik',
-            'psd' => 'PSD (Proyek Strategis Daerah)',
-            'psn' => 'PSN (Proyek Strategis Nasional)',
-            'pokir_dprd' => 'Pokir DPRD',
-            'usulan_musrenbang' => 'Usulan Musrenbang'
         ];
 
         $typeLabel = $type ? ($typeLabels[$type] ?? '') : '';
@@ -65,7 +61,9 @@ class CategoryController extends Controller
         while ($current->parent_id !== null) {
             $depth++;
             $current = Category::find($current->parent_id);
-            if (!$current || $depth > 3) break; // Prevent infinite loop
+            if (! $current || $depth > 3) {
+                break;
+            } // Prevent infinite loop
         }
 
         return $depth;
@@ -76,10 +74,14 @@ class CategoryController extends Controller
      */
     private function validateParentHierarchy($parentId, $currentCategoryId = null)
     {
-        if (!$parentId) return true;
+        if (! $parentId) {
+            return true;
+        }
 
         $parent = Category::find($parentId);
-        if (!$parent) return false;
+        if (! $parent) {
+            return false;
+        }
 
         // Hitung depth dari parent
         $parentDepth = $this->getCategoryDepth($parent);
@@ -101,7 +103,6 @@ class CategoryController extends Controller
         return true;
     }
 
-
     public function create(Request $request)
     {
         $type = $request->get('type');
@@ -110,10 +111,6 @@ class CategoryController extends Controller
         // Get available types
         $types = [
             'tematik' => 'Peta Tematik',
-            'musrenbang' => 'Usulan Musrenbang',
-            'pokir' => 'POKIR DPRD',
-            'psd' => 'Proyek Strategis Daerah',
-            'psn' => 'Proyek Strategis Nasional'
         ];
 
         // Get potential parents if type is selected
@@ -147,7 +144,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
+            'type' => 'required|in:tematik',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -155,7 +152,7 @@ class CategoryController extends Controller
             'is_marker' => 'boolean',
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id'
+            'parent_id' => 'nullable|exists:categories,id',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
             'type.in' => 'Tipe kategori tidak valid',
@@ -171,19 +168,21 @@ class CategoryController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
+
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         // Validasi maksimal 10 kategori aktif jika is_active = true
         if ($request->boolean('is_active')) {
-            if (!$this->validateMaxActiveCategories($request->type)) {
+            if (! $this->validateMaxActiveCategories($request->type)) {
                 $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
         }
@@ -198,15 +197,17 @@ class CategoryController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
 
             // 2. Validasi hirarki 3 level
-            if (!$this->validateParentHierarchy($request->parent_id)) {
+            if (! $this->validateParentHierarchy($request->parent_id)) {
                 $error = ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']];
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
         }
@@ -229,7 +230,7 @@ class CategoryController extends Controller
                 'is_marker' => $request->boolean('is_marker'),
                 'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
-                'parent_id' => $request->parent_id
+                'parent_id' => $request->parent_id,
             ]);
 
             DB::commit();
@@ -240,14 +241,14 @@ class CategoryController extends Controller
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
                 'depth' => $this->getCategoryDepth($category),
-                'is_active' => $category->is_active
+                'is_active' => $category->is_active,
             ]);
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Kategori berhasil dibuat',
-                    'data' => $category
+                    'data' => $category,
                 ]);
             }
 
@@ -258,16 +259,17 @@ class CategoryController extends Controller
             if (isset($gambarPath) && $gambarPath) {
                 Storage::disk('public')->delete($gambarPath);
             }
-            Log::error('Error creating category: ' . $e->getMessage());
+            Log::error('Error creating category: '.$e->getMessage());
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()
+                    'message' => 'Terjadi kesalahan saat membuat kategori: '.$e->getMessage(),
                 ], 500);
             }
+
             return redirect()->back()
-                ->withErrors(['error' => 'Terjadi kesalahan saat membuat kategori: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Terjadi kesalahan saat membuat kategori: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -279,7 +281,7 @@ class CategoryController extends Controller
         if (request()->ajax()) {
             return response()->json([
                 'success' => true,
-                'data' => $category
+                'data' => $category,
             ]);
         }
 
@@ -292,10 +294,6 @@ class CategoryController extends Controller
 
         $types = [
             'peta_tematik' => 'Peta Tematik (Lokasi)',
-            'musrenbang' => 'Usulan Musrenbang',
-            'pokir' => 'POKIR DPRD',
-            'psd' => 'Proyek Strategis Daerah',
-            'psn' => 'Proyek Strategis Nasional'
         ];
 
         // Get potential parents (exclude self and children to prevent circular reference)
@@ -318,12 +316,12 @@ class CategoryController extends Controller
         $userRole = $user->role->slug ?? null;
 
         // Cek otorisasi
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengedit kategori ini.');
         }
 
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
+            'type' => 'required|in:tematik',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -331,7 +329,7 @@ class CategoryController extends Controller
             'is_marker' => 'boolean',
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id'
+            'parent_id' => 'nullable|exists:categories,id',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
             'type.in' => 'Tipe kategori tidak valid',
@@ -347,16 +345,18 @@ class CategoryController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
+
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         // Validasi maksimal 10 kategori aktif
         if ($request->boolean('is_active')) {
-            if (!$this->validateMaxActiveCategories($request->type, $category->id)) {
+            if (! $this->validateMaxActiveCategories($request->type, $category->id)) {
                 $error = ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']];
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
         }
@@ -371,6 +371,7 @@ class CategoryController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
 
@@ -380,6 +381,7 @@ class CategoryController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
 
@@ -391,15 +393,17 @@ class CategoryController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
 
             // 4. Validasi hirarki 3 level untuk update
-            if (!$this->validateParentHierarchy($request->parent_id, $category->id)) {
+            if (! $this->validateParentHierarchy($request->parent_id, $category->id)) {
                 $error = ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']];
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
 
@@ -412,6 +416,7 @@ class CategoryController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'errors' => $error], 422);
                 }
+
                 return redirect()->back()->withErrors($error)->withInput();
             }
         }
@@ -427,7 +432,7 @@ class CategoryController extends Controller
                 'is_marker' => $request->boolean('is_marker'),
                 'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
-                'parent_id' => $request->parent_id
+                'parent_id' => $request->parent_id,
             ];
 
             // Handle gambar upload
@@ -452,14 +457,14 @@ class CategoryController extends Controller
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
                 'depth' => $this->getCategoryDepth($category),
-                'is_active' => $category->is_active
+                'is_active' => $category->is_active,
             ]);
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Kategori berhasil diperbarui',
-                    'data' => $category
+                    'data' => $category,
                 ]);
             }
 
@@ -467,16 +472,17 @@ class CategoryController extends Controller
                 ->with('success', 'Kategori berhasil diperbarui');
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error updating category: ' . $e->getMessage());
+            Log::error('Error updating category: '.$e->getMessage());
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()
+                    'message' => 'Terjadi kesalahan saat memperbarui kategori: '.$e->getMessage(),
                 ], 500);
             }
+
             return redirect()->back()
-                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui kategori: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui kategori: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -492,6 +498,7 @@ class CategoryController extends Controller
                 return true;
             }
         }
+
         return false;
     }
 
@@ -527,7 +534,7 @@ class CategoryController extends Controller
         $userRole = $user->role->slug ?? null;
 
         // Cek otorisasi: hanya super-admin, admin-bappeda, atau pembuat
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus kategori ini.');
         }
 
@@ -555,16 +562,16 @@ class CategoryController extends Controller
 
             Log::info('Category deleted successfully', [
                 'id' => $id,
-                'type' => $categoryType
+                'type' => $categoryType,
             ]);
 
             return redirect()->route('categories.index', ['type' => $categoryType])
                 ->with('success', 'Kategori berhasil dihapus');
         } catch (\Exception $e) {
-            Log::error('Error deleting category: ' . $e->getMessage());
+            Log::error('Error deleting category: '.$e->getMessage());
 
             return redirect()->back()
-                ->with('error', 'Terjadi kesalahan saat menghapus kategori: ' . $e->getMessage());
+                ->with('error', 'Terjadi kesalahan saat menghapus kategori: '.$e->getMessage());
         }
     }
 
@@ -578,25 +585,25 @@ class CategoryController extends Controller
         $userRole = $user->role->slug ?? null;
 
         // Cek otorisasi
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengubah status kategori ini.'
+                'message' => 'Anda tidak memiliki izin untuk mengubah status kategori ini.',
             ], 403);
         }
 
         try {
             // Jika ingin mengaktifkan, cek batas maksimal
-            if (!$category->is_active) {
-                if (!$this->validateMaxActiveCategories($category->type, $category->id)) {
+            if (! $category->is_active) {
+                if (! $this->validateMaxActiveCategories($category->type, $category->id)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Maksimal hanya 10 kategori yang dapat diaktifkan per tipe'
+                        'message' => 'Maksimal hanya 10 kategori yang dapat diaktifkan per tipe',
                     ], 422);
                 }
             }
 
-            $category->is_active = !$category->is_active;
+            $category->is_active = ! $category->is_active;
             $category->save();
 
             $status = $category->is_active ? 'diaktifkan' : 'dinonaktifkan';
@@ -604,20 +611,20 @@ class CategoryController extends Controller
             Log::info('Category status toggled', [
                 'id' => $category->id,
                 'nama' => $category->nama,
-                'is_active' => $category->is_active
+                'is_active' => $category->is_active,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Kategori berhasil {$status}",
-                'is_active' => $category->is_active
+                'is_active' => $category->is_active,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error toggling category status: ' . $e->getMessage());
+            Log::error('Error toggling category status: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengubah status kategori'
+                'message' => 'Terjadi kesalahan saat mengubah status kategori',
             ], 500);
         }
     }
@@ -634,7 +641,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $categories
+            'data' => $categories,
         ]);
     }
 
@@ -649,7 +656,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $categories
+            'data' => $categories,
         ]);
     }
 
@@ -670,10 +677,9 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $categories
+            'data' => $categories,
         ]);
     }
-
 
     /**
      * API method to get category options for select (updated for 3-level)
@@ -693,23 +699,23 @@ class CategoryController extends Controller
                 'id' => $parent->id,
                 'nama' => $parent->nama,
                 'level' => 0,
-                'can_have_children' => true
+                'can_have_children' => true,
             ];
 
             foreach ($parent->children as $child) {
                 $options[] = [
                     'id' => $child->id,
-                    'nama' => '-- ' . $child->nama,
+                    'nama' => '-- '.$child->nama,
                     'level' => 1,
-                    'can_have_children' => true
+                    'can_have_children' => true,
                 ];
 
                 foreach ($child->children as $grandchild) {
                     $options[] = [
                         'id' => $grandchild->id,
-                        'nama' => '---- ' . $grandchild->nama,
+                        'nama' => '---- '.$grandchild->nama,
                         'level' => 2,
-                        'can_have_children' => false
+                        'can_have_children' => false,
                     ];
                 }
             }
@@ -717,7 +723,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $options
+            'data' => $options,
         ]);
     }
 
@@ -735,7 +741,7 @@ class CategoryController extends Controller
                 'is_active' => $category->is_active,
                 'deskripsi' => $category->deskripsi,
                 'parent_id' => $category->parent_id,
-                'children' => $this->buildTree($category->children)
+                'children' => $this->buildTree($category->children),
             ];
         });
     }
@@ -755,12 +761,12 @@ class CategoryController extends Controller
             'root_categories' => Category::roots()->count(),
             'child_categories' => Category::whereNotNull('parent_id')->count(),
             'marker_categories' => Category::markers()->count(),
-            'categories_with_images' => Category::whereNotNull('gambar')->count()
+            'categories_with_images' => Category::whereNotNull('gambar')->count(),
         ];
 
         return response()->json([
             'success' => true,
-            'statistics' => $stats
+            'statistics' => $stats,
         ]);
     }
 
@@ -769,13 +775,13 @@ class CategoryController extends Controller
         $validator = Validator::make($request->all(), [
             'categories' => 'required|array',
             'categories.*.id' => 'required|exists:categories,id',
-            'action' => 'required|in:delete,update_type,toggle_marker,toggle_active'
+            'action' => 'required|in:delete,update_type,toggle_marker,toggle_active',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -812,7 +818,7 @@ class CategoryController extends Controller
                     break;
 
                 case 'update_type':
-                    if (!$request->has('new_type')) {
+                    if (! $request->has('new_type')) {
                         throw new \Exception('Tipe baru harus disediakan');
                     }
 
@@ -824,7 +830,7 @@ class CategoryController extends Controller
                     // Toggle is_marker for each category
                     foreach ($categoryIds as $id) {
                         $category = Category::find($id);
-                        $category->is_marker = !$category->is_marker;
+                        $category->is_marker = ! $category->is_marker;
                         $category->save();
                         $updatedCount++;
                     }
@@ -836,13 +842,13 @@ class CategoryController extends Controller
                         $category = Category::find($id);
 
                         // Jika ingin mengaktifkan, cek batas maksimal
-                        if (!$category->is_active) {
-                            if (!$this->validateMaxActiveCategories($category->type, $category->id)) {
+                        if (! $category->is_active) {
+                            if (! $this->validateMaxActiveCategories($category->type, $category->id)) {
                                 throw new \Exception("Maksimal 10 kategori aktif untuk tipe {$category->type}. Kategori '{$category->nama}' tidak dapat diaktifkan.");
                             }
                         }
 
-                        $category->is_active = !$category->is_active;
+                        $category->is_active = ! $category->is_active;
                         $category->save();
                         $updatedCount++;
                     }
@@ -854,21 +860,21 @@ class CategoryController extends Controller
             Log::info('Bulk category update completed', [
                 'action' => $request->action,
                 'count' => $updatedCount,
-                'category_ids' => $categoryIds->toArray()
+                'category_ids' => $categoryIds->toArray(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Berhasil {$request->action} {$updatedCount} kategori",
-                'updated_count' => $updatedCount
+                'updated_count' => $updatedCount,
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error in bulk category update: ' . $e->getMessage());
+            Log::error('Error in bulk category update: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -879,15 +885,15 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
-            'type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
+            'type' => 'nullable|in:tematik',
             'include_children' => 'boolean',
-            'copy_image' => 'boolean'
+            'copy_image' => 'boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -899,7 +905,7 @@ class CategoryController extends Controller
             if ($request->boolean('copy_image') && $originalCategory->gambar) {
                 if (Storage::disk('public')->exists($originalCategory->gambar)) {
                     $extension = pathinfo($originalCategory->gambar, PATHINFO_EXTENSION);
-                    $newGambarPath = 'categories/' . uniqid() . '.' . $extension;
+                    $newGambarPath = 'categories/'.uniqid().'.'.$extension;
                     Storage::disk('public')->copy($originalCategory->gambar, $newGambarPath);
                 }
             }
@@ -915,7 +921,7 @@ class CategoryController extends Controller
                 'is_marker' => $originalCategory->is_marker,
                 'is_active' => false, // Duplicate dimulai sebagai tidak aktif
                 'deskripsi' => $originalCategory->deskripsi,
-                'parent_id' => $originalCategory->parent_id
+                'parent_id' => $originalCategory->parent_id,
             ]);
 
             // Duplicate children if requested
@@ -929,13 +935,13 @@ class CategoryController extends Controller
                 'original_id' => $originalCategory->id,
                 'new_id' => $newCategory->id,
                 'include_children' => $request->boolean('include_children'),
-                'copy_image' => $request->boolean('copy_image')
+                'copy_image' => $request->boolean('copy_image'),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Kategori berhasil diduplikasi',
-                'category' => $newCategory->load('children')
+                'category' => $newCategory->load('children'),
             ]);
         } catch (\Exception $e) {
             DB::rollback();
@@ -945,11 +951,11 @@ class CategoryController extends Controller
                 Storage::disk('public')->delete($newGambarPath);
             }
 
-            Log::error('Error duplicating category: ' . $e->getMessage());
+            Log::error('Error duplicating category: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menduplikasi kategori: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menduplikasi kategori: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -963,7 +969,7 @@ class CategoryController extends Controller
             if ($copyImages && $child->gambar) {
                 if (Storage::disk('public')->exists($child->gambar)) {
                     $extension = pathinfo($child->gambar, PATHINFO_EXTENSION);
-                    $childGambarPath = 'categories/' . uniqid() . '.' . $extension;
+                    $childGambarPath = 'categories/'.uniqid().'.'.$extension;
                     Storage::disk('public')->copy($child->gambar, $childGambarPath);
                 }
             }
@@ -978,7 +984,7 @@ class CategoryController extends Controller
                 'is_marker' => $child->is_marker,
                 'is_active' => false, // Children juga dimulai sebagai tidak aktif
                 'deskripsi' => $child->deskripsi,
-                'parent_id' => $newParent->id
+                'parent_id' => $newParent->id,
             ]);
 
             // Recursively duplicate grandchildren
@@ -994,13 +1000,13 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'new_parent_id' => 'nullable|exists:categories,id',
-            'new_type' => 'nullable|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn'
+            'new_type' => 'nullable|in:tematik',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -1048,21 +1054,21 @@ class CategoryController extends Controller
             Log::info('Category moved successfully', [
                 'category_id' => $category->id,
                 'new_parent_id' => $request->new_parent_id,
-                'new_type' => $request->new_type
+                'new_type' => $request->new_type,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Kategori berhasil dipindahkan',
-                'category' => $category->fresh(['parent', 'children'])
+                'category' => $category->fresh(['parent', 'children']),
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error moving category: ' . $e->getMessage());
+            Log::error('Error moving category: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memindahkan kategori: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat memindahkan kategori: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1099,14 +1105,14 @@ class CategoryController extends Controller
                     'success' => true,
                     'type' => $type,
                     'categories' => $categories,
-                    'exported_at' => now()->toISOString()
+                    'exported_at' => now()->toISOString(),
                 ]);
         }
     }
 
     private function exportToCsv($categories, $type)
     {
-        $filename = 'categories' . ($type ? "_$type" : '') . '_' . date('Y-m-d_H-i-s') . '.csv';
+        $filename = 'categories'.($type ? "_$type" : '').'_'.date('Y-m-d_H-i-s').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -1130,7 +1136,7 @@ class CategoryController extends Controller
                 'Parent ID',
                 'Parent Nama',
                 'Created At',
-                'Updated At'
+                'Updated At',
             ]);
 
             foreach ($categories as $category) {
@@ -1147,7 +1153,7 @@ class CategoryController extends Controller
                     $category->parent_id,
                     $category->parent?->nama,
                     $category->created_at,
-                    $category->updated_at
+                    $category->updated_at,
                 ]);
             }
 
@@ -1164,7 +1170,7 @@ class CategoryController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Excel export belum diimplementasi. Gunakan format CSV atau JSON.',
-            'available_formats' => ['json', 'csv']
+            'available_formats' => ['json', 'csv'],
         ], 501);
     }
 
@@ -1172,14 +1178,14 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:json,csv',
-            'type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,psd,psn',
-            'overwrite' => 'boolean'
+            'type' => 'required|in:tematik',
+            'overwrite' => 'boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -1202,21 +1208,21 @@ class CategoryController extends Controller
             Log::info('Categories imported successfully', [
                 'file' => $file->getClientOriginalName(),
                 'type' => $request->type,
-                'count' => $importedCount
+                'count' => $importedCount,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Berhasil mengimpor {$importedCount} kategori",
-                'imported_count' => $importedCount
+                'imported_count' => $importedCount,
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error importing categories: ' . $e->getMessage());
+            Log::error('Error importing categories: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengimpor: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat mengimpor: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1226,14 +1232,14 @@ class CategoryController extends Controller
         $content = file_get_contents($file->getRealPath());
         $data = json_decode($content, true);
 
-        if (!$data || !is_array($data)) {
+        if (! $data || ! is_array($data)) {
             throw new \Exception('Format JSON tidak valid');
         }
 
         $importedCount = 0;
 
         foreach ($data as $item) {
-            if (!isset($item['nama'])) {
+            if (! isset($item['nama'])) {
                 continue;
             }
 
@@ -1247,7 +1253,7 @@ class CategoryController extends Controller
                 'is_marker' => $item['is_marker'] ?? false,
                 'is_active' => false, // Import dimulai sebagai tidak aktif
                 'deskripsi' => $item['deskripsi'] ?? null,
-                'parent_id' => null // Handle parent relationships in second pass
+                'parent_id' => null, // Handle parent relationships in second pass
             ];
 
             if ($overwrite) {
@@ -1256,7 +1262,7 @@ class CategoryController extends Controller
                     $categoryData
                 );
             } else {
-                if (!Category::where('nama', $item['nama'])->where('type', $type)->exists()) {
+                if (! Category::where('nama', $item['nama'])->where('type', $type)->exists()) {
                     Category::create($categoryData);
                 }
             }
@@ -1271,7 +1277,7 @@ class CategoryController extends Controller
     {
         $handle = fopen($file->getRealPath(), 'r');
 
-        if (!$handle) {
+        if (! $handle) {
             throw new \Exception('Tidak dapat membaca file CSV');
         }
 
@@ -1281,6 +1287,7 @@ class CategoryController extends Controller
         while (($row = fgetcsv($handle)) !== false) {
             if ($isFirstRow) {
                 $isFirstRow = false;
+
                 continue; // Skip header row
             }
 
@@ -1298,7 +1305,7 @@ class CategoryController extends Controller
                 'is_marker' => ($row[4] ?? '') === 'Yes',
                 'is_active' => false, // Import dimulai sebagai tidak aktif
                 'deskripsi' => $row[5] ?? null,
-                'parent_id' => null
+                'parent_id' => null,
             ];
 
             if (empty($categoryData['nama'])) {
@@ -1311,7 +1318,7 @@ class CategoryController extends Controller
                     $categoryData
                 );
             } else {
-                if (!Category::where('nama', $categoryData['nama'])->where('type', $type)->exists()) {
+                if (! Category::where('nama', $categoryData['nama'])->where('type', $type)->exists()) {
                     Category::create($categoryData);
                 }
             }
@@ -1320,6 +1327,7 @@ class CategoryController extends Controller
         }
 
         fclose($handle);
+
         return $importedCount;
     }
 }

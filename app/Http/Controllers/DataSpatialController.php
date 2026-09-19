@@ -42,12 +42,7 @@ class DataSpatialController extends Controller
         $perPage = min($perPage, 500);
 
         // Validate type
-        if (! in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
-            return redirect()->back();
-        }
-
-        // Validate sub_type for proyek strategis
-        if ($type === 'proyek_strategis' && ! in_array($subType, ['psd', 'psn'])) {
+        if ($type !== 'tematik') {
             return redirect()->back();
         }
 
@@ -67,11 +62,6 @@ class DataSpatialController extends Controller
 
         // Filter by data type
         $query->where('data_type', $type);
-
-        // Filter by sub type for proyek strategis
-        if ($subType && $type === 'proyek_strategis') {
-            $query->where('sub_type', $subType);
-        }
 
         // Filter by year if provided
         if ($year) {
@@ -115,12 +105,7 @@ class DataSpatialController extends Controller
             ])
             ->roots();
 
-        if ($type === 'proyek_strategis') {
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            $categoryType = $this->getCategoryTypeByDataType($type, $subType);
-            $categories = $categoriesQuery->where('type', $categoryType)->get();
-        }
+        $categories = $categoriesQuery->where('type', 'tematik')->get();
 
         return view('backend.pages.data_spatial.index', compact(
             'data',
@@ -132,30 +117,24 @@ class DataSpatialController extends Controller
         ));
     }
 
+    public function map(Request $request)
+    {
+        $categories = Category::with(['children.children'])
+            ->roots()
+            ->where('type', 'tematik')
+            ->orderBy('nama')
+            ->get();
+
+        return view('backend.pages.data_spatial.map', compact('categories'));
+    }
+
     public function create(Request $request)
     {
-        $dataType = $request->get('type');
-        $subType = $request->get('sub_type');
+        $dataType = 'tematik';
+        $subType = null;
         $year = $request->get('year');
 
-        // Tentukan kategori berdasarkan data type dan sub type
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-        // Query kategori
-        $categoriesQuery = Category::with('children')->roots();
-
-        // Logika untuk menentukan filter kategori
-        if ($dataType === 'proyek_strategis' && in_array($subType, ['psd', 'psn'])) {
-            // Untuk proyek strategis, gunakan sub_type sebagai type
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            // Untuk data type lain, gunakan category type
-            if ($subType) {
-                $categories = $categoriesQuery->where('sub_type', $categoryType)->get();
-            } else {
-                $categories = $categoriesQuery->where('type', $categoryType)->get();
-            }
-        }
+        $categories = Category::with('children')->roots()->where('type', 'tematik')->get();
 
         return view('backend.pages.data_spatial.create', compact(
             'categories',
@@ -170,17 +149,11 @@ class DataSpatialController extends Controller
         // dd($request->all());
         // Validasi dasar
         $rules = [
-            'data_type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,proyek_strategis',
+            'data_type' => 'required|in:tematik',
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',
         ];
-
-        // Validasi tambahan untuk proyek strategis
-        if ($request->data_type === 'proyek_strategis') {
-            $rules['sub_type'] = 'required|in:psn,psd';
-            $rules['tahun'] = 'required|integer|min:2000|max:2050';
-        }
 
         $request->validate($rules);
 
@@ -233,20 +206,11 @@ class DataSpatialController extends Controller
         $subType = $data->sub_type;
         $year = $data->tahun;
 
-        // Tentukan kategori berdasarkan data type dan sub type
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-        // Get categories
-        $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
+        $categories = Category::select(['id', 'nama', 'type', 'parent_id'])
             ->with(['children:id,nama,parent_id'])
-            ->roots();
-
-        if ($dataType === 'proyek_strategis') {
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-            $categories = $categoriesQuery->where('type', $categoryType)->get();
-        }
+            ->roots()
+            ->where('type', 'tematik')
+            ->get();
 
         return view('backend.pages.data_spatial.edit', compact(
             'data',
@@ -368,93 +332,6 @@ class DataSpatialController extends Controller
         $categories = Category::layers()->with('children')->roots()->get();
 
         return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-    }
-
-    public function indexUsulanMusrenbang(Request $request)
-    {
-        if ($request->get('type') !== 'usulan_musrenbang') {
-            return redirect()->back();
-        }
-
-        $query = DataSpatial::with('kategori')
-            ->where('data_type', 'usulan_musrenbang');
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->get();
-
-        $categories = Category::musenbangs()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-    }
-
-    public function indexPokirDprd(Request $request)
-    {
-        if ($request->get('type') !== 'pokir_dprd') {
-            return redirect()->back();
-        }
-
-        $query = DataSpatial::with('kategori')
-            ->where('data_type', 'pokir_dprd');
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->get();
-
-        $categories = Category::pokirDprds()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
-    }
-
-    public function indexProyekStrategisDaerah($year = null)
-    {
-        $query = DataSpatial::where('sub_type', 'psd');
-
-        if ($year) {
-            $query->where('tahun', $year);
-        }
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->paginate(100);
-
-        $categories = Category::psd()->with('children')->roots()->get();
-
-        $statistics = null;
-        if ($year) {
-            $statistics = [
-                'total' => $data->count(),
-                'categories' => $data->groupBy('kategori_id')->map->count(),
-                'year' => $year,
-            ];
-        }
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
-    }
-
-    public function indexProyekStrategisNasional($year = null)
-    {
-        $query = DataSpatial::where('sub_type', 'psn');
-
-        if ($year) {
-            $query->where('tahun', $year);
-        }
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->paginate(100);
-
-        $categories = Category::psn()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
     }
 
     // === GEOJSON METHODS ===
@@ -856,41 +733,19 @@ class DataSpatialController extends Controller
 
     private function getCategoryTypeByDataType($dataType, $subType = null)
     {
-        return match ($dataType) {
-            'tematik' => 'tematik',
-            'usulan_musrenbang' => 'usulan_musrenbang',
-            'pokir_dprd' => 'pokir_dprd',
-            'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
-            default => 'tematik',
-        };
+        return 'tematik';
     }
 
     private function getDefaultNameByDataType($dataType, $index)
     {
         return match ($dataType) {
             'tematik' => "Tematik {$index}",
-            'usulan_musrenbang' => "Usulan Musrenbang {$index}",
-            'pokir_dprd' => "Pokir DPRD {$index}",
-            'proyek_strategis' => "Proyek Strategis {$index}",
             default => "Data {$index}"
         };
     }
 
     private function getRedirectAfterStore(Request $request, $message)
     {
-        if ($request->data_type === 'proyek_strategis') {
-            if ($request->has('tahun')) {
-                $routeName = $request->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-
-                return redirect()->route($routeName, ['year' => $request->tahun])
-                    ->with('success', $message);
-            }
-
-            $routeName = $request->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-
-            return redirect()->route($routeName)->with('success', $message);
-        }
-
         // Redirect dinamis ke data-spatial.index dengan query string
         return redirect()->route('data-spatial.index', array_filter([
             'type' => $request->data_type,
@@ -898,32 +753,8 @@ class DataSpatialController extends Controller
         ]))->with('success', $message);
     }
 
-    // private function getRedirectAfterUpdate(DataSpatial $data)
-    // {
-    //     return match($data->data_type) {
-    //         'lokasi' => redirect()->route('lokasi.index'),
-    //         'usulan_musrenbang' => redirect()->route('usulan-musrenbang.index'),
-    //         'pokir_dprd' => redirect()->route('pokir-dprd.index'),
-    //         'proyek_strategis' => $data->tahun
-    //             ? redirect()->route($data->sub_type === 'nasional' ? 'psn.tahun.show' : 'psd.tahun.show', ['year' => $data->tahun])
-    //             : redirect()->route($data->sub_type === 'nasional' ? 'psn.index' : 'psd.index'),
-    //         default => redirect()->route('data-spatial.index')
-    //     };
-    // }
     private function getRedirectAfterUpdate(DataSpatial $data)
     {
-        if ($data->data_type === 'proyek_strategis') {
-            if ($data->tahun) {
-                $routeName = $data->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-
-                return redirect()->route($routeName, ['year' => $data->tahun]);
-            }
-
-            $routeName = $data->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-
-            return redirect()->route($routeName);
-        }
-
         // Redirect dinamis ke data-spatial.index
         return redirect()->route('data-spatial.index', array_filter([
             'type' => $data->data_type,
@@ -1826,12 +1657,6 @@ class DataSpatialController extends Controller
 
         // Route mapping sesuai dengan controller yang ada
         $routeMap = [
-            'proyek_strategis' => [
-                'psn' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psn']],
-                'psd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psd']],
-            ],
-            'pokir_dprd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'pokir_dprd']],
-            'usulan_musrenbang' => ['route' => 'data-spatial.index', 'params' => ['type' => 'usulan_musrenbang']],
             'tematik' => ['route' => 'data-spatial.index', 'params' => ['type' => 'tematik']],
         ];
 

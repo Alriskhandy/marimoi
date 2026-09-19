@@ -1,12 +1,21 @@
-<ul class="list-unstyled {{ $level ?? 0 ? 'ms-3' : '' }} mb-0">
+<ul class="layer-tree {{ $level ?? 0 ? 'layer-tree-child' : '' }}">
     @forelse ($categories as $category)
-        <li class="mb-1">
-            <div class="form-check">
-                <input class="form-check-input map-layer-checkbox" type="checkbox" value="{{ $category->id }}"
-                    id="layer-cat-{{ $category->id }}">
-                <label class="form-check-label" for="layer-cat-{{ $category->id }}">
-                    {{ $category->nama }}
+        <li>
+            <div class="layer-item">
+                <label class="layer-label" for="layer-cat-{{ $category->id }}">
+                    <input class="map-layer-checkbox" type="checkbox" value="{{ $category->id }}"
+                        id="layer-cat-{{ $category->id }}">
+                    <span class="layer-swatch" style="background: {{ $category->warna ?: '#0d6efd' }}"></span>
+                    <span class="layer-name">{{ $category->nama }}</span>
                 </label>
+                <span class="layer-status">
+                    <span class="spinner-border spinner-border-sm text-primary d-none" role="status"></span>
+                    <span class="layer-count d-none"></span>
+                    <button type="button" class="layer-zoom d-none" data-category-id="{{ $category->id }}"
+                        title="Zoom ke layer">
+                        <i class="mdi mdi-crosshairs-gps"></i>
+                    </button>
+                </span>
             </div>
             @if ($category->children->count())
                 @include('backend.pages.data_spatial._map_layer_checklist', [

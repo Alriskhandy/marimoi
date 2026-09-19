@@ -77,15 +77,14 @@ class DataSpatialGeojsonTest extends TestCase
         $response->assertJsonPath('meta.truncated', true);
     }
 
-    public function test_tematik_index_page_renders_map_toggle_and_layer_checklist(): void
+    public function test_tematik_map_page_renders_layer_checklist(): void
     {
         $admin = $this->superAdmin();
         $category = $this->category();
 
-        $response = $this->actingAs($admin)->get(route('data-spatial.index', ['type' => 'tematik']));
+        $response = $this->actingAs($admin)->get(route('data-spatial.map'));
 
         $response->assertOk();
-        $response->assertSee('id="btnViewMap"', false);
         $response->assertSee('id="dataSpasialMap"', false);
         $response->assertSee('map-layer-checkbox', false);
         $response->assertSee('id="layer-cat-'.$category->id.'"', false);

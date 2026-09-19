@@ -90,6 +90,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
         Route::get('/', [DataSpatialController::class, 'index'])->name('index');
+        Route::get('/peta', [DataSpatialController::class, 'map'])->name('map');
         Route::get('/geojson', [DataSpatialController::class, 'geojson'])->name('geojson');
         Route::get('/create', [DataSpatialController::class, 'create'])->name('create');
         Route::post('/store', [DataSpatialController::class, 'store'])->name('store');
@@ -135,88 +136,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Usulan Musrenbang Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('usulan-musrenbang')->name('usulan-musrenbang.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexUsulanmusrenbang'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create').'?type=usulan_musrenbang';
-        })->name('create');
-        Route::get('/{uuid}/edit', function ($id) {
-            return redirect()->route('data-spatial.edit', $id);
-        })->name('edit');
-        Route::put('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.update', $id);
-        })->name('update');
-        Route::delete('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.destroy', $id);
-        })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pokir DPRD Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('pokir-dprd')->name('pokir-dprd.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexPokirDprd'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create').'?type=pokir_dprd';
-        })->name('create');
-        Route::get('/{uuid}/edit', function ($id) {
-            return redirect()->route('data-spatial.edit', $id);
-        })->name('edit');
-        Route::put('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.update', $id);
-        })->name('update');
-        Route::delete('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.destroy', $id);
-        })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Proyek Strategis Daerah Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('proyek-strategis-daerah')->name('psd.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create').'?type=proyek_strategis&sub_type=psd';
-        })->name('create');
-
-        // Routes berdasarkan tahun
-        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create')."?type=proyek_strategis&sub_type=psd&year={$year}";
-        })->name('tahun.create');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Proyek Strategis Nasional Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('proyek-strategis-nasional')->name('psn.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create').'?type=proyek_strategis&sub_type=psn';
-        })->name('create');
-
-        // Routes berdasarkan tahun
-        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create')."?type=proyek_strategis&sub_type=psn&year={$year}";
-        })->name('tahun.create');
     });
 
     /*

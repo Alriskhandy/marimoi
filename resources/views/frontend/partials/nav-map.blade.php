@@ -263,44 +263,6 @@
                         class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a>
                 </li>
 
-                <!-- Dropdown: Proyek Strategis -->
-                <li class="dropdown">
-                    <a href="#"
-                        class="dropdown-toggle {{ request()->routeIs(['tampil.psd', 'tampil.psn']) ? 'active' : '' }}"
-                        onclick="toggleDropdown(event, this)">
-                        Proyek Strategis
-                    </a>
-                    <div class="dropdown-menu">
-                        <a href="{{ route('tampil.psd') }}"
-                            class="{{ request()->routeIs('tampil.psd') ? 'active' : '' }}">
-                            <div class="menu-icon">
-                                <img src="{{ asset('frontend/img/daerah.svg') }}" alt="Proyek Strategis Daerah" />
-                            </div>
-                            <div class="menu-text">
-                                <div class="menu-title">
-                                    Proyek Strategis Daerah
-                                </div>
-                                <div class="menu-subtitle">
-                                    Program pembangunan daerah prioritas
-                                </div>
-                            </div>
-                        </a>
-                        <a href="{{ route('tampil.psn') }}"
-                            class="{{ request()->routeIs('tampil.psn') ? 'active' : '' }}">
-                            <div class="menu-icon">
-                                <img src="{{ asset('frontend/img/nasional.svg') }}" alt="Proyek Strategis Nasional" />
-                            </div>
-                            <div class="menu-text">
-                                <div class="menu-title">
-                                    Proyek Strategis Nasional
-                                </div>
-                                <div class="menu-subtitle">
-                                    Program prioritas pemerintah pusat
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                </li>
 
                 <li>
                     <a href="{{ route('tampil.prioritas') }}"
@@ -319,14 +281,6 @@
                 </li>
                
 
-                <li>
-                    <a href="{{ route('tampil.musrenbang') }}"
-                        class="{{ request()->routeIs('tampil.musrenbang') ? 'active' : '' }}">Musrenbang</a>
-                </li>
-                <li>
-                    <a href="{{ route('tampil.pokir') }}"
-                        class="{{ request()->routeIs('tampil.pokir') ? 'active' : '' }}">Pokir DPRD</a>
-                </li>
                 {{-- <li>
                     <a href="{{ route('tampil.aspirasi') }}"
                         class="{{ request()->routeIs('tampil.aspirasi') ? 'active' : '' }}">Aspirasi</a>
