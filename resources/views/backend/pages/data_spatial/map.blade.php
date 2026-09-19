@@ -19,44 +19,69 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-3 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="fw-semibold mb-0">
-                            <i class="mdi mdi-layers-outline me-1"></i>Layer Kategori
-                        </h6>
-                    </div>
-                    <p class="text-muted small mb-3">Centang kategori untuk menampilkan datanya di peta.</p>
-
-                    <div id="mapLayerList" class="map-layer-list">
-                        @include('backend.pages.data_spatial._map_layer_checklist', ['categories' => $categories])
-                    </div>
-
-                    <hr>
-                    <label for="layerOpacity" class="form-label small fw-semibold mb-1">
-                        <i class="mdi mdi-opacity me-1"></i>Transparansi data
-                        <span id="layerOpacityValue" class="text-muted">100%</span>
-                    </label>
-                    <input type="range" class="form-range" id="layerOpacity" min="10" max="100"
-                        step="5" value="100">
-
-                    <div class="d-grid mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnZoomActive">
-                            <i class="mdi mdi-fit-to-page-outline me-1"></i>Zoom ke semua layer aktif
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-9 grid-margin stretch-card">
+        <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body p-2">
-                    <div id="mapTruncatedNotice" class="alert alert-warning d-none m-2"></div>
 
                     <div id="mapWrapper" class="map-wrapper">
                         <div id="dataSpasialMap"></div>
+
+                        <!-- Efek loading -->
+                        <div id="mapLoading" class="map-loading" role="status" aria-live="polite">
+                            <div class="map-loading-box">
+                                <div class="map-loading-spinner"></div>
+                                <div class="map-loading-text" id="mapLoadingText">Memuat peta...</div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol layer (di bawah zoom in/out) -->
+                        <button type="button" id="btnToggleLayers" class="map-layers-btn" title="Layer"
+                            aria-expanded="false">
+                            <i class="mdi mdi-layers"></i>
+                        </button>
+
+                        <!-- Panel layer -->
+                        <div id="layerPanel" class="layer-panel d-none">
+                            <div class="layer-panel-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="mdi mdi-layers me-1"></i>Layer</h6>
+                                <button type="button" id="btnCloseLayers" class="layer-panel-close"
+                                    aria-label="Tutup">
+                                    <i class="mdi mdi-close"></i>
+                                </button>
+                            </div>
+
+                            <div class="layer-search">
+                                <i class="mdi mdi-magnify"></i>
+                                <input type="text" id="layerSearch" autocomplete="off" spellcheck="false"
+                                    maxlength="100" placeholder="Cari layer atau kategori...">
+                                <button type="button" id="layerSearchClear" class="d-none"
+                                    aria-label="Hapus pencarian">
+                                    <i class="mdi mdi-close-circle"></i>
+                                </button>
+                            </div>
+                            <p id="layerSearchEmpty" class="text-muted small d-none px-1">Tidak ada layer/kategori
+                                yang cocok.</p>
+
+                            <div id="mapLayerList" class="map-layer-list">
+                                @include('backend.pages.data_spatial._map_layer_checklist', [
+                                    'categories' => $categories,
+                                ])
+                            </div>
+
+                            <div class="layer-panel-footer">
+                                <label for="layerOpacity" class="form-label small fw-semibold mb-1">
+                                    <i class="mdi mdi-opacity me-1"></i>Transparansi data
+                                    <span id="layerOpacityValue" class="text-muted">100%</span>
+                                </label>
+                                <input type="range" class="form-range" id="layerOpacity" min="10" max="100"
+                                    step="5" value="100">
+                                <div class="d-grid mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnZoomActive">
+                                        <i class="mdi mdi-fit-to-page-outline me-1"></i>Zoom ke semua layer aktif
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Pencarian lokasi & data -->
                         <div class="map-search">
@@ -84,23 +109,36 @@
                                 <i class="mdi mdi-home-map-marker"></i>
                             </button>
                             <span class="map-tool-sep"></span>
-                            <button type="button" class="map-tool" id="toolDistance" title="Ukur jarak">
+                            <button type="button" class="map-tool" id="toolPoint" title="Gambar titik">
+                                <i class="mdi mdi-map-marker-plus"></i>
+                            </button>
+                            <button type="button" class="map-tool" id="toolDistance" title="Gambar garis / ukur jarak">
                                 <i class="mdi mdi-ruler"></i>
                             </button>
-                            <button type="button" class="map-tool" id="toolArea" title="Ukur luas">
+                            <button type="button" class="map-tool" id="toolArea" title="Gambar poligon / ukur luas">
                                 <i class="mdi mdi-vector-polygon"></i>
                             </button>
                         </div>
 
-                        <!-- Hasil pengukuran -->
+                        <!-- Panel gambar & ukur -->
                         <div id="measurePanel" class="measure-panel d-none">
                             <div class="fw-semibold small" id="measureTitle"></div>
                             <div class="measure-value" id="measureValue">-</div>
                             <div class="text-muted small" id="measureHint"></div>
+                            <div class="small mt-2" id="drawSummary"></div>
                             <div class="mt-2 d-flex gap-1">
                                 <button type="button" class="btn btn-sm btn-primary" id="measureFinish">Selesai</button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary"
-                                    id="measureClear">Hapus</button>
+                                    id="measureClear">Hapus semua</button>
+                            </div>
+                            <div class="mt-2 small fw-semibold">Simpan sebagai file:</div>
+                            <div class="btn-group btn-group-sm w-100 mt-1" role="group">
+                                <button type="button" class="btn btn-outline-primary export-btn" data-format="kmz"
+                                    disabled>KMZ</button>
+                                <button type="button" class="btn btn-outline-primary export-btn" data-format="kml"
+                                    disabled>KML</button>
+                                <button type="button" class="btn btn-outline-primary export-btn"
+                                    data-format="geojson" disabled>GeoJSON</button>
                             </div>
                         </div>
 
@@ -146,8 +184,121 @@
         }
 
         #dataSpasialMap {
-            height: calc(100vh - 260px);
-            min-height: 560px;
+            height: calc(100vh - 200px);
+            min-height: 620px;
+        }
+
+        .map-loading {
+            position: absolute;
+            inset: 0;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(17, 24, 39, .45);
+            backdrop-filter: blur(1px);
+            opacity: 1;
+            transition: opacity .25s ease;
+        }
+
+        .map-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .map-loading-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 28px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .3);
+        }
+
+        .map-loading-spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid #dbeafe;
+            border-top-color: #0d6efd;
+            border-radius: 50%;
+            animation: map-loading-spin .8s linear infinite;
+        }
+
+        .map-loading-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        @keyframes map-loading-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .map-layers-btn {
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            z-index: 1000;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            font-size: 20px;
+            line-height: 1;
+            color: #333;
+            background: #fff;
+            border: 2px solid rgba(0, 0, 0, .2);
+            border-radius: 4px;
+            background-clip: padding-box;
+        }
+
+        .map-layers-btn:hover,
+        .map-layers-btn.active {
+            background: #0d6efd;
+            color: #fff;
+        }
+
+        .layer-panel {
+            position: absolute;
+            top: 80px;
+            left: 54px;
+            z-index: 1001;
+            width: 310px;
+            max-width: calc(100% - 130px);
+            max-height: calc(100% - 175px);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background: #f8fafc;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+        }
+
+        .layer-panel .map-layer-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+        }
+
+        .layer-panel-footer {
+            flex: 0 0 auto;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .layer-panel-close {
+            border: 0;
+            background: transparent;
+            padding: 0 2px;
+            font-size: 18px;
+            line-height: 1;
+            color: #fff;
         }
 
         .map-wrapper:fullscreen #dataSpasialMap {
@@ -182,29 +333,108 @@
             overflow-y: auto;
         }
 
-        .layer-tree {
-            list-style: none;
-            margin: 0;
-            padding: 0;
+        .layer-panel-header {
+            background: linear-gradient(135deg, #007fff, #0066cc);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
         }
 
-        .layer-tree-child {
-            margin-left: 18px;
-            padding-left: 8px;
-            border-left: 1px dashed #d0d5dd;
+        .layer-panel-header h6 {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .layer-item {
+        .layer-search {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 6px 8px;
-            border-radius: 6px;
+            gap: 6px;
+            padding: 0 10px;
+            margin-bottom: 10px;
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
         }
 
-        .layer-item:hover {
-            background: #f3f6fb;
+        .layer-search:focus-within {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, .4);
+        }
+
+        .layer-search input {
+            flex: 1 1 auto;
+            min-width: 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .layer-search button {
+            border: 0;
+            background: transparent;
+            padding: 0;
+            color: #9ca3af;
+        }
+
+        .layer-node {
+            margin-bottom: 6px;
+        }
+
+        .layer-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            transition: background .15s;
+        }
+
+        .layer-row:hover {
+            background: #f3f4f6;
+        }
+
+        .layer-row.layer-depth-1 {
+            border-color: #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+
+        .layer-row.layer-depth-2 {
+            border: 0;
+            border-radius: 4px;
+            padding: 4px 6px;
+        }
+
+        .layer-children {
+            margin: 4px 0 0 14px;
+            padding-left: 8px;
+            border-left: 1px solid #e5e7eb;
+        }
+
+        .layer-toggle {
+            flex: 0 0 18px;
+            width: 18px;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            font-size: 18px;
+            line-height: 1;
+            color: #4b5563;
+        }
+
+        .layer-toggle i {
+            transition: transform .2s;
+            display: inline-block;
+        }
+
+        .layer-node.open > .layer-row .layer-toggle i {
+            transform: rotate(90deg);
         }
 
         .layer-label {
@@ -215,6 +445,12 @@
             min-width: 0;
             margin: 0;
             cursor: pointer;
+            font-size: 13px;
+            color: #1f2937;
+        }
+
+        .layer-depth-0 .layer-label {
+            font-weight: 600;
             font-size: 14px;
         }
 
@@ -227,7 +463,7 @@
             width: 16px;
             height: 16px;
             margin: 0;
-            accent-color: #0d6efd;
+            accent-color: #3b82f6;
             cursor: pointer;
         }
 
@@ -245,6 +481,16 @@
             white-space: nowrap;
         }
 
+        .layer-badge {
+            flex: 0 0 auto;
+            font-size: 11px;
+            line-height: 1;
+            padding: 3px 7px;
+            border-radius: 10px;
+            background: #e5e7eb;
+            color: #374151;
+        }
+
         .layer-status {
             flex: 0 0 auto;
             display: flex;
@@ -257,8 +503,8 @@
             line-height: 1;
             padding: 3px 7px;
             border-radius: 10px;
-            background: #eef2f7;
-            color: #495057;
+            background: #dbeafe;
+            color: #1d4ed8;
         }
 
         .layer-zoom {
@@ -346,7 +592,7 @@
             background: #fff;
             padding: 10px 12px;
             border-radius: 6px;
-            min-width: 190px;
+            min-width: 230px;
             box-shadow: 0 1px 5px rgba(0, 0, 0, .45);
         }
 
@@ -439,6 +685,38 @@
         const featureIndex = {}; // categoryId -> [{layer, props}]
         let layerOpacity = 1;
 
+        // ---------- Efek loading ----------
+        let pendingLoads = 0;
+        let initialTilesLoaded = false;
+
+        function showMapLoading(text) {
+            pendingLoads++;
+            document.getElementById('mapLoadingText').textContent = text;
+            document.getElementById('mapLoading').classList.remove('hidden');
+        }
+
+        function updateMapLoadingText(text) {
+            document.getElementById('mapLoadingText').textContent = text;
+        }
+
+        function hideMapLoading() {
+            pendingLoads = Math.max(0, pendingLoads - 1);
+
+            if (pendingLoads === 0) {
+                document.getElementById('mapLoading').classList.add('hidden');
+            }
+        }
+
+        // Overlay hanya untuk pemuatan awal peta dasar; geser/zoom berikutnya tidak menutupi peta.
+        function trackInitialTiles(tileLayer) {
+            tileLayer.once('load', () => {
+                if (!initialTilesLoaded) {
+                    initialTilesLoaded = true;
+                    hideMapLoading();
+                }
+            });
+        }
+
         // ---------- Peta dasar ----------
         function buildBasemaps() {
             const esriImagery = L.tileLayer(
@@ -500,22 +778,34 @@
                 position: 'bottomleft'
             }).addTo(dataSpasialMap);
 
+            showMapLoading('Memuat peta...');
             basemaps = buildBasemaps();
+            basemaps.satelit.eachLayer(trackInitialTiles);
             setBasemap('satelit');
+
+            // Cadangan bila tile lambat/gagal dimuat agar overlay tidak menggantung.
+            setTimeout(() => {
+                if (!initialTilesLoaded) {
+                    initialTilesLoaded = true;
+                    hideMapLoading();
+                }
+            }, 10000);
 
             document.querySelectorAll('.basemap-btn').forEach(btn => {
                 btn.addEventListener('click', () => setBasemap(btn.dataset.basemap));
             });
 
-            document.querySelectorAll('.map-layer-checkbox').forEach((checkbox) => {
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        showMapLayer(this.value);
-                    } else {
-                        hideMapLayer(this.value);
-                    }
-                });
-            });
+            initLayerTree();
+
+            const layerPanel = document.getElementById('layerPanel');
+            const layerBtn = document.getElementById('btnToggleLayers');
+            const toggleLayerPanel = (open) => {
+                layerPanel.classList.toggle('d-none', !open);
+                layerBtn.classList.toggle('active', open);
+                layerBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            };
+            layerBtn.addEventListener('click', () => toggleLayerPanel(layerPanel.classList.contains('d-none')));
+            document.getElementById('btnCloseLayers').addEventListener('click', () => toggleLayerPanel(false));
 
             document.querySelectorAll('.layer-zoom').forEach(btn => {
                 btn.addEventListener('click', () => zoomToCategory(btn.dataset.categoryId));
@@ -526,6 +816,97 @@
             initMeasure();
             initSearch();
             initLayerControls();
+        }
+
+        // ---------- Daftar layer (akordeon bertingkat seperti frontend) ----------
+        function setLayerVisibility(checkbox, visible) {
+            checkbox.checked = visible;
+
+            if (visible) {
+                showMapLayer(checkbox.value);
+            } else {
+                hideMapLayer(checkbox.value);
+            }
+        }
+
+        function initLayerTree() {
+            document.querySelectorAll('.map-layer-checkbox').forEach((checkbox) => {
+                checkbox.addEventListener('change', function() {
+                    setLayerVisibility(this, this.checked);
+
+                    // Checkbox induk mengatur seluruh sub kategorinya.
+                    const children = this.closest('.layer-node').querySelector(':scope > .layer-children');
+                    if (children) {
+                        children.querySelectorAll('.map-layer-checkbox').forEach(child => {
+                            if (child.checked !== this.checked) {
+                                setLayerVisibility(child, this.checked);
+                            }
+                        });
+
+                        if (this.checked) {
+                            this.closest('.layer-node').classList.add('open');
+                            children.classList.remove('d-none');
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll('.layer-toggle:not(.layer-toggle-empty)').forEach((toggle) => {
+                toggle.addEventListener('click', () => {
+                    const node = toggle.closest('.layer-node');
+                    const open = node.classList.toggle('open');
+                    node.querySelector(':scope > .layer-children').classList.toggle('d-none', !open);
+                });
+            });
+
+            const input = document.getElementById('layerSearch');
+            const clearBtn = document.getElementById('layerSearchClear');
+            const empty = document.getElementById('layerSearchEmpty');
+
+            function filterNode(node, query) {
+                const children = node.querySelector(':scope > .layer-children');
+                const ownMatch = node.dataset.name.includes(query);
+                let childMatch = false;
+
+                if (children) {
+                    children.querySelectorAll(':scope > .layer-node').forEach(child => {
+                        if (filterNode(child, query)) childMatch = true;
+                    });
+                }
+
+                const visible = query === '' || ownMatch || childMatch;
+                node.classList.toggle('d-none', !visible);
+
+                if (children && query !== '') {
+                    // Sub kategori tampil lengkap bila induknya cocok; kalau tidak, hanya yang cocok.
+                    if (ownMatch && !childMatch) {
+                        children.querySelectorAll('.layer-node').forEach(n => n.classList.remove('d-none'));
+                    }
+                    node.classList.toggle('open', true);
+                    children.classList.remove('d-none');
+                }
+
+                return visible;
+            }
+
+            function applySearch() {
+                const query = input.value.trim().toLowerCase();
+                clearBtn.classList.toggle('d-none', query === '');
+
+                let anyVisible = false;
+                document.querySelectorAll('#mapLayerList > .layer-node').forEach(node => {
+                    if (filterNode(node, query)) anyVisible = true;
+                });
+
+                empty.classList.toggle('d-none', anyVisible || query === '');
+            }
+
+            input.addEventListener('input', applySearch);
+            clearBtn.addEventListener('click', () => {
+                input.value = '';
+                applySearch();
+                input.focus();
+            });
         }
 
         // ---------- Koordinat kursor ----------
@@ -540,7 +921,7 @@
             });
 
             dataSpasialMap.on('contextmenu', (e) => {
-                if (measureMode) return;
+                if (drawMode) return;
 
                 const value = e.latlng.lat.toFixed(6) + ', ' + e.latlng.lng.toFixed(6);
                 const box = document.createElement('div');
@@ -607,12 +988,15 @@
             });
         }
 
-        // ---------- Pengukuran jarak & luas ----------
-        let measureMode = null; // 'distance' | 'area' | null
-        let measurePoints = [];
-        let measureGroup = null;
-        let measureShape = null;
-        let measureTemp = null;
+        // ---------- Gambar & ukur (titik, garis, poligon) ----------
+        const exportUrl = '{{ route('data-spatial.export-drawings') }}';
+        let drawMode = null; // 'point' | 'distance' | 'area' | null
+        let workingPoints = [];
+        let workingGroup = null; // objek yang sedang digambar
+        let workingShape = null;
+        let workingTemp = null;
+        let drawnGroup = null; // objek yang sudah selesai
+        const drawnShapes = []; // {type, latlngs, name, layer}
 
         function formatDistance(meters) {
             return meters < 1000 ? meters.toFixed(1) + ' m' : (meters / 1000).toFixed(2) + ' km';
@@ -645,122 +1029,356 @@
             return total;
         }
 
-        function initMeasure() {
-            measureGroup = L.layerGroup().addTo(dataSpasialMap);
+        const DRAW_TITLES = {
+            point: 'Gambar Titik',
+            distance: 'Gambar Garis / Ukur Jarak',
+            area: 'Gambar Poligon / Ukur Luas'
+        };
 
-            document.getElementById('toolDistance').addEventListener('click', () => startMeasure('distance'));
-            document.getElementById('toolArea').addEventListener('click', () => startMeasure('area'));
-            document.getElementById('measureFinish').addEventListener('click', () => stopMeasure(false));
-            document.getElementById('measureClear').addEventListener('click', () => stopMeasure(true));
+        const DRAW_HINTS = {
+            point: 'Klik peta untuk menambah titik. Klik "Selesai" atau Esc untuk berhenti.',
+            distance: 'Klik peta untuk menambah titik garis. Klik ganda / Enter untuk selesai, Esc untuk batal.',
+            area: 'Klik peta untuk menambah sudut poligon. Klik ganda / Enter untuk selesai, Esc untuk batal.'
+        };
+
+        function initMeasure() {
+            workingGroup = L.layerGroup().addTo(dataSpasialMap);
+            drawnGroup = L.layerGroup().addTo(dataSpasialMap);
+
+            document.getElementById('toolPoint').addEventListener('click', () => startDraw('point'));
+            document.getElementById('toolDistance').addEventListener('click', () => startDraw('distance'));
+            document.getElementById('toolArea').addEventListener('click', () => startDraw('area'));
+            document.getElementById('measureFinish').addEventListener('click', () => finishDraw());
+            document.getElementById('measureClear').addEventListener('click', () => clearAllDrawings());
+
+            document.querySelectorAll('.export-btn').forEach(btn => {
+                btn.addEventListener('click', () => exportDrawings(btn.dataset.format));
+            });
 
             dataSpasialMap.on('click', (e) => {
-                if (!measureMode) return;
-                measurePoints.push(e.latlng);
+                if (!drawMode) return;
+
+                if (drawMode === 'point') {
+                    commitShape('Point', [e.latlng]);
+                    return;
+                }
+
+                workingPoints.push(e.latlng);
                 L.circleMarker(e.latlng, {
                     radius: 4,
                     color: '#fff',
                     weight: 2,
                     fillColor: '#0d6efd',
                     fillOpacity: 1
-                }).addTo(measureGroup);
-                redrawMeasure();
+                }).addTo(workingGroup);
+                redrawWorking();
             });
 
             dataSpasialMap.on('mousemove', (e) => {
-                if (!measureMode || measurePoints.length === 0) return;
-                if (measureTemp) measureGroup.removeLayer(measureTemp);
-                measureTemp = L.polyline([measurePoints[measurePoints.length - 1], e.latlng], {
+                if (!drawMode || drawMode === 'point' || workingPoints.length === 0) return;
+                if (workingTemp) workingGroup.removeLayer(workingTemp);
+                workingTemp = L.polyline([workingPoints[workingPoints.length - 1], e.latlng], {
                     color: '#0d6efd',
                     weight: 2,
                     dashArray: '5,6'
-                }).addTo(measureGroup);
+                }).addTo(workingGroup);
             });
 
             dataSpasialMap.on('dblclick', () => {
-                if (measureMode) stopMeasure(false);
+                if (!drawMode || drawMode === 'point') return;
+                workingPoints.pop(); // klik kedua dari klik ganda
+                finishDraw();
             });
 
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && measureMode) stopMeasure(true);
-                if (e.key === 'Enter' && measureMode) stopMeasure(false);
+                if (!drawMode) return;
+                if (e.key === 'Escape') cancelWorking(true);
+                if (e.key === 'Enter') finishDraw();
             });
+
+            updateDrawSummary();
         }
 
-        function startMeasure(mode) {
-            if (measureMode === mode) {
-                stopMeasure(true);
+        function startDraw(mode) {
+            if (drawMode === mode) {
+                finishDraw();
                 return;
             }
 
-            clearMeasure();
-            measureMode = mode;
+            cancelWorking(false);
+            drawMode = mode;
             dataSpasialMap.doubleClickZoom.disable();
             dataSpasialMap.closePopup();
 
             document.getElementById('mapWrapper').classList.add('measuring');
-            document.getElementById('toolDistance').classList.toggle('active', mode === 'distance');
-            document.getElementById('toolArea').classList.toggle('active', mode === 'area');
+            ['point', 'distance', 'area'].forEach(m => {
+                const id = m === 'point' ? 'toolPoint' : (m === 'distance' ? 'toolDistance' : 'toolArea');
+                document.getElementById(id).classList.toggle('active', m === mode);
+            });
 
-            document.getElementById('measureTitle').textContent = mode === 'distance' ? 'Ukur Jarak' : 'Ukur Luas';
-            document.getElementById('measureHint').textContent =
-                'Klik peta untuk menambah titik. Klik ganda / Enter untuk selesai, Esc untuk batal.';
+            document.getElementById('measureTitle').textContent = DRAW_TITLES[mode];
+            document.getElementById('measureHint').textContent = DRAW_HINTS[mode];
             document.getElementById('measureValue').textContent = '-';
             document.getElementById('measurePanel').classList.remove('d-none');
         }
 
-        function redrawMeasure() {
-            if (measureShape) measureGroup.removeLayer(measureShape);
-            if (measureTemp) {
-                measureGroup.removeLayer(measureTemp);
-                measureTemp = null;
+        function redrawWorking() {
+            if (workingShape) workingGroup.removeLayer(workingShape);
+            if (workingTemp) {
+                workingGroup.removeLayer(workingTemp);
+                workingTemp = null;
             }
 
             const valueEl = document.getElementById('measureValue');
+            workingShape = null;
+            valueEl.textContent = '-';
 
-            if (measureMode === 'area' && measurePoints.length >= 3) {
-                measureShape = L.polygon(measurePoints, {
+            if (drawMode === 'area' && workingPoints.length >= 3) {
+                workingShape = L.polygon(workingPoints, {
                     color: '#0d6efd',
                     weight: 3,
                     fillOpacity: 0.2
-                }).addTo(measureGroup);
-                valueEl.textContent = formatArea(polygonAreaMeters(measurePoints));
-            } else if (measurePoints.length >= 2) {
-                measureShape = L.polyline(measurePoints, {
+                }).addTo(workingGroup);
+                valueEl.textContent = formatArea(polygonAreaMeters(workingPoints));
+            } else if (workingPoints.length >= 2) {
+                workingShape = L.polyline(workingPoints, {
                     color: '#0d6efd',
                     weight: 3
-                }).addTo(measureGroup);
-                valueEl.textContent = measureMode === 'area' ? '-' : formatDistance(pathDistanceMeters(measurePoints));
-            } else {
-                measureShape = null;
-                valueEl.textContent = '-';
+                }).addTo(workingGroup);
+                if (drawMode === 'distance') {
+                    valueEl.textContent = formatDistance(pathDistanceMeters(workingPoints));
+                }
             }
         }
 
-        function stopMeasure(clear) {
-            measureMode = null;
+        function clearWorking() {
+            workingGroup.clearLayers();
+            workingPoints = [];
+            workingShape = null;
+            workingTemp = null;
+        }
+
+        function endDrawMode() {
+            drawMode = null;
             dataSpasialMap.doubleClickZoom.enable();
             document.getElementById('mapWrapper').classList.remove('measuring');
-            document.getElementById('toolDistance').classList.remove('active');
-            document.getElementById('toolArea').classList.remove('active');
+            ['toolPoint', 'toolDistance', 'toolArea'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+        }
 
-            if (measureTemp) {
-                measureGroup.removeLayer(measureTemp);
-                measureTemp = null;
-            }
+        // Batal: buang gambar yang belum selesai. Esc kedua menutup mode gambar.
+        function cancelWorking(exitMode) {
+            const hadWork = workingPoints.length > 0;
+            clearWorking();
+            document.getElementById('measureValue').textContent = '-';
 
-            if (clear) {
-                clearMeasure();
-                document.getElementById('measurePanel').classList.add('d-none');
-            } else {
-                document.getElementById('measureHint').textContent = 'Pengukuran selesai.';
+            if (exitMode && !hadWork) {
+                endDrawMode();
             }
         }
 
-        function clearMeasure() {
-            measureGroup.clearLayers();
-            measurePoints = [];
-            measureShape = null;
-            measureTemp = null;
+        // Selesai: simpan objek yang sedang digambar (bila cukup titik) lalu keluar dari mode gambar.
+        function finishDraw() {
+            if (drawMode === 'distance' && workingPoints.length >= 2) {
+                commitShape('LineString', workingPoints);
+            } else if (drawMode === 'area' && workingPoints.length >= 3) {
+                commitShape('Polygon', workingPoints);
+            }
+
+            clearWorking();
+            endDrawMode();
+            document.getElementById('measureHint').textContent = 'Gunakan tombol di bawah untuk menyimpan sebagai file.';
+        }
+
+        function commitShape(type, latlngs) {
+            const points = latlngs.slice();
+            const index = drawnShapes.filter(s => s.type === type).length + 1;
+            const labels = {
+                Point: 'Titik',
+                LineString: 'Garis',
+                Polygon: 'Poligon'
+            };
+            let name = `${labels[type]} ${index}`;
+            let layer;
+            let measureText = '';
+
+            if (type === 'Point') {
+                layer = L.marker(points[0]);
+                measureText = points[0].lat.toFixed(6) + ', ' + points[0].lng.toFixed(6);
+            } else if (type === 'LineString') {
+                layer = L.polyline(points, {
+                    color: '#e8590c',
+                    weight: 5,
+                    opacity: 0.9,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                });
+                measureText = formatDistance(pathDistanceMeters(points));
+            } else {
+                layer = L.polygon(points, {
+                    color: '#e8590c',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillColor: '#e8590c',
+                    fillOpacity: 0.3
+                });
+                measureText = formatArea(polygonAreaMeters(points));
+            }
+
+            const shape = {
+                type,
+                latlngs: points,
+                name,
+                layer
+            };
+
+            layer.bindPopup(() => {
+                const box = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'map-popup-title';
+                title.textContent = shape.name;
+                const value = document.createElement('div');
+                value.className = 'small text-muted';
+                value.textContent = measureText;
+                const remove = document.createElement('button');
+                remove.className = 'btn btn-sm btn-outline-danger mt-2';
+                remove.innerHTML = '<i class="mdi mdi-trash-can-outline"></i> Hapus objek';
+                remove.addEventListener('click', () => removeDrawnShape(shape));
+                box.append(title, value, remove);
+                return box;
+            });
+
+            if (type !== 'Point') {
+                layer.bindTooltip(measureText, {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'measure-label'
+                });
+            }
+
+            layer.addTo(drawnGroup);
+            drawnShapes.push(shape);
+            updateDrawSummary();
+        }
+
+        function removeDrawnShape(shape) {
+            drawnGroup.removeLayer(shape.layer);
+            drawnShapes.splice(drawnShapes.indexOf(shape), 1);
+            updateDrawSummary();
+        }
+
+        function clearAllDrawings() {
+            clearWorking();
+            drawnGroup.clearLayers();
+            drawnShapes.length = 0;
+            endDrawMode();
+            updateDrawSummary();
+            document.getElementById('measurePanel').classList.add('d-none');
+        }
+
+        function updateDrawSummary() {
+            const counts = {
+                Point: 0,
+                LineString: 0,
+                Polygon: 0
+            };
+            drawnShapes.forEach(s => counts[s.type]++);
+
+            document.getElementById('drawSummary').textContent = drawnShapes.length ?
+                `${drawnShapes.length} objek: ${counts.Point} titik, ${counts.LineString} garis, ${counts.Polygon} poligon` :
+                'Belum ada objek tersimpan di peta.';
+
+            document.querySelectorAll('.export-btn').forEach(btn => {
+                btn.disabled = drawnShapes.length === 0;
+            });
+
+            if (drawnShapes.length > 0) {
+                document.getElementById('measurePanel').classList.remove('d-none');
+            }
+        }
+
+        function drawnFeatures() {
+            return drawnShapes.map(shape => {
+                const position = (ll) => [ll.lng, ll.lat];
+                let coordinates;
+
+                if (shape.type === 'Point') {
+                    coordinates = position(shape.latlngs[0]);
+                } else if (shape.type === 'LineString') {
+                    coordinates = shape.latlngs.map(position);
+                } else {
+                    const ring = shape.latlngs.map(position);
+                    ring.push(ring[0]);
+                    coordinates = [ring];
+                }
+
+                return {
+                    type: shape.type,
+                    name: shape.name,
+                    coordinates
+                };
+            });
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportDrawings(format) {
+            if (drawnShapes.length === 0) return;
+
+            const features = drawnFeatures();
+
+            if (format === 'geojson') {
+                const collection = {
+                    type: 'FeatureCollection',
+                    features: features.map(f => ({
+                        type: 'Feature',
+                        properties: {
+                            name: f.name
+                        },
+                        geometry: {
+                            type: f.type,
+                            coordinates: f.coordinates
+                        }
+                    }))
+                };
+                downloadBlob(new Blob([JSON.stringify(collection, null, 2)], {
+                    type: 'application/geo+json'
+                }), 'gambar-peta.geojson');
+                return;
+            }
+
+            fetch(exportUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/octet-stream',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        format,
+                        features
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Gagal membuat file ' + format.toUpperCase());
+                    return response.blob();
+                })
+                .then(blob => downloadBlob(blob, 'gambar-peta.' + format))
+                .catch(error => Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal mengunduh',
+                    text: error.message
+                }));
         }
 
         // ---------- Pencarian lokasi & data ----------
@@ -978,7 +1596,7 @@
         }
 
         function layerRow(categoryId) {
-            return document.getElementById(`layer-cat-${categoryId}`)?.closest('.layer-item');
+            return document.getElementById(`layer-cat-${categoryId}`)?.closest('.layer-row');
         }
 
         function setLayerLoading(categoryId, loading) {
@@ -1023,6 +1641,89 @@
             }
         }
 
+        const LAYER_BATCH_SIZE = 500;
+        const layerLoadTokens = {}; // categoryId -> token, untuk membatalkan pemuatan yang usang
+
+        function addFeaturesToLayer(categoryId, layerGroup, collection) {
+            const geoJsonLayer = L.geoJSON(collection, {
+                pointToLayer: (feature, latlng) => L.marker(latlng),
+                style: (feature) => featureStyle(feature),
+                onEachFeature: (feature, layer) => {
+                    layer.bindPopup(buildMapPopup(feature.properties));
+                    featureIndex[categoryId].push({
+                        layer,
+                        props: feature.properties
+                    });
+
+                    layer.on('mouseover', () => layer.setStyle && layer.setStyle({
+                        weight: featureStyle(feature).weight + 2
+                    }));
+                    layer.on('mouseout', () => layer.setStyle && layer.setStyle({
+                        weight: featureStyle(feature).weight
+                    }));
+                }
+            });
+
+            geoJsonLayer.addTo(layerGroup);
+            applyOpacityToAll();
+        }
+
+        function fitToLayerGroup(layerGroup) {
+            const bounds = L.latLngBounds([]);
+            layerGroup.eachLayer(l => l.getBounds && bounds.extend(l.getBounds()));
+
+            if (bounds.isValid()) {
+                dataSpasialMap.fitBounds(bounds, {
+                    padding: [30, 30]
+                });
+            }
+        }
+
+        // Ambil data per 500 fitur sampai habis agar semua data tampil tanpa membebani sekaligus.
+        async function loadLayerInBatches(categoryId, layerGroup, token) {
+            let offset = 0;
+            let total = null;
+
+            while (true) {
+                const params = new URLSearchParams({
+                    data_type: 'tematik',
+                    category_id: categoryId,
+                    limit: LAYER_BATCH_SIZE,
+                    offset
+                });
+
+                const response = await fetch(`${geojsonUrl}?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                // Layer sudah dimuat ulang atau dihapus centangnya: hentikan pemuatan lama.
+                if (layerLoadTokens[categoryId] !== token) {
+                    return false;
+                }
+
+                total = result.meta?.total_matching ?? total;
+                const features = result.features || [];
+
+                if (features.length > 0) {
+                    addFeaturesToLayer(categoryId, layerGroup, result);
+                }
+
+                offset += features.length;
+                setLayerCount(categoryId, offset);
+
+                if (total !== null && total > LAYER_BATCH_SIZE) {
+                    updateMapLoadingText(`Memuat data layer... ${offset} / ${total}`);
+                }
+
+                if (!result.meta?.has_more || features.length === 0) {
+                    return true;
+                }
+            }
+        }
+
         function showMapLayer(categoryId, forceReload = false) {
             const layerGroup = getMapLayerGroup(categoryId);
             layerGroup.addTo(dataSpasialMap);
@@ -1031,71 +1732,27 @@
                 return;
             }
 
+            const token = (layerLoadTokens[categoryId] || 0) + 1;
+            layerLoadTokens[categoryId] = token;
+
             layerGroup.clearLayers();
             featureIndex[categoryId] = [];
             setLayerLoading(categoryId, true);
+            showMapLoading('Memuat data layer...');
 
-            const params = new URLSearchParams();
-            params.set('data_type', 'tematik');
-            params.set('category_id', categoryId);
+            loadLayerInBatches(categoryId, layerGroup, token)
+                .then(completed => {
+                    if (!completed) return;
 
-            const notice = document.getElementById('mapTruncatedNotice');
-
-            fetch(`${geojsonUrl}?${params.toString()}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(result => {
                     loadedMapLayers.add(categoryId);
-
-                    if (result.meta && result.meta.truncated) {
-                        notice.textContent =
-                            `Salah satu layer punya ${result.meta.total_matching} data, hanya ${result.meta.total_features} yang ditampilkan. Gunakan pencarian di tampilan tabel untuk mempersempit.`;
-                        notice.classList.remove('d-none', 'alert-danger');
-                        notice.classList.add('alert-warning');
-                    }
-
-                    const features = result.features || [];
-                    setLayerCount(categoryId, features.length);
-
-                    if (features.length === 0) {
-                        return;
-                    }
-
-                    const geoJsonLayer = L.geoJSON(result, {
-                        pointToLayer: (feature, latlng) => L.marker(latlng),
-                        style: (feature) => featureStyle(feature),
-                        onEachFeature: (feature, layer) => {
-                            layer.bindPopup(buildMapPopup(feature.properties));
-                            featureIndex[categoryId].push({
-                                layer,
-                                props: feature.properties
-                            });
-
-                            layer.on('mouseover', () => layer.setStyle && layer.setStyle({
-                                weight: featureStyle(feature).weight + 2
-                            }));
-                            layer.on('mouseout', () => layer.setStyle && layer.setStyle({
-                                weight: featureStyle(feature).weight
-                            }));
-                        }
-                    });
-
-                    geoJsonLayer.addTo(layerGroup);
-                    applyOpacityToAll();
-
-                    if (geoJsonLayer.getBounds().isValid()) {
-                        dataSpasialMap.fitBounds(geoJsonLayer.getBounds(), {
-                            padding: [30, 30]
-                        });
-                    }
+                    fitToLayerGroup(layerGroup);
                 })
                 .catch(error => {
                     console.error('Gagal memuat layer peta:', error);
 
+                    layerLoadTokens[categoryId] = 0;
+                    layerGroup.clearLayers();
+                    featureIndex[categoryId] = [];
                     document.getElementById(`layer-cat-${categoryId}`).checked = false;
                     dataSpasialMap.removeLayer(layerGroup);
 
@@ -1105,7 +1762,10 @@
                         text: error.message
                     });
                 })
-                .finally(() => setLayerLoading(categoryId, false));
+                .finally(() => {
+                    setLayerLoading(categoryId, false);
+                    hideMapLoading();
+                });
         }
 
         function buildMapPopup(props) {

@@ -334,6 +334,115 @@ class DataSpatialController extends Controller
         return view('backend.pages.data_spatial.index', compact('data', 'categories'));
     }
 
+    /**
+     * Unduh hasil gambar/ukur di peta sebagai KMZ atau KML.
+     */
+    public function exportDrawings(Request $request)
+    {
+        $validated = $request->validate([
+            'format' => 'required|in:kmz,kml',
+            'features' => 'required|array|min:1',
+            'features.*.type' => 'required|in:Point,LineString,Polygon',
+            'features.*.name' => 'nullable|string|max:255',
+            'features.*.coordinates' => 'required|array',
+        ]);
+
+        $placemarks = '';
+
+        foreach ($validated['features'] as $index => $feature) {
+            $geometry = $this->drawingGeometryToKml($feature['type'], $feature['coordinates']);
+
+            if ($geometry === null) {
+                throw ValidationException::withMessages([
+                    "features.{$index}.coordinates" => 'Koordinat tidak valid.',
+                ]);
+            }
+
+            $name = htmlspecialchars($feature['name'] ?? 'Objek '.($index + 1), ENT_XML1);
+            $placemarks .= "    <Placemark>\n      <name>{$name}</name>\n      <styleUrl>#gambar</styleUrl>\n      {$geometry}\n    </Placemark>\n";
+        }
+
+        $kml = <<<KML
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Gambar Peta MARIMOI</name>
+    <Style id="gambar">
+      <LineStyle><color>fffd6e0d</color><width>4</width></LineStyle>
+      <PolyStyle><color>66fd6e0d</color></PolyStyle>
+    </Style>
+{$placemarks}  </Document>
+</kml>
+KML;
+
+        if ($validated['format'] === 'kml') {
+            return response($kml, 200, [
+                'Content-Type' => 'application/vnd.google-earth.kml+xml',
+                'Content-Disposition' => 'attachment; filename="gambar-peta.kml"',
+            ]);
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'kmz');
+        $zip = new ZipArchive;
+
+        if ($zip->open($path, ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Gagal membuat file KMZ.');
+        }
+
+        $zip->addFromString('doc.kml', $kml);
+        $zip->close();
+
+        return response()->download($path, 'gambar-peta.kmz', [
+            'Content-Type' => 'application/vnd.google-earth.kmz',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * @param  array<int, mixed>  $coordinates  Koordinat GeoJSON ([lng, lat]).
+     */
+    private function drawingGeometryToKml(string $type, array $coordinates): ?string
+    {
+        $toPosition = function ($position): ?string {
+            if (! is_array($position) || count($position) < 2 || ! is_numeric($position[0]) || ! is_numeric($position[1])) {
+                return null;
+            }
+
+            $lng = (float) $position[0];
+            $lat = (float) $position[1];
+
+            if (abs($lng) > 180 || abs($lat) > 90) {
+                return null;
+            }
+
+            return "{$lng},{$lat},0";
+        };
+
+        $toList = function (array $positions) use ($toPosition): ?string {
+            $converted = array_map($toPosition, $positions);
+
+            return in_array(null, $converted, true) ? null : implode(' ', $converted);
+        };
+
+        if ($type === 'Point') {
+            $position = $toPosition($coordinates);
+
+            return $position === null ? null : "<Point><coordinates>{$position}</coordinates></Point>";
+        }
+
+        if ($type === 'LineString') {
+            $list = count($coordinates) >= 2 ? $toList($coordinates) : null;
+
+            return $list === null ? null : "<LineString><tessellate>1</tessellate><coordinates>{$list}</coordinates></LineString>";
+        }
+
+        $ring = $coordinates[0] ?? null;
+        $list = is_array($ring) && count($ring) >= 4 ? $toList($ring) : null;
+
+        return $list === null
+            ? null
+            : "<Polygon><outerBoundaryIs><LinearRing><coordinates>{$list}</coordinates></LinearRing></outerBoundaryIs></Polygon>";
+    }
+
     // === GEOJSON METHODS ===
 
     public function geojson(Request $request)
@@ -423,8 +532,10 @@ class DataSpatialController extends Controller
         // saat data sangat banyak (mis. ribuan poligon tematik).
         $totalMatching = (clone $query)->count();
         $limit = min((int) $request->get('limit', 500), 2000);
+        $offset = max((int) $request->get('offset', 0), 0);
 
-        $data = $query->limit($limit)->get();
+        // Urutan stabil agar pemuatan bertahap (offset) tidak menggandakan/melewatkan data.
+        $data = $query->orderBy('data_spatial.id')->offset($offset)->limit($limit)->get();
 
         $features = $data->map(function ($item) {
             $dbfAttributes = json_decode($item->dbf_attributes, true) ?? [];
@@ -475,6 +586,8 @@ class DataSpatialController extends Controller
                 'total_features' => $features->count(),
                 'total_matching' => $totalMatching,
                 'truncated' => $totalMatching > $limit,
+                'offset' => $offset,
+                'has_more' => $offset + $features->count() < $totalMatching,
                 'total_root_categories' => $rootCategories->count(),
                 'total_categories' => $allCategories->count(),
                 'generated_at' => now()->toISOString(),

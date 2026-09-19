@@ -77,6 +77,37 @@ class DataSpatialGeojsonTest extends TestCase
         $response->assertJsonPath('meta.truncated', true);
     }
 
+    public function test_geojson_can_be_loaded_in_batches_without_duplicates_or_gaps(): void
+    {
+        $admin = $this->superAdmin();
+        $category = $this->category();
+
+        DataSpatial::factory()->count(5)->create([
+            'user_id' => $admin->id,
+            'kategori_id' => $category->id,
+        ]);
+
+        $uuids = [];
+
+        foreach ([0, 2, 4] as $offset) {
+            $response = $this->actingAs($admin)->getJson(route('data-spatial.geojson', [
+                'data_type' => 'tematik',
+                'category_id' => $category->id,
+                'limit' => 2,
+                'offset' => $offset,
+            ]));
+
+            $response->assertOk();
+            $response->assertJsonPath('meta.total_matching', 5);
+            $response->assertJsonPath('meta.has_more', $offset < 4);
+
+            $uuids = array_merge($uuids, array_column(array_column($response->json('features'), 'properties'), 'uuid'));
+        }
+
+        $this->assertCount(5, $uuids);
+        $this->assertCount(5, array_unique($uuids));
+    }
+
     public function test_tematik_map_page_renders_layer_checklist(): void
     {
         $admin = $this->superAdmin();

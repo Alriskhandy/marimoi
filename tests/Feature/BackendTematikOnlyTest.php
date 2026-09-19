@@ -69,6 +69,8 @@ class BackendTematikOnlyTest extends TestCase
             ->assertSee('id="dataSpasialMap"', false)
             ->assertSee('data-basemap="satelit"', false)
             ->assertSee('id="toolDistance"', false)
+            ->assertSee('id="toolPoint"', false)
+            ->assertSee('data-format="kmz"', false)
             ->assertSee('id="mapSearchInput"', false)
             ->assertSee(route('data-spatial.index', ['type' => 'tematik']), false);
 
@@ -77,5 +79,69 @@ class BackendTematikOnlyTest extends TestCase
             ->assertOk()
             ->assertDontSee('id="dataSpasialMap"', false)
             ->assertSee(route('data-spatial.map'), false);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function drawingPayload(string $format): array
+    {
+        return [
+            'format' => $format,
+            'features' => [
+                ['type' => 'Point', 'name' => 'Titik 1', 'coordinates' => [127.38, 0.79]],
+                ['type' => 'LineString', 'name' => 'Garis 1', 'coordinates' => [[127.38, 0.79], [127.4, 0.8]]],
+                ['type' => 'Polygon', 'name' => 'Poligon <1>', 'coordinates' => [[[127.3, 0.7], [127.4, 0.7], [127.4, 0.8], [127.3, 0.7]]]],
+            ],
+        ];
+    }
+
+    public function test_drawings_can_be_downloaded_as_kml(): void
+    {
+        $response = $this->actingAs($this->superAdmin())
+            ->post(route('data-spatial.export-drawings'), $this->drawingPayload('kml'));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Disposition', 'attachment; filename="gambar-peta.kml"');
+
+        $kml = $response->getContent();
+        $this->assertStringContainsString('<Point><coordinates>127.38,0.79,0</coordinates></Point>', $kml);
+        $this->assertStringContainsString('<LineString>', $kml);
+        $this->assertStringContainsString('<Polygon>', $kml);
+        $this->assertStringContainsString('Poligon &lt;1&gt;', $kml);
+        $this->assertNotFalse(simplexml_load_string($kml));
+    }
+
+    public function test_drawings_can_be_downloaded_as_kmz(): void
+    {
+        $response = $this->actingAs($this->superAdmin())
+            ->post(route('data-spatial.export-drawings'), $this->drawingPayload('kmz'));
+
+        $response->assertOk();
+
+        $path = tempnam(sys_get_temp_dir(), 'kmz-test');
+        file_put_contents($path, $response->baseResponse->getFile()->getContent());
+
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($path));
+        $this->assertStringContainsString('<Placemark>', $zip->getFromName('doc.kml'));
+        $zip->close();
+        unlink($path);
+    }
+
+    public function test_drawing_export_rejects_invalid_coordinates(): void
+    {
+        $payload = $this->drawingPayload('kml');
+        $payload['features'][0]['coordinates'] = [999, 0.79];
+
+        $this->actingAs($this->superAdmin())
+            ->postJson(route('data-spatial.export-drawings'), $payload)
+            ->assertUnprocessable();
+    }
+
+    public function test_guest_cannot_export_drawings(): void
+    {
+        $this->post(route('data-spatial.export-drawings'), $this->drawingPayload('kml'))
+            ->assertRedirect(route('login'));
     }
 }
