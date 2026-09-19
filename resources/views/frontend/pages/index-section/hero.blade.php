@@ -28,7 +28,7 @@
 
         <button
             class="py-[16px] px-[30px] md:py-[14px] md:px-[35px] sm:py-[12px] sm:px-[30px] bg-gradient-to-r from-[var(--primary)] to-[#0066cc] text-[var(--text-primary)] border-none rounded-[50px] text-[1.1rem] md:text-[1.2rem] sm:text-[1.1rem] font-bold cursor-pointer transition-all duration-300 ease-in-out font-[Poppins,sans-serif] shadow-[0_8px_25px_rgba(0,127,255,0.3)] md:shadow-[0_10px_30px_rgba(0,127,255,0.4)] sm:shadow-[0_8px_25px_rgba(0,127,255,0.4)] sm:min-w-[180px] md:min-w-[200px] hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(0,127,255,0.4)] hover:bg-gradient-to-r hover:from-[#0066cc] hover:to-[var(--primary)]"
-            onclick="scrollToSection('peta-tematik')">
+            onclick="scrollToSection('layanan-utama')">
             Jelajahi Platform
         </button>
     </div>

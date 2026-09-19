@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+    }
+}
+
+@layer components {
+    /* Scroll reveal: state is driven by data-in, toggled by an IntersectionObserver. */
+    .reveal {
+        @apply translate-y-8 opacity-0 transition duration-700 ease-out data-[in=true]:translate-y-0 data-[in=true]:opacity-100;
+    }
+
+    .reveal-blur {
+        @apply scale-[.98] opacity-0 blur-xl transition duration-1000 ease-out data-[in=true]:scale-100 data-[in=true]:opacity-100 data-[in=true]:blur-0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .reveal,
+        .reveal-blur {
+            @apply translate-y-0 scale-100 opacity-100 blur-0 transition-none;
+        }
+    }
+
+    /* Leaflet skin for the dark map. */
+    .leaflet-container {
+        @apply bg-[#0a2236] font-manrope;
+    }
+
+    .leaflet-control-attribution {
+        @apply bg-deep/60 text-[10px] text-white/45;
+    }
+
+    .leaflet-control-attribution a {
+        @apply text-white/60;
+    }
+}
+
+/* Parallax digerakkan compositor lewat CSS scroll-driven animations (spatial.js menambahkan kelas ini
+   hanya bila browser mendukung). Ditulis di luar @layer agar tidak terkena purge Tailwind. */
+@keyframes parallax-view {
+    from { transform: translate3d(0, calc(var(--s, .1) * var(--factor, 1) * -60vh), 0); }
+    to { transform: translate3d(0, calc(var(--s, .1) * var(--factor, 1) * 60vh), 0); }
+}
+
+@keyframes parallax-hero {
+    from { transform: translate3d(0, 0, 0); opacity: 1; }
+    to { transform: translate3d(0, calc(var(--s, .1) * var(--factor, 1) * 100vh), 0); opacity: var(--end-o, 1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+        .parallax-view {
+            animation: parallax-view linear both;
+            animation-timeline: view();
+            animation-range: cover;
+        }
+
+        .parallax-hero {
+            animation: parallax-hero linear both;
+            animation-timeline: scroll(root);
+            animation-range: 0 100vh;
+        }
+
+        @media (max-width: 900px) {
+            .parallax-view,
+            .parallax-hero { --factor: .45; }
+        }
+    }
+}

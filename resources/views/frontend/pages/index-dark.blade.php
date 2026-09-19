@@ -35,35 +35,24 @@
     <!-- Hero Section -->
     @include('frontend.pages.index-section.hero')
 
-    <!-- Running Text -->
-    @include('frontend.pages.index-section.running-text')
+    <!-- Layanan Utama -->
+    @include('frontend.pages.index-section.layanan-utama')
 
     <!-- Peta Tematik -->
     @include('frontend.pages.index-section.peta-tematik')
 
-    <!-- Fitur Utama -->
-    @include('frontend.pages.index-section.fitur-utama')
-
+    <!-- Indikator Pembangunan -->
     @include('frontend.pages.index-section.indikator-pembangunan')
 
     <!-- Aspirasi -->
     @include('frontend.pages.index-section.aspirasi')
 
-    <!-- About -->
-    @include('frontend.pages.index-section.dukungan')
-
-    <!-- About -->
+    <!-- Tentang -->
     @include('frontend.pages.index-section.about')
 
-    <!-- Logo Section -->
-    @include('frontend.pages.index-section.logo-section')
-    
     <!-- FAQ Section -->
-    @include('frontend.pages.index-section.faq')    
-    
-    <!-- Filosofi Section -->
-    @include('frontend.pages.index-section.filosofi')    
-   
+    @include('frontend.pages.index-section.faq')
+
     <!-- Footer -->
     @include('frontend.partials.footer-dark-tailwind')
 @endsection
@@ -71,9 +60,6 @@
 @push('scripts')
     <!-- Vite JavaScript -->
     @vite(['resources/js/app.js'])
-
-    <!-- Model Viewer for 3D Model -->
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
     <!-- Swiper JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>

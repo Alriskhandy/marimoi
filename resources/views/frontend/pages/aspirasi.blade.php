@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Usulan Aspirasi'])
+@extends('frontend.layouts.spatial', ['title' => 'Usulan Aspirasi', 'heroTitle' => 'Usulan Aspirasi Masyarakat'])
 
 @push('styles')
     @vite(['resources/css/app.css'])
@@ -126,6 +126,8 @@
     </style>
 @endpush
 
+@section('subtitle', 'Sampaikan usulan pembangunan atau kritik dan saran untuk Maluku Utara.')
+
 @section('main')
     <!-- Modal Overlay -->
     <div id="modalOverlay"
@@ -148,11 +150,7 @@
     </div>
 
     <!-- Main Content -->
-    <section class="min-h-screen mt-[76px] pt-8 pb-8 bg-slate-50">
-        <!-- Section Title -->
-        <div class="container mx-auto px-4 text-center mb-6" data-aos="fade-up">
-            <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Usulan Aspirasi Masyarakat</h2>
-        </div>
+    <section class="min-h-screen mt-0 pt-8 pb-8 bg-slate-50">
 
         <div class="container mx-auto px-4" data-aos="fade-up" data-aos-delay="100">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -596,7 +594,6 @@
         </div>
     </section>
 
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

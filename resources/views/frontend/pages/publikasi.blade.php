@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Dokumen Publikasi - MARIMOI'])
+@extends('frontend.layouts.spatial', ['title' => 'Dokumen Publikasi - MARIMOI', 'heroTitle' => 'Dokumen Publikasi'])
 
 @push('styles')
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
@@ -113,16 +113,13 @@
     </style>
 @endpush
 
+@section('subtitle', 'Dokumen perencanaan dan publikasi resmi MARIMOI.')
+
 @section('main')
     <!-- Publikasi Section -->
-    <section class="publikasi-section min-h-auto mt-[76px] pt-0 pb-8 bg-slate-100"
+    <section class="publikasi-section min-h-auto mt-0 pt-0 pb-8 bg-slate-100"
         style="background: url('{{ asset('frontend/img/cv/bg.svg') }}') repeat;">
-        <!-- Section Title -->
-        <div class="container mx-auto px-4 text-center mb-8 z-above-overlay">
-            <h2 class="text-2xl md:text-3xl font-bold pt-8 text-slate-800 mb-4">
-                Dokumen Publikasi
-            </h2>
-        </div>
+        <div class="pt-8"></div>
 
 
         <div class="container mx-auto px-4 z-above-overlay">
@@ -279,7 +276,6 @@
     </div>
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

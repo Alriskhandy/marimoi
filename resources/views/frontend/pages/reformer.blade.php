@@ -1,513 +1,157 @@
-@extends('frontend.layouts.dark', ['title' => 'Profil REFORMER - MARIMOI'])
+@extends('frontend.layouts.spatial', ['title' => 'Profil Reformer - MARIMOI', 'heroTitle' => 'Profil Reformer MARIMOI'])
 
-@push('styles')
-    <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    <!-- Tailwind CSS via Vite -->
-    @vite(['resources/css/app.css'])
-    <style>
-        /* Typography Fonts */
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            font-family: 'Poppins', sans-serif;
-        }
+@section('subtitle', 'Kepala BAPPEDA Provinsi Maluku Utara, instansi yang mengelola MARIMOI.')
 
-        p,
-        body,
-        ul,
-        li {
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Custom animations and transitions */
-        .answer {
-            /* remove heavy max-height transition */
-            max-height: none;
-            overflow: hidden;
-            padding-top: 0;
-        }
-
-        /* inner wrapper that will be GPU-animated */
-        .answer>.collapsible {
-            transform-origin: top;
-            transform: scaleY(0);
-            opacity: 0;
-            transition: transform 280ms cubic-bezier(.2, .8, .2, 1), opacity 200ms ease;
-            will-change: transform, opacity;
-            /* keep layout stable */
-            display: block;
-        }
-
-        /* when radio checked, expand via scale */
-        .tab input[type="radio"]:checked~.answer>.collapsible {
-            transform: scaleY(1);
-            opacity: 1;
-            padding-top: 1rem;
-            /* if you need the extra spacing */
-        }
-
-        /* remove heavy per-faq max-height rules */
-        #faq1:checked~.answer,
-        #faq2:checked~.answer,
-        #faq3:checked~.answer,
-        #faq4:checked~.answer,
-        #faq5:checked~.answer,
-        #faq6:checked~.answer,
-        #faq7:checked~.answer,
-        #faq8:checked~.answer {
-            /* no-op kept for selector compatibility */
-        }
-
-        /* optionally limit expensive shadows on many elements */
-        .tab {
-            transition: transform 180ms ease;
-        }
-
-        .tab:hover {
-            transform: translateY(-1px);
-            /* lighter shadow to reduce overdraw */
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-        }
-
-        /* Style for checked/active accordion labels */
-        .tab input[type="radio"]:checked~label {
-            background: linear-gradient(to bottom right, #2563eb, #1e40af) !important;
-            color: white !important;
-        }
-
-        .tab input[type="radio"]:checked~label h3 {
-            color: white !important;
-        }
-
-        .tab input[type="radio"]:checked~label::after {
-            color: white !important;
-        }
-
-        .tab input[type="radio"]:checked~label i {
-            color: white !important;
-        }
-
-        /* Default label styling */
-        .tab label {
-            color: #374151 !important;
-            background-color: transparent;
-        }
-
-        .tab label h3 {
-            color: #374151 !important;
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .tab label i {
-            color: #374151 !important;
-        }
-
-        /* Smooth hover effects */
-        .tab:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .container {
-            max-width: 1200px;
-        }
-
-        /* Tab icon styling: consistent size, spacing and states */
-        .tab label h3 {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-        }
-
-        .tab label i {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            min-width: 36px;
-            border-radius: 8px;
-            background: transparent;
-            color: #2563eb;
-            /* primary blue */
-            font-size: 18px;
-            margin-right: 0.5rem;
-            /* space between icon and text */
-            transition: background 180ms ease, color 180ms ease, transform 180ms ease;
-        }
-
-        /* Hover state for icons */
-        .tab label:hover i {
-            background: rgba(37, 99, 235, 0.08);
-            color: #1e40af;
-            transform: translateY(-2px);
-        }
-
-        /* Active (checked) state — keep icons visible on colored background */
-        .tab input[type="radio"]:checked~label i {
-            background: rgba(255, 255, 255, 0.12);
-            color: #ffffff !important;
-            transform: none;
-        }
-
-        /* Reformer section white gradient overlay */
-        .reformer-section {
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Gradient: solid white at top until ~55%, then fade to transparent toward bottom */
-        .reformer-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background: linear-gradient(to bottom,
-                    rgba(241, 245, 249, 0.90) 0%,
-                    rgba(241, 245, 249, 1) 20%,
-                    rgba(241, 245, 249, 1) 80%,
-                    rgba(241, 245, 249, 0.90) 100%);
-        }
-
-        /* Ensure content appears above the overlay */
-        .reformer-section .z-above-overlay {
-            position: relative;
-            z-index: 10;
-        }
-    </style>
-@endpush
+@php
+    $pendidikan = [
+        ['1993', 'SD Kenari Tinggi 4 Ternate', 'Sekolah Dasar', null],
+        ['1996', 'SMP Negeri 1 Ternate', 'Sekolah Menengah Pertama', null],
+        ['1999', 'SMA Negeri 1 Ternate', 'Sekolah Menengah Atas, Jurusan IPS', null],
+        ['2003', 'Sekolah Tinggi Pemerintahan Dalam Negeri', 'S-1 / D-IV', 'S.STP'],
+        ['2006', 'Fisipol Universitas Gadjah Mada', 'S-2', 'Magister Ilmu Politik'],
+        ['2016', 'Fisipol Universitas Gadjah Mada', 'S-3', 'Doktor Ilmu Politik'],
+    ];
+    $jabatan = [
+        ['2014', 'Kepala Bidang Sosial Budaya', 'BAPPEDA Kabupaten Halmahera Timur', '28-08-2014'],
+        ['2017', 'Kepala Bidang Pemerintahan dan Pembangunan Manusia', 'BP4D Kabupaten Halmahera Timur', '06-01-2017'],
+        ['2019', 'Sekretaris Dinas', 'DPMD Kabupaten Halmahera Timur', '18-07-2019'],
+        ['2020', 'Sekretaris Badan', 'BPPD Provinsi Maluku Utara', '08-04-2020'],
+        ['2020', 'Kepala Bidang Pemerintahan dan Sosial Budaya', 'BAPPEDA Provinsi Maluku Utara', '09-2020'],
+        ['2023', 'Sekretaris Badan', 'BAPPEDA Provinsi Maluku Utara', '31-03-2023'],
+        ['2023', 'Plt. Kepala Badan', 'BAPPEDA Provinsi Maluku Utara', '27-03-2023'],
+        ['2023', 'Kepala Badan', 'BAPPEDA Provinsi Maluku Utara', '13-09-2023'],
+    ];
+    $dokumenCv = [
+        ['Halaman 1', 'frontend/img/cv/cv-halaman-1.webp'],
+        ['Halaman 2', 'frontend/img/cv/cv-halaman-2.webp'],
+        ['Riwayat Jabatan', 'frontend/img/cv/4.jpg'],
+    ];
+    $contour = 'h-full w-full [&_path]:fill-none [&_path]:stroke-aqua/10 [&_path]:[vector-effect:non-scaling-stroke]';
+@endphp
 
 @section('main')
-    <!-- CV Section -->
-    <section class="reformer-section min-h-auto mt-[76px] pt-0 pb-8 bg-slate-100"
-        style="background: url('{{ asset('frontend/img/cv/bg.svg') }}') repeat;">
-        <!-- Section Title -->
-        <div class="container mx-auto px-4 text-center mb-8 z-above-overlay">
-            <h2 class="text-2xl md:text-3xl font-bold pt-8 text-slate-800 mb-4">
-                Profil Reformer MARIMOI
-            </h2>
+    {{-- Sorotan profil --}}
+    <section class="relative overflow-hidden bg-deep pb-20 text-white md:pb-28">
+        <div data-parallax="0.06" class="pointer-events-none absolute inset-x-0 -inset-y-[8%] opacity-50 will-change-transform" aria-hidden="true">
+            <svg class="contours {{ $contour }}"></svg>
         </div>
+        <div class="relative mx-auto grid w-full max-w-[1180px] items-center gap-10 px-6 pt-4 md:grid-cols-[5fr_7fr] md:gap-16">
+            <div class="reveal-blur relative mx-auto w-full max-w-sm md:max-w-none" data-reveal>
+                <div class="absolute inset-x-[8%] bottom-0 top-[14%] rounded-t-[999px] bg-gradient-to-b from-ocean/70 to-navy" aria-hidden="true"></div>
+                <div class="absolute -right-2 top-[18%] h-24 w-24 rounded-full bg-amber-400/90 blur-[1px]" aria-hidden="true"></div>
+                <img src="{{ asset('frontend/img/cv/kepala-bappeda.webp') }}" alt="Dr. Muhammad Sarmin S. Adam, Kepala BAPPEDA Provinsi Maluku Utara"
+                    width="900" height="1350" class="relative z-10 mx-auto max-h-[560px] w-auto">
+            </div>
 
+            <div>
+                <p class="reveal mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-aqua before:h-px before:w-7 before:bg-current" data-reveal>Kepala BAPPEDA Provinsi Maluku Utara</p>
+                <h2 class="reveal delay-100 text-3xl font-extrabold leading-[1.1] tracking-tight md:text-4xl lg:text-5xl" data-reveal>Dr. Muhammad Sarmin S. Adam, S.STP, M.Si</h2>
+                <p class="reveal mt-6 max-w-xl text-lg text-white/70 delay-200" data-reveal>Meniti karier di perencanaan pembangunan daerah sejak 2014, dari BAPPEDA Kabupaten
+                    Halmahera Timur hingga memimpin BAPPEDA Provinsi Maluku Utara.</p>
 
-        <div class="container mx-auto px-4 z-above-overlay">
-            <div class="wrapper w-full max-w-4xl mx-auto">
-                <div
-                    class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <img src="{{ asset('frontend/img/cv/1.png') }}" alt="CV 1">
+                <dl class="reveal mt-10 grid grid-cols-3 gap-6 border-t border-white/15 pt-8 delay-300" data-reveal>
+                    <div>
+                        <dt class="text-sm text-white/50">Jabatan saat ini</dt>
+                        <dd class="mt-1 font-semibold leading-snug">Kepala BAPPEDA</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-white/50">Pendidikan tertinggi</dt>
+                        <dd class="mt-1 font-semibold leading-snug">S-3 Ilmu Politik, UGM</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-white/50">Riwayat jabatan</dt>
+                        <dd class="mt-1 font-grotesk text-2xl font-medium text-aqua">{{ count($jabatan) }} <span class="font-manrope text-sm font-semibold text-white">posisi</span></dd>
+                    </div>
+                </dl>
+
+                <div class="reveal mt-10 flex flex-wrap gap-3 delay-300" data-reveal>
+                    <button type="button" data-cv-open="0"
+                        class="inline-flex items-center gap-2 rounded-full bg-ocean px-7 py-3.5 text-[15px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_14px_38px_-10px_rgba(32,217,255,.75)]">
+                        Lihat CV lengkap
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                    <a href="{{ route('tampil.tentang') }}"
+                        class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-xl transition duration-300 ease-out hover:-translate-y-1 hover:border-white/40">Tentang MARIMOI</a>
                 </div>
-
-                <!-- Item 1: Informasi Kontak & Riwayat Pendidikan -->
-                <div
-                    class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <input type="radio" name="faq" id="faq1" class="hidden peer">
-                    <label for="faq1"
-                        class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md
-                           after:absolute after:content-['+'] after:right-10 after:text-2xl 
-                           after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
-                           after:transition-transform after:duration-300"
-                        tabindex="0">
-                        <h3><i class="bi bi-person-vcard me-2"></i> Riwayat Pendidikan</h3>
-                    </label>
-                    <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/2.png') }}" alt="CV 2" class="border rounded-lg"
-                                loading="lazy" decoding="async">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Item 2: Riwayat Kepangkatan -->
-                {{-- <div
-                    class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <input type="radio" name="faq" id="faq2" class="hidden peer">
-                    <label for="faq2"
-                        class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md
-                           after:absolute after:content-['+'] after:right-10 after:text-2xl 
-                           after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
-                           after:transition-transform after:duration-300"
-                        tabindex="0">
-                        <h3><i class="bi bi-bar-chart-steps me-2"></i> Riwayat Kepangkatan</h3>
-                    </label>
-                    <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/3.jpg') }}" alt="CV 3" class="border rounded-lg">
-                        </div>
-                    </div>
-                </div> --}}
-
-                <!-- Item 3: Pengalaman Kerja -->
-                <div
-                    class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <input type="radio" name="faq" id="faq3" class="hidden peer">
-                    <label for="faq3"
-                        class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md
-                           after:absolute after:content-['+'] after:right-10 after:text-2xl 
-                           after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
-                           after:transition-transform after:duration-300"
-                        tabindex="0">
-                        <h3><i class="bi bi-briefcase me-2"></i> Pengalaman Kerja</h3>
-                    </label>
-                    <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/4.jpg') }}" alt="CV 4" class="border rounded-lg">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Item 4: Riwayat Kinerja, Diklat, & Penghargaan -->
-                {{-- <div
-                    class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                    <input type="radio" name="faq" id="faq4" class="hidden peer">
-                    <label for="faq4"
-                        class="flex items-center text-sm md:text-lg font-semibold cursor-pointer py-2 px-3 rounded-md
-                           after:absolute after:content-['+'] after:right-10 after:text-2xl 
-                           after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
-                           after:transition-transform after:duration-300"
-                        tabindex="0">
-                        <h3><i class="bi bi-award  me-2"></i> Riwayat Kinerja, Diklat, & Penghargaan</h3>
-                    </label>
-                    <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                        <div class="collapsible text-gray-700 text-sm md:text-md leading-relaxed">
-                            <img src="{{ asset('frontend/img/cv/5.jpg') }}" alt="CV 5" class="border rounded-lg">
-                        </div>
-                    </div>
-                </div> --}}
-
             </div>
         </div>
+    </section>
 
-        <!-- Fullscreen carousel modal -->
-        <div id="imageModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/80">
-            <button id="closeModal" aria-label="Close" style="z-index:9999"
-                class="absolute top-20 right-8 text-white text-4xl leading-none">&times;</button>
-            <button id="prevBtn" aria-label="Previous" style="z-index:9999"
-                class="absolute left-4 text-white text-4xl leading-none p-2 rounded-lg bg-black/40 hover:bg-black/70">‹</button>
-            <button id="nextBtn" aria-label="Next" style="z-index:9999"
-                class="absolute right-8 text-white text-4xl leading-none p-2 rounded-lg bg-black/40 hover:bg-black/70">›</button>
-            <div id="carousel" class="w-full h-full flex items-center justify-center relative overflow-hidden">
-                <!-- slides will be injected here -->
+    {{-- Riwayat pendidikan --}}
+    <section class="bg-mist py-20 md:py-28">
+        <div class="mx-auto grid w-full max-w-[1180px] gap-12 px-6 lg:grid-cols-[4fr_8fr] lg:gap-20">
+            <div class="lg:sticky lg:top-28 lg:self-start">
+                <p class="reveal mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-ocean before:h-px before:w-7 before:bg-current" data-reveal>Pendidikan</p>
+                <h2 class="reveal delay-100 text-3xl font-bold leading-[1.1] tracking-tight text-navy md:text-4xl" data-reveal>Riwayat pendidikan</h2>
+                <p class="reveal mt-4 text-slate-600 delay-200" data-reveal>Dari Ternate hingga doktor Ilmu Politik di Universitas Gadjah Mada.</p>
+            </div>
+            <ol class="relative border-l border-slate-900/15 pl-8">
+                @foreach ($pendidikan as $i => [$tahun, $lembaga, $tingkat, $gelar])
+                    <li class="reveal relative pb-10 last:pb-0" data-reveal style="transition-delay: {{ $i * 60 }}ms">
+                        <span class="absolute -left-[37px] top-1.5 h-3 w-3 rounded-full border-2 border-mist bg-ocean ring-4 ring-ocean/15" aria-hidden="true"></span>
+                        <span class="font-grotesk text-sm text-ocean">{{ $tahun }}</span>
+                        <h3 class="mt-1 text-lg font-bold leading-snug text-navy">{{ $lembaga }}</h3>
+                        <p class="text-[15px] text-slate-600">{{ $tingkat }}@if ($gelar) <span class="text-slate-400">·</span> <b class="font-semibold text-navy">{{ $gelar }}</b>@endif</p>
+                    </li>
+                @endforeach
+            </ol>
+        </div>
+    </section>
+
+    {{-- Riwayat jabatan --}}
+    <section class="relative overflow-hidden bg-deep py-20 text-white md:py-28">
+        <div data-parallax="0.06" class="pointer-events-none absolute inset-x-0 -inset-y-[8%] opacity-40 will-change-transform" aria-hidden="true">
+            <svg class="contours {{ $contour }}"></svg>
+        </div>
+        <div class="relative mx-auto grid w-full max-w-[1180px] gap-12 px-6 lg:grid-cols-[4fr_8fr] lg:gap-20">
+            <div class="lg:sticky lg:top-28 lg:self-start">
+                <p class="reveal mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-aqua before:h-px before:w-7 before:bg-current" data-reveal>Karier</p>
+                <h2 class="reveal delay-100 text-3xl font-bold leading-[1.1] tracking-tight md:text-4xl" data-reveal>Riwayat jabatan</h2>
+                <p class="reveal mt-4 text-white/65 delay-200" data-reveal>Perjalanan di perencanaan pembangunan daerah, dari kabupaten hingga provinsi.</p>
+            </div>
+            <ol class="relative border-l border-white/15 pl-8">
+                @foreach ($jabatan as $i => [$tahun, $posisi, $instansi, $tmt])
+                    <li class="reveal relative pb-10 last:pb-0" data-reveal style="transition-delay: {{ $i * 60 }}ms">
+                        <span class="absolute -left-[37px] top-1.5 h-3 w-3 rounded-full border-2 border-deep bg-aqua ring-4 ring-aqua/15" aria-hidden="true"></span>
+                        <span class="font-grotesk text-sm text-aqua">{{ $tahun }}</span>
+                        <h3 class="mt-1 text-lg font-bold leading-snug">{{ $posisi }}</h3>
+                        <p class="text-[15px] text-white/65">{{ $instansi }}</p>
+                        <p class="mt-0.5 font-grotesk text-xs uppercase tracking-widest text-white/40">TMT {{ $tmt }}</p>
+                    </li>
+                @endforeach
+            </ol>
+        </div>
+    </section>
+
+    {{-- Penampil CV lengkap --}}
+    <div id="cvModal" data-open="false" role="dialog" aria-modal="true" aria-label="CV lengkap" aria-hidden="true"
+        class="invisible fixed inset-0 z-[1200] grid place-items-center bg-slate-950/90 p-4 opacity-0 backdrop-blur-sm transition duration-300 data-[open=true]:visible data-[open=true]:opacity-100">
+        <div class="relative flex max-h-full w-full max-w-5xl flex-col">
+            <div class="mb-3 flex items-center justify-between text-white">
+                <p id="cvCaption" class="font-grotesk text-xs uppercase tracking-widest text-white/70"></p>
+                <button id="cvClose" type="button" aria-label="Tutup"
+                    class="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <div class="relative min-h-0 overflow-auto rounded-2xl bg-white">
+                <img id="cvImage" src="" alt="" class="mx-auto h-auto w-full">
+            </div>
+            <div class="mt-4 flex items-center justify-center gap-3 text-white">
+                <button id="cvPrev" type="button" aria-label="Sebelumnya" class="grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+                </button>
+                <span id="cvCounter" class="min-w-[4ch] text-center font-grotesk text-sm text-white/70"></span>
+                <button id="cvNext" type="button" aria-label="Berikutnya" class="grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
             </div>
         </div>
-    </section><!-- /CV Section -->
-
-    <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
+    </div>
 @endsection
 
 @push('scripts')
-    <!-- Vite JavaScript -->
-    @vite(['resources/js/app.js'])
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add keyboard support for accordion
-            const labels = document.querySelectorAll('.tab label');
-            const radioButtons = document.querySelectorAll('input[name="faq"]');
-
-            labels.forEach((label, index) => {
-                // Handle keyboard events
-                label.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        toggleAccordion(index);
-                    }
-                });
-
-                // Handle click events
-                label.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    toggleAccordion(index);
-                });
-            });
-
-            // NEW: helper to open/close with measured max-height for reliable layout
-            function setCollapseState(tabIndex, open) {
-                const tab = labels[tabIndex].closest('.tab');
-                if (!tab) return;
-                const collapsible = tab.querySelector('.collapsible');
-                if (!collapsible) return;
-
-                // Ensure we have a transition for max-height + opacity
-                collapsible.style.overflow = 'hidden';
-                collapsible.style.transition = 'max-height 300ms cubic-bezier(.2,.8,.2,1), opacity 200ms ease';
-
-                if (open) {
-                    // measure then expand
-                    collapsible.style.maxHeight = '0px';
-                    // allow DOM to apply before measuring
-                    requestAnimationFrame(() => {
-                        const h = collapsible.scrollHeight;
-                        collapsible.style.maxHeight = h + 'px';
-                        collapsible.style.opacity = '1';
-                    });
-                } else {
-                    // collapse
-                    collapsible.style.maxHeight = '0px';
-                    collapsible.style.opacity = '0';
-                }
-            }
-
-            function toggleAccordion(index) {
-                const radio = radioButtons[index];
-
-                // If the clicked accordion is already open, close it
-                if (radio.checked) {
-                    radio.checked = false;
-                    radio.dispatchEvent(new Event('change'));
-                    setCollapseState(index, false);
-                } else {
-                    // Close all other accordions and open the clicked one
-                    radioButtons.forEach((otherRadio, otherIndex) => {
-                        if (otherIndex !== index) {
-                            otherRadio.checked = false;
-                            otherRadio.dispatchEvent(new Event('change'));
-                            setCollapseState(otherIndex, false);
-                        }
-                    });
-
-                    radio.checked = true;
-                    radio.dispatchEvent(new Event('change'));
-                    setCollapseState(index, true);
-
-                    // Optionally lazy-load images inside the opened panel immediately
-                    const tab = labels[index].closest('.tab');
-                    if (tab) {
-                        const imgs = tab.querySelectorAll('img[loading="lazy"]');
-                        imgs.forEach(img => {
-                            // trigger eager decode by removing loading attr so browser loads now
-                            img.loading = 'eager';
-                            // try decode to avoid flicker
-                            if (img.decode) img.decode().catch(() => {});
-                        });
-                    }
-                }
-            }
-
-            // Initialize collapsed states (ensure maxHeight 0 and opacity 0)
-            radioButtons.forEach((rb, idx) => {
-                const tab = labels[idx].closest('.tab');
-                if (!tab) return;
-                const collapsible = tab.querySelector('.collapsible');
-                if (!collapsible) return;
-                collapsible.style.maxHeight = rb.checked ? collapsible.scrollHeight + 'px' : '0px';
-                collapsible.style.opacity = rb.checked ? '1' : '0';
-                collapsible.style.overflow = 'hidden';
-            });
-        });
-    </script>
-
-    <script>
-        (function() {
-            // Build a list of images from the page (all img inside .wrapper)
-            const wrapper = document.querySelector('.wrapper');
-            if (!wrapper) return;
-
-            const imgs = Array.from(wrapper.querySelectorAll('img')).map(img => ({
-                src: img.getAttribute('src') || img.dataset.src,
-                alt: img.getAttribute('alt') || ''
-            })).filter(i => i.src);
-
-            if (imgs.length === 0) return;
-
-            const modal = document.getElementById('imageModal');
-            const carousel = document.getElementById('carousel');
-            const closeBtn = document.getElementById('closeModal');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-
-            let current = 0;
-
-            // Create slides
-            imgs.forEach((img, idx) => {
-                const slide = document.createElement('div');
-                slide.className =
-                    'slide absolute inset-0 flex items-center justify-center transition-opacity duration-300';
-                slide.style.opacity = idx === 0 ? '1' : '0';
-                slide.style.transform = 'translateX(0)';
-
-                const el = document.createElement('img');
-                el.src = img.src;
-                el.alt = img.alt;
-                el.className = 'max-w-full max-h-full object-contain';
-
-                slide.appendChild(el);
-                carousel.appendChild(slide);
-            });
-
-            const slides = Array.from(carousel.querySelectorAll('.slide'));
-
-            function show(index) {
-                if (index < 0) index = slides.length - 1;
-                if (index >= slides.length) index = 0;
-                slides.forEach((s, i) => {
-                    s.style.opacity = i === index ? '1' : '0';
-                    s.style.pointerEvents = i === index ? 'auto' : 'none';
-                });
-                current = index;
-            }
-
-            function open(index) {
-                show(index);
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function close() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                document.body.style.overflow = '';
-            }
-
-            // Wire up click on page images to open at the right index
-            const pageImgs = Array.from(wrapper.querySelectorAll('img'));
-            pageImgs.forEach((imgEl, idx) => {
-                imgEl.style.cursor = 'zoom-in';
-                imgEl.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    open(idx);
-                });
-            });
-
-            closeBtn.addEventListener('click', close);
-            prevBtn.addEventListener('click', () => show(current - 1));
-            nextBtn.addEventListener('click', () => show(current + 1));
-
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (modal.classList.contains('hidden')) return;
-                if (e.key === 'Escape') close();
-                if (e.key === 'ArrowLeft') show(current - 1);
-                if (e.key === 'ArrowRight') show(current + 1);
-            });
-
-            // Click outside to close
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) close();
-            });
-
-            // Simple touch support: swipe left/right
-            let touchStartX = 0;
-            let touchEndX = 0;
-            carousel.addEventListener('touchstart', (e) => {
-                touchStartX = e.changedTouches[0].screenX;
-            }, {
-                passive: true
-            });
-            carousel.addEventListener('touchend', (e) => {
-                touchEndX = e.changedTouches[0].screenX;
-                const dx = touchEndX - touchStartX;
-                if (Math.abs(dx) > 40) {
-                    if (dx > 0) show(current - 1);
-                    else show(current + 1);
-                }
-            }, {
-                passive: true
-            });
-        })();
+        window.MARIMOI_CV = @json(collect($dokumenCv)->map(fn ($d) => ['label' => $d[0], 'src' => asset($d[1])])->all());
     </script>
 @endpush

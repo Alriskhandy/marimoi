@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Syarat dan Ketentuan'])
+@extends('frontend.layouts.spatial', ['title' => 'Syarat dan Ketentuan', 'heroTitle' => 'Syarat dan Ketentuan'])
 
 @push('styles')
     <!-- Tailwind CSS via Vite -->
@@ -25,15 +25,12 @@
 
 @section('main')
     <!-- Terms and Conditions Section -->
-    <section id="terms" class="min-h-auto mt-[76px] pt-8 pb-12 bg-slate-50">
+    <section id="terms" class="min-h-auto mt-0 pt-8 pb-12 bg-slate-50">
         <div class="container mx-auto px-4">
             <div class="flex justify-center">
                 <div class="w-full max-w-4xl">
                     <div class="bg-white shadow-xl border-0 rounded-2xl">
                         <div class="p-8 md:p-12">
-                            <h2 class="text-center mb-6 text-2xl md:text-3xl font-bold text-[#0a0f1e]">
-                                Syarat dan Ketentuan Website MARIMOI
-                            </h2>
                             <p class="text-justify text-slate-600 mb-8 text-sm md:text-base leading-relaxed">
                                 Dengan mengakses situs ini, Anda setuju untuk mematuhi Syarat dan Ketentuan berikut.
                                 Syarat ini berlaku untuk semua pengunjung, pengguna, dan pihak lain yang mengakses atau
@@ -127,7 +124,6 @@
     </section>
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

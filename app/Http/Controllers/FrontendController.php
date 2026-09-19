@@ -10,12 +10,14 @@ use App\Models\DataSpatial;
 use App\Models\Dokumen;
 use App\Models\KategoriAspirasi;
 use App\Models\ProjectFeedback;
+use App\Models\Publication;
 use App\Models\SharedMap;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -86,7 +88,12 @@ class FrontendController extends Controller
         $visitorsMonth = Visitor::thisMonth()->count();
         $visitorsTotal = Visitor::count();
 
-        return view('frontend.pages.index-dark', compact(
+        $spatial = $this->homeSpatialSummary();
+        $totalPublikasi = Publication::count();
+
+        return view('frontend.pages.home', compact(
+            'spatial',
+            'totalPublikasi',
             'petaTematik',
             'totalKritik',
             'totalUsulan',
@@ -95,6 +102,94 @@ class FrontendController extends Controller
             'visitorsMonth',
             'visitorsTotal'
         ));
+    }
+
+    /**
+     * Ringkasan data spasial untuk beranda: total objek, kategori teratas, dan
+     * seluruh titik lokasi (geometri POINT) agar bisa dipetakan di peta interaktif.
+     *
+     * @return array{total: int, categories: int, top: array<int, object>, layers: array<int, object>, points: array<int, array<string, mixed>>}
+     */
+    private function homeSpatialSummary(): array
+    {
+        return Cache::remember('home.spatial-summary', 3600, function () {
+            $top = DB::select(
+                'select c.nama, c.warna, count(d.id) as total
+                 from data_spatial d join categories c on c.id = d.kategori_id
+                 group by c.id, c.nama, c.warna order by total desc limit 7'
+            );
+
+            $layers = DB::select(
+                'select c.id, c.nama, c.warna, count(d.id) as total
+                 from data_spatial d join categories c on c.id = d.kategori_id
+                 where GeometryType(d.geom) = ? group by c.id, c.nama, c.warna order by total desc',
+                ['POINT']
+            );
+
+            $points = collect(DB::select(
+                'select d.id, d.kategori_id as k, d.deskripsi as d, d.tahun as t,
+                        round(ST_X(d.geom)::numeric, 5) as x, round(ST_Y(d.geom)::numeric, 5) as y
+                 from data_spatial d where GeometryType(d.geom) = ? and ST_SRID(d.geom) = 4326',
+                ['POINT']
+            ))->map(fn ($row) => [
+                'id' => $row->id,
+                'k' => $row->k,
+                'n' => $row->d ?: null,
+                't' => $row->t,
+                'x' => (float) $row->x,
+                'y' => (float) $row->y,
+            ])->all();
+
+            return [
+                'total' => DB::table('data_spatial')->count(),
+                'categories' => Category::where('is_active', true)->count(),
+                'top' => $top,
+                'layers' => $layers,
+                'points' => $points,
+            ];
+        });
+    }
+
+    public function tentang()
+    {
+        return view('frontend.pages.tentang', [
+            'spatial' => $this->homeSpatialSummary(),
+            'totalPublikasi' => Publication::count(),
+            'dukungan' => $this->dukunganVideos(),
+        ]);
+    }
+
+    /**
+     * Video testimoni "Dukungan Terhadap MARIMOI" (id video YouTube dan pemberi dukungan).
+     *
+     * @return array<int, array{id: string, title: string}>
+     */
+    private function dukunganVideos(): array
+    {
+        return array_map(fn (array $row) => ['id' => $row[0], 'title' => $row[1]], [
+            ['cWA8hBj4PcE', 'Gubernur Provinsi Maluku Utara'],
+            ['fcbyr-_O8VM', 'Wakil Gubernur Provinsi Maluku Utara'],
+            ['SlncXrLMJrM', 'Sekretaris Daerah Provinsi Maluku Utara'],
+            ['uJyzLgpJa8U', 'Direktur Pembangunan Indonesia Timur Kementrian PPN/BAPPENAS'],
+            ['2wWShCIhAzs', 'Kepala DISKOMINFO dan Persandian Prov MALUT'],
+            ['6fkOgICo_Xs', 'PLT. KADIKBUD Provinsi Maluku Utara'],
+            ['tvWS8IOxy0w', 'Kepala DISPERKIM Provinsi Maluku Utara'],
+            ['CDelrE8NNwc', 'Kepala Dinas PANGAN Provinsi Maluku Utara'],
+            ['qKU3BAL2CBA', 'BAPPELITBANGDA Kota Ternate'],
+            ['wJAVmcA_CDc', 'BAPPERIDA Kota Tidore Kepulauan'],
+            ['oaV902ATMn8', 'BP3D Kabupaten Halmahera Barat'],
+            ['Fxv5cDKptIQ', 'BAPPELITBANGDA Kabupaten Halmahera Selatan'],
+            ['l7w_Y1WGWUY', 'BP4D Kabupaten Halmahera Timur'],
+            ['-kda5JnpjLg', 'Sekretaris BAPPEDA Prov Maluku Utara'],
+            ['COkXbg26hIw', 'Kabid PERAN BAPPEDA Prov Maluku Utara'],
+            ['uVCVPWt6Pfk', 'Kabid SOSBUD BAPPEDA Prov Maluku Utara'],
+            ['-oaJ37KpdSE', 'DUKUNGAN TERHADAP SISTEM MARIMOI'],
+        ]);
+    }
+
+    public function faq()
+    {
+        return view('frontend.pages.faq');
     }
 
     public function reformer()

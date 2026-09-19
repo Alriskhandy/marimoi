@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Detail Kegiatan - MARIMOI'])
+@extends('frontend.layouts.spatial', ['title' => 'Detail Kegiatan - MARIMOI'])
 
 @push('styles')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -103,6 +103,8 @@
         }
     </style>
 @endpush
+
+@section('no-hero', '1')
 
 @section('main')
     <!-- Modal Overlay -->
@@ -504,7 +506,6 @@
     @endif
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

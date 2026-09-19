@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Survey Feedback - MARIMOI'])
+@extends('frontend.layouts.spatial', ['title' => 'Survey Feedback - MARIMOI'])
 
 @push('styles')
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
@@ -259,6 +259,8 @@
         }
     </style>
 @endpush
+
+@section('no-hero', '1')
 
 @section('main')
     <!-- Survey Section -->
@@ -583,7 +585,6 @@
     </div>
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

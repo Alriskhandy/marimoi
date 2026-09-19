@@ -1,13 +1,24 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-Cp7XSPcA.css",
+    "file": "assets/app-DmA8udsr.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/spatial.css": {
+    "file": "assets/spatial-CL7frXF3.css",
+    "src": "resources/css/spatial.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-DxuHltQx.js",
+    "file": "assets/app-DaBYqt0m.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/spatial.js": {
+    "file": "assets/spatial-DUMxaci_.js",
+    "name": "spatial",
+    "src": "resources/js/spatial.js",
     "isEntry": true
   }
 }

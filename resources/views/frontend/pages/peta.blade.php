@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'MARIMOI - Peta Interaktif'])
+@extends('frontend.layouts.spatial', ['title' => 'MARIMOI - Peta Interaktif'])
 
 @push('styles')
     @vite(['resources/css/app.css'])
@@ -102,6 +102,9 @@
         }
     </style>
 @endpush
+
+@section('no-hero', '1')
+@section('no-footer', '1')
 
 @section('main')
     <div class="p-0 h-[calc(100vh-70px)]">

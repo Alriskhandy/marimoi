@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 // HALAMAN //
 Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
 Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');
+Route::get('/tentang', [FrontendController::class, 'tentang'])->name('tampil.tentang');
+Route::get('/faq', [FrontendController::class, 'faq'])->name('tampil.faq');
 // Halaman lama digabung ke Peta Tematik //
 foreach (['proyek-strategis-daerah', 'proyek-strategis-nasional', 'usulan-musrenbang', 'pokir-dprd'] as $halamanLama) {
     Route::redirect('/'.$halamanLama, '/peta-tematik', 301);
@@ -32,11 +34,6 @@ Route::get('/peta-tematik/{id}', [FrontendController::class, 'detailPetaTematik'
 Route::get('/rpjmd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.rpjmd');
 Route::get('/pokir-dprd/{id}', [FrontendController::class, 'detailPeta'])->name('detail.pokir');
 Route::get('/usulan-musrenbang/{id}', [FrontendController::class, 'detailPeta'])->name('detail.musrenbang');
-
-// FAQ //
-// Route::get('/faq', function () {
-//     return view('frontend.pages.faq');
-// })->name('faq');
 
 Route::get('/syarat-ketentuan', function () {
     return view('frontend.pages.syarat_ketentuan');
