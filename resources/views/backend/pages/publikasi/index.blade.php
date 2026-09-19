@@ -286,13 +286,12 @@
                                                             <p class="mt-2">Memuat preview...</p>
                                                         </div>
 
-                                                        <!-- PDF iframe -->
+                                                        <!-- PDF iframe: dimuat saat modal dibuka (lewat rute preview yang terautentikasi) -->
                                                         <iframe id="pdfPreview{{ $publication->id }}"
-                                                            src="{{ asset('storage/' . $publication->file_path) }}"
+                                                            data-src="{{ route('publications.preview', $publication, false) }}"
+                                                            title="Preview {{ $publication->title }}"
                                                             width="100%" height="100%"
-                                                            style="border: none; border-radius: 8px; display: none;"
-                                                            onload="hideLoading({{ $publication->id }})"
-                                                            onerror="showError({{ $publication->id }})">
+                                                            style="border: none; border-radius: 8px; display: none;">
                                                         </iframe>
 
                                                         <!-- Error message -->
@@ -302,10 +301,10 @@
                                                             <i class="mdi mdi-alert-circle text-warning"
                                                                 style="font-size: 3rem;"></i>
                                                             <h5 class="mt-3">Preview tidak dapat dimuat</h5>
-                                                            <p class="text-muted">File mungkin terlalu besar atau browser
+                                                            <p class="text-muted preview-error-message">File mungkin terlalu besar atau browser
                                                                 tidak mendukung preview</p>
                                                             <div class="mt-3">
-                                                                <a href="{{ asset('storage/' . $publication->file_path) }}"
+                                                                <a href="{{ route('publications.preview', $publication, false) }}"
                                                                     target="_blank" class="btn btn-primary me-2">
                                                                     <i class="mdi mdi-open-in-new me-1"></i>Buka di Tab
                                                                     Baru
@@ -1209,14 +1208,65 @@
             if (iframe) iframe.style.display = 'block';
         }
 
-        function showError(publicationId) {
+        function showError(publicationId, message) {
             const loading = document.querySelector(`#previewModal${publicationId} .preview-loading`);
             const error = document.querySelector(`#previewError${publicationId}`);
             const iframe = document.querySelector(`#pdfPreview${publicationId}`);
 
             if (loading) loading.style.display = 'none';
             if (iframe) iframe.style.display = 'none';
-            if (error) error.style.display = 'block';
+            if (error) {
+                const text = error.querySelector('.preview-error-message');
+                if (text && message) text.textContent = message;
+                error.style.display = 'block';
+            }
+        }
+
+        // Muat preview saat modal dibuka: cek dulu respons servernya (404/403 kini terbaca jelas)
+        // baru tampilkan di iframe. Handler dipasang di sini, bukan inline, supaya tidak
+        // tergantung urutan pemuatan skrip.
+        async function loadPublicationPreview(publicationId) {
+            const iframe = document.querySelector(`#pdfPreview${publicationId}`);
+            const loading = document.querySelector(`#previewModal${publicationId} .preview-loading`);
+            const error = document.querySelector(`#previewError${publicationId}`);
+            if (!iframe) return;
+
+            const url = iframe.dataset.src;
+            if (loading) loading.style.display = 'block';
+            if (error) error.style.display = 'none';
+            iframe.style.display = 'none';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'HEAD',
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    const reasons = {
+                        404: 'File tidak ditemukan di server. Unggah ulang dokumen ini.',
+                        403: 'Anda tidak memiliki izin untuk melihat file ini.',
+                        401: 'Sesi berakhir. Silakan masuk kembali.'
+                    };
+                    showError(publicationId, reasons[response.status] || `Server mengembalikan status ${response.status}.`);
+                    return;
+                }
+            } catch (networkError) {
+                showError(publicationId, 'Tidak dapat menghubungi server. Periksa koneksi Anda.');
+                return;
+            }
+
+            iframe.onload = () => hideLoading(publicationId);
+            iframe.src = url;
+        }
+
+        function unloadPublicationPreview(publicationId) {
+            const iframe = document.querySelector(`#pdfPreview${publicationId}`);
+            if (iframe) {
+                iframe.onload = null;
+                iframe.removeAttribute('src');
+                iframe.style.display = 'none';
+            }
         }
 
         $(document).ready(function() {
@@ -1353,26 +1403,9 @@
 
             // Preview modal handling
             $('[id^="previewModal"]').on('shown.bs.modal', function() {
-                const modalId = this.id;
-                const publicationId = modalId.replace('previewModal', '');
-                const iframe = document.querySelector(`#pdfPreview${publicationId}`);
-                const loading = document.querySelector(`#previewModal${publicationId} .preview-loading`);
-
-                if (loading) loading.style.display = 'block';
-
-                setTimeout(() => {
-                    if (iframe && iframe.style.display === 'none') {
-                        showError(publicationId);
-                    }
-                }, 10000);
-
-                if (iframe) {
-                    const originalSrc = iframe.src;
-                    iframe.src = '';
-                    setTimeout(() => {
-                        iframe.src = originalSrc;
-                    }, 100);
-                }
+                loadPublicationPreview(this.id.replace('previewModal', ''));
+            }).on('hidden.bs.modal', function() {
+                unloadPublicationPreview(this.id.replace('previewModal', ''));
             });
         });
     </script>

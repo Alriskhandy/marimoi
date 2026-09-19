@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Permission;
+use App\Models\Publication;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RolePermissionTest extends TestCase
@@ -189,5 +191,46 @@ class RolePermissionTest extends TestCase
         $this->actingAs($manager)->get(route('logs.index'))
             ->assertOk()
             ->assertSee(route('logs.prune-old'), false);
+    }
+
+    public function test_super_admin_can_preview_publication_pdf_inline(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('dokumen_files/laporan.pdf', '%PDF-1.4 tes');
+
+        $publication = Publication::create([
+            'title' => 'Laporan Tahunan',
+            'file_name' => 'Laporan Tahunan Ünggulan.pdf',
+            'file_path' => 'dokumen_files/laporan.pdf',
+            'file_type' => 'pdf',
+            'file_size' => 12,
+        ]);
+
+        $response = $this->actingAs($this->userFor($this->roleWith('super-admin')))
+            ->get(route('publications.preview', $publication));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
+    }
+
+    public function test_publication_preview_requires_permission_and_reports_missing_file(): void
+    {
+        Storage::fake('public');
+        $publication = Publication::create([
+            'title' => 'Hilang',
+            'file_name' => 'hilang.pdf',
+            'file_path' => 'dokumen_files/hilang.pdf',
+            'file_type' => 'pdf',
+            'file_size' => 1,
+        ]);
+
+        $this->actingAs($this->userFor($this->roleWith('admin-bappeda')))
+            ->get(route('publications.preview', $publication))
+            ->assertForbidden();
+
+        $this->actingAs($this->userFor($this->roleWith('admin-opd', ['publications.view'])))
+            ->get(route('publications.preview', $publication))
+            ->assertNotFound();
     }
 }

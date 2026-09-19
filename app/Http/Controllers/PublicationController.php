@@ -7,6 +7,7 @@ use App\Models\Publication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class PublicationController extends Controller
 {
@@ -104,7 +105,7 @@ class PublicationController extends Controller
             $originalName = $file->getClientOriginalName();
             $cleanName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
             $extension = $file->getClientOriginalExtension();
-            $filename = time() . '_' . $cleanName . '.' . $extension;
+            $filename = time().'_'.$cleanName.'.'.$extension;
 
             // Store file in dokumen_files folder
             $path = $file->storeAs('dokumen_files', $filename, 'public');
@@ -121,7 +122,7 @@ class PublicationController extends Controller
             $coverOriginalName = $coverFile->getClientOriginalName();
             $coverCleanName = Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME));
             $coverExtension = $coverFile->getClientOriginalExtension();
-            $coverFilename = time() . '_cover_' . $coverCleanName . '.' . $coverExtension;
+            $coverFilename = time().'_cover_'.$coverCleanName.'.'.$coverExtension;
 
             // Store cover in dokumen_covers folder
             $coverPath = $coverFile->storeAs('dokumen_covers', $coverFilename, 'public');
@@ -160,7 +161,7 @@ class PublicationController extends Controller
             $originalName = $file->getClientOriginalName();
             $cleanName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
             $extension = $file->getClientOriginalExtension();
-            $filename = time() . '_' . $cleanName . '.' . $extension;
+            $filename = time().'_'.$cleanName.'.'.$extension;
 
             $path = $file->storeAs('dokumen_files', $filename, 'public');
 
@@ -181,7 +182,7 @@ class PublicationController extends Controller
             $coverOriginalName = $coverFile->getClientOriginalName();
             $coverCleanName = Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME));
             $coverExtension = $coverFile->getClientOriginalExtension();
-            $coverFilename = time() . '_cover_' . $coverCleanName . '.' . $coverExtension;
+            $coverFilename = time().'_cover_'.$coverCleanName.'.'.$coverExtension;
 
             $coverPath = $coverFile->storeAs('dokumen_covers', $coverFilename, 'public');
             $data['cover'] = $coverPath;
@@ -219,15 +220,22 @@ class PublicationController extends Controller
      */
     public function preview(Publication $publication)
     {
-        if (!Storage::disk('public')->exists($publication->file_path)) {
+        if (! $publication->file_path || ! Storage::disk('public')->exists($publication->file_path)) {
             abort(404, 'File tidak ditemukan');
         }
 
         $fullPath = Storage::disk('public')->path($publication->file_path);
+        $name = $publication->file_name ?: basename($publication->file_path);
 
+        // Nama berkas boleh berisi spasi/karakter non-ASCII, jadi header dibuat lewat HeaderUtils
+        // (dengan fallback ASCII) agar tidak menghasilkan header yang rusak.
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $publication->file_name . '"'
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_INLINE,
+                $name,
+                Str::ascii($name) ?: 'dokumen.pdf'
+            ),
         ]);
     }
 
@@ -236,7 +244,7 @@ class PublicationController extends Controller
      */
     public function download(Publication $publication)
     {
-        if (!Storage::disk('public')->exists($publication->file_path)) {
+        if (! Storage::disk('public')->exists($publication->file_path)) {
             abort(404, 'File tidak ditemukan');
         }
 
@@ -253,7 +261,7 @@ class PublicationController extends Controller
     {
         $request->validate([
             'publication_ids' => 'required|array',
-            'publication_ids.*' => 'exists:publications,id'
+            'publication_ids.*' => 'exists:publications,id',
         ]);
 
         $publications = Publication::whereIn('id', $request->publication_ids)->get();
@@ -273,7 +281,7 @@ class PublicationController extends Controller
         }
 
         return redirect()->back()
-            ->with('success', count($request->publication_ids) . ' publikasi berhasil dihapus.');
+            ->with('success', count($request->publication_ids).' publikasi berhasil dihapus.');
     }
 
     /**
@@ -336,7 +344,7 @@ class PublicationController extends Controller
      */
     public function debugFile($id)
     {
-        if (!app()->environment('local')) {
+        if (! app()->environment('local')) {
             abort(404);
         }
 
@@ -356,7 +364,7 @@ class PublicationController extends Controller
                 'storage_disk_path' => Storage::disk('public')->path(''),
                 'public_storage_path' => public_path('storage/'),
                 'symlink_exists' => is_link(public_path('storage')),
-                'symlink_target' => is_link(public_path('storage')) ? readlink(public_path('storage')) : 'Not a symlink'
+                'symlink_target' => is_link(public_path('storage')) ? readlink(public_path('storage')) : 'Not a symlink',
             ],
             'file_checks' => [
                 'main_file_exists' => Storage::disk('public')->exists($publication->file_path),
@@ -366,18 +374,18 @@ class PublicationController extends Controller
                 'main_file_readable' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
                     is_readable(Storage::disk('public')->path($publication->file_path)) : false,
                 'main_file_size' => file_exists(Storage::disk('public')->path($publication->file_path)) ?
-                    filesize(Storage::disk('public')->path($publication->file_path)) : 'N/A'
+                    filesize(Storage::disk('public')->path($publication->file_path)) : 'N/A',
             ],
             'urls' => [
-                'main_file_asset_url' => asset('storage/' . $publication->file_path),
-                'cover_asset_url' => $publication->cover ? asset('storage/' . $publication->cover) : null,
+                'main_file_asset_url' => asset('storage/'.$publication->file_path),
+                'cover_asset_url' => $publication->cover ? asset('storage/'.$publication->cover) : null,
                 'preview_url' => route('publications.preview', $publication->id),
-                'download_url' => route('publications.download', $publication->id)
+                'download_url' => route('publications.download', $publication->id),
             ],
             'model_methods' => [
                 'file_exists' => method_exists($publication, 'fileExists') ? $publication->fileExists() : 'Method not exists',
                 'cover_image_url' => method_exists($publication, 'getCoverImageUrlAttribute') ? $publication->cover_image_url : 'Method not exists',
-            ]
+            ],
         ];
 
         return response()->json($debug, 200, [], JSON_PRETTY_PRINT);
