@@ -896,6 +896,25 @@
                 this.form.submit();
             });
 
+            // Select2 pada pilihan kategori/layer di modal bulk. dropdownParent wajib agar kolom
+            // pencarian bisa diketik di dalam modal Bootstrap; indentasi bertingkat (↳) tetap terbaca.
+            $('#bulkCategorySelect').select2({
+                dropdownParent: $('#bulkCategoryModal'),
+                placeholder: '-- Pilih Kategori/Layer --',
+                width: '100%',
+                allowClear: true,
+                language: {
+                    noResults: () => 'Kategori/layer tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            }).on('change', function() {
+                document.getElementById('bulkCategoryError').classList.add('d-none');
+            });
+
+            $('#bulkCategoryModal').on('shown.bs.modal', function() {
+                $('#bulkCategorySelect').select2('open');
+            });
+
             // Initialize checkbox events directly
             initializeCheckboxEvents();
 
@@ -1046,7 +1065,7 @@
             }
 
             document.getElementById('bulkCategoryCount').textContent = selectedItems.length;
-            document.getElementById('bulkCategorySelect').value = '';
+            $('#bulkCategorySelect').val('').trigger('change');
             const errorBox = document.getElementById('bulkCategoryError');
             errorBox.classList.add('d-none');
             errorBox.textContent = '';
