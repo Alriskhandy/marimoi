@@ -49,6 +49,12 @@ Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedb
 // USULAN ASPIRASI MASYARAKAT //
 Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi-masyarakat.store');
 
+// LACAK STATUS ASPIRASI //
+Route::get('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiLacak'])->name('aspirasi-masyarakat.lacak');
+Route::post('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiLacakCari'])
+    ->name('aspirasi-masyarakat.lacak.cari')
+    ->middleware('throttle:6,1');
+
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 Route::get('/geojson/version', [FrontendController::class, 'tematikVersion'])->name('tematik.version');

@@ -262,7 +262,12 @@
                 <!-- Form Card -->
                 <div class="lg:col-span-7">
                     <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 h-full">
-                        <h3 class="text-lg text-center font-semibold mb-6 text-slate-800">Formulir Usulan Aspirasi</h3>
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-slate-800">Formulir Usulan Aspirasi</h3>
+                            <a href="{{ route('aspirasi-masyarakat.lacak') }}" class="text-sm text-blue-600 hover:underline">
+                                Sudah pernah mengirim? Lacak status
+                            </a>
+                        </div>
 
                         <form action="/aspirasi-masyarakat" method="post" enctype="multipart/form-data" id="formUsulan"
                             novalidate>
@@ -1277,7 +1282,11 @@
                     const data = await response.json();
 
                     if (data.status === 'success') {
-                        this.showModal('success', 'Aspirasi Berhasil Dikirim', data.message);
+                        const tiket = data.data?.nomor_tiket;
+                        const pesan = tiket
+                            ? `${data.message} Nomor tiket Anda: ${tiket}. Simpan nomor ini untuk melacak status pengajuan.`
+                            : data.message;
+                        this.showModal('success', 'Aspirasi Berhasil Dikirim', pesan);
                         this.resetForm();
                     } else {
                         this.handleSubmitError(data);

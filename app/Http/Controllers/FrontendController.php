@@ -27,6 +27,13 @@ use Illuminate\Support\Str;
 
 class FrontendController extends Controller
 {
+    /**
+     * Nama kategori aspirasi bawaan untuk jenis "kritik & saran" (bukan usulan pembangunan
+     * dengan kategori/OPD spesifik). Dicari berdasarkan nama, bukan ID, karena ID baris ini
+     * tidak dijamin selalu 1 (tergantung urutan seeding).
+     */
+    private const KATEGORI_KRITIK_SARAN = 'Kritik dan Saran';
+
     // public function index()
     // {
     //     // Ambil 6 data PSD secara random
@@ -274,7 +281,7 @@ class FrontendController extends Controller
 
     public function aspirasi()
     {
-        $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', 'Kritik dan Saran')->get();
+        $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', self::KATEGORI_KRITIK_SARAN)->get();
 
         return view('frontend.pages.aspirasi', compact('aspirasi'));
     }
@@ -1046,8 +1053,19 @@ class FrontendController extends Controller
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
             } else {
+                $kategoriKritikSaran = KategoriAspirasi::where('nama_kategori', self::KATEGORI_KRITIK_SARAN)->first();
+
+                if (! $kategoriKritikSaran) {
+                    Log::error('Kategori aspirasi default "'.self::KATEGORI_KRITIK_SARAN.'" tidak ditemukan.');
+
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Sistem belum siap menerima kritik & saran. Silakan hubungi admin.',
+                    ], 500);
+                }
+
                 $data['admin_id'] = $adminData ? $adminData->id : null;
-                $data['kategori_aspirasi_id'] = 1; // ID kategori default untuk kritik & saran
+                $data['kategori_aspirasi_id'] = $kategoriKritikSaran->id;
                 $data['latitude'] = $request->latitude ?? null;
                 $data['longitude'] = $request->longitude ?? null;
             }
@@ -1161,6 +1179,58 @@ class FrontendController extends Controller
                 'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi admin jika masalah berlanjut.',
             ], 500);
         }
+    }
+
+    /**
+     * Tampilkan form pelacakan status aspirasi publik.
+     */
+    public function aspirasiLacak()
+    {
+        return view('frontend.pages.aspirasi-lacak');
+    }
+
+    /**
+     * Cari aspirasi berdasarkan nomor tiket + verifikasi kepemilikan (email/phone).
+     * Pesan error untuk "tidak ditemukan" dan "kontak tidak cocok" sengaja sama
+     * supaya endpoint ini tidak bisa dipakai untuk enumerasi nomor tiket valid.
+     */
+    public function aspirasiLacakCari(Request $request)
+    {
+        $validated = $request->validate([
+            'nomor_tiket' => 'required|string|max:30',
+            'kontak' => 'required|string|max:255',
+        ], [
+            'nomor_tiket.required' => 'Nomor tiket wajib diisi.',
+            'kontak.required' => 'Email atau nomor WhatsApp wajib diisi.',
+        ]);
+
+        $aspirasi = Aspirasi::where('nomor_tiket', trim($validated['nomor_tiket']))->first();
+
+        $cocok = $aspirasi && (
+            ($aspirasi->email && Str::lower($aspirasi->email) === Str::lower(trim($validated['kontak'])))
+            || ($aspirasi->phone && $this->normalizeTelepon($aspirasi->phone) === $this->normalizeTelepon($validated['kontak']))
+        );
+
+        if (! $cocok) {
+            return view('frontend.pages.aspirasi-lacak', [
+                'notFound' => true,
+            ])->withInput($request->only('nomor_tiket'));
+        }
+
+        return view('frontend.pages.aspirasi-lacak', [
+            'aspirasi' => $aspirasi,
+        ]);
+    }
+
+    /**
+     * Normalisasi nomor telepon untuk pencocokan: buang karakter non-digit,
+     * lalu samakan prefix 0/62 supaya "0812...", "62812...", "+62812..." dianggap sama.
+     */
+    private function normalizeTelepon(string $value): string
+    {
+        $digits = preg_replace('/\D+/', '', $value) ?? '';
+
+        return preg_replace('/^(0|62)/', '', $digits) ?? $digits;
     }
 
     /**
