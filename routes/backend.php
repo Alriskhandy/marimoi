@@ -109,7 +109,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
         // Detail endpoint for modal
         Route::get('/{uuid}/details', function ($uuid) {
-            $data = DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            $data = DataSpatial::with(['kategori', 'opdPengelola'])->where('uuid', $uuid)->first();
 
             return response()->json([
                 'success' => $data ? true : false,
@@ -289,7 +289,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
         // Data Spatial Details
         Route::get('/data-spatial/{uuid}/details', function ($uuid) {
-            $data = DataSpatial::with('kategori')->where('uuid', $uuid)->first();
+            $data = DataSpatial::with(['kategori', 'opdPengelola'])->where('uuid', $uuid)->first();
 
             return response()->json([
                 'success' => $data ? true : false,

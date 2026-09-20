@@ -88,7 +88,31 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
+                                <div class="card border-0 shadow-sm rounded-4 bg-light mt-3">
+                                    <div class="card-header bg-secondary text-white rounded-top-4 py-2">
+                                        <h6 class="mb-0 fw-semibold">
+                                            <i class="mdi mdi-shield-check-outline me-2"></i>Metadata Dataset
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <small class="text-muted fw-semibold">Sumber Data:</small>
+                                                <div class="fw-medium">${data.data.sumber_data || 'Belum diisi'}</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted fw-semibold">Instansi Pengelola:</small>
+                                                <div class="fw-medium">${data.data.opd_pengelola?.name || 'Belum diisi'}</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted fw-semibold">Tanggal Data:</small>
+                                                <div class="fw-medium">${data.data.tanggal_data || 'Belum diisi'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="card border-0 shadow-sm rounded-4 bg-light mt-3">
                                     <div class="card-header bg-info text-white rounded-top-4 py-2">
                                         <h6 class="mb-0 fw-semibold">

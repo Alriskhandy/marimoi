@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Model utama untuk data spatial
 class DataSpatial extends Model
 {
     use HasFactory;
+
     protected static function boot()
     {
         parent::boot();
@@ -18,7 +18,7 @@ class DataSpatial extends Model
         static::creating(function ($model) {
             do {
                 $randomNumber = str_pad(random_int(0, 9999999999), 10, '0', STR_PAD_LEFT);
-                $uuid = 'MARIMOI-' . $randomNumber;
+                $uuid = 'MARIMOI-'.$randomNumber;
             } while (self::where('uuid', $uuid)->exists());
 
             $model->uuid = $uuid;
@@ -26,24 +26,28 @@ class DataSpatial extends Model
     }
 
     protected $table = 'data_spatial';
-    
+
     protected $fillable = [
         'data_type',
         'sub_type',
         'kategori_id',
         'deskripsi',
+        'sumber_data',
+        'opd_pengelola_id',
+        'tanggal_data',
         'dbf_attributes',
         'tahun',
         'gambar',
         'views',
         'geom',
-        'user_id'
+        'user_id',
     ];
 
     protected $casts = [
         'dbf_attributes' => 'array',
+        'tanggal_data' => 'date',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     // Relasi ke kategori
@@ -52,8 +56,21 @@ class DataSpatial extends Model
         return $this->belongsTo(Category::class, 'kategori_id');
     }
 
+    // Relasi ke OPD pengelola data (metadata)
+    public function opdPengelola(): BelongsTo
+    {
+        return $this->belongsTo(Opd::class, 'opd_pengelola_id');
+    }
+
+    public function getMetadataLengkapAttribute(): bool
+    {
+        return filled($this->sumber_data)
+            && filled($this->opd_pengelola_id)
+            && filled($this->tanggal_data);
+    }
+
     // === SCOPES UNTUK DATA TYPE ===
-    
+
     public function scopeLokasi($query)
     {
         return $query->where('data_type', 'tematik');
@@ -75,7 +92,7 @@ class DataSpatial extends Model
     }
 
     // === SCOPES UNTUK SUB TYPE ===
-    
+
     public function scopeProyekStrategisDaerah($query)
     {
         return $query->proyekStrategis()->where('sub_type', 'psd');
@@ -87,7 +104,7 @@ class DataSpatial extends Model
     }
 
     // === SCOPES TAMBAHAN ===
-    
+
     public function scopeByYear($query, $year)
     {
         return $query->where('tahun', $year);
@@ -104,7 +121,7 @@ class DataSpatial extends Model
     }
 
     // === HELPER METHODS ===
-    
+
     public function isLokasi()
     {
         return $this->data_type === 'tematik';
@@ -122,7 +139,7 @@ class DataSpatial extends Model
 
     public function hasGeometry()
     {
-        return !is_null($this->geom);
+        return ! is_null($this->geom);
     }
 
     // Method untuk mendapatkan nama kategori
@@ -134,7 +151,7 @@ class DataSpatial extends Model
     // Method untuk format display type
     public function getDisplayTypeAttribute()
     {
-        $type = match($this->data_type) {
+        $type = match ($this->data_type) {
             'tematik' => 'Tematik',
             'usulan_musrenbang' => 'Usulan Musrenbang',
             'pokir_dprd' => 'Pokir DPRD',
@@ -143,7 +160,7 @@ class DataSpatial extends Model
         };
 
         if ($this->sub_type) {
-            $type .= ' ' . ucfirst($this->sub_type);
+            $type .= ' '.ucfirst($this->sub_type);
         }
 
         return $type;
@@ -152,7 +169,7 @@ class DataSpatial extends Model
     // Method untuk mendapatkan nama kategori type berdasarkan data_type
     public function getCategoryTypeAttribute()
     {
-        return match($this->data_type) {
+        return match ($this->data_type) {
             'tematik' => 'tematik',
             'usulan_musrenbang' => 'usulan_musrenbang',
             'pokir_dprd' => 'pokir_dprd',
@@ -182,7 +199,7 @@ class DataSpatial extends Model
      */
     public function scopeWhereDbfAttribute($query, $attribute, $value)
     {
-        return $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+        return $query->whereRaw('dbf_attributes->? = ?', [$attribute, json_encode($value)]);
     }
 
     /**
@@ -190,7 +207,7 @@ class DataSpatial extends Model
      */
     public function scopeSearchDbfAttributes($query, $search)
     {
-        return $query->whereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+        return $query->whereRaw('dbf_attributes::text ILIKE ?', ["%{$search}%"]);
     }
 
     /**
@@ -198,7 +215,7 @@ class DataSpatial extends Model
      */
     public function scopeWhereDbfPath($query, $path, $value)
     {
-        return $query->whereRaw("dbf_attributes #> ? = ?", ['{' . $path . '}', json_encode($value)]);
+        return $query->whereRaw('dbf_attributes #> ? = ?', ['{'.$path.'}', json_encode($value)]);
     }
 
     /**
@@ -206,14 +223,13 @@ class DataSpatial extends Model
      */
     public function scopeWhereDbfContains($query, $data)
     {
-        return $query->whereRaw("dbf_attributes @> ?", [json_encode($data)]);
+        return $query->whereRaw('dbf_attributes @> ?', [json_encode($data)]);
     }
 
     public function projectFeedbacks()
-{
-    return $this->hasMany(ProjectFeedback::class, 'data_spatial_id');
-}
-
+    {
+        return $this->hasMany(ProjectFeedback::class, 'data_spatial_id');
+    }
 }
 
 // Model khusus untuk masing-masing jenis (opsional, untuk kemudahan akses)
@@ -224,7 +240,7 @@ class Lokasi extends DataSpatial
         static::addGlobalScope('tematik', function ($query) {
             $query->where('data_type', 'tematik');
         });
-        
+
         static::creating(function ($model) {
             $model->data_type = 'tematik';
         });
@@ -233,7 +249,7 @@ class Lokasi extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'tematik');
+            ->where('type', 'tematik');
     }
 }
 
@@ -244,7 +260,7 @@ class UsulanMusrenbang extends DataSpatial
         static::addGlobalScope('usulan_musrenbang', function ($query) {
             $query->where('data_type', 'usulan_musrenbang');
         });
-        
+
         static::creating(function ($model) {
             $model->data_type = 'usulan_musrenbang';
         });
@@ -253,7 +269,7 @@ class UsulanMusrenbang extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'usulan_musrenbang');
+            ->where('type', 'usulan_musrenbang');
     }
 }
 
@@ -264,7 +280,7 @@ class PokirDprd extends DataSpatial
         static::addGlobalScope('pokir_dprd', function ($query) {
             $query->where('data_type', 'pokir_dprd');
         });
-        
+
         static::creating(function ($model) {
             $model->data_type = 'pokir_dprd';
         });
@@ -273,7 +289,7 @@ class PokirDprd extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'pokir_dprd');
+            ->where('type', 'pokir_dprd');
     }
 }
 
@@ -283,9 +299,9 @@ class ProyekStrategisDaerah extends DataSpatial
     {
         static::addGlobalScope('proyek_strategis_daerah', function ($query) {
             $query->where('data_type', 'proyek_strategis')
-                  ->where('sub_type', 'psd');
+                ->where('sub_type', 'psd');
         });
-        
+
         static::creating(function ($model) {
             $model->data_type = 'proyek_strategis';
             $model->sub_type = 'psd';
@@ -295,7 +311,7 @@ class ProyekStrategisDaerah extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'psd');
+            ->where('type', 'psd');
     }
 }
 
@@ -305,9 +321,9 @@ class ProyekStrategisNasional extends DataSpatial
     {
         static::addGlobalScope('proyek_strategis_nasional', function ($query) {
             $query->where('data_type', 'proyek_strategis')
-                  ->where('sub_type', 'psn');
+                ->where('sub_type', 'psn');
         });
-        
+
         static::creating(function ($model) {
             $model->data_type = 'proyek_strategis';
             $model->sub_type = 'psn';
@@ -317,6 +333,6 @@ class ProyekStrategisNasional extends DataSpatial
     public function kategori(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'kategori_id')
-                   ->where('type', 'psn');
+            ->where('type', 'psn');
     }
 }

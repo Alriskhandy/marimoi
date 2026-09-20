@@ -176,9 +176,11 @@ class FrontendController extends Controller
             // ST_X/ST_Y hanya boleh dipanggil pada POINT, jadi dibungkus CASE di subquery
             // (PostgreSQL tidak menjamin urutan evaluasi kondisi AND).
             $pointSource = "select d.id, d.kategori_id, d.deskripsi, d.tahun,
+                        d.sumber_data, o.name as opd_pengelola, d.tanggal_data,
                         case when GeometryType(d.geom) = 'POINT' then ST_X(d.geom) end as px,
                         case when GeometryType(d.geom) = 'POINT' then ST_Y(d.geom) end as py
-                 from data_spatial d";
+                 from data_spatial d
+                 left join opd o on o.id = d.opd_pengelola_id";
             $pointBindings = [self::HOME_LON_MIN, self::HOME_LON_MAX, self::HOME_LAT_MIN, self::HOME_LAT_MAX];
             $inRange = 'p.px between ? and ? and p.py between ? and ?';
 
@@ -191,6 +193,7 @@ class FrontendController extends Controller
 
             $points = collect(DB::select(
                 'select p.id, p.kategori_id as k, p.deskripsi as d, p.tahun as t,
+                        p.sumber_data as sd, p.opd_pengelola as op, p.tanggal_data as td,
                         round(p.px::numeric, 5) as x, round(p.py::numeric, 5) as y
                  from ('.$pointSource.') p where '.$inRange,
                 $pointBindings
@@ -199,6 +202,9 @@ class FrontendController extends Controller
                 'k' => $row->k,
                 'n' => $row->d ?: null,
                 't' => $row->t,
+                'sd' => $row->sd,
+                'op' => $row->op,
+                'td' => $row->td,
                 'x' => (float) $row->x,
                 'y' => (float) $row->y,
             ])->all();
@@ -398,6 +404,7 @@ class FrontendController extends Controller
             // Build base query with proper joins and error handling
             $query = DB::table('data_spatial')
                 ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+                ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
                 ->select(
                     'data_spatial.id',
                     'data_spatial.uuid',
@@ -408,6 +415,9 @@ class FrontendController extends Controller
                     'data_spatial.tahun',
                     'categories.nama as kategori',
                     'data_spatial.deskripsi',
+                    'data_spatial.sumber_data',
+                    'data_spatial.tanggal_data',
+                    'opd.name as opd_pengelola',
                     'data_spatial.dbf_attributes',
                     'categories.icon',
                     'categories.warna',
@@ -560,6 +570,11 @@ class FrontendController extends Controller
                             'kategori' => $lokasi->kategori,
                             'tahun' => $lokasi->tahun,
                             'deskripsi' => $lokasi->deskripsi,
+                            'sumber_data' => $lokasi->sumber_data,
+                            'opd_pengelola' => $lokasi->opd_pengelola,
+                            'tanggal_data' => $lokasi->tanggal_data
+                                ? Carbon::parse($lokasi->tanggal_data)->format('d-m-Y')
+                                : null,
                             'icon' => $lokasi->icon,
                             'warna' => $lokasi->warna,
                             'is_marker' => (bool) $lokasi->is_marker,
@@ -738,6 +753,7 @@ class FrontendController extends Controller
     public function detailPeta(Request $request, $uuid)
     {
         $project = DataSpatial::select('*', DB::raw($this->geojsonSelectSql()))
+            ->with('opdPengelola')
             ->where('uuid', $uuid)
             ->firstOrFail();
 
@@ -753,6 +769,7 @@ class FrontendController extends Controller
     public function detailPetaTematik(Request $request, $uuid)
     {
         $project = DataSpatial::select('*', DB::raw($this->geojsonSelectSql()))
+            ->with('opdPengelola')
             ->where('uuid', $uuid)
             ->firstOrFail();
 

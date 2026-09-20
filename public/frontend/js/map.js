@@ -814,7 +814,7 @@ function bindPopupContent(feature, layer, urlPath) {
             <div class="max-h-40 overflow-y-auto">
                 <table class="w-full text-[9px]" >`;
 
-    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN"];
+    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN", "SUMBER_DATA", "OPD_PENGELOLA", "TANGGAL_DATA"];
     Object.entries(props).forEach(([key, value]) => {
         if (allowedKeys.includes(key.toUpperCase()) && value) {
             const label = key

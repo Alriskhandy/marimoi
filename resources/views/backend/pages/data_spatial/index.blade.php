@@ -307,6 +307,7 @@
                                         @if ($hasTahun)
                                             <th>Tahun</th>
                                         @endif
+                                        <th>Metadata</th>
                                         <th>Tanggal</th>
                                         <th>Aksi</th>
                                     </tr>
@@ -340,6 +341,13 @@
                                                     {{ $item->tahun ?? '-' }}
                                                 </td>
                                             @endif
+                                            <td class="text-center">
+                                                @if ($item->metadata_lengkap)
+                                                    <span class="badge bg-gradient-success text-white">Lengkap</span>
+                                                @else
+                                                    <span class="badge bg-gradient-warning text-white">Belum lengkap</span>
+                                                @endif
+                                            </td>
                                             <td class="text-center">
                                                 {{ $item->created_at ? $item->created_at->format('d M Y') : date('d M Y') }}
                                             </td>

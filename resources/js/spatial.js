@@ -637,6 +637,12 @@ function initMap() {
         $('#infoTitle').textContent = p.n || layer.nama;
         $('#infoYear').textContent = p.t || '-';
         $('#infoCoord').textContent = `${p.y.toFixed(4)}, ${p.x.toFixed(4)}`;
+        $('#infoSource').textContent = p.sd || '';
+        $('#infoSourceLabel').classList.toggle('hidden', !p.sd);
+        $('#infoSource').classList.toggle('hidden', !p.sd);
+        $('#infoOpd').textContent = p.op || '';
+        $('#infoOpdLabel').classList.toggle('hidden', !p.op);
+        $('#infoOpd').classList.toggle('hidden', !p.op);
         info.dataset.open = 'true';
         if (pulse) { map.removeLayer(pulse); }
         pulse = L.marker([p.y, p.x], {

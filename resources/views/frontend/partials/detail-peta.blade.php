@@ -89,6 +89,15 @@
                         @if ($project->sub_type)
                             <div><dt class="text-slate-500">Sub tipe</dt><dd class="mt-0.5 font-semibold uppercase text-navy">{{ $project->sub_type }}</dd></div>
                         @endif
+                        @if ($project->sumber_data)
+                            <div><dt class="text-slate-500">Sumber Data</dt><dd class="mt-0.5 font-semibold text-navy">{{ $project->sumber_data }}</dd></div>
+                        @endif
+                        @if ($project->opdPengelola)
+                            <div><dt class="text-slate-500">Instansi Pengelola</dt><dd class="mt-0.5 font-semibold text-navy">{{ $project->opdPengelola->name }}</dd></div>
+                        @endif
+                        @if ($project->tanggal_data)
+                            <div><dt class="text-slate-500">Tanggal Data</dt><dd class="mt-0.5 font-semibold text-navy">{{ $project->tanggal_data->format('d M Y') }}</dd></div>
+                        @endif
                     </dl>
                 </article>
 

@@ -248,6 +248,8 @@
                     <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px] text-white/70">
                         <dt class="text-white/45">Tahun</dt><dd id="infoYear"></dd>
                         <dt class="text-white/45">Koordinat</dt><dd id="infoCoord"></dd>
+                        <dt id="infoSourceLabel" class="text-white/45">Sumber</dt><dd id="infoSource"></dd>
+                        <dt id="infoOpdLabel" class="text-white/45">Instansi</dt><dd id="infoOpd"></dd>
                     </dl>
                     <a href="{{ route('tampil.tematik') }}" class="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2 text-[13px] font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">Buka peta lengkap {!! $arrow !!}</a>
                 </aside>

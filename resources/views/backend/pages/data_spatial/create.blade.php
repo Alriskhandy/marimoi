@@ -660,6 +660,49 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="sumber_data" class="form-label">
+                                            <i class="mdi mdi-source-branch me-1"></i>
+                                            Sumber Data
+                                        </label>
+                                        <input type="text" class="form-control" id="sumber_data" name="sumber_data"
+                                            value="{{ old('sumber_data') }}"
+                                            placeholder="Contoh: Survei lapangan Bappeda 2025, SK Gubernur No. ...">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="opd_pengelola_id" class="form-label">
+                                            <i class="mdi mdi-office-building me-1"></i>
+                                            Instansi Pengelola (OPD)
+                                        </label>
+                                        <select class="form-select select2" id="opd_pengelola_id" name="opd_pengelola_id"
+                                            @if (Auth::user()->role->slug === 'admin-opd') disabled @endif>
+                                            <option value="">-- Pilih OPD --</option>
+                                            @foreach ($opdList as $opd)
+                                                <option value="{{ $opd->id }}"
+                                                    @selected(old('opd_pengelola_id', Auth::user()->opd_id) == $opd->id)>
+                                                    {{ $opd->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="tanggal_data" class="form-label">
+                                            <i class="mdi mdi-calendar-clock me-1"></i>
+                                            Tanggal Data
+                                        </label>
+                                        <input type="date" class="form-control" id="tanggal_data" name="tanggal_data"
+                                            value="{{ old('tanggal_data') }}">
+                                        <div class="form-text">Tanggal referensi/pembaruan data.</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             @if ($dataType === 'proyek_strategis')
                                 <div class="year-input-group">
                                     <div class="row">

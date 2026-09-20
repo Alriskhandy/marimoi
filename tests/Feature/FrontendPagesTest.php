@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\Opd;
 use App\Models\User;
 use App\Support\MapDataVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -137,6 +138,48 @@ class FrontendPagesTest extends TestCase
             ->assertSee('ANGGARAN')
             ->assertSee('Rp. 1.500.000.000')
             ->assertDontSee('>ID<', false);
+    }
+
+    public function test_detail_page_shows_dataset_metadata_when_present(): void
+    {
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Metadata', 'warna' => '#00ff00']);
+        $user = User::factory()->create();
+        $opd = Opd::create(['name' => 'Dinas Uji Coba', 'singkatan' => 'DUC']);
+        $data = DataSpatial::factory()->create([
+            'user_id' => $user->id,
+            'kategori_id' => $category->id,
+            'sumber_data' => 'Survei lapangan 2025',
+            'opd_pengelola_id' => $opd->id,
+            'tanggal_data' => '2025-06-01',
+        ]);
+
+        $this->get(route('detail.tematik', $data->uuid))
+            ->assertOk()
+            ->assertSee('Sumber Data')
+            ->assertSee('Survei lapangan 2025')
+            ->assertSee('Instansi Pengelola')
+            ->assertSee('Dinas Uji Coba')
+            ->assertSee('Tanggal Data')
+            ->assertSee('01 Jun 2025');
+    }
+
+    public function test_detail_page_hides_dataset_metadata_fields_when_absent(): void
+    {
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Tanpa Metadata', 'warna' => '#ff00ff']);
+        $user = User::factory()->create();
+        $data = DataSpatial::factory()->create([
+            'user_id' => $user->id,
+            'kategori_id' => $category->id,
+            'sumber_data' => null,
+            'opd_pengelola_id' => null,
+            'tanggal_data' => null,
+        ]);
+
+        $this->get(route('detail.tematik', $data->uuid))
+            ->assertOk()
+            ->assertDontSee('Sumber Data')
+            ->assertDontSee('Instansi Pengelola')
+            ->assertDontSee('Tanggal Data');
     }
 
     public function test_tematik_map_version_is_public_and_stable_until_data_or_category_changes(): void

@@ -159,6 +159,52 @@
                             </div>
                         </div>
 
+                        <!-- Metadata Dataset -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="sumber_data">Sumber Data</label>
+                                    <input type="text" class="form-control @error('sumber_data') is-invalid @enderror"
+                                        id="sumber_data" name="sumber_data" value="{{ old('sumber_data', $data->sumber_data) }}"
+                                        placeholder="Contoh: Survei lapangan Bappeda 2025, SK Gubernur No. ...">
+                                    @error('sumber_data')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="opd_pengelola_id">Instansi Pengelola (OPD)</label>
+                                    <select class="form-control select2 @error('opd_pengelola_id') is-invalid @enderror"
+                                        id="opd_pengelola_id" name="opd_pengelola_id"
+                                        @if (Auth::user()->role->slug === 'admin-opd') disabled @endif>
+                                        <option value="">-- Pilih OPD --</option>
+                                        @foreach ($opdList as $opd)
+                                            <option value="{{ $opd->id }}"
+                                                @selected(old('opd_pengelola_id', $data->opd_pengelola_id ?? Auth::user()->opd_id) == $opd->id)>
+                                                {{ $opd->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('opd_pengelola_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="tanggal_data">Tanggal Data</label>
+                                    <input type="date" class="form-control @error('tanggal_data') is-invalid @enderror"
+                                        id="tanggal_data" name="tanggal_data"
+                                        value="{{ old('tanggal_data', optional($data->tanggal_data)->format('Y-m-d')) }}">
+                                    <small class="form-text text-muted">Tanggal referensi/pembaruan data.</small>
+                                    @error('tanggal_data')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Image Upload Section -->
                         <div class="row">
                             <div class="col-12">

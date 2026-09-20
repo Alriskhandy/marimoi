@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\Opd;
 use App\Support\MapDataVersion;
 use DOMDocument;
 use DOMXPath;
@@ -56,6 +57,9 @@ class DataSpatialController extends Controller
                 'sub_type',
                 'tahun',
                 'deskripsi',
+                'sumber_data',
+                'opd_pengelola_id',
+                'tanggal_data',
                 'kategori_id',
                 'user_id',
                 'created_at',
@@ -136,12 +140,14 @@ class DataSpatialController extends Controller
         $year = $request->get('year');
 
         $categories = Category::with('children')->roots()->where('type', 'tematik')->get();
+        $opdList = Opd::orderBy('name')->get();
 
         return view('backend.pages.data_spatial.create', compact(
             'categories',
             'dataType',
             'subType',
-            'year'
+            'year',
+            'opdList'
         ));
     }
 
@@ -154,6 +160,9 @@ class DataSpatialController extends Controller
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',
+            'sumber_data' => 'nullable|string|max:255',
+            'opd_pengelola_id' => 'nullable|exists:opd,id',
+            'tanggal_data' => 'nullable|date',
         ];
 
         $request->validate($rules);
@@ -212,13 +221,15 @@ class DataSpatialController extends Controller
             ->roots()
             ->where('type', 'tematik')
             ->get();
+        $opdList = Opd::orderBy('name')->get();
 
         return view('backend.pages.data_spatial.edit', compact(
             'data',
             'categories',
             'dataType',
             'subType',
-            'year'
+            'year',
+            'opdList'
         ));
     }
 
@@ -230,6 +241,9 @@ class DataSpatialController extends Controller
             'deskripsi' => 'nullable|string|max:255',
             'dbf_attributes' => 'nullable|string',
             'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048', // Validasi gambar
+            'sumber_data' => 'nullable|string|max:255',
+            'opd_pengelola_id' => 'nullable|exists:opd,id',
+            'tanggal_data' => 'nullable|date',
         ], [
             'kategori_id.required' => 'Kategori harus dipilih',
             'kategori_id.exists' => 'Kategori tidak valid',
@@ -237,6 +251,8 @@ class DataSpatialController extends Controller
             'gambar.image' => 'File harus berupa gambar',
             'gambar.mimes' => 'Format gambar harus jpeg, jpg, png, atau gif',
             'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'opd_pengelola_id.exists' => 'OPD pengelola tidak valid.',
+            'tanggal_data.date' => 'Tanggal data tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -284,6 +300,11 @@ class DataSpatialController extends Controller
             $data->deskripsi = $request->deskripsi;
             $data->dbf_attributes = $dbfAttributes;
             $data->gambar = $imagePath;
+            $data->sumber_data = $request->sumber_data;
+            $data->opd_pengelola_id = $this->isAdminOPD()
+                ? Auth::user()->opd_id
+                : $request->opd_pengelola_id;
+            $data->tanggal_data = $request->tanggal_data;
             $data->save();
 
             Log::info('Data spatial updated successfully', [
@@ -857,6 +878,18 @@ KML;
 
             if ($request->has('tahun')) {
                 $data['tahun'] = $request->tahun;
+            }
+
+            if ($request->filled('sumber_data')) {
+                $data['sumber_data'] = $request->sumber_data;
+            }
+
+            $data['opd_pengelola_id'] = $this->isAdminOPD()
+                ? Auth::user()->opd_id
+                : $request->opd_pengelola_id;
+
+            if ($request->filled('tanggal_data')) {
+                $data['tanggal_data'] = $request->tanggal_data;
             }
 
             $data['user_id'] = Auth::user()->id;
