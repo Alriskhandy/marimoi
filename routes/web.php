@@ -58,6 +58,8 @@ Route::post('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiL
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 Route::get('/geojson/version', [FrontendController::class, 'tematikVersion'])->name('tematik.version');
+Route::get('/geojson/filter-options', [FrontendController::class, 'getFilterOptions'])->name('tematik.filter-options');
+Route::get('/geojson/filter-categories', [FrontendController::class, 'getFilterCategories'])->name('tematik.filter-categories');
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 

@@ -224,6 +224,14 @@
                         <button id="layerAll" type="button" class="text-[11px] text-aqua">Semua / kosongkan</button>
                     </div>
                     <div id="layerList" class="overflow-auto px-2 pb-3 group-data-[collapsed=true]/tools:hidden"></div>
+                    <div class="border-t border-white/10 px-4 py-3 space-y-2 group-data-[collapsed=true]/tools:hidden">
+                        <select id="homeFilterTahun" class="w-full rounded-lg border-white/10 bg-white/10 text-xs text-white">
+                            <option value="" class="text-black">Semua Tahun</option>
+                        </select>
+                        <select id="homeFilterOpd" class="w-full rounded-lg border-white/10 bg-white/10 text-xs text-white">
+                            <option value="" class="text-black">Semua OPD</option>
+                        </select>
+                    </div>
                 </div>
 
                 {{-- Zoom --}}

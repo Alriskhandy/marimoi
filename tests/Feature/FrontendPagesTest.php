@@ -95,7 +95,11 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="map-hud"', false)
             ->assertSee('id="sidebar-layer"', false)
             ->assertSee('id="btn-toggle-sidebar-basemap"', false)
-            ->assertSee('id="btn-share-map"', false);
+            ->assertSee('id="btn-share-map"', false)
+            ->assertSee('id="sidebar-layer"', false)
+            ->assertSee('id="filter-kabupaten"', false)
+            ->assertSee('id="filter-tahun"', false)
+            ->assertSee('id="filter-opd"', false);
     }
 
     public function test_detail_map_reprojects_legacy_web_mercator_geometry_to_lon_lat(): void

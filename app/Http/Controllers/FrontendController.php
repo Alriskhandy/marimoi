@@ -332,6 +332,10 @@ class FrontendController extends Controller
             'data_type' => 'nullable|string|max:50',
             'sub_type' => 'nullable|string|max:50',
             'year' => 'nullable|integer',
+            'filters' => 'nullable|array',
+            'filters.kabupaten' => 'nullable|string|max:255',
+            'filters.tahun' => 'nullable|integer',
+            'filters.opd_pengelola' => 'nullable|string|max:255',
         ]);
 
         do {
@@ -345,6 +349,7 @@ class FrontendController extends Controller
             'data_type' => $validated['data_type'] ?? 'tematik',
             'sub_type' => $validated['sub_type'] ?? null,
             'year' => $validated['year'] ?? null,
+            'filters' => $validated['filters'] ?? null,
         ]);
 
         return response()->json([
@@ -372,6 +377,7 @@ class FrontendController extends Controller
             ->with('sharedMapState', [
                 'layers' => $sharedMap->layers,
                 'viewport' => $sharedMap->viewport,
+                'filters' => $sharedMap->filters,
             ]);
     }
 
@@ -662,6 +668,105 @@ class FrontendController extends Controller
                 ],
             ], 500);
         }
+    }
+
+    /**
+     * Nilai distinct Kabupaten/Kota, Tahun, dan OPD Pengelola untuk mengisi dropdown
+     * filter Peta Tematik tanpa harus menunggu layer tertentu dimuat/dicentang dulu
+     * di browser (beda dari opsi yang digali progresif dari feature yang sudah
+     * dirender di refreshFilterPanel() pada map.js).
+     */
+    public function getFilterOptions(Request $request)
+    {
+        $dataType = $request->get('type', 'tematik');
+        $subType = $request->get('sub_type');
+        $year = $request->get('year');
+
+        $base = DB::table('data_spatial')
+            ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
+            ->where('data_spatial.data_type', $dataType);
+
+        if ($subType && is_string($subType)) {
+            $base->where('data_spatial.sub_type', $subType);
+        }
+
+        if ($year && is_numeric($year)) {
+            $base->where('data_spatial.tahun', intval($year));
+        }
+
+        $kabupaten = (clone $base)
+            ->select(DB::raw("dbf_attributes->>'KABUPATEN' as value"))
+            ->whereRaw("dbf_attributes->>'KABUPATEN' IS NOT NULL AND dbf_attributes->>'KABUPATEN' != ''")
+            ->distinct()
+            ->pluck('value')
+            ->sort()
+            ->values();
+
+        $tahun = (clone $base)
+            ->select('data_spatial.tahun as value')
+            ->whereNotNull('data_spatial.tahun')
+            ->distinct()
+            ->pluck('value')
+            ->sortDesc()
+            ->values();
+
+        $opdPengelola = (clone $base)
+            ->select('opd.name as value')
+            ->whereNotNull('opd.name')
+            ->distinct()
+            ->pluck('value')
+            ->sort()
+            ->values();
+
+        return response()->json([
+            'kabupaten' => $kabupaten,
+            'tahun' => $tahun,
+            'opd_pengelola' => $opdPengelola,
+        ]);
+    }
+
+    /**
+     * Kategori (nama layer) mana saja yang punya minimal satu feature yang cocok
+     * dengan kombinasi filter yang dipilih user, supaya frontend hanya perlu memuat
+     * & mencentang layer yang relevan saja — bukan seluruh pohon layer.
+     */
+    public function getFilterCategories(Request $request)
+    {
+        $dataType = $request->get('type', 'tematik');
+        $subType = $request->get('sub_type');
+        $year = $request->get('year');
+        $kabupaten = $request->get('kabupaten');
+        $tahun = $request->get('tahun');
+        $opdPengelola = $request->get('opd_pengelola');
+
+        $query = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+            ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
+            ->where('data_spatial.data_type', $dataType);
+
+        if ($subType && is_string($subType)) {
+            $query->where('data_spatial.sub_type', $subType);
+        }
+
+        if ($year && is_numeric($year)) {
+            $query->where('data_spatial.tahun', intval($year));
+        }
+
+        if ($kabupaten && is_string($kabupaten)) {
+            $query->whereRaw("dbf_attributes->>'KABUPATEN' = ?", [$kabupaten]);
+        }
+
+        if ($tahun && is_numeric($tahun)) {
+            $query->where('data_spatial.tahun', intval($tahun));
+        }
+
+        if ($opdPengelola && is_string($opdPengelola)) {
+            $query->where('opd.name', $opdPengelola);
+        }
+
+        $categories = $query->distinct()->pluck('categories.nama')->values();
+
+        return response()->json(['categories' => $categories]);
     }
 
     /**

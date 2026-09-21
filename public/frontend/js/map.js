@@ -635,6 +635,218 @@ function getLayerGroupOpacity(layerGroup) {
 }
 
 /**
+ * Nilai filter yang sedang aktif, dibaca dari 3 <select> di panel Filter.
+ * String kosong berarti "semua" (tidak memfilter dimensi itu).
+ */
+function getActiveFilterValues() {
+    return {
+        kabupaten: document.getElementById("filter-kabupaten")?.value || "",
+        tahun: document.getElementById("filter-tahun")?.value || "",
+        opd_pengelola: document.getElementById("filter-opd")?.value || "",
+    };
+}
+
+/**
+ * Isi <select> dengan opsi baru yang belum ada, tanpa mengubah pilihan yang
+ * sedang aktif (append-only) — dipanggil berulang setiap kali data baru dimuat.
+ */
+function ensureFilterOptions(selectEl, values) {
+    if (!selectEl) return;
+    const existing = new Set(Array.from(selectEl.options).map((o) => o.value));
+
+    Array.from(values).sort().forEach((value) => {
+        if (value === "" || existing.has(String(value))) return;
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = value;
+        selectEl.appendChild(opt);
+        existing.add(String(value));
+    });
+}
+
+/**
+ * Jalan-jalan rekursif ke setiap leaf layer yang sedang aktif di peta (pola sama
+ * dengan generateLegend()/getLayerGroupOpacity()), lalu: (a) kumpulkan nilai
+ * distinct KABUPATEN/tahun/opd_pengelola untuk opsi dropdown, (b) terapkan
+ * visibility sesuai filter aktif. Dipanggil setelah data baru dimuat, setiap kali
+ * filter berubah, dan saat panel filter dibuka.
+ */
+function refreshFilterPanel() {
+    const filters = getActiveFilterValues();
+    const kabupatenSet = new Set();
+    const tahunSet = new Set();
+    const opdSet = new Set();
+    let shown = 0;
+    let total = 0;
+
+    function matches(props) {
+        if (filters.kabupaten && (props.KABUPATEN || "") !== filters.kabupaten) return false;
+        if (filters.tahun && String(props.tahun || "") !== filters.tahun) return false;
+        if (filters.opd_pengelola && (props.opd_pengelola || "") !== filters.opd_pengelola) return false;
+        return true;
+    }
+
+    function applyVisibility(leaf, visible) {
+        if (typeof leaf.setStyle === "function") {
+            if (visible) {
+                leaf.setStyle(leaf.marimoiOriginalStyle || {});
+            } else {
+                leaf.marimoiOriginalStyle = leaf.marimoiOriginalStyle || { ...leaf.options };
+                leaf.setStyle({ opacity: 0, fillOpacity: 0 });
+            }
+        } else if (typeof leaf.setOpacity === "function") {
+            leaf.setOpacity(visible ? 1 : 0);
+        }
+    }
+
+    function visit(layer) {
+        if (layer.eachLayer) {
+            layer.eachLayer(visit);
+            return;
+        }
+        if (!layer.feature?.properties) return;
+
+        const props = layer.feature.properties;
+        total++;
+        if (props.KABUPATEN) kabupatenSet.add(props.KABUPATEN);
+        if (props.tahun) tahunSet.add(String(props.tahun));
+        if (props.opd_pengelola) opdSet.add(props.opd_pengelola);
+
+        const visible = matches(props);
+        if (visible) shown++;
+        applyVisibility(layer, visible);
+    }
+
+    Object.values(layerGroups).forEach((secondLevel) => {
+        Object.values(secondLevel).forEach((thirdLevel) => {
+            Object.values(thirdLevel).forEach((leafGroup) => {
+                if (map.hasLayer(leafGroup)) leafGroup.eachLayer(visit);
+            });
+        });
+    });
+
+    ensureFilterOptions(document.getElementById("filter-kabupaten"), kabupatenSet);
+    ensureFilterOptions(document.getElementById("filter-tahun"), tahunSet);
+    ensureFilterOptions(document.getElementById("filter-opd"), opdSet);
+
+    const countEl = document.getElementById("filter-count");
+    if (countEl) {
+        countEl.textContent = total > 0 ? `${shown} dari ${total} titik ditampilkan` : "Belum ada data dimuat";
+    }
+
+    const activeCount = Object.values(filters).filter(Boolean).length;
+    const summaryEl = document.getElementById("filter-summary-count");
+    if (summaryEl) {
+        summaryEl.textContent = activeCount > 0 ? String(activeCount) : "";
+        summaryEl.classList.toggle("hidden", activeCount === 0);
+    }
+}
+
+/**
+ * Isi 3 dropdown filter dari nilai distinct yang ada di database (endpoint
+ * /geojson/filter-options), supaya pilihan seperti "Kota Ternate" sudah bisa dipilih
+ * sejak awal — tanpa menunggu satu pun layer dimuat/dicentang dulu. Dipanggil sekali
+ * saat inisialisasi peta. refreshFilterPanel() tetap menambah opsi baru secara
+ * progresif dari feature yang sudah dirender (ensureFilterOptions bersifat
+ * append-only, jadi tidak ada duplikasi antara sumber server ini dan sumber client).
+ */
+async function loadFilterOptionsFromServer() {
+    try {
+        const urlPath = window.location.pathname.replace(/\/$/, "");
+        const tipeLayer = getDataType(urlPath);
+        const params = new URLSearchParams();
+        if (tipeLayer.type) params.set("type", tipeLayer.type);
+        if (tipeLayer.sub_type) params.set("sub_type", tipeLayer.sub_type);
+        if (tipeLayer.year) params.set("year", tipeLayer.year);
+
+        const response = await fetch(`/geojson/filter-options?${params.toString()}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        ensureFilterOptions(document.getElementById("filter-kabupaten"), data.kabupaten || []);
+        ensureFilterOptions(document.getElementById("filter-tahun"), (data.tahun || []).map(String));
+        ensureFilterOptions(document.getElementById("filter-opd"), data.opd_pengelola || []);
+    } catch (error) {
+        console.error("Gagal memuat opsi filter:", error);
+    }
+}
+
+/**
+ * Muat & centang hanya kategori yang punya feature cocok dengan kombinasi filter aktif
+ * (lewat endpoint /geojson/filter-categories) — bukan seluruh pohon layer, supaya
+ * memilih satu Kabupaten/Kota saja tidak memicu pemuatan semua data yang ada.
+ * Memakai pola pencarian checkbox + dispatchEvent("change") yang sama persis dengan
+ * applySharedMapState() (sudah terbukti bekerja untuk memuat layer dari share link).
+ */
+async function loadCategoriesMatchingFilter(filters) {
+    const urlPath = window.location.pathname.replace(/\/$/, "");
+    const tipeLayer = getDataType(urlPath);
+    const params = new URLSearchParams();
+    if (tipeLayer.type) params.set("type", tipeLayer.type);
+    if (tipeLayer.sub_type) params.set("sub_type", tipeLayer.sub_type);
+    if (tipeLayer.year) params.set("year", tipeLayer.year);
+    if (filters.kabupaten) params.set("kabupaten", filters.kabupaten);
+    if (filters.tahun) params.set("tahun", filters.tahun);
+    if (filters.opd_pengelola) params.set("opd_pengelola", filters.opd_pengelola);
+
+    let categoryNames = [];
+    try {
+        const response = await fetch(`/geojson/filter-categories?${params.toString()}`);
+        if (response.ok) {
+            const data = await response.json();
+            categoryNames = Array.isArray(data.categories) ? data.categories : [];
+        }
+    } catch (error) {
+        console.error("Gagal memuat daftar layer yang cocok dengan filter:", error);
+    }
+
+    for (const categoryName of categoryNames) {
+        const checkbox = findCheckboxForCategory(categoryName);
+        if (!checkbox || checkbox.checked) continue;
+
+        await expandParentGroupIfNeeded(checkbox);
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+}
+
+/**
+ * Terapkan filter yang sedang aktif: bila ada minimal satu dimensi filter terisi,
+ * muat dulu kategori yang cocok (loadCategoriesMatchingFilter) supaya filter bekerja
+ * lintas layer tanpa perlu layer dicentang manual lebih dulu, baru refreshFilterPanel()
+ * menyaring hasilnya per-feature. Kontrol filter dikunci sementara selama pemuatan.
+ */
+async function applyStructuredFilters() {
+    const filters = getActiveFilterValues();
+    const hasActiveFilter = Object.values(filters).some(Boolean);
+
+    if (!hasActiveFilter) {
+        refreshFilterPanel();
+        return;
+    }
+
+    const filterFields = ["filter-kabupaten", "filter-tahun", "filter-opd", "btn-reset-filter"];
+    filterFields.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+    });
+
+    const countEl = document.getElementById("filter-count");
+    if (countEl) countEl.textContent = "Mencari layer yang cocok dengan filter...";
+
+    try {
+        await loadCategoriesMatchingFilter(filters);
+    } finally {
+        filterFields.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+        refreshFilterPanel();
+    }
+}
+
+/**
  * Resolusi warna representatif sebuah layer, sama persis dengan urutan
  * fallback yang dipakai generateLegend() supaya warna slider di Layer Tools
  * konsisten dengan warna swatch di Legenda.
@@ -1363,6 +1575,7 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
             await renderCachedChunks(cachedChunks, targetLayer, categoryName, urlPath);
             loadedCategories.add(categoryName);
             updateCheckboxLoadingState(categoryName, false);
+            refreshFilterPanel();
             return;
         }
 
@@ -1531,6 +1744,7 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
         hideLoadingOverlay();
         updateCheckboxLoadingState(categoryName, false);
+        refreshFilterPanel();
 
         if (loadingToast) {
             hideToast(loadingToast);
@@ -1830,16 +2044,16 @@ function updateLayerList() {
                 thirdLevelContainer.appendChild(thirdRow);
                 
                 // Third level checkbox handler
-                thirdCheckbox.addEventListener("change", async () => {
+                const applyThirdLevelChange = async () => {
                     // Disable checkbox during loading
                     thirdCheckbox.disabled = true;
                     thirdCheckbox.className = thirdCheckbox.className + " opacity-50 cursor-not-allowed";
-                    
+
                     try {
                         if (thirdCheckbox.checked) {
                             // Load data on-demand if not loaded yet
                             await loadCategoryData(thirdName, secondName, rootName);
-                            
+
                             // Add layer to map
                             if (layerGroups[rootName]?.[secondName]?.[thirdName]) {
                                 map.addLayer(layerGroups[rootName][secondName][thirdName]);
@@ -1850,7 +2064,7 @@ function updateLayerList() {
                                 map.removeLayer(layerGroups[rootName][secondName][thirdName]);
                             }
                         }
-                        
+
                         // Update second level checkbox state based on third level checkboxes
                         updateSecondLevelCheckboxState(secondCheckbox, thirdLevelContainer);
                         updateRootCheckboxState(rootCheckbox, secondLevelContainer);
@@ -1862,7 +2076,11 @@ function updateLayerList() {
                         thirdCheckbox.disabled = false;
                         thirdCheckbox.className = thirdCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
                     }
-                });
+                };
+                thirdCheckbox.addEventListener("change", applyThirdLevelChange);
+                // Referensi ke handler-nya sendiri, dipakai checkbox induk (root/second level)
+                // agar tiap kategori dimuat berurutan lewat pemanggilan langsung yang bisa di-`await`.
+                thirdCheckbox._applyChange = applyThirdLevelChange;
             });
             
             // Toggle functionality for second level
@@ -2275,6 +2493,18 @@ async function applySharedMapState() {
     if (viewport && typeof viewport.lat === "number" && typeof viewport.lng === "number") {
         map.setView([viewport.lat, viewport.lng], viewport.zoom || mapConfig.zoom);
     }
+
+    if (state.filters) {
+        const kabupatenEl = document.getElementById("filter-kabupaten");
+        const tahunEl = document.getElementById("filter-tahun");
+        const opdEl = document.getElementById("filter-opd");
+        if (state.filters.kabupaten && kabupatenEl) kabupatenEl.value = state.filters.kabupaten;
+        if (state.filters.tahun && tahunEl) tahunEl.value = String(state.filters.tahun);
+        if (state.filters.opd_pengelola && opdEl) opdEl.value = state.filters.opd_pengelola;
+        // Filter di share link juga harus menampilkan layer yang cocok di luar
+        // state.layers yang eksplisit tercentang — bukan cuma menyaring yang sudah dimuat.
+        await applyStructuredFilters();
+    }
 }
 
 /**
@@ -2544,6 +2774,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+        // Isi dropdown filter dari database (paralel, tidak perlu menunggu pohon layer
+        // selesai dibangun — elemen <select>-nya statis di Blade, tanpa layerGroups).
+        loadFilterOptionsFromServer();
+
         // Load categories metadata - ini akan build layerGroups dan UI
         await loadCategoriesMetadata();
 
@@ -2694,6 +2928,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                 sidebarElements[type].classList.add("hidden");
             });
         }
+    });
+
+    // Filter Data kini menyatu di sidebar Layer: opsi bertambah otomatis saat data
+    // dimuat (lihat loadCategoryData). Memilih nilai filter memuat & mencentang seluruh
+    // kategori yang belum aktif (applyStructuredFilters -> activateAllCategoriesForFilter)
+    // supaya filter menampilkan layer yang cocok, bukan cuma menyaring layer yang
+    // kebetulan sudah dicentang lebih dulu.
+    ["filter-kabupaten", "filter-tahun", "filter-opd"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("change", applyStructuredFilters);
+    });
+
+    document.getElementById("btn-reset-filter")?.addEventListener("click", () => {
+        ["filter-kabupaten", "filter-tahun", "filter-opd"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+        refreshFilterPanel();
+    });
+
+    toggleButtons.layer?.addEventListener("click", refreshFilterPanel);
+
+    // Toggle panel Filter Data, terpisah dari toggle sidebar Layer supaya filter
+    // bisa dibuka/ditutup tanpa menutup sidebar Layer itu sendiri.
+    const filterPanel = document.getElementById("filter-panel");
+    const btnToggleFilterPanel = document.getElementById("btn-toggle-filter-panel");
+    btnToggleFilterPanel?.addEventListener("click", () => {
+        if (!filterPanel) return;
+        const isHidden = filterPanel.classList.toggle("hidden");
+        btnToggleFilterPanel.setAttribute("aria-expanded", String(!isHidden));
     });
 
     // Layer Tools panel (independen dari sidebar lain: boleh dibuka bersamaan
@@ -2935,6 +3198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     data_type: tipeLayer.type,
                     sub_type: tipeLayer.sub_type,
                     year: tipeLayer.year,
+                    filters: getActiveFilterValues(),
                 }),
             });
 

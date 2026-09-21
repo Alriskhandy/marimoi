@@ -13,6 +13,7 @@ class SharedMap extends Model
         'data_type',
         'sub_type',
         'year',
+        'filters',
         'expired_at',
     ];
 
@@ -21,6 +22,7 @@ class SharedMap extends Model
         return [
             'layers' => 'array',
             'viewport' => 'array',
+            'filters' => 'array',
             'expired_at' => 'datetime',
         ];
     }

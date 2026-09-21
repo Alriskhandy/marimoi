@@ -667,15 +667,35 @@ function initMap() {
         markers.push({ mk, p, hay: `${p.n || ''} ${layer.nama}`.toLowerCase() });
     });
 
+    function ensureHomeFilterOptions(selectEl, values) {
+        if (!selectEl) { return; }
+        Array.from(values).sort().forEach((value) => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = value;
+            opt.className = 'text-black';
+            selectEl.appendChild(opt);
+        });
+    }
+    ensureHomeFilterOptions($('#homeFilterTahun'), new Set(pts.map((p) => p.t).filter(Boolean)));
+    ensureHomeFilterOptions($('#homeFilterOpd'), new Set(pts.map((p) => p.op).filter(Boolean)));
+
     function apply() {
+        const filterTahun = $('#homeFilterTahun')?.value || '';
+        const filterOpd = $('#homeFilterOpd')?.value || '';
         let shown = 0;
         markers.forEach((m) => {
-            const on = active[m.p.k] && (!query || m.hay.includes(query));
+            const on = active[m.p.k]
+                && (!query || m.hay.includes(query))
+                && (!filterTahun || String(m.p.t || '') === filterTahun)
+                && (!filterOpd || (m.p.op || '') === filterOpd);
             if (on) { shown++; if (!group.hasLayer(m.mk)) { group.addLayer(m.mk); } }
             else if (group.hasLayer(m.mk)) { group.removeLayer(m.mk); }
         });
         $('#mapCount').textContent = fmt(shown);
     }
+    $('#homeFilterTahun')?.addEventListener('change', apply);
+    $('#homeFilterOpd')?.addEventListener('change', apply);
 
     const list = $('#layerList');
     list.replaceChildren(...(DATA.layers || []).map((l) => {

@@ -239,10 +239,10 @@
 
                 <!-- Sidebar Layer -->
                 <div id="sidebar-layer"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
                     <!-- Header with gradient background -->
                     <div
-                        class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
+                        class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Layer</h6>
                         <button id="btn-close-sidebar-layer"
                             class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
@@ -250,18 +250,31 @@
                         </button>
                     </div>
 
-                    <div class="mb-3 w-full">
-                        <label for="layer-search" class="sr-only">Cari Layer/Kategori</label>
-                        <div
-                            class="flex items-center gap-2 w-full px-3 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
-                            <i class="bi bi-search text-gray-400 text-sm shrink-0"></i>
-                            <input type="text" id="layer-search" name="layer-search" autocomplete="off"
-                                spellcheck="false" maxlength="100"
-                                class="flex-1 min-w-0 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 py-2 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
-                                placeholder="Cari layer atau kategori...">
-                            <button type="button" id="layer-search-clear"
-                                class="hidden shrink-0 text-gray-400 hover:text-gray-600" aria-label="Hapus pencarian">
-                                <i class="bi bi-x-circle-fill text-sm"></i>
+                    <div class="shrink-0 mb-2 w-full">
+                        <div class="flex items-center gap-2 w-full">
+                            <label for="layer-search" class="sr-only">Cari Layer/Kategori</label>
+                            <div
+                                class="flex items-center gap-2 flex-1 min-w-0 px-3 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
+                                <i class="bi bi-search text-gray-400 text-sm shrink-0"></i>
+                                <input type="text" id="layer-search" name="layer-search" autocomplete="off"
+                                    spellcheck="false" maxlength="100"
+                                    class="flex-1 min-w-0 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 py-2 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
+                                    placeholder="Cari layer atau kategori...">
+                                <button type="button" id="layer-search-clear"
+                                    class="hidden shrink-0 text-gray-400 hover:text-gray-600" aria-label="Hapus pencarian">
+                                    <i class="bi bi-x-circle-fill text-sm"></i>
+                                </button>
+                            </div>
+
+                            <!-- Toggle panel Filter Data, di samping kolom pencarian agar sidebar
+                                 Layer tetap ringkas (panel filter default tersembunyi). -->
+                            <button type="button" id="btn-toggle-filter-panel"
+                                class="relative shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-500 hover:bg-slate-100 transition-colors"
+                                title="Filter Data" data-tooltip="Filter Data" aria-expanded="false"
+                                aria-controls="filter-panel">
+                                <i class="bi bi-funnel-fill text-sm"></i>
+                                <span id="filter-summary-count"
+                                    class="hidden absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] leading-none"></span>
                             </button>
                         </div>
                         <p id="layer-search-empty" class="hidden text-xs text-gray-500 mt-2 px-1">
@@ -269,7 +282,41 @@
                         </p>
                     </div>
 
-                    <div id="layer-list" class="max-h-[calc(100vh-250px)] overflow-y-auto text-sm">
+                    <!-- Panel Filter Data: tersembunyi secara default, dibuka lewat tombol corong
+                         di samping pencarian. Filter bisa diatur lebih dulu tanpa mengaktifkan
+                         layer apa pun, baru layer yang sesuai hasil filter dicentang. -->
+                    <div id="filter-panel"
+                        class="hidden shrink-0 border border-gray-200 rounded-lg bg-white p-3 mb-2">
+                        <div class="mb-2">
+                            <label for="filter-kabupaten" class="block text-xs font-medium text-gray-700 mb-1">Kabupaten/Kota</label>
+                            <select id="filter-kabupaten" class="w-full text-sm rounded-lg border-gray-300">
+                                <option value="">Semua Kabupaten/Kota</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label for="filter-tahun" class="block text-xs font-medium text-gray-700 mb-1">Tahun</label>
+                            <select id="filter-tahun" class="w-full text-sm rounded-lg border-gray-300">
+                                <option value="">Semua Tahun</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label for="filter-opd" class="block text-xs font-medium text-gray-700 mb-1">OPD Pengelola</label>
+                            <select id="filter-opd" class="w-full text-sm rounded-lg border-gray-300">
+                                <option value="">Semua OPD</option>
+                            </select>
+                        </div>
+
+                        <button id="btn-reset-filter" type="button"
+                            class="w-full text-sm text-blue-600 border border-blue-200 rounded-lg py-1.5 hover:bg-blue-50 mb-2">
+                            Reset Filter
+                        </button>
+
+                        <p id="filter-count" class="text-xs text-gray-500 text-center"></p>
+                    </div>
+
+                    <div id="layer-list" class="flex-1 min-h-0 overflow-y-auto text-sm">
                         <!-- Layer list will be populated dynamically -->
                     </div>
                 </div>
@@ -400,7 +447,7 @@
                     </button>
 
                     <button id="btn-toggle-sidebar-layer" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
                         title="Layer Peta" data-tooltip="Layer Peta">
                         <i class="bi bi-layers-fill"></i>
                     </button>
