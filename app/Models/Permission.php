@@ -43,6 +43,14 @@ class Permission extends SpatiePermission
                 'delete' => 'Hapus feedback',
             ],
         ],
+        'project-progress' => [
+            'label' => 'Progres Proyek Strategis',
+            'actions' => [
+                'view' => 'Lihat laporan progres proyek',
+                'create' => 'Tambah laporan progres',
+                'edit' => 'Perbarui laporan progres yang sudah ada',
+            ],
+        ],
         'dokumen' => [
             'label' => 'Upload Dokumen',
             'actions' => [

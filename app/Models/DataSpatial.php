@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Model utama untuk data spatial
 class DataSpatial extends Model
@@ -60,6 +61,12 @@ class DataSpatial extends Model
     public function opdPengelola(): BelongsTo
     {
         return $this->belongsTo(Opd::class, 'opd_pengelola_id');
+    }
+
+    // Relasi ke seluruh laporan progres proyek ini (terurut dari yang paling baru disimpan)
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(ProjectProgressReport::class, 'data_spatial_id')->latest('id');
     }
 
     public function getMetadataLengkapAttribute(): bool

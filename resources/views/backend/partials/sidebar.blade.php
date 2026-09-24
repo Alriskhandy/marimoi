@@ -101,6 +101,21 @@
 
         @endif
 
+        {{-- Pembangunan --}}
+        @can('project-progress.view')
+            <div class="nav-section-label">Pembangunan</div>
+            <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}"
+                href="{{ route('dashboard.pembangunan') }}">
+                <span class="nav-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span>
+                <span class="nav-text">Dashboard Pembangunan</span>
+            </a>
+            <a class="nav-link {{ request()->routeIs('project-progress.*') ? 'active' : '' }}"
+                href="{{ route('project-progress.index') }}">
+                <span class="nav-icon"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+                <span class="nav-text">Progres Proyek Strategis</span>
+            </a>
+        @endcan
+
         {{-- Upload Dokumen --}}
         @if ($slug != 'admin-opd' && Route::has('dokumen.index') && $user?->can('dokumen.view'))
             <a class="nav-link {{ $isDokumenActive ? 'active' : '' }}" href="{{ route('dokumen.index') }}">
