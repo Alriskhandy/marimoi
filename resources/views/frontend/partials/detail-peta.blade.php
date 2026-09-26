@@ -99,6 +99,13 @@
                             <div><dt class="text-slate-500">Tanggal Data</dt><dd class="mt-0.5 font-semibold text-navy">{{ $project->tanggal_data->format('d M Y') }}</dd></div>
                         @endif
                     </dl>
+
+                    @if (! $project->metadata_lengkap)
+                        <div class="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            Metadata belum lengkap — sumber data, instansi pengelola, atau tanggal data belum dicantumkan sepenuhnya.
+                        </div>
+                    @endif
                 </article>
 
                 @if (! empty($project->gambar))

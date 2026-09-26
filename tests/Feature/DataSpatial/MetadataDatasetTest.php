@@ -9,6 +9,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class MetadataDatasetTest extends TestCase
@@ -145,6 +146,59 @@ class MetadataDatasetTest extends TestCase
 
         $data->refresh();
         $this->assertSame($ownOpd->id, $data->opd_pengelola_id);
+    }
+
+    public function test_new_data_spatial_requires_metadata_after_cutoff(): void
+    {
+        Carbon::setTestNow(Carbon::parse(config('marimoi.metadata_wajib_sejak'))->addDay());
+
+        $admin = $this->superAdmin();
+        $category = $this->category();
+
+        $this->actingAs($admin)
+            ->post(route('data-spatial.store'), $this->coordinatePayload($category))
+            ->assertSessionHasErrors(['sumber_data', 'opd_pengelola_id', 'tanggal_data']);
+
+        $this->assertSame(0, DataSpatial::count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_new_data_spatial_metadata_still_optional_before_cutoff(): void
+    {
+        Carbon::setTestNow(Carbon::parse(config('marimoi.metadata_wajib_sejak'))->subDay());
+
+        $admin = $this->superAdmin();
+        $category = $this->category();
+
+        $this->actingAs($admin)
+            ->post(route('data-spatial.store'), $this->coordinatePayload($category))
+            ->assertSessionDoesntHaveErrors(['sumber_data', 'opd_pengelola_id', 'tanggal_data']);
+
+        $this->assertSame(1, DataSpatial::count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_admin_opd_not_required_to_fill_opd_pengelola_id_after_cutoff(): void
+    {
+        Carbon::setTestNow(Carbon::parse(config('marimoi.metadata_wajib_sejak'))->addDay());
+
+        $opd = Opd::create(['name' => 'Dinas Uji Grace', 'singkatan' => 'DUG']);
+        $admin = $this->adminOpd($opd, ['data-spatial.create']);
+        $category = $this->category();
+
+        $this->actingAs($admin)
+            ->post(route('data-spatial.store'), $this->coordinatePayload($category, [
+                'sumber_data' => 'Survei lapangan',
+                'tanggal_data' => '2026-10-05',
+            ]))
+            ->assertSessionDoesntHaveErrors('opd_pengelola_id');
+
+        $data = DataSpatial::firstOrFail();
+        $this->assertSame($opd->id, $data->opd_pengelola_id);
+
+        Carbon::setTestNow();
     }
 
     public function test_metadata_lengkap_accessor_reflects_completeness(): void

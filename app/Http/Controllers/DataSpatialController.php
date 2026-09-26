@@ -10,6 +10,7 @@ use DOMDocument;
 use DOMXPath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -26,6 +27,11 @@ class DataSpatialController extends Controller
     protected function isAdminOPD()
     {
         return Auth::user()?->role?->slug === 'admin-opd';
+    }
+
+    private function metadataWajib(): bool
+    {
+        return now()->greaterThanOrEqualTo(Carbon::parse(config('marimoi.metadata_wajib_sejak')));
     }
 
     public function index(Request $request)
@@ -155,14 +161,19 @@ class DataSpatialController extends Controller
     {
         // dd($request->all());
         // Validasi dasar
+        $wajibMetadata = $this->metadataWajib();
+
         $rules = [
             'data_type' => 'required|in:tematik',
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',
-            'sumber_data' => 'nullable|string|max:255',
-            'opd_pengelola_id' => 'nullable|exists:opd,id',
-            'tanggal_data' => 'nullable|date',
+            'sumber_data' => [$wajibMetadata ? 'required' : 'nullable', 'string', 'max:255'],
+            'opd_pengelola_id' => [
+                ($wajibMetadata && ! $this->isAdminOPD()) ? 'required' : 'nullable',
+                'exists:opd,id',
+            ],
+            'tanggal_data' => [$wajibMetadata ? 'required' : 'nullable', 'date'],
         ];
 
         $request->validate($rules);
@@ -236,14 +247,19 @@ class DataSpatialController extends Controller
     public function update(Request $request, $id)
     {
         // dd($request->kategori_id);
+        $wajibMetadata = $this->metadataWajib();
+
         $validator = Validator::make($request->all(), [
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string|max:255',
             'dbf_attributes' => 'nullable|string',
             'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048', // Validasi gambar
-            'sumber_data' => 'nullable|string|max:255',
-            'opd_pengelola_id' => 'nullable|exists:opd,id',
-            'tanggal_data' => 'nullable|date',
+            'sumber_data' => [$wajibMetadata ? 'required' : 'nullable', 'string', 'max:255'],
+            'opd_pengelola_id' => [
+                ($wajibMetadata && ! $this->isAdminOPD()) ? 'required' : 'nullable',
+                'exists:opd,id',
+            ],
+            'tanggal_data' => [$wajibMetadata ? 'required' : 'nullable', 'date'],
         ], [
             'kategori_id.required' => 'Kategori harus dipilih',
             'kategori_id.exists' => 'Kategori tidak valid',
@@ -251,7 +267,10 @@ class DataSpatialController extends Controller
             'gambar.image' => 'File harus berupa gambar',
             'gambar.mimes' => 'Format gambar harus jpeg, jpg, png, atau gif',
             'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'sumber_data.required' => 'Sumber data wajib diisi.',
+            'opd_pengelola_id.required' => 'OPD pengelola wajib dipilih.',
             'opd_pengelola_id.exists' => 'OPD pengelola tidak valid.',
+            'tanggal_data.required' => 'Tanggal data wajib diisi.',
             'tanggal_data.date' => 'Tanggal data tidak valid.',
         ]);
 

@@ -45,7 +45,7 @@
 </form>
 
 <div class="row">
-    <div class="col-md-4 stretch-card grid-margin">
+    <div class="col-md-3 stretch-card grid-margin">
         <div class="card bg-gradient-primary card-img-holder text-white">
             <div class="card-body">
                 <h6 class="font-weight-normal">Proyek Terdaftar</h6>
@@ -54,7 +54,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 stretch-card grid-margin">
+    <div class="col-md-3 stretch-card grid-margin">
         <div class="card bg-gradient-info card-img-holder text-white">
             <div class="card-body">
                 <h6 class="font-weight-normal">Realisasi Anggaran</h6>
@@ -63,12 +63,21 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 stretch-card grid-margin">
+    <div class="col-md-3 stretch-card grid-margin">
         <div class="card bg-gradient-success card-img-holder text-white">
             <div class="card-body">
                 <h6 class="font-weight-normal">Rata-rata Progres Fisik</h6>
                 <h2 class="mb-2">{{ $cards['rata_progres_fisik'] }}%</h2>
                 <small>{{ $cards['jumlah_bermasalah'] }} proyek berstatus terlambat</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 stretch-card grid-margin">
+        <div class="card bg-gradient-warning card-img-holder text-white">
+            <div class="card-body">
+                <h6 class="font-weight-normal">Kelengkapan Pelaporan</h6>
+                <h2 class="mb-2">{{ $cards['persen_kelengkapan'] }}%</h2>
+                <small>{{ $cards['jumlah_dilaporkan'] }} dari {{ $cards['jumlah_proyek'] }} proyek sudah melapor tahun {{ $tahun }}</small>
             </div>
         </div>
     </div>

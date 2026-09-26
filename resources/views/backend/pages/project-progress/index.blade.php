@@ -8,6 +8,16 @@
     </h3>
 </div>
 
+@if ($belumLaporBanner)
+    <div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+        <i class="mdi mdi-alert-circle-outline"></i>
+        <div>
+            <strong>{{ $belumLaporBanner['belum'] }} dari {{ $belumLaporBanner['total'] }}</strong>
+            proyek OPD Anda belum melapor progres untuk tahun anggaran {{ $belumLaporBanner['tahun'] }}.
+        </div>
+    </div>
+@endif
+
 <div class="card">
     <div class="card-body">
         <form method="GET" class="row g-2 mb-3">

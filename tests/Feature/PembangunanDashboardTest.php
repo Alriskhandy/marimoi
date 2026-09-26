@@ -139,4 +139,35 @@ class PembangunanDashboardTest extends TestCase
         $response->assertOk();
         $response->assertViewHas('laporan', fn ($laporan) => $laporan->count() === 1 && $laporan->first()->status === 'terlambat');
     }
+
+    public function test_dashboard_shows_kelengkapan_pelaporan_percentage(): void
+    {
+        $role = Role::create(['slug' => 'admin-bappeda', 'name' => 'Admin Bappeda', 'description' => null]);
+        $this->grantProjectProgressView($role);
+        $admin = User::factory()->create(['role_id' => $role->id]);
+
+        $opd = Opd::create(['name' => 'Dinas PUPR', 'singkatan' => 'PUPR']);
+        $proyekSudahLapor = $this->proyek($opd->id);
+        $this->proyek($opd->id); // belum lapor
+        $this->proyek($opd->id); // belum lapor
+
+        ProjectProgressReport::factory()->create([
+            'data_spatial_id' => $proyekSudahLapor->id,
+            'opd_id' => $opd->id,
+            'tahun_anggaran' => 2026,
+            'periode_laporan' => 'Triwulan 1',
+        ]);
+
+        // opd_id disertakan eksplisit supaya jumlah_proyek terbatas ke OPD ini saja —
+        // tanpa filter ini, baris DataSpatial throwaway dari ProjectProgressReportFactory
+        // (proyek "internal" yang dibuat factory itu sendiri) ikut terhitung.
+        $response = $this->actingAs($admin)->get(route('dashboard.pembangunan', ['tahun' => 2026, 'opd_id' => $opd->id]));
+
+        $response->assertOk();
+        $response->assertViewHas('cards', function (array $cards) {
+            return $cards['jumlah_proyek'] === 3
+                && $cards['jumlah_dilaporkan'] === 1
+                && $cards['persen_kelengkapan'] === 33.3;
+        });
+    }
 }

@@ -30,7 +30,10 @@
 
             <div class="mb-3">
                 <label class="form-label">Pagu (Rp)</label>
-                <input type="number" step="0.01" name="pagu" class="form-control" value="{{ old('pagu') }}">
+                <input type="number" step="0.01" name="pagu" class="form-control" value="{{ old('pagu', $laporanTerakhir->pagu ?? '') }}">
+                @if ($laporanTerakhir && $laporanTerakhir->pagu)
+                    <small class="text-muted">Diisi otomatis dari laporan {{ $laporanTerakhir->periode_laporan }} {{ $laporanTerakhir->tahun_anggaran }} — sesuaikan bila berubah.</small>
+                @endif
             </div>
 
             <div class="mb-3">

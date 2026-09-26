@@ -51,10 +51,30 @@
 
     <nav class="sidebar-nav">
         @can('dashboard.view')
-            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-                <span class="nav-text">Dashboard</span>
-            </a>
+            @if ($user?->can('project-progress.view'))
+                @php($isDashboardGroupActive = request()->routeIs('dashboard') || request()->routeIs('dashboard.pembangunan'))
+                <a class="nav-link {{ $isDashboardGroupActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#dashboardMenu"
+                    role="button" aria-expanded="{{ $isDashboardGroupActive ? 'true' : 'false' }}" aria-controls="dashboardMenu">
+                    <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                    <span class="nav-text">Dashboard</span>
+                    <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+                </a>
+                <div class="collapse {{ $isDashboardGroupActive ? 'show' : '' }}" id="dashboardMenu">
+                    <div class="sidebar-submenu">
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                            <span class="nav-text">Ringkasan</span>
+                        </a>
+                        <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}" href="{{ route('dashboard.pembangunan') }}">
+                            <span class="nav-text">Pembangunan</span>
+                        </a>
+                    </div>
+                </div>
+            @else
+                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                    <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            @endif
         @endcan
 
         @if ($canPetaTematik || $canAspirasi || ($slug != 'admin-opd' && $user?->can('dokumen.view')))
@@ -104,11 +124,6 @@
         {{-- Pembangunan --}}
         @can('project-progress.view')
             <div class="nav-section-label">Pembangunan</div>
-            <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}"
-                href="{{ route('dashboard.pembangunan') }}">
-                <span class="nav-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span>
-                <span class="nav-text">Dashboard Pembangunan</span>
-            </a>
             <a class="nav-link {{ request()->routeIs('project-progress.*') ? 'active' : '' }}"
                 href="{{ route('project-progress.index') }}">
                 <span class="nav-icon"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>

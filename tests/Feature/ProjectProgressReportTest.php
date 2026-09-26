@@ -253,4 +253,93 @@ class ProjectProgressReportTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    public function test_admin_opd_sees_reminder_banner_when_reports_incomplete(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas PUPR', 'singkatan' => 'PUPR']);
+        $role = $this->roleWithPermissions('admin-opd', ['project-progress.view']);
+        $admin = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+
+        $proyekSudahLapor = $this->proyek($opd->id);
+        $this->proyek($opd->id);
+        $this->proyek($opd->id);
+
+        ProjectProgressReport::factory()->create([
+            'data_spatial_id' => $proyekSudahLapor->id,
+            'opd_id' => $opd->id,
+            'tahun_anggaran' => now()->year,
+            'periode_laporan' => 'Triwulan 1',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('project-progress.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('belumLaporBanner', fn ($banner) => $banner['belum'] === 2 && $banner['total'] === 3);
+    }
+
+    public function test_admin_opd_does_not_see_banner_when_all_reported(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas PUPR', 'singkatan' => 'PUPR']);
+        $role = $this->roleWithPermissions('admin-opd', ['project-progress.view']);
+        $admin = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+
+        $proyek = $this->proyek($opd->id);
+        ProjectProgressReport::factory()->create([
+            'data_spatial_id' => $proyek->id,
+            'opd_id' => $opd->id,
+            'tahun_anggaran' => now()->year,
+            'periode_laporan' => 'Triwulan 1',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('project-progress.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('belumLaporBanner', fn ($banner) => $banner === null);
+    }
+
+    public function test_admin_bappeda_never_sees_personal_banner(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas PUPR', 'singkatan' => 'PUPR']);
+        $role = $this->roleWithPermissions('admin-bappeda', ['project-progress.view']);
+        $admin = User::factory()->create(['role_id' => $role->id]);
+
+        // Proyek OPD lain sengaja belum lapor sama sekali — tidak relevan untuk admin-bappeda.
+        $this->proyek($opd->id);
+
+        $response = $this->actingAs($admin)->get(route('project-progress.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('belumLaporBanner', fn ($banner) => $banner === null);
+    }
+
+    public function test_create_form_prefills_pagu_from_last_report(): void
+    {
+        $role = $this->roleWithPermissions('admin-bappeda', ['project-progress.view', 'project-progress.create']);
+        $admin = User::factory()->create(['role_id' => $role->id]);
+        $proyek = $this->proyek();
+
+        ProjectProgressReport::factory()->create([
+            'data_spatial_id' => $proyek->id,
+            'tahun_anggaran' => 2026,
+            'periode_laporan' => 'Triwulan 1',
+            'pagu' => 500000000,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('project-progress.create', $proyek->uuid));
+
+        $response->assertOk();
+        $response->assertViewHas('laporanTerakhir', fn ($laporan) => (float) $laporan->pagu === 500000000.0);
+    }
+
+    public function test_create_form_has_no_prefill_for_first_report(): void
+    {
+        $role = $this->roleWithPermissions('admin-bappeda', ['project-progress.view', 'project-progress.create']);
+        $admin = User::factory()->create(['role_id' => $role->id]);
+        $proyek = $this->proyek();
+
+        $response = $this->actingAs($admin)->get(route('project-progress.create', $proyek->uuid));
+
+        $response->assertOk();
+        $response->assertViewHas('laporanTerakhir', fn ($laporan) => $laporan === null);
+    }
 }

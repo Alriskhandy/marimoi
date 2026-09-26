@@ -164,7 +164,8 @@ class FrontendPagesTest extends TestCase
             ->assertSee('Instansi Pengelola')
             ->assertSee('Dinas Uji Coba')
             ->assertSee('Tanggal Data')
-            ->assertSee('01 Jun 2025');
+            ->assertSee('01 Jun 2025')
+            ->assertDontSee('Metadata belum lengkap');
     }
 
     public function test_detail_page_hides_dataset_metadata_fields_when_absent(): void
@@ -183,7 +184,8 @@ class FrontendPagesTest extends TestCase
             ->assertOk()
             ->assertDontSee('Sumber Data')
             ->assertDontSee('Instansi Pengelola')
-            ->assertDontSee('Tanggal Data');
+            ->assertDontSee('Tanggal Data')
+            ->assertSee('Metadata belum lengkap');
     }
 
     public function test_tematik_map_version_is_public_and_stable_until_data_or_category_changes(): void

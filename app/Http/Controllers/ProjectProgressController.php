@@ -52,7 +52,29 @@ class ProjectProgressController extends Controller
 
         $opdOptions = $this->isAdminOpd() ? collect() : Opd::orderBy('name')->get(['id', 'name', 'singkatan']);
 
-        return view('backend.pages.project-progress.index', compact('proyek', 'opdOptions'));
+        $belumLaporBanner = null;
+        if ($this->isAdminOpd() && Auth::user()->opd_id) {
+            $totalProyekOpd = DataSpatial::proyekStrategis()
+                ->where('opd_pengelola_id', Auth::user()->opd_id)
+                ->count();
+
+            $proyekSudahLaporTahunIni = ProjectProgressReport::where('opd_id', Auth::user()->opd_id)
+                ->where('tahun_anggaran', now()->year)
+                ->distinct()
+                ->count('data_spatial_id');
+
+            $belumLapor = $totalProyekOpd - $proyekSudahLaporTahunIni;
+
+            if ($totalProyekOpd > 0 && $belumLapor > 0) {
+                $belumLaporBanner = [
+                    'belum' => $belumLapor,
+                    'total' => $totalProyekOpd,
+                    'tahun' => now()->year,
+                ];
+            }
+        }
+
+        return view('backend.pages.project-progress.index', compact('proyek', 'opdOptions', 'belumLaporBanner'));
     }
 
     public function show(string $uuid)
@@ -77,10 +99,13 @@ class ProjectProgressController extends Controller
 
         $this->authorizeProject($proyek);
 
+        $laporanTerakhir = $proyek->progressReports()->first();
+
         return view('backend.pages.project-progress.create', [
             'proyek' => $proyek,
             'statuses' => ProjectProgressReport::STATUSES,
             'periodeOptions' => ProjectProgressReport::PERIODE,
+            'laporanTerakhir' => $laporanTerakhir,
         ]);
     }
 

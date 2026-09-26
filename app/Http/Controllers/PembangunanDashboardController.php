@@ -63,6 +63,9 @@ class PembangunanDashboardController extends Controller
         $cards['persen_realisasi'] = $cards['total_pagu'] > 0
             ? round(($cards['total_realisasi'] / $cards['total_pagu']) * 100, 1)
             : 0;
+        $cards['persen_kelengkapan'] = $cards['jumlah_proyek'] > 0
+            ? round(($cards['jumlah_dilaporkan'] / $cards['jumlah_proyek']) * 100, 1)
+            : 0;
 
         $progresPerSektor = $laporan
             ->groupBy(fn (ProjectProgressReport $item) => $item->kategori?->nama ?? 'Tanpa Sektor')
