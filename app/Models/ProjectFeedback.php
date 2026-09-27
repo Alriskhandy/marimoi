@@ -12,9 +12,10 @@ class ProjectFeedback extends Model
     use HasFactory;
 
     protected $table = 'project_feedbacks';
-    
+
     protected $fillable = [
         'data_spatial_id',
+        'development_project_id',
         'nama_pemberi_aspirasi',
         'nama_proyek',
         'kabupaten_kota',
@@ -29,7 +30,7 @@ class ProjectFeedback extends Model
         'phone',
         'response_admin',
         'responded_at',
-        'opd_id'
+        'opd_id',
     ];
 
     protected $casts = [
@@ -45,9 +46,15 @@ class ProjectFeedback extends Model
     {
         return $this->belongsTo(DataSpatial::class, 'data_spatial_id');
     }
+
     public function opd()
     {
         return $this->belongsTo(Opd::class, 'opd_id');
+    }
+
+    public function developmentProject()
+    {
+        return $this->belongsTo(DevelopmentProject::class, 'development_project_id');
     }
 
     /**
@@ -105,7 +112,7 @@ class ProjectFeedback extends Model
             'pending' => 'badge-warning',
             'ditinjau' => 'badge-info',
             'ditindaklanjuti' => 'badge-primary',
-            'selesai' => 'badge-success'
+            'selesai' => 'badge-success',
         ];
 
         return $classes[$this->status] ?? 'badge-secondary';
@@ -120,7 +127,7 @@ class ProjectFeedback extends Model
             'keluhan' => 'badge-danger',
             'saran' => 'badge-info',
             'apresiasi' => 'badge-success',
-            'pertanyaan' => 'badge-warning'
+            'pertanyaan' => 'badge-warning',
         ];
 
         return $classes[$this->jenis_tanggapan] ?? 'badge-secondary';
@@ -131,7 +138,7 @@ class ProjectFeedback extends Model
      */
     public function hasCoordinates()
     {
-        return !is_null($this->latitude) && !is_null($this->longitude);
+        return ! is_null($this->latitude) && ! is_null($this->longitude);
     }
 
     /**
@@ -139,7 +146,7 @@ class ProjectFeedback extends Model
      */
     public function getGoogleMapsUrlAttribute()
     {
-        if (!$this->hasCoordinates()) {
+        if (! $this->hasCoordinates()) {
             return null;
         }
 
@@ -151,7 +158,7 @@ class ProjectFeedback extends Model
      */
     public function hasResponse()
     {
-        return !is_null($this->response_admin) && !is_null($this->responded_at);
+        return ! is_null($this->response_admin) && ! is_null($this->responded_at);
     }
 
     /**
@@ -159,11 +166,11 @@ class ProjectFeedback extends Model
      */
     public function getImageUrlAttribute()
     {
-        if (!$this->laporan_gambar) {
+        if (! $this->laporan_gambar) {
             return null;
         }
 
-        return asset('storage/feedback_images/' . $this->laporan_gambar);
+        return asset('storage/feedback_images/'.$this->laporan_gambar);
     }
 
     /**

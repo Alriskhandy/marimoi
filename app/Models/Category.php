@@ -7,7 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
-// Model untuk Categories
+/**
+ * @deprecated Tabel/model kanonik baru adalah SpatialLayer (lihat db-schema-v2.md,
+ * Opsi A rename kanonik). Category masih dipakai penuh di banyak controller/seeder
+ * (CategoryController, DataSpatialController, FrontendController, KategoriLayerSeeder,
+ * dst.) sebagai compatibility source — BELUM aman dihapus/dimatikan. Lihat checklist
+ * migrasi kode di docs/marimoi v2/04_implementation/09-implementasi-penuh-database-v2.md
+ * Prioritas 8 sebelum benar-benar meng-retire model ini.
+ */
 class Category extends Model
 {
     protected $table = 'categories';

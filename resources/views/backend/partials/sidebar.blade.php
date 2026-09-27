@@ -110,6 +110,12 @@
                     <span class="nav-text">Kategori Peta Tematik</span>
                 </a>
 @endcan
+                @can('map-types.manage')
+<a class="nav-link {{ request()->routeIs('map-types.*') ? 'active' : '' }}"
+                    href="{{ route('map-types.index') }}">
+                    <span class="nav-text">Jenis Peta</span>
+                </a>
+@endcan
                 @can('project-feedbacks.view')
 <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                     href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">

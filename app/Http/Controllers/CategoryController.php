@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\MapType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,8 +17,9 @@ class CategoryController extends Controller
     {
         $type = $request->get('type');
 
-        // Daftar tipe yang diperbolehkan
-        $validTypes = ['tematik'];
+        // Daftar tipe yang diperbolehkan — sumber kebenaran sekarang map_types (bisa
+        // bertambah lewat CRUD admin tanpa deploy kode), bukan array literal.
+        $validTypes = MapType::active()->pluck('slug')->all();
 
         // Cek jika type ada dan tidak valid
         if ($type && ! in_array($type, $validTypes)) {
@@ -108,10 +110,8 @@ class CategoryController extends Controller
         $type = $request->get('type');
         $parentId = $request->get('parent_id');
 
-        // Get available types
-        $types = [
-            'tematik' => 'Peta Tematik',
-        ];
+        // Get available types — dari map_types, bukan array literal.
+        $types = MapType::active()->pluck('nama', 'slug')->all();
 
         // Get potential parents if type is selected
         $potentialParents = [];
@@ -144,7 +144,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:tematik',
+            'type' => 'required|exists:map_types,slug',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -155,7 +155,7 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:categories,id',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
-            'type.in' => 'Tipe kategori tidak valid',
+            'type.exists' => 'Tipe kategori tidak valid',
             'nama.required' => 'Nama kategori harus diisi',
             'nama.max' => 'Nama kategori maksimal 255 karakter',
             'gambar.image' => 'File harus berupa gambar',
@@ -321,7 +321,7 @@ class CategoryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:tematik',
+            'type' => 'required|exists:map_types,slug',
             'nama' => 'required|string|max:255',
             'warna' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
@@ -332,7 +332,7 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:categories,id',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
-            'type.in' => 'Tipe kategori tidak valid',
+            'type.exists' => 'Tipe kategori tidak valid',
             'nama.required' => 'Nama kategori harus diisi',
             'nama.max' => 'Nama kategori maksimal 255 karakter',
             'gambar.image' => 'File harus berupa gambar',
@@ -885,7 +885,7 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
-            'type' => 'nullable|in:tematik',
+            'type' => 'nullable|exists:map_types,slug',
             'include_children' => 'boolean',
             'copy_image' => 'boolean',
         ]);
@@ -1000,7 +1000,7 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'new_parent_id' => 'nullable|exists:categories,id',
-            'new_type' => 'nullable|in:tematik',
+            'new_type' => 'nullable|exists:map_types,slug',
         ]);
 
         if ($validator->fails()) {
@@ -1178,7 +1178,7 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:json,csv',
-            'type' => 'required|in:tematik',
+            'type' => 'required|exists:map_types,slug',
             'overwrite' => 'boolean',
         ]);
 

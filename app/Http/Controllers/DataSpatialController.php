@@ -164,7 +164,7 @@ class DataSpatialController extends Controller
         $wajibMetadata = $this->metadataWajib();
 
         $rules = [
-            'data_type' => 'required|in:tematik',
+            'data_type' => 'required|exists:map_types,slug',
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',

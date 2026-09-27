@@ -35,6 +35,12 @@ class Permission extends SpatiePermission
                 'delete' => 'Hapus kategori',
             ],
         ],
+        'map-types' => [
+            'label' => 'Jenis Peta',
+            'actions' => [
+                'manage' => 'Kelola jenis peta (master data)',
+            ],
+        ],
         'project-feedbacks' => [
             'label' => 'Feedback Peta',
             'actions' => [

@@ -38,6 +38,7 @@ class ProjectProgressReport extends Model
 
     protected $fillable = [
         'data_spatial_id',
+        'development_project_id',
         'opd_id',
         'kategori_id',
         'tahun_anggaran',
@@ -64,6 +65,11 @@ class ProjectProgressReport extends Model
     public function dataSpatial(): BelongsTo
     {
         return $this->belongsTo(DataSpatial::class, 'data_spatial_id');
+    }
+
+    public function developmentProject(): BelongsTo
+    {
+        return $this->belongsTo(DevelopmentProject::class, 'development_project_id');
     }
 
     public function opd(): BelongsTo

@@ -5,8 +5,10 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataSpatialController;
 use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MapTypeController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\PembangunanDashboardController;
 use App\Http\Controllers\ProfileController;
@@ -54,6 +56,15 @@ Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
 
 // Statistics page route
 Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics')->middleware('permission:dashboard.view');
+
+// Dashboard eksekutif berbasis development_projects (Prioritas 6 database V2) — endpoint
+// data JSON, terpisah dari dashboard/pembangunan (masih berbasis data_spatial) yang sudah ada.
+Route::prefix('dashboard/api/eksekutif')->name('dashboard.api.eksekutif.')->middleware('permission:dashboard.view')->group(function () {
+    Route::get('/summary', [ExecutiveDashboardController::class, 'summary'])->name('summary');
+    Route::get('/sektor', [ExecutiveDashboardController::class, 'bySector'])->name('sektor');
+    Route::get('/wilayah', [ExecutiveDashboardController::class, 'byRegion'])->name('wilayah');
+    Route::get('/tren', [ExecutiveDashboardController::class, 'trend'])->name('tren');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -163,6 +174,16 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree')->middleware('permission:categories.view');
         Route::get('/api/options/{type}', [CategoryController::class, 'getOptions'])->name('api.options')->middleware('permission:categories.view');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Map Type Management (jenis peta, master data spatial_layers.map_type_id)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource('map-types', MapTypeController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:map-types.manage');
 
     /*
     |--------------------------------------------------------------------------

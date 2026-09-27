@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PermissionSeeder::class,
             OpdSeeder::class,
+            AdministrativeRegionSeeder::class,
             // KategoriAspirasiSeeder::class,
             // AspirasiSeeder::class,
             PublicationSeeder::class,
