@@ -1,8 +1,32 @@
 # SKEMA DATABASE MARIMOI V2
 
+> **Dokumen ini adalah single source of truth desain database MARIMOI ke depan.** Seluruh dokumen analisis/rancangan pendahulunya (`01_db-analysis/01-current-schema.md`, `02-analysis.md`, `03-database-planning.md`, `04-marimoi-x-goat.md`, `05-kondisi-eksisting-vs-goat-dan-use-case-pemetaan.md`, `06-rekomendasi-kritis-implementasi-database-v2.md`, `Rekomendasi_Pengelompokan_Layer_MARIMOI.md`, dan `03_plan/01-arsitektur-database.md`) sudah dikonsolidasikan ke sini dan dihapus per 2026-09-27 agar tidak ada dua sumber kebenaran yang saling menyimpang. Perubahan desain database berikutnya diedit di sini, bukan di dokumen baru terpisah.
+
 ## Ringkasan
 
 Dokumen ini adalah rancangan skema database MARIMOI V2. Skema dirancang untuk mendukung WebGIS terpadu, katalog layer, peta yang dapat dikomposisi, publikasi/share URL dan QR code, dashboard eksekutif, pelacakan partisipasi publik, serta audit keamanan.
+
+## Status Implementasi Saat Ini (2026-09-27)
+
+Sejak dokumen ini pertama ditulis, satu batch migrasi (`2026_09_26_223251` s/d `2026_09_26_223252`) sudah berjalan **di luar rencana rename kanonik dokumen ini** — bukan membuat `spatial_layers`/`spatial_layer_features` baru, melainkan memperkuat tabel legacy `categories`/`data_spatial` langsung:
+
+- `map_types` (tabel baru, master jenis peta) + `categories.map_type_id`.
+- `categories.atribut_schema` (jsonb, skema metadata dinamis per kategori).
+- `categories.is_group` + `categories.parent_id` (hierarki kelompok/layer).
+- `sektor` (tabel baru) + `categories.sektor_id` + `data_spatial.sektor_id`.
+- `data_spatial_interventions` (pivot kondisi eksisting ↔ intervensi pembangunan).
+
+**Keputusan yang sudah dikunci soal ini:** desain kolom-kolom di atas **tidak diulang dari nol** — saat Fase 1 (migrasi ke `spatial_layers`, lihat "Urutan implementasi schema" di bawah) dieksekusi, kolom-kolom ini di-backfill apa adanya ke `spatial_layers` (`map_type_id`, `sektor_id`, `atribut_schema`, `is_group`, `parent_id` menjadi kolom `spatial_layers`, dan `data_spatial_interventions` tetap sebagai pivot mandiri yang FK-nya dipindah ke `spatial_layer_features`). `categories`/`data_spatial` tetap berperan sebagai compatibility source selama migrasi kode berjalan (lihat checklist di bawah), **bukan** ditinggalkan sebagai jalur pengembangan permanen kedua di samping `spatial_layers`.
+
+**Checklist migrasi kode (±15 file yang membaca `categories`/`data_spatial` langsung — audit terakhir sebelum konsolidasi dokumen ini)**, jadi *definition of done* Fase 1:
+
+- Model: `app/Models/Category.php`, `app/Models/DataSpatial.php`, plus 5 model duplikat (`Lokasi.php`, `PokirDprd.php`, `ProyekStrategisDaerah.php`, `ProyekStrategisNasional.php`, `UsulanMusrenbang.php`) yang menyalin logika per `type` dan sebaiknya diluruhkan jadi satu model `SpatialLayerFeature` + scope.
+- Controller: `CategoryController` (validator `'type' => 'required|in:tematik'` di beberapa method), `DataSpatialController` (`'data_type' => 'required|in:tematik'`), `ProjectFeedbackController`, `FeedbackController`, `ScopedProjectFeedbackController`, `Api/V1/LayerController` (masing-masing punya `$allowedTypes`/`VALID_TYPES`/map type→model class sendiri).
+- Support: `app/Support/MapDataVersion.php` (cache versioning terkunci ke istilah `tematik`).
+- Seeder: `database/seeders/KategoriLayerSeeder.php` (data seed literal per type, flat tanpa `parent_id`).
+- Routes/Blade: `routes/backend.php`, `categories/index.blade.php`, `data_spatial/index.blade.php`, `data_spatial/create.blade.php`, `project-progress/index.blade.php`, `partials/sidebar.blade.php`.
+
+**Taksonomi 7-kelompok yang harus dibentuk saat data dipindah ke `spatial_layers`** (bukan migrasi skema, murni kerja seeder/admin UI di atas `parent_id` + `is_group` yang sudah ada): Referensi Wilayah, Infrastruktur & Konektivitas, Kawasan & Potensi Wilayah, Layanan Dasar & Fasilitas Publik, Pembangunan & Intervensi, Lingkungan & Risiko, Analisis — masing-masing dengan subkelompok (mis. Infrastruktur & Konektivitas → Transportasi/Utilitas Dasar/Energi/Digital/Infrastruktur Ekonomi). Setiap layer sebaiknya minimal memiliki atribut standar: `kategori`, `subkategori`, `sektor`, `sumber_data`, `instansi_pengelola`, `tahun_data`, `tanggal_update`, `tingkat_wilayah`, `status` — field-field ini sudah tercakup pada `spatial_layers`/`spatial_layer_metadata` di bagian "Peta" dokumen ini.
 
 ### Prinsip desain
 
@@ -47,14 +71,19 @@ erDiagram
 	categories ||--o{ data_spatial : legacy_layer_features
 	categories ||--o| spatial_layers : migrates_to
 
+	map_types ||--o{ spatial_layers : classifies_dynamic
+	spatial_layers ||--o{ spatial_layers : "parent_id (kelompok > subkelompok > layer)"
 	spatial_layers ||--o{ spatial_layer_features : contains
 	spatial_layers ||--|| spatial_layer_metadata : describes
 	spatial_layers ||--o{ spatial_layer_versions : versions
 	spatial_layers ||--o{ spatial_layer_regions : covers
 	administrative_regions ||--o{ spatial_layer_regions : includes
+	administrative_regions ||--o{ spatial_layer_features : locates
 	sectors ||--o{ spatial_layers : classifies
 	opd ||--o{ spatial_layers : manages
 	users ||--o{ spatial_layers : owns
+	spatial_layer_features ||--o{ spatial_layer_feature_interventions : "feature_id_eksisting"
+	spatial_layer_features ||--o{ spatial_layer_feature_interventions : "feature_id_intervensi"
 
 	users ||--o{ maps : owns
 	opd ||--o{ maps : manages
@@ -240,9 +269,27 @@ Nama tabel `categories` dipertahankan sebagai legacy selama compatibility period
 
 Pemakai schema lama: tree layer, menu satu Peta, legend, filter layer, dan `data_spatial.kategori_id`. Pada schema baru, pemakai tersebut berpindah ke `spatial_layers` dan `map_layers.spatial_layer_id`.
 
-### 2. `sectors` - New
+**Catatan akurasi (2026-09-27):** tabel di atas menampilkan kolom dengan nama target (`name`, `slug`, `color`, `image_path`, `created_by`) untuk kejelasan pemetaan — kolom **asli** yang benar-benar ada di database live saat ini bernama `nama`, `warna`, `gambar`, `user_id` (belum ada `slug`/`title`). Empat kolom berikut **sudah live** menambah tabel ini sejak batch 2026-09-26 dan wajib ikut di-backfill ke `spatial_layers` pada Fase 1 (lihat "Status Implementasi Saat Ini" dan kolom `spatial_layers` di bagian Peta): `map_type_id` (FK `map_types`), `sektor_id` (FK `sectors`), `atribut_schema` (jsonb), `is_group` (boolean). Jangan menganggap tabel ini sudah sesuai kolom target hanya karena entri di atas menuliskannya begitu — itu adalah **tujuan pemetaan**, bukan cerminan skema live saat ini.
 
-Master sektor/urusan pembangunan.
+### 2. `map_types` - New (sudah live sebagai tabel ini di schema saat ini)
+
+Master jenis peta yang dapat dikelola Admin Sistem lewat CRUD tanpa deploy kode — menggantikan nilai literal (`tematik`, `proyek_strategis`, dst.) yang sebelumnya di-hardcode di ±15 file. Satu-satunya tabel dari batch 2026-09-26 yang sudah persis cocok dengan namanya sendiri di skema V2 (tidak perlu rename), tinggal dihubungkan ke `spatial_layers.map_type_id` saat Fase 1.
+
+| Kolom | Tipe/atribut | Fungsi dan pemakaian |
+| --- | --- | --- |
+| `id` | `BIGINT PK` | Referensi `spatial_layers.map_type_id`. |
+| `slug` | `VARCHAR(255) UNIQUE` | Identifier stabil pengganti nilai literal `type` lama. |
+| `nama` | `VARCHAR(255)` | Label pada dropdown admin. |
+| `deskripsi` | `TEXT NULL` | Penjelasan jenis peta. |
+| `icon` | `VARCHAR(255) NULL` | Ikon pada sidebar/legend. |
+| `urutan` | `INTEGER DEFAULT 0` | Urutan tampil pada menu/dropdown. |
+| `is_active` | `BOOLEAN DEFAULT TRUE` | Jenis peta yang tersedia untuk layer baru. |
+| `konfigurasi` | `JSONB NULL` | Flag perilaku per jenis peta (mis. `{"punya_sub_type": true, "punya_tahun_anggaran": true}`) dibaca controller/Blade untuk menentukan field yang ditampilkan, tanpa `@if` berantai per jenis. |
+| `created_at`, `updated_at` | `TIMESTAMP` | Audit master. |
+
+Pemakai: dropdown jenis peta di form Layer, validasi (`exists:map_types,slug` menggantikan `in:tematik`), dan flag perilaku form dinamis.
+
+### 3. `sectors` - New
 
 | Kolom | Tipe/atribut | Fungsi dan pemakaian |
 | --- | --- | --- |
@@ -253,7 +300,7 @@ Master sektor/urusan pembangunan.
 | `is_active` | `BOOLEAN DEFAULT TRUE` | Pilihan sektor aktif pada form dan filter. |
 | `created_at`, `updated_at` | `TIMESTAMP` | Audit master. |
 
-### 3. `administrative_regions` - New
+### 4. `administrative_regions` - New
 
 Master wilayah resmi dan hierarkis.
 
@@ -270,7 +317,7 @@ Master wilayah resmi dan hierarkis.
 
 Pemakai: filter wilayah, extent map, project region, dashboard agregasi, dan spatial join.
 
-### 4. `data_stores` - New, optional
+### 5. `data_stores` - New, optional
 
 `data_stores` adalah **master/configuration registry backend penyimpanan**, bukan tabel feature dan bukan layer. Tabel ini mendeskripsikan di mana dan bagaimana feature layer dibaca, misalnya PostGIS lokal, object storage, atau DuckLake. Satu data store dapat dipakai banyak layer.
 
@@ -283,7 +330,7 @@ Pemakai: filter wilayah, extent map, project region, dashboard agregasi, dan spa
 | `is_active` | `BOOLEAN DEFAULT TRUE` | Menentukan backend yang dapat digunakan importer/read service. |
 | `created_at`, `updated_at` | `TIMESTAMP` | Audit registry. |
 
-### 5. `development_indicators` - New
+### 6. `development_indicators` - New
 
 `development_indicators` adalah **master definisi indikator**, bukan transaksi nilai dan bukan hasil dashboard. Tabel ini menjawab “indikator apa yang diukur dan bagaimana cara membacanya”. Nilai per wilayah/periode disimpan pada `indicator_values`.
 
@@ -301,7 +348,7 @@ Pemakai: filter wilayah, extent map, project region, dashboard agregasi, dan spa
 | `is_active` | `BOOLEAN DEFAULT TRUE` | Menentukan indikator yang tampil/diterima. |
 | `created_at`, `updated_at` | `TIMESTAMP` | Audit definisi indikator. |
 
-### 6. `kategori_aspirasi` - Existing
+### 7. `kategori_aspirasi` - Existing
 
 Master kategori aspirasi yang dapat dipetakan ke OPD.
 
@@ -328,10 +375,14 @@ Master kategori aspirasi yang dapat dipetakan ke OPD.
 | `name` | `VARCHAR(255) NOT NULL` | Nama teknis layer. |
 | `title` | `VARCHAR(255) NOT NULL` | Judul yang ditampilkan pada tree, legend, katalog, dan panel aktivasi. |
 | `description` | `TEXT NULL` | Ringkasan isi layer. |
-| `layer_class` | `VARCHAR(30) NOT NULL` | Klasifikasi V2, minimal `thematic` atau `development`; menggantikan ketergantungan pada `categories.type`. |
+| `layer_class` | `VARCHAR(30) NOT NULL` | Klasifikasi luas dan stabil (`thematic`/`development`), dipakai lintas fitur (dashboard, routing, policy) yang tidak boleh berubah tiap kali admin menambah jenis peta baru. Berbeda tanggung jawab dari `map_type_id`: `layer_class` jarang berubah, `map_type_id` dikelola bebas oleh Admin Sistem. |
+| `map_type_id` | `BIGINT FK NULL` | Jenis peta granular dan dinamis (lihat tabel `map_types` di bagian Master Data) — menggantikan `categories.map_type_id` yang sudah live. Admin Sistem menambah jenis peta baru lewat CRUD `map_types` tanpa deploy kode; `layer_class` tidak ikut berubah. |
 | `source_type` | `VARCHAR(50) NOT NULL` | Tipe sumber: feature, raster, atau external service. |
 | `legacy_category_id` | `BIGINT FK NULL` | Mapping satu layer baru ke `categories.id` lama selama transisi; bukan identitas layer canonical. |
 | `sector_id` | `BIGINT FK NULL` | Sektor pembangunan untuk filter layer/map/dashboard. |
+| `parent_id` | `BIGINT FK NULL` | Self-reference untuk hierarki Kelompok → Subkelompok → Layer (taksonomi 7-kelompok); `SET NULL` agar child tidak ikut hilang saat parent diarsipkan. |
+| `is_group` | `BOOLEAN DEFAULT FALSE` | `TRUE` menandai node struktural/kelompok yang tidak boleh dipilih langsung sebagai layer data — dasar pemisahan halaman admin "Kategori" (kelola `is_group=true`, tanpa `atribut_schema`/`map_type_id` yang relevan) dari halaman "Layer" (kelola `is_group=false`, dengan detail data spasial terkait) tanpa dua tabel terpisah. |
+| `atribut_schema` | `JSONB NULL` | Definisi field metadata dinamis khusus layer ini (mis. `{"fields":[{"key":"lebar_jalan_m","type":"number","required":true}]}`) — dibaca untuk merender form input `spatial_layer_features.attributes` secara terstruktur per layer, bukan textarea JSON bebas. `NULL` berarti layer masih freeform (tidak breaking change untuk layer yang belum dikonfigurasi). |
 | `owner_user_id` | `BIGINT FK NULL` | User owner layer. |
 | `owner_opd_id` | `BIGINT FK NULL` | OPD pengelola dan scope Admin OPD. |
 | `data_store_id` | `BIGINT FK NULL` | Backend feature/data store. |
@@ -348,7 +399,7 @@ Master kategori aspirasi yang dapat dipetakan ke OPD.
 | `created_at`, `updated_at` | `TIMESTAMP` | Audit perubahan layer. |
 | `deleted_at` | `TIMESTAMP NULL` | Arsip layer tanpa menghapus feature/version historis. |
 
-Pemakai: katalog layer, panel WebGIS, tree layer V2, filter, policy, map composition, publication, API metadata, dan share validation.
+Pemakai: katalog layer, panel WebGIS, tree layer V2, filter, policy, map composition, publication, API metadata, dan share validation. `is_group` + `parent_id` secara khusus jadi dasar dua halaman admin terpisah dengan tanggung jawab jelas: "Layer" (manajemen `is_group=false`, dengan halaman detail menampilkan `spatial_layer_features` terkait) dan "Kategori" (manajemen `is_group=true`, murni pengelompokan) — kemudahan Admin Sistem/Bappeda mengelola pemetaan tidak butuh tabel terpisah untuk ini.
 
 ### 2. `spatial_layer_metadata` - New
 
@@ -418,11 +469,27 @@ Satu row `spatial_layer_features` mewakili satu feature/objek spasial dan wajib 
 | `source_version_id` | `BIGINT FK NULL` | Versi sumber untuk lineage dan publication snapshot. |
 | `external_id` | `VARCHAR(255) NULL` | ID feature dari sumber asal, unique dalam layer bila tersedia. |
 | `geometry` | `GEOMETRY NOT NULL` | Bentuk spasial feature; tipe dan SRID dibatasi sesuai layer. |
-| `attributes` | `JSONB NULL` | Atribut impor fleksibel; field dashboard penting diproyeksikan terstruktur. |
+| `region_id` | `BIGINT FK NULL` | Wilayah spesifik lokasi feature ini (`SET NULL`), berbeda dari `spatial_layer_regions` yang menandai cakupan layer secara keseluruhan — diisi begitu Fase 4 (`administrative_regions`) berjalan. |
+| `attributes` | `JSONB NULL` | Atribut impor fleksibel; field dashboard penting diproyeksikan terstruktur, field terstruktur ekstra divalidasi lewat `spatial_layers.atribut_schema` milik layer ini. |
 | `created_by` | `BIGINT FK NULL` | User/job yang membuat atau mengimpor feature. |
 | `created_at`, `updated_at` | `TIMESTAMP` | Audit/import feature. |
 
-Pemakai: GeoJSON, bbox query, spatial filter, feature detail, renderer map, dan analitik. Index wajib: `spatial_layer_id`, `source_version_id`, serta GiST pada `geometry`.
+Pemakai: GeoJSON, bbox query, spatial filter, feature detail, renderer map, dan analitik. Index wajib: `spatial_layer_id`, `source_version_id`, `region_id`, serta GiST pada `geometry`.
+
+#### `spatial_layer_feature_interventions` - New (penerus `data_spatial_interventions` yang sudah live)
+
+Pivot yang menautkan objek kondisi eksisting (mis. ruas "Jalan X") dengan intervensi pembangunan yang menyasarnya (mis. "Proyek Peningkatan Jalan X", usulan Musrenbang/Pokir terkait) — dasar struktural analisis "kondisi eksisting + intervensi → kebutuhan infrastruktur". Sudah live sebagai `data_spatial_interventions`; saat Fase 2 (backfill `spatial_layer_features`), FK-nya dipindah mengikuti baris yang sama.
+
+| Kolom | Tipe/atribut | Fungsi dan pemakaian |
+| --- | --- | --- |
+| `id` | `BIGINT PK` | Identifier pivot. |
+| `feature_id_eksisting` | `BIGINT FK NOT NULL` | `spatial_layer_features` yang mewakili kondisi eksisting. |
+| `feature_id_intervensi` | `BIGINT FK NOT NULL` | `spatial_layer_features` yang mewakili intervensi/proyek/usulan. |
+| `jenis_hubungan` | `VARCHAR(50)` | Jenis keterkaitan (mis. `peningkatan`, `rehabilitasi`, `usulan_terkait`). |
+| `created_by` | `BIGINT FK NULL` | User yang membuat tautan. |
+| `created_at`, `updated_at` | `TIMESTAMP` | Audit tautan. |
+
+Pemakai: analisis lintas dataset (kondisi vs intervensi) lewat `JOIN` biasa, dasar dashboard "kesenjangan infrastruktur" dan "sebaran pembangunan" pada Fase 6/7.
 
 ### 5. `spatial_layer_regions` - New
 
@@ -764,6 +831,8 @@ Pertahankan sementara tabel ini sebagai feature store legacy. Relasi schema lama
 
 Pemakai saat transisi: endpoint lama, importer lama, controller lama, dan migrasi data. Jangan gunakan sebagai sumber baru untuk katalog, publication, atau dashboard setelah read path V2 aktif.
 
+**Kolom live yang belum tercantum di atas:** `sumber_data`, `opd_pengelola_id`, `tanggal_data` (metadata v2, ditambahkan sebelum batch 2026-09-26) dan `sektor_id` (FK `sectors`, batch 2026-09-26) sudah ada di tabel live saat ini — disimpan **per baris feature**, bukan per layer. Ini pola yang salah menurut desain V2 (metadata seharusnya di `spatial_layer_metadata`, sekali per layer) dan hanya dipertahankan di sini sebagai *override* per-feature yang sah (mis. satu kategori "Jalan" memang bisa punya sebagian data dari sumber survei lapangan, sebagian dari BPS). Keputusan mana yang jadi metadata kanonik `spatial_layer_metadata` vs mana yang tetap jadi pengecualian di `spatial_layer_features.attributes` bergantung pada hasil verifikasi cardinality (Prasyarat Fase 0) — jangan diasumsikan sepihak saat backfill.
+
 #### 2. `publications`, `publication_downloads`, `surveys` - Existing
 
 Tetap dipertahankan untuk fitur dokumen/publikasi non-map.
@@ -934,6 +1003,8 @@ Queue dipakai untuk import, validasi geometry, perhitungan extent, snapshot publ
 | Filter | Sumber terstruktur | Fitur pemakai |
 | --- | --- | --- |
 | Wilayah | `region_id`, `project_regions`, `spatial_layer_regions` | WebGIS, dashboard, feedback, indikator |
+| Jenis peta | `map_type_id` (FK `map_types`) | katalog layer, sidebar admin, dropdown form Layer |
+| Kelompok/taksonomi | `parent_id`, `is_group` | sidebar publik/admin berjenjang (7-kelompok), halaman "Layer" vs "Kategori" |
 | Sektor | `sector_id` | katalog layer, proyek, dashboard |
 | OPD | `owner_opd_id`, `opd_id` | authorization, katalog, dashboard, tracking |
 | Tahun | `data_reference_year`, `fiscal_year`, periode laporan | katalog, proyek, dashboard, tren |
@@ -960,6 +1031,7 @@ Layer/map hanya boleh dipublikasikan bila:
 - `categories` dan `data_spatial` dipertahankan sebagai legacy selama compatibility period dan menjadi sumber migration.
 - `categories.type` dipetakan ke `spatial_layers.layer_class`/domain baru; lima menu lama tidak menjadi struktur menu canonical V2.
 - Saat user mengaktifkan layer baru, query feature menggunakan `spatial_layer_features.spatial_layer_id`, bukan langsung mengandalkan `data_spatial.kategori_id`.
+- **Rename kanonik dieksekusi sekarang, bukan ditunda lagi** (dikunci 2026-09-27, lihat "Status Implementasi Saat Ini" di atas): meskipun batch `map_types`/`atribut_schema`/`is_group`/`sektor`/`data_spatial_interventions` sudah menaruh data produksi di `categories`/`data_spatial`, desain kolom-kolom itu **dipindah utuh** ke `spatial_layers`/`spatial_layer_features` lewat backfill satu arah — bukan alasan untuk membiarkan `categories`/`data_spatial` jadi tabel kanonik permanen kedua. Pertimbangan: (1) beban legacy `categories` (`type` di-hardcode ±15 file, `parent_id` dipakai dobel untuk hierarki grup dan taksonomi lama) hanya bertambah bila terus ditumpuk kolom baru; (2) periode dual-read tetap ada di kedua opsi (memindah makna metadata dari per-feature ke per-layer butuh transisi baca-dua-sumber baik nama tabelnya berubah atau tidak), jadi bukan pembeda yang sah untuk menghindari rename; (3) rename sekaligus jadi *forcing function* yang memaksa ±15 file itu akhirnya dibereskan, alih-alih terus didiamkan seperti nasib dokumen ini sebelum 2026-09-27.
 
 #### Scope akses admin
 
@@ -998,13 +1070,24 @@ Dengan aturan ini, input awal tetap sederhana, tetapi publication tidak dapat di
 
 ### Urutan implementasi schema
 
-1. Audit kualitas geometry, nilai `kategori_id`, tree `categories`, dan kecocokan `data_type`/`type` pada schema lama.
-2. Tambahkan `is_active`, `owner_opd_id`, public identifier, dan master sektor/wilayah secara additive.
-3. Buat `spatial_layers`, `spatial_layer_metadata`, `spatial_layer_versions`, dan `spatial_layer_regions`, lalu mapping dari `categories`.
-4. Buat `maps`, `map_layers`, groups, publications, dan shares.
-5. Buat proyek pembangunan, laporan progres, indikator, dan nilai indikator.
-6. Tambahkan authentication/activity/status history serta policy.
-7. Migrasikan read/write path, jalankan compatibility period, lalu deprecate tabel/kolom lama.
+Prasyarat mutlak sebelum Fase 1 (tidak bisa dilewati):
+
+1. Verifikasi cardinality `data_spatial` — pastikan asumsi "1 baris = 1 feature" benar untuk seluruh `data_type`, terutama `proyek_strategis` yang punya `project_progress_reports` menempel. Ini menentukan bagaimana backfill ke `spatial_layer_features` dilakukan dan dari mana metadata kanonik per-layer diambil bila nilainya berbeda-beda antar baris.
+2. Kunci level wilayah awal: provinsi + kabupaten/kota + kecamatan (desa/kelurahan menyusul kemudian, skema `administrative_regions` sudah mendukungnya lewat `parent_id`/`level`).
+3. Selesaikan dua-sistem-role (`users.role_id` vs tabel gaya Spatie vs `user_role_assignments`) — `owner_opd_id` di setiap tabel baru bergantung pada satu sumber kebenaran role/OPD yang jelas.
+4. Susun checklist ±15 file pemakai `categories`/`data_spatial` (lihat "Status Implementasi Saat Ini" di atas) sebagai *definition of done* Fase 1.
+
+| Fase | Isi | Bergantung pada | Bisa paralel dengan |
+| --- | --- | --- | --- |
+| 0 | Prasyarat 1-4 di atas | — | — |
+| 1 | `spatial_layers` + `spatial_layer_metadata` (backfill dari `categories`, termasuk `map_type_id`/`sektor_id`/`atribut_schema`/`is_group`/`parent_id`) + migrasi ±15 file pemakai lama ke `spatial_layers` + reorganisasi taksonomi 3-tingkat (Kelompok → Subkelompok → Layer) | Fase 0 | — |
+| 2 | `spatial_layer_features` (backfill dari `data_spatial`, dijalankan sebagai job antrian batch dengan checksum/idempotensi — bukan migrasi Laravel synchronous biasa, karena menyalin kolom geometry besar untuk kemungkinan puluhan ribu baris) | Fase 1 | Fase 3 |
+| 3 | `maps`/`map_layers`/`map_publications`/`map_shares`/`map_share_accesses` (`map_layers.spatial_layer_id` → `spatial_layers`) | Fase 1 | Fase 2 |
+| 4 | `administrative_regions` (3 level) + `spatial_layer_features.region_id`/`spatial_layer_regions` | Fase 2 | Fase 3 |
+| 5 | `development_projects` + migrasi bertahap `project_feedbacks`/`project_progress_reports` ke FK proyek (dari `spatial_layer_features` yang sebelumnya `data_type='proyek_strategis'`) | Fase 4 | — |
+| 6 | Dashboard eksekutif — query agregasi langsung di atas Fase 4+5 (**bukan** tabel hasil komputasi baru; jangan query `attributes`/`dbf_attributes` JSONB ad hoc untuk angka strategis) | Fase 4, 5 | — |
+| 7 (ditunda, tetap disadari) | `analysis_layers`/`analysis_results` + job terjadwal — menunggu rumus/metodologi analisis dikunci; jangan dikerjakan sebelum Fase 4 dan 5 berdiri (butuh dimensi wilayah dan proyek yang valid sebagai input) | Fase 4, 5, rumus dikunci | — |
+| 8 | Matikan `categories`/`data_spatial`/`shared_maps` sebagai compatibility source begitu Fase 1–3 tuntas dan tidak ada kode baru yang membacanya — jangan biarkan periode compatibility ini jadi permanen | Fase 1, 2, 3 | — |
 
 ### Keputusan yang wajib dikunci sebelum migration produksi
 

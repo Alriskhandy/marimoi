@@ -2,7 +2,7 @@
 
 ## Latar Belakang
 
-Dashboard Pembangunan (`06-dashboard-eksekutif-minimum.md`, sudah diimplementasikan) saat ini 100% bergantung pada input manual admin untuk `pagu`/`realisasi_anggaran` di `project_progress_reports`. Data realisasi keuangan pengadaan barang/jasa sebenarnya sudah tercatat resmi di sistem LKPP (INAPROC) dan bisa ditarik lewat API resmi mereka. Dokumen ini merencanakan integrasi tersebut, dibatasi ke domain **infrastruktur** sesuai fokus MARIMOI sebagai sistem informasi akselerasi infrastruktur (lihat `Rekomendasi_Pengelompokan_Layer_MARIMOI.md` §5).
+Dashboard Pembangunan (`06-dashboard-eksekutif-minimum.md`, sudah diimplementasikan) saat ini 100% bergantung pada input manual admin untuk `pagu`/`realisasi_anggaran` di `project_progress_reports`. Data realisasi keuangan pengadaan barang/jasa sebenarnya sudah tercatat resmi di sistem LKPP (INAPROC) dan bisa ditarik lewat API resmi mereka. Dokumen ini merencanakan integrasi tersebut, dibatasi ke domain **infrastruktur** sesuai fokus MARIMOI sebagai sistem informasi akselerasi infrastruktur (lihat `../db-schema-v2.md` bagian "Status Implementasi Saat Ini", taksonomi 7-kelompok, kelompok "Infrastruktur & Konektivitas").
 
 Ini **bukan** pengganti input manual progres fisik — INAPROC hanya melacak realisasi *keuangan* pengadaan, tidak melacak progres fisik konstruksi di lapangan. Progres fisik tetap wajib diisi manual lewat alur yang sudah ada.
 
@@ -405,7 +405,7 @@ Supaya implementasi bisa langsung jalan begitu token INAPROC selesai diproses LK
 
 ## Referensi
 
-- [`Rekomendasi_Pengelompokan_Layer_MARIMOI.md`](../Rekomendasi_Pengelompokan_Layer_MARIMOI.md) §5 — dasar fokus infrastruktur.
+- [`db-schema-v2.md`](../db-schema-v2.md) bagian "Status Implementasi Saat Ini" (taksonomi 7-kelompok) — dasar fokus infrastruktur.
 - [`10-tindak-lanjut-review-jamil.md`](10-tindak-lanjut-review-jamil.md) bagian D — `project_progress_reports`, pola otorisasi OPD, dan titik sambung opsional (Keputusan #7) untuk fitur ini.
 - [`../04_implementation/06-dashboard-eksekutif-minimum.md`](../04_implementation/06-dashboard-eksekutif-minimum.md) — implementasi `ProjectProgressController`/`DataSpatial::opdPengelola()` yang jadi preseden pola otorisasi & struktur controller di dokumen ini.
 - Dokumentasi resmi INAPROC API Gateway: `data.inaproc.id/docs` (ringkasan temuan di tabel "Sumber Data — Temuan Riset" di atas; buka ulang dokumentasi lengkap saat token tersedia untuk detail request/response yang tidak tercakup di sini, dan untuk memvalidasi asumsi "satu token untuk semua `kode_klpd`" — lihat "Asumsi Kerja").

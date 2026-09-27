@@ -4,11 +4,11 @@
 
 MARIMOI V2 dikembangkan menjadi portal WebGIS dan dashboard pembangunan daerah yang menyatukan informasi peta tematik, data pembangunan, partisipasi publik, dan analisis eksekutif dalam satu pengalaman pengguna.
 
-Pengembangan mengacu pada prinsip dari [analisis MARIMOI dan GOAT](../db-analysis/04-marimoi-x-goat.md): layer menyimpan dataset dan metadata, map menyimpan komposisi peta, dan konfigurasi layer disimpan pada relasi map-layer.
+Pengembangan mengacu pada prinsip dari [skema database V2](db-schema-v2.md): layer menyimpan dataset dan metadata, map menyimpan komposisi peta, dan konfigurasi layer disimpan pada relasi map-layer.
 
 ## Ruang Lingkup
 
-1. [Arsitektur dan database](plan/01-arsitektur-database.md)
+1. [Arsitektur dan database](db-schema-v2.md)
 2. [Authentication, user, dan multi-role](plan/02-auth-user-role.md)
 3. [Security, user log, dan activity log](plan/03-security-audit.md)
 4. [WebGIS, katalog layer, filter, dan sharing](plan/04-webgis-map-layer.md)
@@ -73,8 +73,5 @@ flowchart TD
 
 ## Dokumen Referensi
 
-- [Analisis schema saat ini](../db-analysis/01-current-schema.md)
-- [Analisis perbaikan database](../db-analysis/02-analysis.md)
-- [Rencana peningkatan database](../db-analysis/03-database-planning.md)
-- [Analisis MARIMOI berdasarkan GOAT](../db-analysis/04-marimoi-x-goat.md)
-- [Hasil review aplikasi](../Hasil_Review_Marimoi_Jamil.md)
+- [Skema database V2 (single source of truth desain database)](db-schema-v2.md)
+- [Hasil review aplikasi](Hasil_Review_Marimoi_Jamil.md)

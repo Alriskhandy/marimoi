@@ -137,7 +137,7 @@ Pertanyaan #4 punya 4 tuntutan yang tampak saling tarik: **terstruktur** (bukan 
 
 ### 7.1 Solusi: Skema Atribut per Kategori (Bukan Kolom Tetap, Bukan JSON Bebas)
 
-Ini pola yang sudah terbukti dibutuhkan sejak [`Rekomendasi_Pengelompokan_Layer_MARIMOI.md`](../Rekomendasi_Pengelompokan_Layer_MARIMOI.md) §5.1 memberi contoh konkret: data jalan idealnya punya `jenis_jalan`, `status_jalan`, `panjang`, `lebar`, `kondisi`, `permukaan` — bukan cuma nama & geometri. Field itu **tidak masuk akal** sebagai kolom tetap di `data_spatial` (kategori lain seperti sekolah butuh field sama sekali berbeda: jumlah siswa, jenjang), tapi juga **tidak boleh** jadi JSON bebas tanpa validasi (itu yang sekarang terjadi, dan itu penyebab "kualitas belum terjaga").
+Ini pola yang sudah terbukti dibutuhkan sejak [`db-schema-v2.md`](../db-schema-v2.md) bagian "Status Implementasi Saat Ini" memberi contoh konkret: data jalan idealnya punya `jenis_jalan`, `status_jalan`, `panjang`, `lebar`, `kondisi`, `permukaan` — bukan cuma nama & geometri. Field itu **tidak masuk akal** sebagai kolom tetap di `data_spatial` (kategori lain seperti sekolah butuh field sama sekali berbeda: jumlah siswa, jenjang), tapi juga **tidak boleh** jadi JSON bebas tanpa validasi (itu yang sekarang terjadi, dan itu penyebab "kualitas belum terjaga").
 
 **Rancangan:** tambah kolom `atribut_schema` (JSON) di tabel `categories` — mendefinisikan field mana yang berlaku untuk kategori itu, tipe datanya, dan apakah wajib:
 
@@ -199,7 +199,7 @@ Bukan sekadar checklist 6 rekomendasi tercentang, tapi:
 
 - [`10-tindak-lanjut-review-jamil.md`](10-tindak-lanjut-review-jamil.md) — sumber status bagian A-E yang dievaluasi di dokumen ini.
 - [`../Hasil_Review_Marimoi_Jamil.md`](../Hasil_Review_Marimoi_Jamil.md) — 6 rekomendasi asli yang jadi tolok ukur.
-- [`../Rekomendasi_Pengelompokan_Layer_MARIMOI.md`](../Rekomendasi_Pengelompokan_Layer_MARIMOI.md) §5.1 — contoh atribut teknis infrastruktur (jenis jalan, kondisi, dst.) yang jadi rujukan Prioritas 7.
+- [`../db-schema-v2.md`](../db-schema-v2.md) — single source of truth desain database; contoh atribut teknis infrastruktur (jenis jalan, kondisi, dst.) dan taksonomi 7-kelompok yang jadi rujukan Prioritas 7.
 - [`../04_implementation/03-metadata-dataset.md`](../04_implementation/03-metadata-dataset.md), [`../04_implementation/06-dashboard-eksekutif-minimum.md`](../04_implementation/06-dashboard-eksekutif-minimum.md) — implementasi yang jadi dasar temuan gap.
 - [`05-dashboard-eksekutif.md`](05-dashboard-eksekutif.md) — catatan baseline/periode tren yang dirujuk di Prioritas 2.3.
 - [`11-integrasi-inaproc.md`](11-integrasi-inaproc.md) — jalur tambahan pengurang beban input manual (realisasi keuangan dari sumber resmi), relevan sebagai mitigasi jangka menengah untuk Prioritas 5 dan 6 (adopsi & effort OPD) bila diimplementasikan.
