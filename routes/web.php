@@ -3,6 +3,7 @@
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\SpatialMapController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +61,15 @@ Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
 Route::get('/geojson/version', [FrontendController::class, 'tematikVersion'])->name('tematik.version');
 Route::get('/geojson/filter-options', [FrontendController::class, 'getFilterOptions'])->name('tematik.filter-options');
 Route::get('/geojson/filter-categories', [FrontendController::class, 'getFilterCategories'])->name('tematik.filter-categories');
+
+// PETA V2 (pratinjau skema baru spatial_layers/spatial_layer_features — lihat
+// docs/marimoi v2/04_implementation/10-plan-peta-skema-baru.md) //
+Route::prefix('peta-v2')->name('peta-v2.')->group(function () {
+    Route::get('/', [SpatialMapController::class, 'index'])->name('index');
+    Route::get('/layers', [SpatialMapController::class, 'layerTree'])->name('layers');
+    Route::get('/geojson/{layer:slug}', [SpatialMapController::class, 'geojson'])->name('geojson');
+    Route::get('/feature/{feature}', [SpatialMapController::class, 'featureDetail'])->name('feature');
+});
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 

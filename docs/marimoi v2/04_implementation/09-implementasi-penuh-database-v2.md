@@ -22,9 +22,9 @@ Sebuah batch migrasi pendahulu (`map_types`, `categories.atribut_schema`/`is_gro
 | 5 — `development_projects` | ✅ Selesai | 121 proyek ter-backfill, **100%** butuh review OPD (bukan 67 seperti dugaan rencana awal) |
 | 6 — Dashboard eksekutif | ✅ Selesai | Controller baru terpisah, **bukan** mengganti dashboard lama yang sudah ada |
 | 7 — `analysis_layers`/`analysis_results` | ⏸️ Tetap ditunda | Sesuai rencana — rumus & data wilayah belum siap |
-| 8 — Retirement tabel lama | ⏸️ Belum bisa | Checklist ±15 file baru selesai sebagian kecil; model ditandai `@deprecated` saja |
+| 8 — Retirement tabel lama | 🛑 Dihentikan setelah 1 file | `DashboardController` migrasi, lalu ditemukan blocker arsitektur (tabel baru tidak auto-sync dengan tabel lama yang masih aktif ditulis) — butuh keputusan sebelum lanjut, lihat detail di bawah |
 
-**Total test:** 219 passed, 8 failed (pra-existing, tidak terkait — route `/register` 404 dan `ProyekStrategisDaerahFactory` yang memang belum pernah dibuat sebelum sesi ini). Pint bersih di setiap tahap.
+**Total test:** 228 passed, 8 failed (pra-existing, tidak terkait — route `/register` 404 dan `ProyekStrategisDaerahFactory` yang memang belum pernah dibuat sebelum sesi ini). Pint bersih di setiap tahap.
 
 ### Detail per Prioritas
 
@@ -130,15 +130,39 @@ Controller baru: `ExecutiveDashboardController` (4 endpoint: `summary`, `bySecto
 
 Tidak ada perubahan dari rencana — sengaja tidak dikerjakan. Dua syarat belum terpenuhi: (a) rumus/metodologi analisis belum dikunci Bappeda/perencana, (b) data `administrative_regions` masih kosong (strukturnya sudah ada dari Prioritas 4, isinya belum).
 
-#### Prioritas 8 — Retirement `categories`/`data_spatial`/`shared_maps` ⏸️ Belum bisa dikerjakan
+#### Prioritas 8 — Retirement `categories`/`data_spatial`/`shared_maps` 🟡 Dimulai bertahap
 
-Audit ulang checklist ±15 file (2026-09-27) mengonfirmasi retirement **belum aman dilakukan**:
+Audit ulang checklist ±15 file (2026-09-27) mengonfirmasi retirement **belum aman dilakukan sekaligus**:
 
 - `Category` masih dipakai penuh di: `CategoryController`, `DataSpatialController`, `FrontendController`, `PembangunanDashboardController`, `database/seeders/KategoriLayerSeeder.php`.
-- `DataSpatial` masih dipakai penuh di: `DataSpatialController`, `FrontendController`, `PembangunanDashboardController`, `ProjectFeedbackController`, `ProjectProgressController`, `DashboardController`.
+- `DataSpatial` masih dipakai penuh di: `DataSpatialController`, `FrontendController`, `PembangunanDashboardController`, `ProjectFeedbackController`, `ProjectProgressController`.
 - 5 model duplikat (`Lokasi`, `PokirDprd`, `ProyekStrategisDaerah`, `ProyekStrategisNasional`, `UsulanMusrenbang`) dan `app/Support/MapDataVersion.php` juga belum tersentuh sama sekali.
 
-Yang **sudah** dikerjakan sebagai langkah aman (tidak mengubah perilaku apa pun): `Category` dan `DataSpatial` ditandai `@deprecated` di PHPDoc, mengarahkan pembaca berikutnya ke `SpatialLayer`/`SpatialLayerFeature` dan ke checklist ini. **Tidak ada tabel atau kode yang dimatikan/dihapus** — mematikan compatibility source sekarang akan merusak aplikasi produksi secara langsung.
+Yang sudah dikerjakan: `Category` dan `DataSpatial` ditandai `@deprecated` di PHPDoc (langkah aman, tidak mengubah perilaku). **Update 2026-09-27 — file pertama dimigrasikan**: `DashboardController::index()` dan `getDashboardStats()` dipindah dari `DataSpatial::count()` ke `SpatialLayerFeature::count()`. 3 test baru (`DashboardTotalLokasiTest`) mengunci angkanya benar.
+
+**🛑 Migrasi dihentikan setelah 1 file — ditemukan blocker arsitektur yang berlaku untuk SEMUA file tersisa, bukan kasus per-file:**
+
+`spatial_layers`/`spatial_layer_features`/`development_projects` adalah hasil **backfill satu kali** (Prioritas 1, 2, 5) — bukan tersinkron berkelanjutan dengan `categories`/`data_spatial`. Sementara itu `CategoryController::store()` dan `DataSpatialController::store()` **masih aktif** menjadi satu-satunya jalur tulis data baru, dan keduanya **tidak** ikut membuat baris `SpatialLayer`/`SpatialLayerFeature`/`DevelopmentProject` yang berpadanan. Konsekuensinya:
+
+1. **`DashboardController` yang sudah dimigrasikan punya bug laten**: `totalLokasi` akan mulai salah (kurang) begitu ada data spasial baru diinput lewat admin — `SpatialLayerFeature::count()` tidak ikut bertambah. Belum terjadi sekarang (`data_spatial` dan `spatial_layer_features` masih persis 11.927=11.927, karena belum ada input baru sejak backfill), tapi akan drift begitu ada aktivitas input nyata. **Sengaja tidak di-revert** — didokumentasikan sebagai known risk, karena memperbaikinya (Observer sinkronisasi) adalah keputusan arsitektur tersendiri yang belum dikunci.
+2. **`ProjectProgressController`** ditemukan tidak bisa diswap sama sekali ke `DevelopmentProject` tanpa masalah ini: proyek strategis baru yang diinput admin OPD lewat `DataSpatialController` tidak akan pernah muncul di halaman lapor-progres, karena tidak ada mekanisme yang membuat `DevelopmentProject` baru secara otomatis.
+3. Masalah yang sama berlaku untuk `ProjectFeedbackController` (dropdown pilih proyek), `PembangunanDashboardController`, dan bagian manapun di `CategoryController`/`DataSpatialController`/`FrontendController` yang dibaca dari tabel baru sementara ditulis dari tabel lama.
+
+**Keputusan (2026-09-27): migrasi kode dihentikan sampai di sini** — bukan dilanjutkan sambil menerima risiko drift, dan bukan langsung dibangun Observer sinkronisasi. Sebelum melanjutkan file mana pun berikutnya, perlu keputusan arsitektur eksplisit: bangun Observer dua arah (`Category`↔`SpatialLayer`, `DataSpatial`↔`SpatialLayerFeature`) selama masa transisi, ATAU migrasikan `CategoryController`/`DataSpatialController` (titik tulis) lebih dulu sebagai satu paket sekaligus (bukan file-per-commit seperti pola yang dipakai sejauh ini), ATAU pendekatan lain yang belum dipertimbangkan. **Jangan lanjutkan migrasi file tersisa tanpa menjawab ini dulu.**
+
+**Temuan penting yang mengubah urutan migrasi berikutnya**: `PembangunanDashboardController` sempat dicoba sebagai kandidat migrasi berikutnya, tapi ternyata **bukan swap sederhana** — filter `kategori_id` di situ merujuk ke jenis infrastruktur (`categories`, mis. Jalan/Jembatan), sedangkan `development_projects.sector_id` merepresentasikan konsep berbeda (PUPR/Kesehatan/dst). `development_projects` belum punya kolom pengganti untuk "jenis infrastruktur proyek" ini. Migrasi controller ini **ditunda** sampai ada keputusan skema tambahan (mis. `development_projects.category_id` atau tetap merujuk ke `spatial_layers` via `legacy_data_spatial_id`), bukan dipaksakan sekarang.
+
+**Tidak ada tabel yang dimatikan/dihapus** — mematikan compatibility source sepenuhnya masih terlalu dini; pendekatan sekarang adalah migrasi **satu file per commit**, dites penuh tiap langkah, bukan migrasi total sekaligus.
+
+#### Pengayaan Data Wilayah dari Teks Legacy (di luar urutan Prioritas 0-8 asli) ✅
+
+Setelah data kode wilayah Provinsi Maluku Utara diisi (lihat pembaruan Prioritas 4), dibuat command `marimoi:assign-regions-from-location-text` untuk mengisi `spatial_layer_features.region_id` dan `project_regions` dari teks bebas `dbf_attributes.LOKASI` yang tersisa dari import shapefile lama — **tanpa menunggu batas geometri poligon**, murni pencocokan nama.
+
+**Verifikasi data sebelum menulis kode**: dari 11.927 baris `data_spatial`, hanya 125 (≈1%) punya pola lokasi yang cukup jelas ("Kec. X, Kab./Kota Y") untuk diparse aman — mayoritas berisi nama tempat bebas tanpa pola ("Bobong", "Laut, Halmahera, Laut Maluku, Laut Seram") yang tidak bisa dipetakan otomatis tanpa risiko salah.
+
+Hasil setelah dijalankan terhadap 125 baris berpola jelas: **21 berhasil match ke kecamatan spesifik, 61 fallback ke kabupaten** (karena nama kecamatan di teks tidak persis cocok — banyak typo/variasi ejaan asli data, mis. "Gene Barat" vs "Gane Barat", "Masile Utara" vs "Wasile Utara"), **39 tidak match sama sekali, 4 ambigu** (dua kandidat kabupaten sama-sama cocok) — kedua kategori terakhir sengaja dibiarkan `NULL`, tidak ditebak. Total 82/11.927 baris (≈0,7%) ter-assign; `project_regions` terisi 35 baris (dari `development_projects` yang legacy source-nya termasuk dalam 125 baris berpola jelas).
+
+Command mendukung `--dry-run` untuk pratinjau tanpa menyimpan. 6 test baru (`AssignRegionsFromLegacyLocationTextTest`) mengunci: match kecamatan tepat, fallback ke kabupaten, tidak di-assign saat tanpa pola/ambigu, dry-run tidak menyimpan, dan penautan ke `project_regions` untuk proyek terkait.
 
 ## Tujuan
 
@@ -1159,5 +1183,5 @@ Status sebenarnya per 2026-09-27 — lihat [Rekap Hasil Implementasi](#rekap-has
 - [x] Prioritas 5: `development_projects` + `project_regions`/`project_locations` live, 121 baris proyek strategis lama ter-backfill 1:1. **Seluruh 121 baris (100%, bukan 67 seperti dugaan rencana)** bertanda `needs_review=true` (bukan ditebak).
 - [x] Prioritas 6: dashboard eksekutif (`ExecutiveDashboardController`, terpisah dari dashboard lama) menampilkan kartu ringkasan dari data terstruktur, bisa difilter dan ditelusuri.
 - [ ] Prioritas 7: tetap ditunda, tidak dieksekusi di iterasi ini (sesuai keputusan produk) — tidak berubah.
-- [ ] Prioritas 8: **belum bisa** — checklist ±15 file baru sebagian kecil selesai (audit ulang mengonfirmasi `Category`/`DataSpatial` masih dipakai penuh di ±10 file + 5 model duplikat + `MapDataVersion`). Yang sudah dikerjakan: kedua model ditandai `@deprecated` (murni dokumentasi, tidak mengubah perilaku).
-- [x] Seluruh test baru per prioritas + regresi existing lulus (219 passed, 8 failed pra-existing tidak terkait); `vendor/bin/pint --dirty --format agent` bersih di setiap prioritas.
+- [ ] Prioritas 8: **dimulai bertahap** — `DashboardController` (1 dari ±10 file besar) sudah dimigrasikan penuh ke `SpatialLayerFeature`, terverifikasi dengan 3 test baru. Sisa file (`CategoryController`, `DataSpatialController`, `FrontendController`, `PembangunanDashboardController`, `ProjectFeedbackController`, `ProjectProgressController`, 5 model duplikat, `MapDataVersion`) belum disentuh — `PembangunanDashboardController` khususnya butuh keputusan skema tambahan dulu (lihat catatan di atas), bukan migrasi langsung.
+- [x] Seluruh test baru per prioritas + regresi existing lulus (228 passed, 8 failed pra-existing tidak terkait); `vendor/bin/pint --dirty --format agent` bersih di setiap prioritas.
