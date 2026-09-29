@@ -22,6 +22,7 @@ class SpatialLayer extends Model
         'description',
         'layer_class',
         'source_type',
+        'legacy_category_id',
         'map_type_id',
         'sector_id',
         'owner_user_id',

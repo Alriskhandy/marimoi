@@ -492,6 +492,12 @@
                                                     'data-bs-toggle="modal" data-bs-target="#editModal" title="Edit">';
                                                 $output .= '<i class="mdi mdi-pencil"></i>';
                                                 $output .= '</button>';
+                                                $output .=
+                                                    '<a href="' .
+                                                    route('categories.metadata.edit', $kategori->id) .
+                                                    '" class="btn btn-sm btn-outline-info" title="Metadata Layer">';
+                                                $output .= '<i class="mdi mdi-file-document-outline"></i>';
+                                                $output .= '</a>';
                                                 }
 
                                                 if ($user->can('categories.delete')) {

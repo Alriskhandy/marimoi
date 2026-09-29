@@ -116,6 +116,12 @@
                     <span class="nav-text">Jenis Peta</span>
                 </a>
 @endcan
+                @can('maps.manage')
+<a class="nav-link {{ request()->routeIs('maps.*') ? 'active' : '' }}"
+                    href="{{ route('maps.index') }}">
+                    <span class="nav-text">Kelola Peta</span>
+                </a>
+@endcan
                 @can('project-feedbacks.view')
 <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                     href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">

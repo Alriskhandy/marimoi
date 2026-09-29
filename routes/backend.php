@@ -8,6 +8,8 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\MapLayerController;
 use App\Http\Controllers\MapTypeController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\PembangunanDashboardController;
@@ -17,6 +19,7 @@ use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SpatialLayerMetadataController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitorsController;
 use App\Models\DataSpatial;
@@ -169,6 +172,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/{id}', [CategoryController::class, 'update'])->name('update')->middleware('permission:categories.edit');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy')->middleware('permission:categories.delete');
 
+        // Metadata layer skema baru (spatial_layer_metadata) — docs/marimoi v2/
+        // 04_implementation/11-plan-dashboard-skema-baru.md Bagian A.
+        Route::get('/{id}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:categories.edit');
+        Route::put('/{id}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:categories.edit');
+
         // API routes untuk categories
         Route::get('/api/by-type/{type}', [CategoryController::class, 'getByType'])->name('api.by-type')->middleware('permission:categories.view');
         Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree')->middleware('permission:categories.view');
@@ -184,6 +192,25 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::resource('map-types', MapTypeController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->middleware('permission:map-types.manage');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kelola Peta (docs/marimoi v2/04_implementation/11-plan-dashboard-skema-baru.md)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource('maps', MapController::class)
+        ->except(['show'])
+        ->middleware('permission:maps.manage');
+    Route::post('/maps/{map}/publish', [MapController::class, 'publish'])->name('maps.publish')->middleware('permission:maps.manage');
+    Route::post('/maps/{map}/publications/{publication}/share', [MapController::class, 'share'])->name('maps.publications.share')->middleware('permission:maps.manage');
+    Route::delete('/maps/{map}/shares/{mapShare}', [MapController::class, 'revokeShare'])->name('maps.shares.revoke')->middleware('permission:maps.manage');
+    Route::prefix('maps/{map}/layers')->name('maps.layers.')->middleware('permission:maps.manage')->group(function () {
+        Route::post('/', [MapLayerController::class, 'store'])->name('store');
+        Route::put('/{mapLayer}', [MapLayerController::class, 'update'])->name('update');
+        Route::delete('/{mapLayer}', [MapLayerController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [MapLayerController::class, 'reorder'])->name('reorder');
+    });
 
     /*
     |--------------------------------------------------------------------------

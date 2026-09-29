@@ -41,6 +41,12 @@ class Permission extends SpatiePermission
                 'manage' => 'Kelola jenis peta (master data)',
             ],
         ],
+        'maps' => [
+            'label' => 'Kelola Peta',
+            'actions' => [
+                'manage' => 'Susun, terbitkan, dan bagikan peta',
+            ],
+        ],
         'project-feedbacks' => [
             'label' => 'Feedback Peta',
             'actions' => [
