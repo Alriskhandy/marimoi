@@ -4,6 +4,7 @@ use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\PublicMapShareController;
+use App\Http\Controllers\SpatialFeedbackController;
 use App\Http\Controllers\SpatialMapController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VisitorController;
@@ -77,6 +78,12 @@ Route::prefix('peta-v2')->name('peta-v2.')->group(function () {
 Route::get('/peta/bagikan/{token}', [PublicMapShareController::class, 'show'])
     ->name('map-shares.show')
     ->middleware('throttle:30,1');
+
+// FEEDBACK PEMETAAN PUBLIK (docs/marimoi v2/04_implementation/
+// 12-implementasi-perbaikan-pemetaan.md Bagian 3.3) //
+Route::post('/peta-v2/feedback', [SpatialFeedbackController::class, 'store'])
+    ->name('spatial-feedbacks.store')
+    ->middleware('throttle:10,1');
 
 // Route::get('/visitors', [VisitorController::class, 'index'])->name('visitors.index');
 

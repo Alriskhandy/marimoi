@@ -47,6 +47,23 @@ class Permission extends SpatiePermission
                 'manage' => 'Susun, terbitkan, dan bagikan peta',
             ],
         ],
+        'spatial-layers' => [
+            'label' => 'Daftar Layer & Data',
+            'actions' => [
+                'view' => 'Lihat Layer & Data Spasial',
+                'create' => 'Tambah Layer & Data Spasial',
+                'edit' => 'Ubah Layer & Data Spasial',
+                'delete' => 'Hapus Layer & Data Spasial',
+            ],
+        ],
+        'spatial-feedbacks' => [
+            'label' => 'Feedback Pemetaan',
+            'actions' => [
+                'view' => 'Lihat feedback Layer/Data Spasial',
+                'respond' => 'Tanggapi feedback',
+                'delete' => 'Hapus feedback',
+            ],
+        ],
         'project-feedbacks' => [
             'label' => 'Feedback Peta',
             'actions' => [

@@ -87,7 +87,7 @@
             role="button" aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}"
             aria-controls="petaTematikMenu">
             <span class="nav-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
-            <span class="nav-text">Peta Tematik</span>
+            <span class="nav-text">Pemetaan</span>
             <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
         </a>
         <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
@@ -126,6 +126,21 @@
 <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                     href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
                     <span class="nav-text">Feedback Peta Tematik</span>
+                </a>
+@endcan
+                {{-- Menu baru docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
+                     — SENGAJA aditif berdampingan dengan menu lama di atas, BUKAN pengganti.
+                     Bagian 6: menu lama baru dicabut setelah QA paralel selesai. --}}
+                @can('spatial-layers.view')
+<a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
+                    href="{{ route('spatial-layers.index') }}">
+                    <span class="nav-text">Daftar Layer & Data (Baru)</span>
+                </a>
+@endcan
+                @can('spatial-feedbacks.view')
+<a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
+                    href="{{ route('spatial-feedbacks.index') }}">
+                    <span class="nav-text">Feedback Pemetaan (Baru)</span>
                 </a>
 @endcan
             </div>

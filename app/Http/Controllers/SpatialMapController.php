@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataSpatial;
+use App\Models\MapTypeDynamicAttribute;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,7 @@ class SpatialMapController extends Controller
         $layers = SpatialLayer::with('children')
             ->whereNull('parent_id')
             ->where('is_active', true)
-            ->get(['id', 'slug', 'name', 'title', 'color', 'is_marker', 'parent_id']);
+            ->get(['id', 'slug', 'name', 'title', 'color', 'icon', 'opacity', 'is_marker', 'parent_id']);
 
         return response()->json($layers);
     }
@@ -61,9 +62,45 @@ class SpatialMapController extends Controller
 
         return response()->json([
             'attributes' => $feature->attributes,
+            'metadata_dinamis' => $this->labeledMetadataDinamis($feature),
+            'gambar' => $feature->gambar,
             'region' => $feature->region?->only(['name', 'level']),
             'layer' => $feature->layer->only(['name', 'color']),
             'legacy' => $legacy,
         ]);
+    }
+
+    /**
+     * metadata_dinamis (Bagian 1.4/5 docs/marimoi v2/04_implementation/
+     * 12-implementasi-perbaikan-pemetaan.md) disimpan dengan key kode_atribut mentah
+     * — gabungkan dengan label/satuan dari MapTypeDynamicAttribute Jenis-nya supaya
+     * popup detail menampilkan label yang dipahami pengguna, bukan key jsonb mentah.
+     *
+     * @return array<int, array{label: string, satuan: ?string, value: mixed}>
+     */
+    private function labeledMetadataDinamis(SpatialLayerFeature $feature): array
+    {
+        $values = $feature->metadata_dinamis ?? [];
+
+        if (empty($values) || ! $feature->layer->map_type_id) {
+            return [];
+        }
+
+        $definitions = MapTypeDynamicAttribute::where('map_type_id', $feature->layer->map_type_id)
+            ->whereIn('kode_atribut', array_keys($values))
+            ->get()
+            ->keyBy('kode_atribut');
+
+        $result = [];
+        foreach ($values as $kode => $value) {
+            $definition = $definitions->get($kode);
+            $result[] = [
+                'label' => $definition?->label ?? $kode,
+                'satuan' => $definition?->satuan,
+                'value' => $value,
+            ];
+        }
+
+        return $result;
     }
 }

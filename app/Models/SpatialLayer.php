@@ -29,6 +29,8 @@ class SpatialLayer extends Model
         'owner_opd_id',
         'geometry_type',
         'color',
+        'icon',
+        'opacity',
         'is_marker',
         'srid',
         'min_zoom',
@@ -52,6 +54,7 @@ class SpatialLayer extends Model
             'is_group' => 'boolean',
             'atribut_schema' => 'array',
             'published_at' => 'datetime',
+            'opacity' => 'float',
         ];
     }
 
@@ -97,6 +100,41 @@ class SpatialLayer extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /**
+     * Cegah cycle di tree parent-child (docs/marimoi v2/04_implementation/
+     * 12-implementasi-perbaikan-pemetaan.md Keputusan #3) — cek seluruh rantai
+     * parent_id ke atas, bukan cuma satu level.
+     */
+    public function wouldCreateCycle(?int $candidateParentId): bool
+    {
+        if ($candidateParentId === null) {
+            return false;
+        }
+
+        if ($candidateParentId === $this->id) {
+            return true;
+        }
+
+        $current = self::find($candidateParentId);
+        $visited = [];
+
+        while ($current !== null) {
+            if ($current->id === $this->id) {
+                return true;
+            }
+
+            if (in_array($current->id, $visited, true)) {
+                // Sudah ada cycle lain di data — jangan loop tak berujung di sini.
+                return true;
+            }
+
+            $visited[] = $current->id;
+            $current = $current->parent_id ? self::find($current->parent_id) : null;
+        }
+
+        return false;
     }
 
     public function scopeSelectable(Builder $query): Builder

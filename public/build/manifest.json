@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-CBkk9Ukm.css",
+    "file": "assets/app-C5nJnjrG.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -10,7 +10,7 @@
     "isEntry": true
   },
   "resources/css/spatial.css": {
-    "file": "assets/spatial-CRZp8x1c.css",
+    "file": "assets/spatial-DILJbC9K.css",
     "src": "resources/css/spatial.css",
     "isEntry": true
   },
@@ -21,7 +21,7 @@
     "isEntry": true
   },
   "resources/js/peta-v2.js": {
-    "file": "assets/peta-v2-BwlvClLA.js",
+    "file": "assets/peta-v2-QRj0l8f8.js",
     "name": "peta-v2",
     "src": "resources/js/peta-v2.js",
     "isEntry": true

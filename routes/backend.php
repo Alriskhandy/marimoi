@@ -19,6 +19,9 @@ use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SpatialFeedbackController;
+use App\Http\Controllers\SpatialLayerController;
+use App\Http\Controllers\SpatialLayerFeatureController;
 use App\Http\Controllers\SpatialLayerMetadataController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitorsController;
@@ -190,8 +193,46 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     Route::resource('map-types', MapTypeController::class)
-        ->only(['index', 'store', 'update', 'destroy'])
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->middleware('permission:map-types.manage');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Daftar Layer & Data (docs/marimoi v2/04_implementation/
+    | 12-implementasi-perbaikan-pemetaan.md Bagian 3.2)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('spatial-layers')->name('spatial-layers.')->group(function () {
+        Route::get('/', [SpatialLayerController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+        Route::get('/create', [SpatialLayerController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
+        Route::post('/', [SpatialLayerController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+        Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
+        Route::get('/{spatialLayer}/edit', [SpatialLayerController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
+        Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+        Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+
+        Route::prefix('{spatialLayer}/features')->name('features.')->group(function () {
+            Route::get('/create', [SpatialLayerFeatureController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
+            Route::post('/', [SpatialLayerFeatureController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+            Route::get('/{feature}/edit', [SpatialLayerFeatureController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
+            Route::put('/{feature}', [SpatialLayerFeatureController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::delete('/{feature}', [SpatialLayerFeatureController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feedback Pemetaan (docs/marimoi v2/04_implementation/
+    | 12-implementasi-perbaikan-pemetaan.md Bagian 3.3)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('spatial-feedbacks')->name('spatial-feedbacks.')->group(function () {
+        Route::get('/', [SpatialFeedbackController::class, 'index'])->name('index')->middleware('permission:spatial-feedbacks.view');
+        Route::put('/{spatialFeedback}/respond', [SpatialFeedbackController::class, 'respond'])->name('respond')->middleware('permission:spatial-feedbacks.respond');
+        Route::delete('/{spatialFeedback}', [SpatialFeedbackController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-feedbacks.delete');
+    });
 
     /*
     |--------------------------------------------------------------------------

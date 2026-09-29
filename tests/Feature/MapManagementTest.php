@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Map;
 use App\Models\MapLayer;
+use App\Models\MapShare;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -56,6 +57,34 @@ class MapManagementTest extends TestCase
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $this->actingAs($user)->get(route('maps.index'))->assertForbidden();
+    }
+
+    /**
+     * Regresi: halaman ini perlu benar-benar dirender (GET) dengan data yang
+     * mengisi tiap cabang tampilan (layer, publikasi, share) — bukan cuma dites
+     * lewat aksi POST/PUT — supaya kesalahan kompilasi Blade ketahuan. Pola bug
+     * yang sama sempat lolos di map-types/_form.blade.php.
+     */
+    public function test_create_page_renders(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('maps.create'))->assertOk();
+    }
+
+    public function test_edit_page_renders_with_layer_publication_and_share(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $map = Map::create(['slug' => 'peta-render-uji', 'title' => 'Peta Render Uji']);
+        MapLayer::create(['map_id' => $map->id, 'spatial_layer_id' => $layer->id, 'display_order' => 0]);
+        $publication = $map->publish($admin);
+        MapShare::generateFor($publication, $admin);
+
+        $this->actingAs($admin)->get(route('maps.edit', $map))
+            ->assertOk()
+            ->assertSee('Peta Render Uji')
+            ->assertSee('Revisi #1');
     }
 
     public function test_attaching_layer_creates_map_layer_with_incrementing_order(): void

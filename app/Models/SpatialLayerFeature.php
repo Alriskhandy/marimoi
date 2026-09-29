@@ -15,6 +15,8 @@ class SpatialLayerFeature extends Model
         'geometry',
         'region_id',
         'attributes',
+        'gambar',
+        'metadata_dinamis',
         'created_by',
         'legacy_data_spatial_id',
     ];
@@ -23,6 +25,7 @@ class SpatialLayerFeature extends Model
     {
         return [
             'attributes' => 'array',
+            'metadata_dinamis' => 'array',
         ];
     }
 
