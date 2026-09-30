@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\MapType;
+use App\Models\MetadataDefinition;
 use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MapTypeManagementTest extends TestCase
@@ -59,24 +61,115 @@ class MapTypeManagementTest extends TestCase
      * menangani argumen array literal multi-baris dengan benar, hasil kompilasi
      * terpotong jadi PHP tidak valid) — TIDAK pernah ketahuan dari test store()/
      * update() manapun karena tidak ada yang benar-benar GET & render halaman ini.
-     * Wajib ada test yang benar-benar merender create/edit, bukan cuma POST/PUT.
+     * Wajib ada test yang benar-benar merender index/create/edit, bukan cuma POST/PUT.
      */
-    public function test_create_page_renders_without_compile_error(): void
+    public function test_index_page_renders_without_compile_error(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
 
-        $this->actingAs($admin)->get(route('map-types.create'))->assertOk();
+        $this->actingAs($admin)->get(route('map-types.index'))->assertOk();
+    }
+
+    /**
+     * Regresi: "Tambah Jenis Peta" adalah halaman penuh tersendiri (bukan modal di
+     * index) — index cuma link biasa ke `map-types.create`, form action ke
+     * `map-types.store`, dan field diperbaiki (Nama didahulukan, Slug auto-terisi
+     * dari Nama lewat JS, label wajib diberi tanda *).
+     */
+    public function test_create_page_is_a_full_page_not_a_modal(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+
+        $this->actingAs($admin)->get(route('map-types.index'))
+            ->assertOk()
+            ->assertSee(route('map-types.create'), false)
+            ->assertDontSee('id="addMapTypeModal"', false);
+
+        $response = $this->actingAs($admin)->get(route('map-types.create'));
+
+        $response->assertOk()
+            ->assertSee(route('map-types.store'), false)
+            ->assertDontSee('data-bs-toggle="modal"', false)
+            ->assertSee('id="map_type_nama"', false)
+            ->assertSee('id="map_type_slug"', false)
+            ->assertSee('readonly', false);
+    }
+
+    /**
+     * Regresi: field Icon dihapus total dari MapType (model, kolom DB, form, index) —
+     * sengaja tidak pernah dipakai di UI manapun.
+     */
+    public function test_icon_field_is_removed_from_map_type(): void
+    {
+        $this->assertFalse(Schema::hasColumn('map_types', 'icon'));
+        $this->assertNotContains('icon', (new MapType)->getFillable());
+
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $response = $this->actingAs($admin)->get(route('map-types.create'));
+
+        $response->assertOk()
+            ->assertDontSee('name="icon"', false)
+            ->assertDontSee('>Icon<', false);
+    }
+
+    /**
+     * Regresi Opsi B (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md
+     * Bagian 6): section "Metadata" sekarang SATU tabel gabungan (`#dynamic-attributes-table`)
+     * — 3 baris "Atribut Utama" (Sumber Data/OPD/Tanggal, fixed di atas) diikuti
+     * baris atribut dinamis (existing/custom). Tabel "Atribut Siap Pakai" yang dulu
+     * berdiri sendiri (toggle checklist 4 definisi is_system) DIHAPUS — definisi
+     * is_system tetap bisa dipakai lewat pencarian katalog yang sudah ada, bukan
+     * lewat daftar terpisah yang selalu tampil.
+     */
+    public function test_metadata_shown_as_single_merged_table(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+
+        $response = $this->actingAs($admin)->get(route('map-types.create'));
+
+        $response->assertOk()
+            ->assertSee('Metadata')
+            ->assertDontSee('Metadata Utama')
+            ->assertDontSee('Metadata Dinamis')
+            ->assertSee('Atribut Utama')
+            ->assertDontSee('Atribut Siap Pakai')
+            ->assertDontSee('Atribut Tambahan')
+            ->assertDontSee('id="core-attributes-table"', false)
+            ->assertDontSee('id="system-definitions-table"', false)
+            ->assertSee('id="dynamic-attributes-table"', false)
+            ->assertSee('class="core-attribute-row"', false)
+            ->assertSee('<code>sumber_data</code>', false)
+            ->assertSee('<code>opd_penanggung_jawab_id</code>', false)
+            ->assertSee('<code>tanggal_data</code>', false)
+            ->assertSee('Nama/Key')
+            ->assertSee('Nilai (Label)')
+            ->assertSee('Satuan')
+            // Wajib untuk Atribut Utama sekarang badge teks, BUKAN checkbox disabled
+            // (nilai yang tidak perlu diisi/diklik user tidak perlu dibuat disabled).
+            ->assertSee('bg-danger-subtle text-danger">Wajib</span>', false)
+            ->assertDontSee('checked disabled', false)
+            // 4 definisi is_system tidak lagi di-render langsung sebagai daftar
+            // tetap — cuma bisa ditemukan lewat pencarian katalog (AJAX).
+            ->assertDontSee('<code>pagu</code>', false)
+            ->assertSee('id="catalog-search-input"', false)
+            ->assertSee('id="btn-add-custom-attribute"', false);
     }
 
     public function test_edit_page_renders_without_compile_error_and_includes_existing_dynamic_attribute(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
-        $mapType->dynamicAttributes()->create(['tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu']);
+        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
+        $mapType->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id]);
 
         $this->actingAs($admin)->get(route('map-types.edit', $mapType))->assertOk();
     }
 
+    /**
+     * Regresi: edit & detail jadi SATU halaman (bukan dua halaman/modal terpisah)
+     * — halaman edit menampilkan form ubah sekaligus ringkasan Layer yang memakai
+     * Jenis ini.
+     */
     public function test_super_admin_can_manage_map_types(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
@@ -132,19 +225,46 @@ class MapTypeManagementTest extends TestCase
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
 
         $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
             'slug' => 'tematik',
             'nama' => $mapType->nama,
             'dynamic_attributes' => [
-                ['tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu', 'satuan' => 'Rp', 'is_wajib' => '1'],
+                ['metadata_definition_id' => $pagu->id, 'is_wajib' => '1'],
             ],
         ]));
 
         $this->assertDatabaseHas('map_type_dynamic_attributes', [
             'map_type_id' => $mapType->id,
-            'kode_atribut' => 'pagu',
+            'metadata_definition_id' => $pagu->id,
             'is_wajib' => true,
+        ]);
+    }
+
+    /**
+     * Regresi Opsi B: mengirim `kode/label/satuan/data_type` (tanpa
+     * `metadata_definition_id`) berarti "buat definisi baru" — `firstOrCreate` ke
+     * katalog `metadata_definitions` dulu, baru pivot dibuat.
+     */
+    public function test_update_creates_new_metadata_definition_for_custom_attribute(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+
+        $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+            'slug' => 'tematik',
+            'nama' => $mapType->nama,
+            'dynamic_attributes' => [
+                ['kode' => 'lebar_jalan', 'label' => 'Lebar Jalan', 'satuan' => 'meter', 'data_type' => 'text', 'is_wajib' => '0'],
+            ],
+        ]));
+
+        $this->assertDatabaseHas('metadata_definitions', ['kode' => 'lebar_jalan', 'label' => 'Lebar Jalan', 'is_system' => false]);
+        $definition = MetadataDefinition::where('kode', 'lebar_jalan')->firstOrFail();
+        $this->assertDatabaseHas('map_type_dynamic_attributes', [
+            'map_type_id' => $mapType->id,
+            'metadata_definition_id' => $definition->id,
         ]);
     }
 
@@ -152,7 +272,8 @@ class MapTypeManagementTest extends TestCase
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
-        $mapType->dynamicAttributes()->create(['tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu']);
+        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
+        $mapType->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id]);
 
         $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
             'slug' => 'tematik',
@@ -160,7 +281,7 @@ class MapTypeManagementTest extends TestCase
             'dynamic_attributes' => [],
         ]));
 
-        $this->assertDatabaseMissing('map_type_dynamic_attributes', ['map_type_id' => $mapType->id, 'kode_atribut' => 'pagu']);
+        $this->assertDatabaseMissing('map_type_dynamic_attributes', ['map_type_id' => $mapType->id, 'metadata_definition_id' => $pagu->id]);
     }
 
     public function test_destroy_blocks_deletion_when_still_used_by_a_layer(): void
@@ -203,6 +324,79 @@ class MapTypeManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(route('map-types.edit', $mapType), false);
+    }
+
+    /**
+     * Regresi: tampilan index diperbaiki — stats card (Total Jenis/Aktif/Nonaktif/
+     * Total Layer), toolbar cari + per-halaman via DataTables, kolom OPD Penanggung
+     * Jawab, dan tombol hapus pakai pola data-confirm (bukan onsubmit=confirm() polos).
+     */
+    public function test_index_page_shows_stats_cards_and_delete_button(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get(route('map-types.index'));
+
+        $response->assertOk()
+            ->assertSee('Total Jenis')
+            ->assertSee('Aktif')
+            ->assertSee('Nonaktif')
+            ->assertSee('Total Layer')
+            ->assertSee('id="mapTypesTable"', false)
+            ->assertSee('id="tableSearch"', false)
+            ->assertSee('data-confirm="delete"', false)
+            ->assertSee(route('map-types.destroy', $mapType), false);
+    }
+
+    /**
+     * Regresi: kolom Sumber Data & OPD Penanggung Jawab dihapus dari index, diganti
+     * "Atribut Utama" (hitung MapTypeDynamicAttribute tipe placeholder aktif) dan
+     * "Atribut Tambahan" (tipe custom aktif) — atribut nonaktif tidak ikut terhitung.
+     */
+    public function test_index_page_shows_atribut_utama_and_tambahan_columns_instead_of_sumber_data_and_opd(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
+        $realisasiFisik = MetadataDefinition::where('kode', 'realisasi_fisik')->firstOrFail();
+        $catatan = MetadataDefinition::create(['kode' => 'catatan-'.uniqid(), 'label' => 'Catatan', 'is_system' => false]);
+        $mapType->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id, 'is_active' => true]);
+        $mapType->dynamicAttributes()->create(['metadata_definition_id' => $realisasiFisik->id, 'is_active' => false]);
+        $mapType->dynamicAttributes()->create(['metadata_definition_id' => $catatan->id, 'is_active' => true]);
+
+        $response = $this->actingAs($admin)->get(route('map-types.index'));
+
+        $response->assertOk()
+            ->assertSee('Atribut Utama')
+            ->assertSee('Atribut Tambahan')
+            ->assertDontSee('<th>Sumber Data</th>', false)
+            ->assertDontSee('<th>OPD Penanggung Jawab</th>', false);
+    }
+
+    /**
+     * Regresi: index menegaskan Jenis Peta BUKAN pengelompokan Layer, melainkan
+     * definisi atribut/metadata acuan — user wajib pilih Jenis lalu isi Atribut
+     * Utama/Tambahan yang sudah ditentukan saat menambah Layer baru.
+     */
+    /**
+     * Regresi: kolom "Jumlah Layer" diganti nama jadi "Dipakai di Layer" (+ tooltip)
+     * supaya tidak terkesan kolom pengelompokan/kategori — Jenis Peta cuma acuan
+     * atribut, bukan pengelompokan Layer.
+     *
+     * Catatan: banner info penjelas yang sebelumnya ada di atas tabel sempat
+     * dihapus dari file ini di luar sesi kerja ini (bukan oleh perubahan yang
+     * sedang dikerjakan) — assertion untuk banner tersebut sengaja tidak
+     * dipertahankan di sini supaya test tetap merefleksikan isi file yang
+     * sebenarnya, bukan versi yang sudah tidak ada.
+     */
+    public function test_index_page_renames_jumlah_layer_column_to_avoid_grouping_implication(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+
+        $response = $this->actingAs($admin)->get(route('map-types.index'));
+
+        $response->assertOk()->assertSee('Dipakai di Layer');
     }
 
     public function test_activating_a_previously_inactive_map_type_via_update_route_succeeds(): void

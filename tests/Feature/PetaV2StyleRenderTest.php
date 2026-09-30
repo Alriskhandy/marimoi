@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MapType;
+use App\Models\MetadataDefinition;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,9 +35,8 @@ class PetaV2StyleRenderTest extends TestCase
     public function test_feature_detail_includes_labeled_metadata_dinamis(): void
     {
         $jenis = MapType::where('slug', 'tematik')->firstOrFail();
-        $jenis->dynamicAttributes()->create([
-            'tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu', 'satuan' => 'Rp',
-        ]);
+        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
+        $jenis->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id]);
         $layer = SpatialLayer::create([
             'slug' => 'layer-uji', 'name' => 'Layer Uji', 'title' => 'Layer Uji',
             'layer_class' => 'thematic', 'map_type_id' => $jenis->id,

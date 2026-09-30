@@ -11,6 +11,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MapLayerController;
 use App\Http\Controllers\MapTypeController;
+use App\Http\Controllers\MetadataDefinitionController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\PembangunanDashboardController;
 use App\Http\Controllers\ProfileController;
@@ -194,6 +195,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::resource('map-types', MapTypeController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+        ->middleware('permission:map-types.manage');
+
+    Route::get('metadata-definitions/search', [MetadataDefinitionController::class, 'search'])
+        ->name('metadata-definitions.search')
         ->middleware('permission:map-types.manage');
 
     /*

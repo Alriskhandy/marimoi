@@ -72,9 +72,11 @@ class SpatialMapController extends Controller
 
     /**
      * metadata_dinamis (Bagian 1.4/5 docs/marimoi v2/04_implementation/
-     * 12-implementasi-perbaikan-pemetaan.md) disimpan dengan key kode_atribut mentah
-     * — gabungkan dengan label/satuan dari MapTypeDynamicAttribute Jenis-nya supaya
-     * popup detail menampilkan label yang dipahami pengguna, bukan key jsonb mentah.
+     * 12-implementasi-perbaikan-pemetaan.md) disimpan dengan key kode metadata
+     * mentah — gabungkan dengan label/satuan dari katalog MetadataDefinition
+     * (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md Bagian 6,
+     * Opsi B) lewat pivot MapTypeDynamicAttribute Jenis-nya, supaya popup detail
+     * menampilkan label yang dipahami pengguna, bukan key jsonb mentah.
      *
      * @return array<int, array{label: string, satuan: ?string, value: mixed}>
      */
@@ -87,9 +89,11 @@ class SpatialMapController extends Controller
         }
 
         $definitions = MapTypeDynamicAttribute::where('map_type_id', $feature->layer->map_type_id)
-            ->whereIn('kode_atribut', array_keys($values))
+            ->with('metadataDefinition')
             ->get()
-            ->keyBy('kode_atribut');
+            ->pluck('metadataDefinition')
+            ->filter(fn ($definition) => in_array($definition->kode, array_keys($values), true))
+            ->keyBy('kode');
 
         $result = [];
         foreach ($values as $kode => $value) {

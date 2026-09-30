@@ -16,7 +16,6 @@ class MapType extends Model
         'sumber_data',
         'opd_penanggung_jawab_id',
         'tanggal_data',
-        'icon',
         'urutan',
         'is_active',
         'konfigurasi',

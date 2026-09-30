@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MapType;
+use App\Models\MetadataDefinition;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -16,6 +17,8 @@ use Tests\TestCase;
  * Regresi untuk SpatialLayerFeatureController (docs/marimoi v2/04_implementation/
  * 12-implementasi-perbaikan-pemetaan.md Bagian 3.2) — attributes (impor) vs
  * metadata_dinamis (terstruktur) tersimpan terpisah, is_wajib divalidasi.
+ * MapTypeDynamicAttribute sekarang pivot ke katalog global MetadataDefinition
+ * (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md Bagian 6, Opsi B).
  */
 class SpatialLayerFeatureControllerTest extends TestCase
 {
@@ -44,6 +47,19 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ], $overrides));
     }
 
+    private function attachDefinition(SpatialLayer $layer, string $kode, array $definitionOverrides = [], array $pivotOverrides = []): void
+    {
+        $definition = MetadataDefinition::firstOrCreate(
+            ['kode' => $kode],
+            array_merge(['label' => ucfirst($kode)], $definitionOverrides)
+        );
+
+        $layer->mapType->dynamicAttributes()->create(array_merge(
+            ['metadata_definition_id' => $definition->id],
+            $pivotOverrides
+        ));
+    }
+
     public function test_admin_can_create_a_feature_with_wkt_geometry(): void
     {
         $admin = $this->admin();
@@ -60,9 +76,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $layer->mapType->dynamicAttributes()->create([
-            'tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu', 'is_wajib' => true,
-        ]);
+        $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
@@ -73,9 +87,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $layer->mapType->dynamicAttributes()->create([
-            'tipe' => 'custom', 'kode_atribut' => 'catatan', 'label' => 'Catatan', 'is_wajib' => false,
-        ]);
+        $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan'], ['is_wajib' => false]);
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
@@ -88,9 +100,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $layer->mapType->dynamicAttributes()->create([
-            'tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu', 'is_wajib' => true,
-        ]);
+        $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
         $feature = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
             'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
@@ -105,6 +115,29 @@ class SpatialLayerFeatureControllerTest extends TestCase
         $feature->refresh();
         $this->assertSame(['pagu' => '5000000'], $feature->metadata_dinamis);
         $this->assertSame(['KODE_ASLI' => 'ABC123'], $feature->attributes);
+    }
+
+    /**
+     * Regresi Opsi B: kalau definisi katalognya `data_type = select` dengan
+     * `opsi` terisi, nilai di luar daftar opsi harus ditolak validasi server.
+     */
+    public function test_select_dynamic_attribute_rejects_value_outside_options(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        // Kode unik (bukan 'status' yang sudah di-seed migration dengan data_type
+        // default 'text') supaya firstOrCreate() beneran BUAT definisi baru dengan
+        // data_type=select, bukan reuse baris seed yang sudah ada.
+        $this->attachDefinition($layer, 'status_progres', [
+            'label' => 'Status Progres',
+            'data_type' => MetadataDefinition::TYPE_SELECT,
+            'opsi' => ['Berjalan', 'Selesai'],
+        ]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
+            'geometry_wkt' => 'POINT(127.5 0.8)',
+            'metadata_dinamis' => ['status_progres' => 'Batal'],
+        ])->assertSessionHasErrors('metadata_dinamis.status_progres');
     }
 
     public function test_jenis_without_active_dynamic_attributes_requires_no_extra_field(): void
@@ -128,7 +161,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $layer->mapType->dynamicAttributes()->create(['tipe' => 'custom', 'kode_atribut' => 'catatan', 'label' => 'Catatan']);
+        $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan']);
 
         $this->actingAs($admin)->get(route('spatial-layers.features.create', $layer))->assertOk();
     }
@@ -137,7 +170,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $layer->mapType->dynamicAttributes()->create(['tipe' => 'placeholder', 'kode_atribut' => 'pagu', 'label' => 'Pagu']);
+        $this->attachDefinition($layer, 'pagu');
         $feature = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
             'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),

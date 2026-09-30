@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\MapTypeDynamicAttribute;
+use App\Models\MetadataDefinition;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Data Spasial di bawah satu Layer (docs/marimoi v2/04_implementation/
@@ -87,6 +89,7 @@ class SpatialLayerFeatureController extends Controller
 
         return MapTypeDynamicAttribute::where('map_type_id', $layer->map_type_id)
             ->where('is_active', true)
+            ->with('metadataDefinition')
             ->orderBy('urutan')
             ->get();
     }
@@ -100,7 +103,16 @@ class SpatialLayerFeatureController extends Controller
 
         $dynamicAttributes = $this->activeDynamicAttributesFor($layer);
         foreach ($dynamicAttributes as $attribute) {
-            $rules['metadata_dinamis.'.$attribute->kode_atribut] = $attribute->is_wajib ? 'required|string' : 'nullable|string';
+            $definition = $attribute->metadataDefinition;
+            $fieldRules = [$attribute->is_wajib ? 'required' : 'nullable'];
+
+            if ($definition->data_type === MetadataDefinition::TYPE_SELECT && ! empty($definition->opsi)) {
+                $fieldRules[] = Rule::in($definition->opsi);
+            } else {
+                $fieldRules[] = 'string';
+            }
+
+            $rules['metadata_dinamis.'.$definition->kode] = $fieldRules;
         }
 
         $validated = $request->validate($rules);
