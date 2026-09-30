@@ -202,7 +202,6 @@
 
                                             $output .= '<td><div class="btn-group" role="group">';
                                             $output .= '<a href="' . route('spatial-layers.show', $layer->id) . '" class="btn btn-sm btn-outline-primary" title="Detail"><i class="mdi mdi-eye"></i></a>';
-                                            $output .= '<a href="' . route('spatial-layers.edit', $layer->id) . '" class="btn btn-sm btn-outline-success" title="Kelola"><i class="mdi mdi-pencil"></i></a>';
                                             $output .= '<form action="' . route('spatial-layers.destroy', $layer->id) . '" method="POST" style="display:inline-block" data-confirm="delete" data-name="' . e($layer->name) . '">';
                                             $output .= csrf_field() . method_field('DELETE');
                                             $output .= '<button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus"><i class="mdi mdi-delete"></i></button>';

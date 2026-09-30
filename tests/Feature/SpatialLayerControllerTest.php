@@ -6,8 +6,11 @@ use App\Models\MapType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
+use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
@@ -128,14 +131,54 @@ class SpatialLayerControllerTest extends TestCase
         $this->actingAs($admin)->get(route('spatial-layers.create'))->assertOk();
     }
 
-    public function test_edit_page_renders_with_children_dropdown_and_feature_list(): void
+    /**
+     * Regresi: halaman edit terpisah sudah dihapus — mengubah Informasi Layer kini
+     * lewat modal di halaman detail (pola sama seperti modal edit Kategori di
+     * /dashboard/categories), form modal-nya tetap kirim ke route update yang sama.
+     */
+    public function test_show_page_has_edit_modal_instead_of_separate_edit_page(): void
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
         $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root', 'title' => 'Root', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
         SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
 
-        $this->actingAs($admin)->get(route('spatial-layers.edit', $root))->assertOk()->assertSee('Root');
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $root));
+
+        $response->assertOk()
+            ->assertSee('id="editLayerModal"', false)
+            ->assertSee(route('spatial-layers.update', $root), false)
+            ->assertDontSee('>Kelola</a>', false);
+    }
+
+    public function test_spatial_layers_edit_route_no_longer_exists(): void
+    {
+        $this->assertFalse(Route::has('spatial-layers.edit'));
+    }
+
+    /**
+     * Regresi: modal edit Layer disamakan (copy-paste + modifikasi field) dengan
+     * modal edit Kategori di categories/index.blade.php — widget icon-picker &
+     * color-picker (class CSS + struktur DOM yang sama), bukan form polos.
+     */
+    public function test_edit_modal_matches_categories_edit_modal_widgets(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Modal Uji', 'title' => 'Layer Modal Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'color' => '#28a745', 'is_marker' => true, 'icon' => 'mdi mdi-road']);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('class="color-picker-widget"', false)
+            ->assertSee('id="layer_edit_colorSwatches"', false)
+            ->assertSee('class="icon-picker-grid" id="layer_edit_iconGrid"', false)
+            ->assertSee('id="layer_edit_iconSearch"', false)
+            ->assertSee('class="settings-switch-group"', false)
+            ->assertSee('name="map_type_id"', false)
+            ->assertSee('name="parent_id"', false)
+            ->assertSee('name="layer_class"', false)
+            ->assertSee('btn-gradient-warning', false);
     }
 
     public function test_index_page_renders_tree(): void
@@ -185,7 +228,7 @@ class SpatialLayerControllerTest extends TestCase
             ->assertDontSee('<th>Status</th>', false)
             ->assertDontSee('<th>Warna</th>', false)
             ->assertDontSee('<th>Icon</th>', false)
-            ->assertSee('<th>Style</th>', false)
+            ->assertSee('>Style</th>', false)
             ->assertSee(route('spatial-layers.show', $layer), false);
     }
 
@@ -202,6 +245,73 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('Child Detail Uji')
             ->assertSee('Parent Detail Uji')
             ->assertSee($jenis->nama);
+    }
+
+    /**
+     * Regresi: halaman detail Layer perlu card peta (collapsible, basemap-only)
+     * dan tabel Data Spasial bergaya sama seperti /dashboard/data-spatial?type=tematik.
+     */
+    public function test_show_page_renders_map_card_and_data_spatial_table(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Peta Uji', 'title' => 'Layer Peta Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('Peta Data Spasial')
+            ->assertSee('id="layerDetailMap"', false)
+            ->assertSee('id="layerMapBasemapSwitcher"', false)
+            ->assertSee('data-basemap="satelit"', false)
+            ->assertSee('<th>Wilayah</th>', false)
+            ->assertSee('<th>Metadata</th>', false);
+    }
+
+    /**
+     * Regresi: card "Layer Anak" di samping Informasi Layer dihapus, card Informasi
+     * Layer jadi collapsible (default collapsed sama seperti card peta), tabel Data
+     * Spasial dapat search box dan tombol hapus di kolom Aksi.
+     */
+    public function test_show_page_has_collapsible_info_card_search_and_delete_button(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Aksi Uji', 'title' => 'Layer Aksi Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $feature = SpatialLayerFeature::create([
+            'spatial_layer_id' => $layer->id,
+            'external_id' => 'FTR-001',
+            'geometry' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)')"),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertDontSee('Layer Anak')
+            ->assertSee('class="collapse" id="layerInfoCollapse"', false)
+            ->assertSee('id="dataSpasialSearchInput"', false)
+            ->assertSee(route('spatial-layers.features.destroy', [$layer, $feature]), false)
+            ->assertSee('mdi-delete', false);
+    }
+
+    /**
+     * Regresi: tombol "Tambah Data Spasial" menuju halaman create feature, dan
+     * pilihan "Tampilkan N data" tersedia untuk membatasi jumlah baris yang tampil.
+     */
+    public function test_show_page_has_add_feature_button_and_per_page_select(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Tambah Uji', 'title' => 'Layer Tambah Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('Tambah Data Spasial')
+            ->assertSee(route('spatial-layers.features.create', $layer), false)
+            ->assertSee('id="dataSpasialPerPage"', false)
+            ->assertSee('Tampilkan 10 data', false)
+            ->assertSee('Tampilkan semua', false);
     }
 
     public function test_user_without_permission_cannot_view_detail_page(): void

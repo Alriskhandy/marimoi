@@ -208,7 +208,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/create', [SpatialLayerController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
         Route::post('/', [SpatialLayerController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
         Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
-        Route::get('/{spatialLayer}/edit', [SpatialLayerController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
         Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
 

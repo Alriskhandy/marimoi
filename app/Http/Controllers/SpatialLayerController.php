@@ -33,15 +33,17 @@ class SpatialLayerController extends Controller
     }
 
     /**
-     * Halaman detail (read-only) — terpisah dari edit(), untuk melihat Layer
-     * lengkap dengan Metadata Utama Jenis-nya, keturunan tree, dan ringkasan Data
-     * Spasial tanpa perlu masuk mode ubah.
+     * Halaman detail (read-only + modal edit Informasi Layer) — tidak ada lagi
+     * halaman edit terpisah, form ubah Layer ditampilkan lewat modal di halaman ini
+     * sendiri (pola sama seperti modal edit Kategori di /dashboard/categories).
      */
     public function show(SpatialLayer $spatialLayer)
     {
-        $spatialLayer->load(['mapType.opdPenanggungJawab', 'parent', 'children', 'features']);
+        $spatialLayer->load(['mapType.opdPenanggungJawab', 'parent', 'children', 'features.region']);
+        $mapTypes = MapType::active()->get();
+        $parentOptions = SpatialLayer::where('id', '!=', $spatialLayer->id)->orderBy('name')->get(['id', 'name']);
 
-        return view('backend.pages.spatial-layers.show', ['layer' => $spatialLayer]);
+        return view('backend.pages.spatial-layers.show', ['layer' => $spatialLayer, 'mapTypes' => $mapTypes, 'parentOptions' => $parentOptions]);
     }
 
     public function store(Request $request)
@@ -53,21 +55,13 @@ class SpatialLayerController extends Controller
         return redirect()->route('spatial-layers.index')->with('success', 'Layer berhasil dibuat.');
     }
 
-    public function edit(SpatialLayer $spatialLayer)
-    {
-        $mapTypes = MapType::active()->get();
-        $parentOptions = SpatialLayer::where('id', '!=', $spatialLayer->id)->orderBy('name')->get(['id', 'name']);
-
-        return view('backend.pages.spatial-layers.edit', ['layer' => $spatialLayer, 'mapTypes' => $mapTypes, 'parentOptions' => $parentOptions]);
-    }
-
     public function update(Request $request, SpatialLayer $spatialLayer)
     {
         $validated = $this->validated($request, $spatialLayer);
 
         $spatialLayer->update($validated);
 
-        return redirect()->route('spatial-layers.edit', $spatialLayer)->with('success', 'Layer berhasil diperbarui.');
+        return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Layer berhasil diperbarui.');
     }
 
     public function destroy(SpatialLayer $spatialLayer)

@@ -6,7 +6,7 @@
             <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="mdi mdi-map-marker"></i></span>
             Ubah Data Spasial #{{ $feature->id }}: {{ $layer->name }}
         </h3>
-        <a href="{{ route('spatial-layers.edit', $layer) }}" class="btn btn-outline-secondary">Kembali</a>
+        <a href="{{ route('spatial-layers.show', $layer) }}" class="btn btn-outline-secondary">Kembali</a>
     </div>
 
     <div class="row">

@@ -38,7 +38,7 @@ class SpatialLayerFeatureController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return redirect()->route('spatial-layers.edit', $spatialLayer)->with('success', 'Data Spasial berhasil ditambahkan.');
+        return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Data Spasial berhasil ditambahkan.');
     }
 
     public function edit(SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
@@ -67,7 +67,7 @@ class SpatialLayerFeatureController extends Controller
 
         $feature->update($validated);
 
-        return redirect()->route('spatial-layers.edit', $spatialLayer)->with('success', 'Data Spasial berhasil diperbarui.');
+        return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Data Spasial berhasil diperbarui.');
     }
 
     public function destroy(SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
@@ -76,7 +76,7 @@ class SpatialLayerFeatureController extends Controller
 
         $feature->delete();
 
-        return redirect()->route('spatial-layers.edit', $spatialLayer)->with('success', 'Data Spasial berhasil dihapus.');
+        return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Data Spasial berhasil dihapus.');
     }
 
     private function activeDynamicAttributesFor(SpatialLayer $layer)

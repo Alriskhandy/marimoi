@@ -51,7 +51,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
-        ])->assertRedirect(route('spatial-layers.edit', $layer));
+        ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }
@@ -79,7 +79,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
-        ])->assertRedirect(route('spatial-layers.edit', $layer));
+        ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }
@@ -100,7 +100,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
         $this->actingAs($admin)->put(route('spatial-layers.features.update', [$layer, $feature]), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
             'metadata_dinamis' => ['pagu' => '5000000'],
-        ])->assertRedirect(route('spatial-layers.edit', $layer));
+        ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $feature->refresh();
         $this->assertSame(['pagu' => '5000000'], $feature->metadata_dinamis);
@@ -114,7 +114,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
-        ])->assertRedirect(route('spatial-layers.edit', $layer));
+        ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }

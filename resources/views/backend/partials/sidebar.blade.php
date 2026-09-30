@@ -53,18 +53,21 @@
         @can('dashboard.view')
             @if ($user?->can('project-progress.view'))
                 @php($isDashboardGroupActive = request()->routeIs('dashboard') || request()->routeIs('dashboard.pembangunan'))
-                <a class="nav-link {{ $isDashboardGroupActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#dashboardMenu"
-                    role="button" aria-expanded="{{ $isDashboardGroupActive ? 'true' : 'false' }}" aria-controls="dashboardMenu">
+                <a class="nav-link {{ $isDashboardGroupActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                    href="#dashboardMenu" role="button" aria-expanded="{{ $isDashboardGroupActive ? 'true' : 'false' }}"
+                    aria-controls="dashboardMenu">
                     <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
                     <span class="nav-text">Dashboard</span>
                     <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
                 </a>
                 <div class="collapse {{ $isDashboardGroupActive ? 'show' : '' }}" id="dashboardMenu">
                     <div class="sidebar-submenu">
-                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                            href="{{ route('dashboard') }}">
                             <span class="nav-text">Ringkasan</span>
                         </a>
-                        <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}" href="{{ route('dashboard.pembangunan') }}">
+                        <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}"
+                            href="{{ route('dashboard.pembangunan') }}">
                             <span class="nav-text">Pembangunan</span>
                         </a>
                     </div>
@@ -83,69 +86,71 @@
 
         {{-- Peta Tematik --}}
         @if ($canPetaTematik)
-        <a class="nav-link {{ $isPetaTematikActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#petaTematikMenu"
-            role="button" aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}"
-            aria-controls="petaTematikMenu">
-            <span class="nav-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
-            <span class="nav-text">Pemetaan</span>
-            <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
-        </a>
-        <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
-            <div class="sidebar-submenu">
-                @can('data-spatial.view')
-<a class="nav-link {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
-                    href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
-                    <span class="nav-text">Data Peta Tematik</span>
-                </a>
-@endcan
-                @can('data-spatial.view')
-<a class="nav-link {{ request()->routeIs('data-spatial.map') ? 'active' : '' }}"
-                    href="{{ route('data-spatial.map') }}">
-                    <span class="nav-text">Tampilan Peta</span>
-                </a>
-@endcan
-                @can('categories.view')
-<a class="nav-link {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}"
-                    href="{{ route('categories.index', ['type' => 'tematik']) }}">
-                    <span class="nav-text">Kategori Peta Tematik</span>
-                </a>
-@endcan
-                @can('map-types.manage')
-<a class="nav-link {{ request()->routeIs('map-types.*') ? 'active' : '' }}"
-                    href="{{ route('map-types.index') }}">
-                    <span class="nav-text">Jenis Peta</span>
-                </a>
-@endcan
-                @can('maps.manage')
-<a class="nav-link {{ request()->routeIs('maps.*') ? 'active' : '' }}"
-                    href="{{ route('maps.index') }}">
-                    <span class="nav-text">Kelola Peta</span>
-                </a>
-@endcan
-                @can('project-feedbacks.view')
-<a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
-                    href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
-                    <span class="nav-text">Feedback Peta Tematik</span>
-                </a>
-@endcan
-                {{-- Menu baru docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
+            <a class="nav-link {{ $isPetaTematikActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                href="#petaTematikMenu" role="button" aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}"
+                aria-controls="petaTematikMenu">
+                <span class="nav-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
+                <span class="nav-text">Pemetaan</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+            </a>
+            <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
+                <div class="sidebar-submenu">
+                    {{-- Menu baru docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
                      — SENGAJA aditif berdampingan dengan menu lama di atas, BUKAN pengganti.
                      Bagian 6: menu lama baru dicabut setelah QA paralel selesai. --}}
-                @can('spatial-layers.view')
-<a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
-                    href="{{ route('spatial-layers.index') }}">
-                    <span class="nav-text">Daftar Layer & Data (Baru)</span>
-                </a>
-@endcan
-                @can('spatial-feedbacks.view')
-<a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
-                    href="{{ route('spatial-feedbacks.index') }}">
-                    <span class="nav-text">Feedback Pemetaan (Baru)</span>
-                </a>
-@endcan
+                    @can('spatial-layers.view')
+                        <a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
+                            href="{{ route('spatial-layers.index') }}">
+                            <span class="nav-text">Daftar Layer & Data (Baru)</span>
+                        </a>
+                    @endcan
+                    @can('map-types.manage')
+                        <a class="nav-link {{ request()->routeIs('map-types.*') ? 'active' : '' }}"
+                            href="{{ route('map-types.index') }}">
+                            <span class="nav-text">Jenis Peta (Baru)</span>
+                        </a>
+                    @endcan
+                    @can('spatial-feedbacks.view')
+                        <a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
+                            href="{{ route('spatial-feedbacks.index') }}">
+                            <span class="nav-text">Feedback Pemetaan (Baru)</span>
+                        </a>
+                    @endcan
+                    {{-- Menu lama docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
+                     — SENGAJA aditif berdampingan dengan menu baru di atas, BUKAN pengganti.
+                     Bagian 6: menu lama baru dicabut setelah QA paralel selesai. --}}
+                    @can('data-spatial.view')
+                        <a class="nav-link {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
+                            href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
+                            <span class="nav-text">Data Peta Tematik</span>
+                        </a>
+                    @endcan
+                    @can('data-spatial.view')
+                        <a class="nav-link {{ request()->routeIs('data-spatial.map') ? 'active' : '' }}"
+                            href="{{ route('data-spatial.map') }}">
+                            <span class="nav-text">Tampilan Peta</span>
+                        </a>
+                    @endcan
+                    @can('categories.view')
+                        <a class="nav-link {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}"
+                            href="{{ route('categories.index', ['type' => 'tematik']) }}">
+                            <span class="nav-text">Kategori Peta Tematik</span>
+                        </a>
+                    @endcan
+                    @can('maps.manage')
+                        <a class="nav-link {{ request()->routeIs('maps.*') ? 'active' : '' }}"
+                            href="{{ route('maps.index') }}">
+                            <span class="nav-text">Kelola Peta</span>
+                        </a>
+                    @endcan
+                    @can('project-feedbacks.view')
+                        <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
+                            href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
+                            <span class="nav-text">Feedback Peta Tematik</span>
+                        </a>
+                    @endcan
+                </div>
             </div>
-        </div>
-
         @endif
 
         {{-- Pembangunan --}}
@@ -168,28 +173,29 @@
 
         {{-- Aspirasi --}}
         @if ($canAspirasi)
-        <a class="nav-link {{ $isAspirasiMenuActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#aspirasiMenu"
-            role="button" aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}" aria-controls="aspirasiMenu">
-            <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
-            <span class="nav-text">Aspirasi</span>
-            <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
-        </a>
-        <div class="collapse {{ $isAspirasiMenuActive ? 'show' : '' }}" id="aspirasiMenu">
-            <div class="sidebar-submenu">
-                @can('aspirasi.view')
-<a class="nav-link {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}"
-                    href="{{ route('aspirasi.index') }}">
-                    <span class="nav-text">Data Aspirasi</span>
-                </a>
-@endcan
-                @can('kategori-aspirasi.view')
-                    <a class="nav-link {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}"
-                        href="{{ route('kategori-aspirasi.index') }}">
-                        <span class="nav-text">Kategori Aspirasi</span>
-                    </a>
-                @endcan
+            <a class="nav-link {{ $isAspirasiMenuActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                href="#aspirasiMenu" role="button" aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}"
+                aria-controls="aspirasiMenu">
+                <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
+                <span class="nav-text">Aspirasi</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+            </a>
+            <div class="collapse {{ $isAspirasiMenuActive ? 'show' : '' }}" id="aspirasiMenu">
+                <div class="sidebar-submenu">
+                    @can('aspirasi.view')
+                        <a class="nav-link {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}"
+                            href="{{ route('aspirasi.index') }}">
+                            <span class="nav-text">Data Aspirasi</span>
+                        </a>
+                    @endcan
+                    @can('kategori-aspirasi.view')
+                        <a class="nav-link {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}"
+                            href="{{ route('kategori-aspirasi.index') }}">
+                            <span class="nav-text">Kategori Aspirasi</span>
+                        </a>
+                    @endcan
+                </div>
             </div>
-        </div>
         @endif
 
         @if ($canPublikasi || $canSistem)
@@ -217,7 +223,6 @@
                     </a>
                 </div>
             </div>
-
         @endif
 
         @if ($canSistem)
@@ -230,16 +235,26 @@
             </a>
             <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
                 <div class="sidebar-submenu">
-                    @can('users.view')<a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
-                        href="{{ route('users.index') }}"><span class="nav-text">Manajemen Pengguna</span></a>@endcan
-                    @can('roles.view')<a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
-                        href="{{ route('roles.index') }}"><span class="nav-text">Manajemen Role</span></a>@endcan
-                    @can('opd.view')<a class="nav-link {{ request()->routeIs('opd.*') ? 'active' : '' }}"
-                        href="{{ route('opd.index') }}"><span class="nav-text">Manajemen OPD</span></a>@endcan
-                    @can('visitors.view')<a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
-                        href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>@endcan
-                    @can('logs.view')<a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
-                        href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>@endcan
+                    @can('users.view')
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                            href="{{ route('users.index') }}"><span class="nav-text">Manajemen Pengguna</span></a>
+                    @endcan
+                    @can('roles.view')
+                        <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
+                            href="{{ route('roles.index') }}"><span class="nav-text">Manajemen Role</span></a>
+                    @endcan
+                    @can('opd.view')
+                        <a class="nav-link {{ request()->routeIs('opd.*') ? 'active' : '' }}"
+                            href="{{ route('opd.index') }}"><span class="nav-text">Manajemen OPD</span></a>
+                    @endcan
+                    @can('visitors.view')
+                        <a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
+                            href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>
+                    @endcan
+                    @can('logs.view')
+                        <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
+                            href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>
+                    @endcan
                 </div>
             </div>
         @endif
