@@ -137,12 +137,6 @@
                             <span class="nav-text">Kategori Peta Tematik</span>
                         </a>
                     @endcan
-                    @can('maps.manage')
-                        <a class="nav-link {{ request()->routeIs('maps.*') ? 'active' : '' }}"
-                            href="{{ route('maps.index') }}">
-                            <span class="nav-text">Kelola Peta</span>
-                        </a>
-                    @endcan
                     @can('project-feedbacks.view')
                         <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
                             href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
@@ -152,16 +146,6 @@
                 </div>
             </div>
         @endif
-
-        {{-- Pembangunan --}}
-        @can('project-progress.view')
-            <div class="nav-section-label">Pembangunan</div>
-            <a class="nav-link {{ request()->routeIs('project-progress.*') ? 'active' : '' }}"
-                href="{{ route('project-progress.index') }}">
-                <span class="nav-icon"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
-                <span class="nav-text">Progres Proyek Strategis</span>
-            </a>
-        @endcan
 
         {{-- Upload Dokumen --}}
         @if ($slug != 'admin-opd' && Route::has('dokumen.index') && $user?->can('dokumen.view'))

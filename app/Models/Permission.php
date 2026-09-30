@@ -41,12 +41,6 @@ class Permission extends SpatiePermission
                 'manage' => 'Kelola jenis peta (master data)',
             ],
         ],
-        'maps' => [
-            'label' => 'Kelola Peta',
-            'actions' => [
-                'manage' => 'Susun, terbitkan, dan bagikan peta',
-            ],
-        ],
         'spatial-layers' => [
             'label' => 'Daftar Layer & Data',
             'actions' => [
@@ -73,11 +67,9 @@ class Permission extends SpatiePermission
             ],
         ],
         'project-progress' => [
-            'label' => 'Progres Proyek Strategis',
+            'label' => 'Dashboard Pembangunan',
             'actions' => [
-                'view' => 'Lihat laporan progres proyek',
-                'create' => 'Tambah laporan progres',
-                'edit' => 'Perbarui laporan progres yang sudah ada',
+                'view' => 'Lihat dashboard progres pembangunan',
             ],
         ],
         'dokumen' => [

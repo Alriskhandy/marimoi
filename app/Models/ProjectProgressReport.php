@@ -24,7 +24,7 @@ class ProjectProgressReport extends Model
     public const PERIODE = ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4'];
 
     /**
-     * Field yang boleh diedit lewat aksi "Perbarui" (lihat ProjectProgressController::update()).
+     * Field yang boleh diedit lewat aksi "Perbarui" laporan.
      * tahun_anggaran/periode_laporan sengaja tidak termasuk — keduanya identitas laporan,
      * mengubahnya berarti membuat laporan baru, bukan memperbarui yang sudah ada.
      *

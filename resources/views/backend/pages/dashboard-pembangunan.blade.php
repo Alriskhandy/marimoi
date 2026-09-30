@@ -104,7 +104,6 @@
                         <th>Realisasi</th>
                         <th>Progres Fisik</th>
                         <th>Status</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,14 +117,9 @@
                             <td>Rp {{ number_format($item->realisasi_anggaran ?? 0, 0, ',', '.') }}</td>
                             <td>{{ $item->progres_fisik_persen }}%</td>
                             <td>{{ $item->status }}</td>
-                            <td>
-                                @if ($item->dataSpatial)
-                                    <a href="{{ route('project-progress.show', $item->dataSpatial->uuid) }}">Detail</a>
-                                @endif
-                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="text-center">Belum ada laporan progres untuk filter yang dipilih.</td></tr>
+                        <tr><td colspan="8" class="text-center">Belum ada laporan progres untuk filter yang dipilih.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -8,15 +8,12 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LogController;
-use App\Http\Controllers\MapController;
-use App\Http\Controllers\MapLayerController;
 use App\Http\Controllers\MapTypeController;
 use App\Http\Controllers\MetadataDefinitionController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\PembangunanDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectFeedbackController;
-use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\RoleController;
@@ -240,25 +237,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Kelola Peta (docs/marimoi v2/04_implementation/11-plan-dashboard-skema-baru.md)
-    |--------------------------------------------------------------------------
-    */
-
-    Route::resource('maps', MapController::class)
-        ->except(['show'])
-        ->middleware('permission:maps.manage');
-    Route::post('/maps/{map}/publish', [MapController::class, 'publish'])->name('maps.publish')->middleware('permission:maps.manage');
-    Route::post('/maps/{map}/publications/{publication}/share', [MapController::class, 'share'])->name('maps.publications.share')->middleware('permission:maps.manage');
-    Route::delete('/maps/{map}/shares/{mapShare}', [MapController::class, 'revokeShare'])->name('maps.shares.revoke')->middleware('permission:maps.manage');
-    Route::prefix('maps/{map}/layers')->name('maps.layers.')->middleware('permission:maps.manage')->group(function () {
-        Route::post('/', [MapLayerController::class, 'store'])->name('store');
-        Route::put('/{mapLayer}', [MapLayerController::class, 'update'])->name('update');
-        Route::delete('/{mapLayer}', [MapLayerController::class, 'destroy'])->name('destroy');
-        Route::post('/reorder', [MapLayerController::class, 'reorder'])->name('reorder');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
     | Document Upload Routes
     |--------------------------------------------------------------------------
     */
@@ -292,18 +270,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Progres Proyek Strategis & Dashboard Pembangunan
+    | Dashboard Pembangunan
     |--------------------------------------------------------------------------
     */
-
-    Route::prefix('project-progress')->name('project-progress.')->group(function () {
-        Route::get('/', [ProjectProgressController::class, 'index'])->name('index')->middleware('permission:project-progress.view');
-        Route::get('/{uuid}', [ProjectProgressController::class, 'show'])->name('show')->middleware('permission:project-progress.view');
-        Route::get('/{uuid}/create', [ProjectProgressController::class, 'create'])->name('create')->middleware('permission:project-progress.create');
-        Route::post('/{uuid}', [ProjectProgressController::class, 'store'])->name('store')->middleware('permission:project-progress.create');
-        Route::get('/{uuid}/laporan/{report}/edit', [ProjectProgressController::class, 'edit'])->name('laporan.edit')->middleware('permission:project-progress.edit');
-        Route::put('/{uuid}/laporan/{report}', [ProjectProgressController::class, 'update'])->name('laporan.update')->middleware('permission:project-progress.edit');
-    });
 
     Route::get('/pembangunan', [PembangunanDashboardController::class, 'index'])
         ->name('dashboard.pembangunan')

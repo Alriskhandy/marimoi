@@ -3,7 +3,6 @@
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
-use App\Http\Controllers\PublicMapShareController;
 use App\Http\Controllers\SpatialFeedbackController;
 use App\Http\Controllers\SpatialMapController;
 use App\Http\Controllers\SurveyController;
@@ -72,12 +71,6 @@ Route::prefix('peta-v2')->name('peta-v2.')->group(function () {
     Route::get('/geojson/{layer:slug}', [SpatialMapController::class, 'geojson'])->name('geojson');
     Route::get('/feature/{feature}', [SpatialMapController::class, 'featureDetail'])->name('feature');
 });
-
-// HALAMAN PUBLIK BUKA LINK BERBAGI PETA (docs/marimoi v2/04_implementation/
-// 11-plan-dashboard-skema-baru.md Bagian D.2) //
-Route::get('/peta/bagikan/{token}', [PublicMapShareController::class, 'show'])
-    ->name('map-shares.show')
-    ->middleware('throttle:30,1');
 
 // FEEDBACK PEMETAAN PUBLIK (docs/marimoi v2/04_implementation/
 // 12-implementasi-perbaikan-pemetaan.md Bagian 3.3) //

@@ -35,8 +35,6 @@ class PermissionSeeder extends Seeder
             'project-feedbacks.view',
             'project-feedbacks.respond',
             'project-progress.view',
-            'project-progress.create',
-            'project-progress.edit',
             'aspirasi.view',
             'aspirasi.edit',
             'aspirasi.export',
