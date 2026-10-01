@@ -333,4 +333,78 @@ class SpatialLayerControllerTest extends TestCase
             ->assertOk()
             ->assertDontSee('<th>Gambar</th>', false);
     }
+
+    /**
+     * Regresi: filter dropdown "Jenis Peta" di toolbar index, dan atribut
+     * data-map-type-id per baris yang dipakai custom search DataTables.
+     */
+    public function test_index_page_shows_map_type_filter_dropdown(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Filter Uji', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk()
+            ->assertSee('id="mapTypeFilter"', false)
+            ->assertSee('<option value="'.$jenis->id.'">'.$jenis->nama.'</option>', false)
+            ->assertSee('data-map-type-id="'.$jenis->id.'"', false);
+
+        $this->assertNotNull($layer->fresh());
+    }
+
+    /**
+     * Regresi: bulk update Jenis Peta (referensi pola "Ubah Kategori/Layer" di
+     * halaman Data Spasial, docs/marimoi v2/04_implementation/
+     * 12-implementasi-perbaikan-pemetaan.md Bagian 3.2).
+     */
+    public function test_admin_can_bulk_update_map_type_for_selected_layers(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
+
+        $layerA = SpatialLayer::create(['slug' => 'layer-a-'.uniqid(), 'name' => 'Layer A', 'title' => 'Layer A', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layerB = SpatialLayer::create(['slug' => 'layer-b-'.uniqid(), 'name' => 'Layer B', 'title' => 'Layer B', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $untouched = SpatialLayer::create(['slug' => 'layer-c-'.uniqid(), 'name' => 'Layer C', 'title' => 'Layer C', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->put(route('spatial-layers.bulk-update-map-type'), [
+            'ids' => [$layerA->id, $layerB->id],
+            'map_type_id' => $targetJenis->id,
+        ]);
+
+        $response->assertRedirect(route('spatial-layers.index'));
+        $this->assertEquals($targetJenis->id, $layerA->fresh()->map_type_id);
+        $this->assertEquals($targetJenis->id, $layerB->fresh()->map_type_id);
+        $this->assertEquals($jenis->id, $untouched->fresh()->map_type_id);
+    }
+
+    public function test_bulk_update_map_type_requires_ids_and_valid_map_type(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->put(route('spatial-layers.bulk-update-map-type'), [
+            'ids' => [],
+            'map_type_id' => '',
+        ])->assertSessionHasErrors(['ids', 'map_type_id']);
+    }
+
+    public function test_user_without_edit_permission_cannot_bulk_update_map_type(): void
+    {
+        $jenis = $this->jenis();
+        $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Permission Uji', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+
+        $role = Role::create(['name' => 'Viewer Layer', 'slug' => 'viewer-layer', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.view', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->actingAs($user)->put(route('spatial-layers.bulk-update-map-type'), [
+            'ids' => [$layer->id],
+            'map_type_id' => $targetJenis->id,
+        ])->assertForbidden();
+
+        $this->assertEquals($jenis->id, $layer->fresh()->map_type_id);
+    }
 }

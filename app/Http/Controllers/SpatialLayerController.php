@@ -20,8 +20,9 @@ class SpatialLayerController extends Controller
     {
         $layers = SpatialLayer::with('mapType')->withCount(['children', 'features'])->orderBy('name')->get();
         $roots = $layers->whereNull('parent_id')->values();
+        $mapTypes = MapType::active()->orderBy('nama')->get();
 
-        return view('backend.pages.spatial-layers.index', compact('layers', 'roots'));
+        return view('backend.pages.spatial-layers.index', compact('layers', 'roots', 'mapTypes'));
     }
 
     public function create()
@@ -77,6 +78,29 @@ class SpatialLayerController extends Controller
         $spatialLayer->delete();
 
         return redirect()->route('spatial-layers.index')->with('success', 'Layer berhasil dihapus.');
+    }
+
+    /**
+     * Ubah Jenis Peta untuk beberapa Layer sekaligus (pola sama dengan bulk update
+     * kategori/layer di halaman Data Spasial).
+     */
+    public function bulkUpdateMapType(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:spatial_layers,id',
+            'map_type_id' => 'required|exists:map_types,id',
+        ], [
+            'ids.required' => 'Tidak ada Layer yang dipilih.',
+            'map_type_id.required' => 'Jenis Peta tujuan harus dipilih.',
+            'map_type_id.exists' => 'Jenis Peta tidak valid.',
+        ]);
+
+        $updatedCount = SpatialLayer::whereIn('id', $validated['ids'])
+            ->update(['map_type_id' => $validated['map_type_id']]);
+
+        return redirect()->route('spatial-layers.index')
+            ->with('success', "Berhasil mengubah Jenis Peta untuk {$updatedCount} Layer.");
     }
 
     private function validated(Request $request, ?SpatialLayer $spatialLayer = null): array

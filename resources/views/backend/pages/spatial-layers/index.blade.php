@@ -100,7 +100,7 @@
                     <div class="row mb-4 g-3 align-items-end">
                         <div class="col-12">
                             <div class="row g-3 align-items-end filter-toolbar">
-                                <div class="col-lg-9 col-md-8">
+                                <div class="col-lg-6 col-md-6">
                                     <label for="tableSearch" class="form-label fw-semibold mb-1">
                                         <i class="mdi mdi-magnify me-1"></i>Cari Layer
                                     </label>
@@ -113,7 +113,20 @@
                                     </div>
                                 </div>
 
-                                <div class="col-lg-3 col-md-4">
+                                <div class="col-lg-3 col-md-3">
+                                    <label for="mapTypeFilter" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-shape me-1"></i>Jenis Peta
+                                    </label>
+                                    <select class="form-select filter-control" id="mapTypeFilter">
+                                        <option value="">Semua Jenis</option>
+                                        @foreach ($mapTypes as $mapType)
+                                            <option value="{{ $mapType->id }}">{{ $mapType->nama }}</option>
+                                        @endforeach
+                                        <option value="0">- Tanpa Jenis -</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3 col-md-3">
                                     <label for="per_page" class="form-label fw-semibold mb-1">
                                         <i class="mdi mdi-table-row me-1"></i>Tampilkan per halaman
                                     </label>
@@ -129,10 +142,40 @@
                         </div>
                     </div>
 
+                    <!-- Bulk Actions Bar -->
+                    <div id="bulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="mdi mdi-checkbox-multiple-marked me-2"></i>
+                                <span id="selectedCount">0</span> Layer dipilih
+                            </div>
+                            <div>
+                                @can('spatial-layers.edit')
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="bulkUpdateMapType()">
+                                        <i class="mdi mdi-shape-outline me-1"></i>
+                                        Ubah Jenis Peta
+                                    </button>
+                                @endcan
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                                    <i class="mdi mdi-close me-1"></i>
+                                    Batal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table id="spatialLayersTable" class="table table-striped" style="width:100%">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px;">
+                                        <div class="checkbox-wrapper">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                            <label class="form-check-label" for="selectAll">
+                                                <span class="visually-hidden">Select All</span>
+                                            </label>
+                                        </div>
+                                    </th>
                                     <th>No</th>
                                     <th>Nama & Hirarki</th>
                                     <th>Jenis</th>
@@ -158,12 +201,14 @@
                                             $hasChildren = $layer->children_count > 0;
                                             $indentStyle = $level > 0 ? 'padding-left:' . ($level * 1.5) . 'rem;' : '';
 
-                                            $output .= '<tr data-layer-id="' . $layer->id . '" data-parent-id="' . $layer->parent_id . '"';
+                                            $output .= '<tr data-layer-id="' . $layer->id . '" data-parent-id="' . $layer->parent_id . '" data-map-type-id="' . ($layer->map_type_id ?? '0') . '"';
                                             $output .= ' class="spatial-layer-row' . ($level > 0 ? ' children-of-' . $layer->parent_id : '') . '"';
                                             if ($level > 0) {
                                                 $output .= ' style="display:none;"';
                                             }
                                             $output .= '>';
+
+                                            $output .= '<td><div class="checkbox-wrapper"><input class="form-check-input row-checkbox" type="checkbox" value="' . $layer->id . '" id="check-' . $layer->id . '"><label class="form-check-label" for="check-' . $layer->id . '"><span class="visually-hidden">Select row</span></label></div></td>';
 
                                             $output .= '<td>' . $no++ . '</td>';
 
@@ -223,7 +268,7 @@
 
                                 @if ($layers->count() == 0)
                                     <tr>
-                                        <td colspan="5" class="text-center py-4">
+                                        <td colspan="6" class="text-center py-4">
                                             <i class="mdi mdi-layers-outline mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada Layer yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Layer" untuk memulai</p>
@@ -240,10 +285,91 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Update Jenis Peta Modal -->
+    <div class="modal fade" id="bulkMapTypeModal" tabindex="-1" aria-labelledby="bulkMapTypeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="bulkMapTypeModalLabel">
+                        <i class="mdi mdi-shape-outline me-2"></i>Ubah Jenis Peta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Mengubah Jenis Peta untuk <strong id="bulkMapTypeCount">0</strong> Layer yang dipilih.
+                    </p>
+                    <label for="bulkMapTypeSelect" class="form-label fw-semibold">Jenis Peta Baru</label>
+                    <select class="form-select" id="bulkMapTypeSelect">
+                        <option value="">-- Pilih Jenis Peta --</option>
+                        @foreach ($mapTypes as $mapType)
+                            <option value="{{ $mapType->id }}">{{ $mapType->nama }}</option>
+                        @endforeach
+                    </select>
+                    <div id="bulkMapTypeError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkMapType">
+                        <i class="mdi mdi-check me-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Update Jenis Peta Form (Hidden) -->
+    <form id="bulkMapTypeForm" method="POST" action="{{ route('spatial-layers.bulk-update-map-type') }}"
+        style="display: none;">
+        @csrf
+        @method('PUT')
+        <div id="bulkMapTypeIds"></div>
+        <input type="hidden" name="map_type_id" id="bulkMapTypeSelectInput">
+    </form>
 @endsection
 
 @push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
     <style>
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            border: 1px solid var(--admin-border, #dee2e6);
+            border-radius: 0.375rem;
+            background: var(--admin-surface, #fff);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: calc(1.5em + 0.75rem);
+            color: var(--admin-text, #212529);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 8px;
+        }
+
+        #bulkActionsBar {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            color: #1976d2;
+        }
+
         .table th {
             background-color: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
@@ -368,16 +494,85 @@
 @endpush
 
 @push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
     <script>
+        let selectedLayerItems = [];
+
         $(document).ready(function () {
+            $('#bulkMapTypeSelect').select2({
+                dropdownParent: $('#bulkMapTypeModal'),
+                placeholder: '-- Pilih Jenis Peta --',
+                width: '100%',
+                allowClear: true,
+                language: {
+                    noResults: () => 'Jenis Peta tidak ditemukan',
+                    searching: () => 'Mencari...',
+                },
+            }).on('change', function () {
+                document.getElementById('bulkMapTypeError').classList.add('d-none');
+            });
+
+            $('#bulkMapTypeModal').on('shown.bs.modal', function () {
+                $('#bulkMapTypeSelect').select2('open');
+            });
+
+            $(document).on('change', '#selectAll', function () {
+                const isChecked = this.checked;
+
+                $('.row-checkbox').each(function () {
+                    this.checked = isChecked;
+                    const value = this.value;
+
+                    if (isChecked && !selectedLayerItems.includes(value)) {
+                        selectedLayerItems.push(value);
+                    } else if (!isChecked) {
+                        selectedLayerItems = selectedLayerItems.filter((id) => id !== value);
+                    }
+
+                    $(this).closest('tr').toggleClass('table-active', isChecked);
+                });
+
+                updateBulkActionsBar();
+            });
+
+            $(document).on('change', '.row-checkbox', function () {
+                const value = this.value;
+
+                if (this.checked) {
+                    if (!selectedLayerItems.includes(value)) {
+                        selectedLayerItems.push(value);
+                    }
+                } else {
+                    selectedLayerItems = selectedLayerItems.filter((id) => id !== value);
+                }
+
+                $(this).closest('tr').toggleClass('table-active', this.checked);
+                updateBulkActionsBar();
+                updateSelectAllState();
+            });
+
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex, rowData, counter) {
+                if (settings.nTable.id !== 'spatialLayersTable') {
+                    return true;
+                }
+
+                const selected = $('#mapTypeFilter').val();
+                if (!selected) {
+                    return true;
+                }
+
+                const row = settings.aoData[dataIndex].nTr;
+                return $(row).data('map-type-id').toString() === selected;
+            });
+
             const table = $('#spatialLayersTable').DataTable({
                 "processing": true,
                 "pageLength": 200,
                 "lengthMenu": [[10, 25, 50, 100, 200, 500], [10, 25, 50, 100, 200, 500]],
                 "ordering": false,
                 "columnDefs": [
-                    { "searchable": false, "targets": [-1] },
-                    { "className": "text-center", "targets": [0, -1] },
+                    { "searchable": false, "orderable": false, "targets": [0, -1] },
+                    { "className": "text-center", "targets": [0, 1, -1] },
                 ],
                 "language": {
                     "processing": "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>",
@@ -405,6 +600,9 @@
                     });
                     $('#per_page').on('change', function () {
                         table.page.len(parseInt($(this).val(), 10)).draw();
+                    });
+                    $('#mapTypeFilter').on('change', function () {
+                        table.draw();
                     });
 
                     if ($('.hierarchy-toggle').length > 0) {
@@ -457,6 +655,108 @@
                     }
                 });
             }
+        });
+
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+
+            if (selectedLayerItems.length > 0) {
+                bulkActionsBar.classList.remove('d-none');
+                selectedCount.textContent = selectedLayerItems.length;
+            } else {
+                bulkActionsBar.classList.add('d-none');
+            }
+        }
+
+        function updateSelectAllState() {
+            const checkboxes = $('.row-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            let checkedCount = 0;
+
+            checkboxes.each(function () {
+                if (this.checked) checkedCount++;
+            });
+
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        function clearSelection() {
+            selectedLayerItems = [];
+            document.querySelectorAll('.row-checkbox').forEach((cb) => {
+                cb.checked = false;
+                $(cb).closest('tr').removeClass('table-active');
+            });
+            document.getElementById('selectAll').checked = false;
+            document.getElementById('selectAll').indeterminate = false;
+            updateBulkActionsBar();
+        }
+
+        function bulkUpdateMapType() {
+            if (selectedLayerItems.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak ada Layer terpilih',
+                    text: 'Silakan pilih Layer yang akan diubah Jenis Petanya terlebih dahulu',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+
+            document.getElementById('bulkMapTypeCount').textContent = selectedLayerItems.length;
+            $('#bulkMapTypeSelect').val('').trigger('change');
+            const errorBox = document.getElementById('bulkMapTypeError');
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('bulkMapTypeModal'));
+            modal.show();
+        }
+
+        document.getElementById('confirmBulkMapType').addEventListener('click', function () {
+            const select = document.getElementById('bulkMapTypeSelect');
+            const errorBox = document.getElementById('bulkMapTypeError');
+
+            if (selectedLayerItems.length === 0) {
+                errorBox.textContent = 'Tidak ada Layer yang dipilih untuk diubah.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            if (!select.value) {
+                errorBox.textContent = 'Silakan pilih Jenis Peta tujuan.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            errorBox.classList.add('d-none');
+
+            this.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Menyimpan...';
+            this.disabled = true;
+
+            const bulkMapTypeIds = document.getElementById('bulkMapTypeIds');
+            bulkMapTypeIds.innerHTML = '';
+
+            selectedLayerItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                bulkMapTypeIds.appendChild(input);
+            });
+
+            document.getElementById('bulkMapTypeSelectInput').value = select.value;
+
+            document.getElementById('bulkMapTypeForm').submit();
         });
     </script>
 @endpush

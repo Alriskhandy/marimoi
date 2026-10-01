@@ -209,6 +209,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/', [SpatialLayerController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
         Route::get('/create', [SpatialLayerController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
         Route::post('/', [SpatialLayerController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+        Route::put('/bulk-update-map-type', [SpatialLayerController::class, 'bulkUpdateMapType'])->name('bulk-update-map-type')->middleware('permission:spatial-layers.edit');
         Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
         Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
