@@ -287,7 +287,12 @@ class SpatialLayerControllerTest extends TestCase
      * Regresi: halaman detail Layer perlu card peta (collapsible, basemap-only)
      * dan tabel Data Spasial bergaya sama seperti /dashboard/data-spatial?type=tematik.
      */
-    public function test_show_page_renders_map_card_and_data_spatial_table(): void
+    /**
+     * Regresi: kartu "Peta Data Spasial" dan kartu tabel "Data Spasial" digabung
+     * jadi SATU kartu dengan switcher Tabel/Peta (pola sama dengan tombol
+     * Tabel/Peta di data_spatial/index.blade.php), bukan dua kartu terpisah lagi.
+     */
+    public function test_show_page_renders_single_card_with_table_map_switcher(): void
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
@@ -296,12 +301,16 @@ class SpatialLayerControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
         $response->assertOk()
-            ->assertSee('Peta Data Spasial')
+            ->assertSee('id="viewModeTableBtn"', false)
+            ->assertSee('id="viewModeMapBtn"', false)
+            ->assertSee('id="dataSpasialTableView"', false)
+            ->assertSee('id="dataSpasialMapView"', false)
             ->assertSee('id="layerDetailMap"', false)
             ->assertSee('id="layerMapBasemapSwitcher"', false)
             ->assertSee('data-basemap="satelit"', false)
             ->assertSee('<th>Wilayah</th>', false)
-            ->assertSee('<th>Metadata</th>', false);
+            ->assertSee('<th>Metadata</th>', false)
+            ->assertDontSee('id="layerMapCollapse"', false);
     }
 
     /**
@@ -346,8 +355,146 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('Tambah Data Spasial')
             ->assertSee(route('spatial-layers.features.create', $layer), false)
             ->assertSee('id="dataSpasialPerPage"', false)
-            ->assertSee('Tampilkan 10 data', false)
-            ->assertSee('Tampilkan semua', false);
+            ->assertSee('25 / halaman')
+            ->assertSee('50 / halaman');
+    }
+
+    /**
+     * Regresi: tabel Data Spasial sempat cuma sembunyi-tampilkan baris lewat JS
+     * manual tanpa pagination sungguhan — sekarang pakai DataTables (pola sama
+     * dengan tabel Daftar Layer di spatial-layers/index.blade.php), dan dapat
+     * filter tambahan "Status Metadata" (Lengkap/Belum Lengkap).
+     */
+    public function test_show_page_data_spasial_table_has_pagination_and_status_filter(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer DataTable Uji', 'title' => 'Layer DataTable Uji', 'map_type_id' => $jenis->id]);
+        $lengkap = SpatialLayerFeature::create([
+            'spatial_layer_id' => $layer->id,
+            'geometry' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)')"),
+            'metadata_dinamis' => ['sumber_data' => 'Uji'],
+        ]);
+        $belum = SpatialLayerFeature::create([
+            'spatial_layer_id' => $layer->id,
+            'geometry' => DB::raw("ST_GeomFromText('POINT(127.9 1.6)')"),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('id="dataSpasialStatusFilter"', false)
+            ->assertSee('Metadata Lengkap')
+            ->assertSee('Metadata Belum Lengkap')
+            ->assertSee('data-status="lengkap"', false)
+            ->assertSee('data-status="belum"', false);
+    }
+
+    /**
+     * Detail satu Data Spasial ditampilkan lewat modal saat baris tabel diklik,
+     * tanpa pindah ke halaman terpisah — baris harus membawa payload JSON
+     * (kode, wilayah, metadata dinamis, url edit/hapus) lewat atribut
+     * data-feature, dan markup modal #featureDetailModal harus ada di halaman.
+     */
+    public function test_show_page_feature_row_carries_detail_payload_for_modal(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Detail Modal Uji', 'title' => 'Layer Detail Modal Uji', 'map_type_id' => $jenis->id]);
+        $feature = SpatialLayerFeature::create([
+            'spatial_layer_id' => $layer->id,
+            'external_id' => 'KODE-001',
+            'geometry' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)')"),
+            'metadata_dinamis' => ['sumber_data' => 'Uji'],
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('id="featureDetailModal"', false)
+            ->assertSee('id="featureDetailDeleteForm"', false)
+            ->assertSee('data-feature-row', false)
+            ->assertSee(e(route('spatial-layers.features.edit', [$layer, $feature])), false)
+            ->assertSee('&quot;kode&quot;:&quot;KODE-001&quot;', false);
+    }
+
+    /**
+     * Regresi: baris "Belum ada Data Spasial" dulu dirender sebagai <tr> statis
+     * di tbody, yang ikut dihitung DataTables sebagai 1 data sungguhan — info
+     * paginasi jadi salah menampilkan "Menampilkan 1 sampai 1 dari 1 Data
+     * Spasial" padahal sebenarnya nol (dilaporkan user lewat screenshot).
+     * Sekarang pesan kosong itu dirender lewat opsi emptyTable DataTables,
+     * bukan baris tbody, supaya DataTables benar-benar menghitungnya nol.
+     */
+    public function test_show_page_empty_data_spasial_uses_datatables_empty_message_not_static_row(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kosong DataTable Uji', 'title' => 'Layer Kosong DataTable Uji', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('Belum ada Data Spasial')
+            ->assertSee('Tambah Data Spasial Pertama')
+            ->assertSee('emptyTable', false)
+            // Tbody tidak boleh punya baris statis lagi — kalau ada, berarti bug
+            // "Menampilkan 1 dari 1" lama kembali muncul.
+            ->assertDontSee('<td colspan="7" class="text-center py-4 text-muted">', false);
+    }
+
+    /**
+     * Regresi: halaman detail "diperbagus" dengan breadcrumb & kartu statistik
+     * (Jenis Peta, Sub Layer, Data Spasial, Status) di atas kartu Informasi Layer.
+     */
+    public function test_show_page_displays_breadcrumb_and_stats_cards(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root Stats Uji', 'title' => 'Root', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Stats Uji', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+        SpatialLayerFeature::create(['spatial_layer_id' => $root->id, 'geometry' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)')")]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $root));
+
+        $response->assertOk()
+            ->assertSee('breadcrumb', false)
+            ->assertSee('Daftar Layer & Data', false)
+            ->assertSee('Sub Layer')
+            ->assertSee('Data Spasial')
+            ->assertSee('class="stat-value">1</h3>', false);
+    }
+
+    /**
+     * Regresi: tombol Hapus Layer di halaman detail cuma muncul kalau Layer tidak
+     * punya anak maupun Data Spasial (konsisten dengan validasi di
+     * SpatialLayerController::destroy() yang menolak hapus kalau masih dipakai).
+     */
+    public function test_show_page_hides_delete_button_when_layer_has_children_or_features(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root Hapus Uji', 'title' => 'Root', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Hapus Uji', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $root));
+
+        // Catatan: route('spatial-layers.destroy', ...) dan route('spatial-layers.update', ...)
+        // menghasilkan URL yang SAMA (beda cuma method HTTP-nya) — form edit yang
+        // selalu ada bikin assertDontSee(url) false-negative, jadi di sini cek
+        // title tombol Hapus Layer yang unik, bukan URL-nya.
+        $response->assertOk()->assertDontSee('title="Hapus Layer"', false);
+    }
+
+    public function test_show_page_shows_delete_button_when_layer_is_empty(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kosong Uji', 'title' => 'Layer', 'map_type_id' => $jenis->id]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()->assertSee('title="Hapus Layer"', false);
     }
 
     public function test_user_without_permission_cannot_view_detail_page(): void

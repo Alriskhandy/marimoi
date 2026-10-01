@@ -10,6 +10,7 @@ use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -77,17 +78,102 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ];
     }
 
-    public function test_admin_can_create_a_feature_with_wkt_geometry(): void
+    /**
+     * store() sekarang berbasis `input_type` (shapefile/coordinates/kmz) — bukan
+     * `geometry_wkt` langsung lagi (itu tersisa hanya di update()), disamakan
+     * dengan wizard data-spatial/create lama. "coordinates" dengan 1 baris adalah
+     * padanan paling sederhana dari dulu kirim 1 geometry_wkt POINT langsung.
+     *
+     * @return array<string, mixed>
+     */
+    private function coordinatesPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'input_type' => 'coordinates',
+            'coordinates' => [
+                ['latitude' => 0.8, 'longitude' => 127.5],
+            ],
+        ], $overrides);
+    }
+
+    public function test_admin_can_create_a_feature_with_coordinates_input(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame(1, $layer->features()->count());
+    }
+
+    public function test_coordinates_input_can_create_multiple_features_in_one_submit(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'coordinates' => [
+                ['name' => 'Titik 1', 'latitude' => 0.8, 'longitude' => 127.5],
+                ['name' => 'Titik 2', 'latitude' => 0.9, 'longitude' => 127.6],
+            ],
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame(2, $layer->features()->count());
+        $this->assertEqualsCanonicalizing(
+            $this->coreMetadataDinamis(),
+            $layer->features()->first()->metadata_dinamis
+        );
+    }
+
+    /**
+     * Regresi end-to-end jalur KMZ lewat HTTP — parsing KML itu sendiri sudah
+     * diuji detail di tests/Unit/SpatialGeometryBatchImporterTest.php, di sini
+     * cuma pastikan wiring controller (upload file, validasi, redirect) benar.
+     */
+    public function test_admin_can_create_features_from_kml_upload(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $kml = <<<'KML'
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Titik KML Uji</name>
+      <Point><coordinates>127.5,0.8,0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>
+KML;
+
+        $path = tempnam(sys_get_temp_dir(), 'kml').'.kml';
+        file_put_contents($path, $kml);
+        $file = new UploadedFile($path, 'lokasi.kml', 'application/vnd.google-earth.kml+xml', null, true);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
+            'input_type' => 'kmz',
+            'kmz_file' => $file,
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame(1, $layer->features()->count());
+        $this->assertSame('Titik KML Uji', $layer->features()->first()->attributes['NAMA']);
+
+        unlink($path);
+    }
+
+    public function test_store_requires_input_type(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
             'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ])->assertRedirect(route('spatial-layers.show', $layer));
-
-        $this->assertSame(1, $layer->features()->count());
+        ])->assertSessionHasErrors('input_type');
     }
 
     public function test_required_dynamic_attribute_is_enforced(): void
@@ -96,9 +182,8 @@ class SpatialLayerFeatureControllerTest extends TestCase
         $layer = $this->layer();
         $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
 
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
-        ])->assertSessionHasErrors('metadata_dinamis.pagu');
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload())
+            ->assertSessionHasErrors('metadata_dinamis.pagu');
     }
 
     public function test_optional_dynamic_attribute_can_be_left_blank(): void
@@ -107,10 +192,9 @@ class SpatialLayerFeatureControllerTest extends TestCase
         $layer = $this->layer();
         $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan'], ['is_wajib' => false]);
 
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
             'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ])->assertRedirect(route('spatial-layers.show', $layer));
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }
@@ -153,10 +237,9 @@ class SpatialLayerFeatureControllerTest extends TestCase
             'opsi' => ['Berjalan', 'Selesai'],
         ]);
 
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
             'metadata_dinamis' => ['status_progres' => 'Batal'],
-        ])->assertSessionHasErrors('metadata_dinamis.status_progres');
+        ]))->assertSessionHasErrors('metadata_dinamis.status_progres');
     }
 
     /**
@@ -169,18 +252,16 @@ class SpatialLayerFeatureControllerTest extends TestCase
         $admin = $this->admin();
         $layer = $this->layer();
 
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
-        ])->assertSessionHasErrors([
-            'metadata_dinamis.sumber_data',
-            'metadata_dinamis.opd_penanggung_jawab',
-            'metadata_dinamis.tanggal_data',
-        ]);
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload())
+            ->assertSessionHasErrors([
+                'metadata_dinamis.sumber_data',
+                'metadata_dinamis.opd_penanggung_jawab',
+                'metadata_dinamis.tanggal_data',
+            ]);
 
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
             'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ])->assertRedirect(route('spatial-layers.show', $layer));
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }

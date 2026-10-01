@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MapType;
+use App\Models\MapTypeDynamicAttribute;
 use App\Models\SpatialLayer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -44,7 +45,20 @@ class SpatialLayerController extends Controller
         $mapTypes = MapType::active()->get();
         $parentOptions = SpatialLayer::where('id', '!=', $spatialLayer->id)->orderBy('name')->get(['id', 'name']);
 
-        return view('backend.pages.spatial-layers.show', ['layer' => $spatialLayer, 'mapTypes' => $mapTypes, 'parentOptions' => $parentOptions]);
+        $dynamicAttributes = $spatialLayer->map_type_id
+            ? MapTypeDynamicAttribute::where('map_type_id', $spatialLayer->map_type_id)
+                ->where('is_active', true)
+                ->with('metadataDefinition')
+                ->orderBy('urutan')
+                ->get()
+            : collect();
+
+        return view('backend.pages.spatial-layers.show', [
+            'layer' => $spatialLayer,
+            'mapTypes' => $mapTypes,
+            'parentOptions' => $parentOptions,
+            'dynamicAttributes' => $dynamicAttributes,
+        ]);
     }
 
     public function store(Request $request)

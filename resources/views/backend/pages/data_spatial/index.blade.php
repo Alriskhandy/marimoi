@@ -135,11 +135,11 @@
                                         </a>
                                     </div>
                                 @endif
-@can('data-spatial.create')
-                                <a href="{{ $createUrl }}" class="btn btn-gradient-primary btn-rounded btn-fw me-2">
-                                    <i class="mdi mdi-map-marker-plus"></i> {{ $label }}
-                                </a>
-@endcan
+                                @can('data-spatial.create')
+                                    <a href="{{ $createUrl }}" class="btn btn-gradient-primary btn-rounded btn-fw me-2">
+                                        <i class="mdi mdi-map-marker-plus"></i> {{ $label }}
+                                    </a>
+                                @endcan
                             </div>
                         </div>
 
@@ -254,26 +254,26 @@
                                     <span id="selectedCount">0</span> item dipilih
                                 </div>
                                 <div>
-@can('data-spatial.edit')
-                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                        onclick="bulkUpdateCategory()">
-                                        <i class="mdi mdi-shape-outline me-1"></i>
-                                        Ubah Kategori/Layer
-                                    </button>
-@endcan
-@can('data-spatial.edit')
-                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                        onclick="bulkManageDbfAttribute()">
-                                        <i class="mdi mdi-table-edit me-1"></i>
-                                        Kelola Atribut DBF
-                                    </button>
-@endcan
-@can('data-spatial.delete')
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
-                                        <i class="mdi mdi-trash-can-outline me-1"></i>
-                                        Hapus Terpilih
-                                    </button>
-@endcan
+                                    @can('data-spatial.edit')
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            onclick="bulkUpdateCategory()">
+                                            <i class="mdi mdi-shape-outline me-1"></i>
+                                            Ubah Kategori/Layer
+                                        </button>
+                                    @endcan
+                                    @can('data-spatial.edit')
+                                        <button type="button" class="btn btn-sm btn-outline-info"
+                                            onclick="bulkManageDbfAttribute()">
+                                            <i class="mdi mdi-table-edit me-1"></i>
+                                            Kelola Atribut DBF
+                                        </button>
+                                    @endcan
+                                    @can('data-spatial.delete')
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                            <i class="mdi mdi-trash-can-outline me-1"></i>
+                                            Hapus Terpilih
+                                        </button>
+                                    @endcan
                                     <button type="button" class="btn btn-sm btn-outline-secondary"
                                         onclick="clearSelection()">
                                         <i class="mdi mdi-close me-1"></i>
@@ -353,29 +353,29 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-2">
-@can('data-spatial.edit')
-                                                    <a href="{{ route('data-spatial.edit', $item->uuid) }}"
-                                                        class="btn btn-sm btn-outline-warning" title="Edit">
-                                                        <i class="mdi mdi-pencil"></i>
-                                                    </a>
-@endcan
+                                                    @can('data-spatial.edit')
+                                                        <a href="{{ route('data-spatial.edit', $item->uuid) }}"
+                                                            class="btn btn-sm btn-outline-warning" title="Edit">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </a>
+                                                    @endcan
 
                                                     <button type="button" class="btn btn-sm btn-outline-info"
                                                         onclick="showDetails('{{ $item->uuid }}')" title="Detail">
                                                         <i class="mdi mdi-eye"></i>
                                                     </button>
 
-@can('data-spatial.delete')
-                                                    <form action="{{ route('data-spatial.destroy', $item->uuid) }}"
-                                                        method="POST" style="display:inline-block;"
-                                                        data-confirm="delete">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                            <i class="fa fa-trash"></i>
-                                                        </button>
-                                                    </form>
-@endcan
+                                                    @can('data-spatial.delete')
+                                                        <form action="{{ route('data-spatial.destroy', $item->uuid) }}"
+                                                            method="POST" style="display:inline-block;"
+                                                            data-confirm="delete">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endcan
                                                 </div>
                                             </td>
                                         </tr>
@@ -552,8 +552,8 @@
 
                     <label class="form-label fw-semibold d-block">Aksi</label>
                     <div class="btn-group w-100 mb-3" role="group">
-                        <input type="radio" class="btn-check" name="bulkDbfAction" id="bulkDbfActionSet" value="set"
-                            checked>
+                        <input type="radio" class="btn-check" name="bulkDbfAction" id="bulkDbfActionSet"
+                            value="set" checked>
                         <label class="btn btn-outline-primary" for="bulkDbfActionSet">
                             <i class="mdi mdi-plus-box me-1"></i>Tambah / Ubah Nilai
                         </label>
@@ -606,34 +606,43 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
     <style>
-        .select2-container { width: 100% !important; }
+        .select2-container {
+            width: 100% !important;
+        }
+
         .select2-container--default .select2-selection--single {
             height: calc(1.5em + 0.75rem + 2px);
             border: 1px solid var(--admin-border, #dee2e6);
             border-radius: 0.375rem;
             background: var(--admin-surface, #fff);
         }
+
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: calc(1.5em + 0.75rem);
             color: var(--admin-text, #212529);
         }
+
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: calc(1.5em + 0.75rem);
         }
+
         .select2-dropdown {
             background: var(--admin-surface, #fff);
             color: var(--admin-text, #212529);
             border-color: var(--admin-border, #dee2e6);
         }
+
         .select2-container--default .select2-search--dropdown .select2-search__field {
             background: var(--admin-surface-soft, #fff);
             color: var(--admin-text, #212529);
             border-color: var(--admin-border, #dee2e6);
         }
+
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
             background: var(--admin-primary, #2563eb);
             color: #fff;
         }
+
         .select2-container--default .select2-results__option[aria-selected=true] {
             background: var(--admin-surface-soft, #eee);
             color: var(--admin-text, #212529);
@@ -1205,7 +1214,8 @@
             }
 
             if (!bulkDbfKeyRegex.test(key)) {
-                errorBox.textContent = 'Nama atribut hanya boleh huruf, angka, dan underscore, tidak diawali angka.';
+                errorBox.textContent =
+                'Nama atribut hanya boleh huruf, angka, dan underscore, tidak diawali angka.';
                 errorBox.classList.remove('d-none');
                 return;
             }
@@ -1297,5 +1307,4 @@
             });
         });
     </script>
-
 @endpush

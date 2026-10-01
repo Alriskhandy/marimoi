@@ -4,45 +4,141 @@
     <div class="page-header">
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2"><i class="mdi mdi-layers"></i></span>
-            Detail Layer: {{ $layer->name }}
+            {{ $layer->name }}
         </h3>
-        <div>
-            <a href="{{ route('spatial-layers.index') }}" class="btn btn-outline-secondary">Kembali</a>
-        </div>
+        <nav aria-label="breadcrumb">
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('spatial-layers.index') }}">Daftar Layer & Data</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $layer->name }}</li>
+            </ul>
+        </nav>
     </div>
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
+            <i class="mdi mdi-check-circle me-2"></i>{{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
     @if (session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
+            <i class="mdi mdi-alert-circle me-2"></i>{{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 stats-row-compact">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Jenis Peta</p>
+                            <h3 class="stat-value" style="font-size:1.15rem;">{{ $layer->mapType?->nama ?? '-' }}</h3>
+                        </div>
+                        <i class="mdi mdi-shape stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Sub Layer</p>
+                            <h3 class="stat-value">{{ $layer->children->count() }}</h3>
+                        </div>
+                        <i class="mdi mdi-subdirectory-arrow-right stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Data Spasial</p>
+                            <h3 class="stat-value">{{ $layer->features->count() }}</h3>
+                        </div>
+                        <i class="mdi mdi-map-marker-multiple stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div
+                class="card stat-card-compact {{ $layer->is_active ? 'bg-gradient-warning' : 'bg-gradient-secondary' }} text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Status</p>
+                            <h3 class="stat-value" style="font-size:1.15rem;">
+                                {{ $layer->is_active ? 'Aktif' : 'Nonaktif' }}</h3>
+                        </div>
+                        <i class="mdi {{ $layer->is_active ? 'mdi-check-circle' : 'mdi-pause-circle' }} stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-12 grid-margin">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <p class="card-title mb-0">Informasi Layer</p>
+                    <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+                        <div>
+                            <p class="card-title mb-1">Informasi Layer</p>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                @if ($layer->color)
+                                    <span
+                                        style="display:inline-block;width:16px;height:16px;border-radius:4px;background:{{ $layer->color }};border:1px solid #dee2e6;"></span>
+                                @endif
+                                @if ($layer->is_marker && $layer->icon)
+                                    <i class="{{ $layer->icon }}"
+                                        style="color:{{ $layer->color ?? '#007bff' }};font-size:1.2em;"></i>
+                                @endif
+                                <span
+                                    class="badge {{ $layer->is_marker ? 'bg-warning text-dark' : 'bg-info text-white' }}">
+                                    {{ $layer->is_marker ? 'Marker' : 'Layer' }}
+                                </span>
+                                @if ($layer->parent)
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="mdi mdi-subdirectory-arrow-right"></i>
+                                        Anak dari <a href="{{ route('spatial-layers.show', $layer->parent) }}"
+                                            class="text-decoration-none">{{ $layer->parent->name }}</a>
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
                         <div class="d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                                 data-bs-target="#editLayerModal" title="Edit">
                                 <i class="mdi mdi-pencil"></i> Edit
                             </button>
+                            @if ($layer->children->isEmpty() && $layer->features->isEmpty())
+                                <form action="{{ route('spatial-layers.destroy', $layer) }}" method="POST"
+                                    style="display:inline-block;" data-confirm="delete" data-name="{{ $layer->name }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Layer">
+                                        <i class="mdi mdi-delete"></i> Hapus
+                                    </button>
+                                </form>
+                            @endif
                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse"
                                 data-bs-target="#layerInfoCollapse" aria-expanded="false" aria-controls="layerInfoCollapse"
                                 id="layerInfoToggle">
-                                <i class="mdi mdi-arrow-expand"></i> Expand
+                                <i class="mdi mdi-arrow-expand"></i> Detail
                             </button>
                         </div>
                     </div>
                     <div class="collapse" id="layerInfoCollapse">
+                        <hr class="mt-0">
                         <table class="table table-sm">
                             <tr>
                                 <th style="width:200px;">Nama</th>
@@ -56,7 +152,8 @@
                                 <th>Layer Induk</th>
                                 <td>
                                     @if ($layer->parent)
-                                        <a href="{{ route('spatial-layers.show', $layer->parent) }}">{{ $layer->parent->name }}</a>
+                                        <a
+                                            href="{{ route('spatial-layers.show', $layer->parent) }}">{{ $layer->parent->name }}</a>
                                     @else
                                         <span class="text-muted">Tidak ada (akar)</span>
                                     @endif
@@ -67,13 +164,16 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         @if ($layer->color)
-                                            <span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:{{ $layer->color }};border:1px solid #dee2e6;"></span>
+                                            <span
+                                                style="display:inline-block;width:20px;height:20px;border-radius:4px;background:{{ $layer->color }};border:1px solid #dee2e6;"></span>
                                             <small>{{ $layer->color }}</small>
                                         @endif
                                         @if ($layer->is_marker && $layer->icon)
-                                            <i class="{{ $layer->icon }}" style="color:{{ $layer->color ?? '#007bff' }};font-size:1.3em;"></i>
+                                            <i class="{{ $layer->icon }}"
+                                                style="color:{{ $layer->color ?? '#007bff' }};font-size:1.3em;"></i>
                                         @endif
-                                        <span class="badge {{ $layer->is_marker ? 'bg-warning text-dark' : 'bg-info text-white' }}">
+                                        <span
+                                            class="badge {{ $layer->is_marker ? 'bg-warning text-dark' : 'bg-info text-white' }}">
                                             {{ $layer->is_marker ? 'Marker' : 'Layer' }}
                                         </span>
                                         <small class="text-muted">Opacity: {{ $layer->opacity }}</small>
@@ -90,12 +190,17 @@
                                     @endif
                                 </td>
                             </tr>
+                            <tr>
+                                <th>Jenis Peta</th>
+                                <td>
+                                    @if ($layer->mapType)
+                                        {{ $layer->mapType->nama }}
+                                    @else
+                                        <span class="text-muted">Layer ini belum memiliki Jenis.</span>
+                                    @endif
+                                </td>
+                            </tr>
                         </table>
-
-                        <p class="card-title mb-0">Jenis: {{ $layer->mapType?->nama ?? '-' }}</p>
-                        @unless ($layer->mapType)
-                            <p class="text-muted">Layer ini belum memiliki Jenis.</p>
-                        @endunless
                     </div>
                 </div>
             </div>
@@ -106,15 +211,158 @@
         <div class="col-12 grid-margin">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <p class="card-title mb-0">Peta Data Spasial</p>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse"
-                            data-bs-target="#layerMapCollapse" aria-expanded="true" aria-controls="layerMapCollapse"
-                            id="layerMapToggle">
-                            <i class="mdi mdi-arrow-collapse"></i> Collapse
-                        </button>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <p class="card-title mb-0">Data Spasial ({{ $layer->features->count() }})</p>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <div class="btn-group" role="group" aria-label="Ganti tampilan">
+                                <button type="button" class="btn btn-sm btn-outline-primary active"
+                                    id="viewModeTableBtn" onclick="setDataViewMode('table')">
+                                    <i class="mdi mdi-table"></i> Tabel
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="viewModeMapBtn"
+                                    onclick="setDataViewMode('map')">
+                                    <i class="mdi mdi-map"></i> Peta
+                                </button>
+                            </div>
+                            <a href="{{ route('spatial-layers.features.create', $layer) }}"
+                                class="btn btn-sm btn-gradient-primary text-nowrap">
+                                <i class="mdi mdi-map-marker-plus"></i> Tambah Data
+                            </a>
+                        </div>
                     </div>
-                    <div class="collapse show" id="layerMapCollapse">
+
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+                        <div class="input-group" style="max-width: 320px;">
+                            <input type="text" class="form-control form-control-sm" id="dataSpasialSearchInput"
+                                placeholder="Cari kode, wilayah...">
+                            <button type="button" class="btn btn-sm btn-primary" id="dataSpasialSearchBtn">
+                                <i class="mdi mdi-magnify"></i>
+                            </button>
+                        </div>
+                        <select class="form-select form-select-sm" id="dataSpasialStatusFilter" style="width: auto;">
+                            <option value="">Semua Status</option>
+                            <option value="lengkap">Metadata Lengkap</option>
+                            <option value="belum">Metadata Belum Lengkap</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="dataSpasialPerPage" style="width: auto;">
+                            <option value="10">10 / halaman</option>
+                            <option value="25" selected>25 / halaman</option>
+                            <option value="50">50 / halaman</option>
+                            <option value="100">100 / halaman</option>
+                        </select>
+                    </div>
+
+                    @php
+                        // Pesan "kosong" dirender lewat opsi emptyTable DataTables (bukan baris
+                        // <tr> statis di tbody seperti sebelumnya) — baris statis itu ikut
+                        // dihitung DataTables sebagai 1 data sungguhan, jadi info paginasi
+                        // sempat menampilkan "Menampilkan 1 sampai 1 dari 1 Data Spasial" padahal
+                        // sebenarnya nol (lihat screenshot bug yang dilaporkan user).
+                        $dataSpasialEmptyHtml = '<div class="text-center py-4 text-muted">'
+                            .'<i class="mdi mdi-map-marker-off-outline mdi-36px text-muted d-block mb-2"></i>'
+                            .'Belum ada Data Spasial.';
+                        if (auth()->user()?->can('spatial-layers.create')) {
+                            $dataSpasialEmptyHtml .= '<br><a href="'.e(route('spatial-layers.features.create', $layer)).'" class="btn btn-sm btn-primary mt-2">'
+                                .'<i class="mdi mdi-map-marker-plus"></i> Tambah Data Spasial Pertama</a>';
+                        }
+                        $dataSpasialEmptyHtml .= '</div>';
+                    @endphp
+
+                    <!-- TABEL -->
+                    <div id="dataSpasialTableView">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="dataSpasialLayerTable">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th style="width:56px;">Gambar</th>
+                                        <th>Kode</th>
+                                        <th>Wilayah</th>
+                                        <th>Metadata</th>
+                                        <th>Tanggal Input</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($layer->features as $feature)
+                                        @php
+                                            $featureMetadataRows = $dynamicAttributes->map(function ($attribute) use ($feature) {
+                                                $definition = $attribute->metadataDefinition;
+
+                                                return [
+                                                    'label' => $definition->label,
+                                                    'satuan' => $definition->satuan,
+                                                    'value' => $feature->metadata_dinamis[$definition->kode] ?? null,
+                                                ];
+                                            })->values();
+
+                                            $featureDetailPayload = [
+                                                'kode' => $feature->external_id ?? '#'.$feature->id,
+                                                'wilayah' => $feature->region->name ?? null,
+                                                'gambar' => $feature->gambar ? asset('storage/'.$feature->gambar) : null,
+                                                'status_lengkap' => ! empty($feature->metadata_dinamis),
+                                                'tanggal_input' => $feature->created_at?->format('d M Y H:i'),
+                                                'metadata' => $featureMetadataRows,
+                                                'edit_url' => route('spatial-layers.features.edit', [$layer, $feature]),
+                                                'delete_url' => route('spatial-layers.features.destroy', [$layer, $feature]),
+                                                'delete_name' => $feature->external_id ?? '#'.$feature->id,
+                                            ];
+                                        @endphp
+                                        <tr data-feature-row
+                                            data-status="{{ empty($feature->metadata_dinamis) ? 'belum' : 'lengkap' }}"
+                                            data-feature="{{ json_encode($featureDetailPayload) }}"
+                                            style="cursor: pointer;" title="Klik untuk lihat detail">
+                                            <td>{{ $loop->iteration }}</td>
+                                            <td class="text-center">
+                                                @if ($feature->gambar)
+                                                    <img src="{{ asset('storage/' . $feature->gambar) }}" alt="Gambar"
+                                                        class="img-thumbnail"
+                                                        style="width:40px;height:40px;object-fit:cover;">
+                                                @else
+                                                    <i class="mdi mdi-image-off-outline text-muted"
+                                                        style="font-size:1.3rem;"></i>
+                                                @endif
+                                            </td>
+                                            <td>{{ $feature->external_id ?? '-' }}</td>
+                                            <td>{{ $feature->region->name ?? '-' }}</td>
+                                            <td class="text-center">
+                                                @if (!empty($feature->metadata_dinamis))
+                                                    <span class="badge bg-gradient-success text-white">Lengkap</span>
+                                                @else
+                                                    <span class="badge bg-gradient-warning text-white">Belum lengkap</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">{{ $feature->created_at?->format('d M Y') ?? '-' }}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center gap-2">
+                                                    <a href="{{ route('spatial-layers.features.edit', [$layer, $feature]) }}"
+                                                        class="btn btn-sm btn-outline-warning" title="Kelola">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </a>
+                                                    <form
+                                                        action="{{ route('spatial-layers.features.destroy', [$layer, $feature]) }}"
+                                                        method="POST" style="display:inline-block;"
+                                                        data-confirm="delete"
+                                                        data-name="{{ $feature->external_id ?? '#' . $feature->id }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            title="Hapus">
+                                                            <i class="mdi mdi-delete"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PETA -->
+                    <div id="dataSpasialMapView" style="display:none;">
                         <div id="layerMapWrapper" class="layer-map-wrapper">
                             <div id="layerDetailMap"></div>
                             <div class="basemap-switcher" id="layerMapBasemapSwitcher">
@@ -138,89 +386,8 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12 grid-margin">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                        <p class="card-title mb-0">Data Spasial ({{ $layer->features->count() }})</p>
-                        <div class="d-flex align-items-center flex-wrap gap-2">
-                            <select class="form-select form-select-sm" id="dataSpasialPerPage" style="width: auto;">
-                                <option value="10">Tampilkan 10 data</option>
-                                <option value="25">Tampilkan 25 data</option>
-                                <option value="50">Tampilkan 50 data</option>
-                                <option value="all" selected>Tampilkan semua</option>
-                            </select>
-                            <div class="input-group filter-input-group" style="max-width: 320px;">
-                                <input type="text" class="form-control filter-control" id="dataSpasialSearchInput"
-                                    placeholder="Cari kode, wilayah...">
-                                <span class="btn btn-md btn-primary filter-btn"><i class="mdi mdi-magnify"></i></span>
-                            </div>
-                            <a href="{{ route('spatial-layers.features.create', $layer) }}"
-                                class="btn btn-sm btn-gradient-primary text-nowrap">
-                                <i class="mdi mdi-map-marker-plus"></i> Tambah Data Spasial
-                            </a>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-striped" id="dataSpasialLayerTable">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Kode</th>
-                                    <th>Wilayah</th>
-                                    <th>Metadata</th>
-                                    <th>Tanggal Input</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($layer->features as $feature)
-                                    <tr data-feature-row>
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $feature->external_id ?? '-' }}</td>
-                                        <td>{{ $feature->region->name ?? '-' }}</td>
-                                        <td class="text-center">
-                                            @if (! empty($feature->metadata_dinamis))
-                                                <span class="badge bg-gradient-success text-white">Lengkap</span>
-                                            @else
-                                                <span class="badge bg-gradient-warning text-white">Belum lengkap</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">{{ $feature->created_at?->format('d M Y') ?? '-' }}</td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <a href="{{ route('spatial-layers.features.edit', [$layer, $feature]) }}"
-                                                    class="btn btn-sm btn-outline-warning" title="Kelola">
-                                                    <i class="mdi mdi-pencil"></i>
-                                                </a>
-                                                <form action="{{ route('spatial-layers.features.destroy', [$layer, $feature]) }}"
-                                                    method="POST" style="display:inline-block;" data-confirm="delete"
-                                                    data-name="{{ $feature->external_id ?? '#'.$feature->id }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                        <i class="mdi mdi-delete"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">Belum ada Data Spasial.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                        <p id="dataSpasialNoResult" class="text-center text-muted py-3 d-none">Tidak ada data yang cocok dengan pencarian.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="editLayerModal" tabindex="-1" aria-labelledby="editLayerModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editLayerModal" tabindex="-1" aria-labelledby="editLayerModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -238,26 +405,36 @@
                             <!-- LEFT COLUMN -->
                             <div class="col-md-6">
                                 <div class="form-group mb-2">
-                                    <label for="layer_edit_map_type_id" class="form-label">Jenis <span class="text-danger">*</span></label>
+                                    <label for="layer_edit_map_type_id" class="form-label">Jenis <span
+                                            class="text-danger">*</span></label>
                                     <select class="form-control" id="layer_edit_map_type_id" name="map_type_id" required>
                                         <option value="">-- Pilih Jenis --</option>
                                         @foreach ($mapTypes as $mapType)
-                                            <option value="{{ $mapType->id }}" @selected(old('map_type_id', $layer->map_type_id) == $mapType->id)>{{ $mapType->nama }}</option>
+                                            <option value="{{ $mapType->id }}" @selected(old('map_type_id', $layer->map_type_id) == $mapType->id)>
+                                                {{ $mapType->nama }}</option>
                                         @endforeach
                                     </select>
-                                    @error('map_type_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    @error('map_type_id')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="form-group mb-2">
-                                    <label for="layer_edit_name" class="form-label">Nama Layer <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="layer_edit_name" name="name" value="{{ old('name', $layer->name) }}" required>
-                                    @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    <label for="layer_edit_name" class="form-label">Nama Layer <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="layer_edit_name" name="name"
+                                        value="{{ old('name', $layer->name) }}" required>
+                                    @error('name')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="form-group mb-2">
                                     <label for="layer_edit_description" class="form-label">Deskripsi</label>
                                     <textarea class="form-control" id="layer_edit_description" name="description" rows="2">{{ old('description', $layer->description) }}</textarea>
-                                    @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    @error('description')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="form-group mb-2">
@@ -265,13 +442,16 @@
                                     <select class="form-control" id="layer_edit_parent_id" name="parent_id">
                                         <option value="">-- Tidak ada (jadi akar) --</option>
                                         @foreach ($parentOptions as $option)
-                                            <option value="{{ $option->id }}" @selected(old('parent_id', $layer->parent_id) == $option->id)>{{ $option->name }}</option>
+                                            <option value="{{ $option->id }}" @selected(old('parent_id', $layer->parent_id) == $option->id)>
+                                                {{ $option->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    @error('parent_id')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                
+
                             </div>
 
                             <!-- RIGHT COLUMN -->
@@ -280,33 +460,50 @@
                                     <label for="layer_edit_warna" class="form-label">Warna</label>
                                     <div class="color-picker-widget">
                                         <div class="color-swatch-list" id="layer_edit_colorSwatches">
-                                            <button type="button" class="color-swatch" data-color="#007bff" style="background-color:#007bff" title="#007bff"></button>
-                                            <button type="button" class="color-swatch" data-color="#28a745" style="background-color:#28a745" title="#28a745"></button>
-                                            <button type="button" class="color-swatch" data-color="#dc3545" style="background-color:#dc3545" title="#dc3545"></button>
-                                            <button type="button" class="color-swatch" data-color="#ffc107" style="background-color:#ffc107" title="#ffc107"></button>
-                                            <button type="button" class="color-swatch" data-color="#17a2b8" style="background-color:#17a2b8" title="#17a2b8"></button>
-                                            <button type="button" class="color-swatch" data-color="#6f42c1" style="background-color:#6f42c1" title="#6f42c1"></button>
-                                            <button type="button" class="color-swatch" data-color="#fd7e14" style="background-color:#fd7e14" title="#fd7e14"></button>
-                                            <button type="button" class="color-swatch" data-color="#20c997" style="background-color:#20c997" title="#20c997"></button>
-                                            <button type="button" class="color-swatch" data-color="#6c757d" style="background-color:#6c757d" title="#6c757d"></button>
-                                            <button type="button" class="color-swatch" data-color="#212529" style="background-color:#212529" title="#212529"></button>
+                                            <button type="button" class="color-swatch" data-color="#007bff"
+                                                style="background-color:#007bff" title="#007bff"></button>
+                                            <button type="button" class="color-swatch" data-color="#28a745"
+                                                style="background-color:#28a745" title="#28a745"></button>
+                                            <button type="button" class="color-swatch" data-color="#dc3545"
+                                                style="background-color:#dc3545" title="#dc3545"></button>
+                                            <button type="button" class="color-swatch" data-color="#ffc107"
+                                                style="background-color:#ffc107" title="#ffc107"></button>
+                                            <button type="button" class="color-swatch" data-color="#17a2b8"
+                                                style="background-color:#17a2b8" title="#17a2b8"></button>
+                                            <button type="button" class="color-swatch" data-color="#6f42c1"
+                                                style="background-color:#6f42c1" title="#6f42c1"></button>
+                                            <button type="button" class="color-swatch" data-color="#fd7e14"
+                                                style="background-color:#fd7e14" title="#fd7e14"></button>
+                                            <button type="button" class="color-swatch" data-color="#20c997"
+                                                style="background-color:#20c997" title="#20c997"></button>
+                                            <button type="button" class="color-swatch" data-color="#6c757d"
+                                                style="background-color:#6c757d" title="#6c757d"></button>
+                                            <button type="button" class="color-swatch" data-color="#212529"
+                                                style="background-color:#212529" title="#212529"></button>
                                         </div>
                                         <div class="input-group">
                                             <input type="color" class="form-control form-control-color"
-                                                id="layer_edit_warna" name="color" value="{{ old('color', $layer->color ?? '#007bff') }}">
-                                            <input type="text" class="form-control text-uppercase" id="layer_edit_warnaHex"
-                                                maxlength="7" placeholder="#RRGGBB" autocomplete="off"
+                                                id="layer_edit_warna" name="color"
+                                                value="{{ old('color', $layer->color ?? '#007bff') }}">
+                                            <input type="text" class="form-control text-uppercase"
+                                                id="layer_edit_warnaHex" maxlength="7" placeholder="#RRGGBB"
+                                                autocomplete="off"
                                                 value="{{ strtoupper(old('color', $layer->color ?? '#007bff')) }}">
                                         </div>
-                                        @error('color') <div class="text-danger small">{{ $message }}</div> @enderror
+                                        @error('color')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
 
                                 <div class="form-group mb-2">
                                     <label for="layer_edit_opacity" class="form-label">Opacity</label>
                                     <input type="number" class="form-control" id="layer_edit_opacity" name="opacity"
-                                        step="0.1" min="0" max="1" value="{{ old('opacity', $layer->opacity ?? 1) }}">
-                                    @error('opacity') <div class="text-danger small">{{ $message }}</div> @enderror
+                                        step="0.1" min="0" max="1"
+                                        value="{{ old('opacity', $layer->opacity ?? 1) }}">
+                                    @error('opacity')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 <div class="form-group mb-0">
@@ -359,7 +556,8 @@
                                             </div>
                                         </div>
                                         <div class="col-md-5">
-                                            <div id="layer_edit_iconPreview" class="icon-preview-container icon-preview-inline">
+                                            <div id="layer_edit_iconPreview"
+                                                class="icon-preview-container icon-preview-inline">
                                                 <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
                                             </div>
                                         </div>
@@ -369,7 +567,9 @@
 
                                     <div class="form-text">Ikon hanya berlaku untuk Layer marker. Klik salah satu ikon
                                         di atas untuk memilih.</div>
-                                    @error('icon') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    @error('icon')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -381,6 +581,63 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL DATA SPASIAL (dibuka saat baris tabel diklik, tanpa pindah halaman) -->
+    <div class="modal fade" id="featureDetailModal" tabindex="-1" aria-labelledby="featureDetailModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="featureDetailModalLabel">
+                        <i class="mdi mdi-map-marker"></i> Detail Data Spasial
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3" id="featureDetailImageWrap" style="display:none;">
+                        <img src="" alt="Gambar" id="featureDetailImage" class="img-thumbnail"
+                            style="max-height:160px;object-fit:cover;">
+                    </div>
+                    <table class="table table-sm mb-3">
+                        <tr>
+                            <th style="width:200px;">Kode</th>
+                            <td id="featureDetailKode">-</td>
+                        </tr>
+                        <tr>
+                            <th>Wilayah</th>
+                            <td id="featureDetailWilayah">-</td>
+                        </tr>
+                        <tr>
+                            <th>Metadata</th>
+                            <td id="featureDetailStatus">-</td>
+                        </tr>
+                        <tr>
+                            <th>Tanggal Input</th>
+                            <td id="featureDetailTanggal">-</td>
+                        </tr>
+                    </table>
+                    <p class="card-title mb-2" style="font-size:0.95rem;">Metadata Dinamis</p>
+                    <table class="table table-sm" id="featureDetailMetadataTable">
+                        <tbody id="featureDetailMetadata"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <form id="featureDetailDeleteForm" action="" method="POST" style="display:inline-block;"
+                        data-confirm="delete" data-name="">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="mdi mdi-delete"></i> Hapus
+                        </button>
+                    </form>
+                    <a href="" id="featureDetailEditBtn" class="btn btn-gradient-warning">
+                        <i class="mdi mdi-pencil"></i> Kelola
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
@@ -432,18 +689,93 @@
             color: #fff;
         }
 
+        /* ===========================================
+                           TABEL DATA SPASIAL — disamakan dengan tabel index
+                           data_spatial/index.blade.php (header uppercase, hover terangkat, badge pill).
+                        =========================================== */
+        #dataSpasialTableView .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
         #dataSpasialLayerTable th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            text-transform: uppercase;
             font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            color: #495057;
+            padding: 12px 8px;
         }
 
         #dataSpasialLayerTable td {
+            vertical-align: middle;
+            padding: 12px 8px;
+            border-bottom: 1px solid #eef2f7;
             font-size: 0.85rem;
         }
 
+        #dataSpasialTableView .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        #dataSpasialTableView .table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #dataSpasialTableView .badge {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
         /* ===========================================
-           MODAL EDIT LAYER — disamakan dengan modal edit Kategori
-           (resources/views/backend/pages/categories/index.blade.php)
-        =========================================== */
+                           STATISTICS CARDS (COMPACT) — disamakan dengan
+                           spatial-layers/index.blade.php & categories/index.blade.php
+                        =========================================== */
+        .stats-row-compact {
+            margin-bottom: 1rem;
+        }
+
+        .stat-card-compact {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .stat-card-compact .card-body {
+            padding: 0.85rem 1rem;
+        }
+
+        .stat-card-compact .stat-label {
+            margin: 0 0 2px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.9;
+            white-space: nowrap;
+        }
+
+        .stat-card-compact .stat-value {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .stat-card-compact .stat-icon {
+            font-size: 2rem;
+            opacity: 0.5;
+        }
+
+        /* ===========================================
+                           MODAL EDIT LAYER — disamakan dengan modal edit Kategori
+                           (resources/views/backend/pages/categories/index.blade.php)
+                        =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -709,102 +1041,140 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        (function () {
+        (function() {
             const layerSlug = @json($layer->slug);
             const layerColor = @json($layer->color ?? '#2563eb');
             const layerIcon = @json($layer->is_marker ? $layer->icon : null);
             const layerOpacity = @json($layer->opacity ?? 1);
 
-            const map = L.map('layerDetailMap').setView([1.5, 127.8], 8);
+            let map = null;
 
-            const esriImagery = L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                { attribution: 'Tiles &copy; Esri' }
-            );
-
-            const basemaps = {
-                satelit: esriImagery,
-                jalan: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors',
-                }),
-                topografi: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenTopoMap contributors',
-                }),
-                gelap: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-                    attribution: '&copy; CARTO',
-                }),
-            };
-
-            basemaps.satelit.addTo(map);
-            let activeBasemap = basemaps.satelit;
-
-            function setBasemap(name) {
-                if (! basemaps[name] || basemaps[name] === activeBasemap) {
+            // Peta di-init BARU saat pertama kali mode "Peta" dibuka, bukan langsung
+            // saat halaman dimuat — container-nya mulai dalam keadaan display:none
+            // (mode default tabel), dan Leaflet gagal menghitung ukuran peta yang
+            // di-init di dalam container tersembunyi (hasilnya peta abu-abu kosong).
+            function initMapOnce() {
+                if (map) {
                     return;
                 }
-                map.removeLayer(activeBasemap);
-                basemaps[name].addTo(map);
-                activeBasemap = basemaps[name];
-                document.querySelectorAll('#layerMapBasemapSwitcher .basemap-btn').forEach((btn) => {
-                    btn.classList.toggle('active', btn.dataset.basemap === name);
-                });
-            }
 
-            document.querySelectorAll('#layerMapBasemapSwitcher .basemap-btn').forEach((btn) => {
-                btn.addEventListener('click', () => setBasemap(btn.dataset.basemap));
-            });
+                map = L.map('layerDetailMap').setView([1.5, 127.8], 8);
 
-            fetch(`/peta-v2/geojson/${layerSlug}`)
-                .then((response) => (response.ok ? response.json() : null))
-                .then((geojson) => {
-                    if (! geojson) {
+                const esriImagery = L.tileLayer(
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Tiles &copy; Esri'
+                    }
+                );
+
+                const basemaps = {
+                    satelit: esriImagery,
+                    jalan: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors',
+                    }),
+                    topografi: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenTopoMap contributors',
+                    }),
+                    gelap: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+                        attribution: '&copy; CARTO',
+                    }),
+                };
+
+                basemaps.satelit.addTo(map);
+                let activeBasemap = basemaps.satelit;
+
+                function setBasemap(name) {
+                    if (!basemaps[name] || basemaps[name] === activeBasemap) {
                         return;
                     }
+                    map.removeLayer(activeBasemap);
+                    basemaps[name].addTo(map);
+                    activeBasemap = basemaps[name];
+                    document.querySelectorAll('#layerMapBasemapSwitcher .basemap-btn').forEach((btn) => {
+                        btn.classList.toggle('active', btn.dataset.basemap === name);
+                    });
+                }
 
-                    const dataLayer = L.geoJSON(geojson, {
-                        pointToLayer: (feature, latlng) => {
-                            if (layerIcon) {
-                                return L.marker(latlng, {
-                                    icon: L.divIcon({
-                                        html: `<i class="${layerIcon}" style="color:${layerColor};font-size:1.5rem;"></i>`,
-                                        className: 'layer-detail-marker-icon',
-                                        iconSize: [24, 24],
-                                    }),
+                document.querySelectorAll('#layerMapBasemapSwitcher .basemap-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => setBasemap(btn.dataset.basemap));
+                });
+
+                fetch(`/peta-v2/geojson/${layerSlug}`)
+                    .then((response) => (response.ok ? response.json() : null))
+                    .then((geojson) => {
+                        if (!geojson) {
+                            return;
+                        }
+
+                        const dataLayer = L.geoJSON(geojson, {
+                            pointToLayer: (feature, latlng) => {
+                                if (layerIcon) {
+                                    return L.marker(latlng, {
+                                        icon: L.divIcon({
+                                            html: `<i class="${layerIcon}" style="color:${layerColor};font-size:1.5rem;"></i>`,
+                                            className: 'layer-detail-marker-icon',
+                                            iconSize: [24, 24],
+                                        }),
+                                    });
+                                }
+
+                                return L.circleMarker(latlng, {
+                                    radius: 6,
+                                    fillColor: layerColor,
+                                    color: layerColor,
+                                    weight: 1,
+                                    fillOpacity: layerOpacity,
                                 });
-                            }
-
-                            return L.circleMarker(latlng, {
-                                radius: 6,
-                                fillColor: layerColor,
+                            },
+                            style: () => ({
                                 color: layerColor,
-                                weight: 1,
-                                fillOpacity: layerOpacity,
+                                weight: 2,
+                                opacity: layerOpacity,
+                                fillOpacity: layerOpacity * 0.4
+                            }),
+                            onEachFeature: (feature, leafletLayer) => {
+                                const externalId = feature.properties?.external_id ??
+                                    `#${feature.properties?.id ?? ''}`;
+                                leafletLayer.bindPopup(String(externalId));
+                            },
+                        }).addTo(map);
+
+                        if (dataLayer.getBounds().isValid()) {
+                            map.fitBounds(dataLayer.getBounds(), {
+                                maxZoom: 15
                             });
-                        },
-                        style: () => ({ color: layerColor, weight: 2, opacity: layerOpacity, fillOpacity: layerOpacity * 0.4 }),
-                        onEachFeature: (feature, leafletLayer) => {
-                            const externalId = feature.properties?.external_id ?? `#${feature.properties?.id ?? ''}`;
-                            leafletLayer.bindPopup(String(externalId));
-                        },
-                    }).addTo(map);
+                        }
+                    })
+                    .catch((error) => console.error('Gagal memuat Data Spasial Layer ini', error));
+            }
 
-                    if (dataLayer.getBounds().isValid()) {
-                        map.fitBounds(dataLayer.getBounds(), { maxZoom: 15 });
-                    }
-                })
-                .catch((error) => console.error('Gagal memuat Data Spasial Layer ini', error));
+            // Toggle tabel <-> peta dalam SATU kartu (bukan dua kartu terpisah seperti
+            // sebelumnya) — pola switcher-nya disamakan dengan tombol Tabel/Peta di
+            // data_spatial/index.blade.php, bedanya di sini murni client-side (tidak
+            // pindah halaman) karena datanya sudah sama-sama dimuat di kartu ini.
+            window.setDataViewMode = function(mode) {
+                const tableView = document.getElementById('dataSpasialTableView');
+                const mapView = document.getElementById('dataSpasialMapView');
+                const tableBtn = document.getElementById('viewModeTableBtn');
+                const mapBtn = document.getElementById('viewModeMapBtn');
 
-            const mapCollapseEl = document.getElementById('layerMapCollapse');
-            const mapToggleBtn = document.getElementById('layerMapToggle');
+                if (mode === 'map') {
+                    tableView.style.display = 'none';
+                    mapView.style.display = '';
+                    tableBtn.classList.remove('active');
+                    mapBtn.classList.add('active');
 
-            mapCollapseEl.addEventListener('shown.bs.collapse', () => {
-                map.invalidateSize();
-                mapToggleBtn.innerHTML = '<i class="mdi mdi-arrow-collapse"></i> Collapse';
-            });
-
-            mapCollapseEl.addEventListener('hidden.bs.collapse', () => {
-                mapToggleBtn.innerHTML = '<i class="mdi mdi-arrow-expand"></i> Expand';
-            });
+                    initMapOnce();
+                    // invalidateSize butuh container yang sudah display:block —
+                    // ditunda 1 tick lewat requestAnimationFrame supaya browser
+                    // sempat reflow dulu sebelum Leaflet menghitung ukurannya.
+                    requestAnimationFrame(() => map && map.invalidateSize());
+                } else {
+                    mapView.style.display = 'none';
+                    tableView.style.display = '';
+                    mapBtn.classList.remove('active');
+                    tableBtn.classList.add('active');
+                }
+            };
 
             const infoCollapseEl = document.getElementById('layerInfoCollapse');
             const infoToggleBtn = document.getElementById('layerInfoToggle');
@@ -817,49 +1187,128 @@
                 infoToggleBtn.innerHTML = '<i class="mdi mdi-arrow-expand"></i> Expand';
             });
 
-            const searchInput = document.getElementById('dataSpasialSearchInput');
-            const perPageSelect = document.getElementById('dataSpasialPerPage');
-            const tableBody = document.querySelector('#dataSpasialLayerTable tbody');
-            const noResultEl = document.getElementById('dataSpasialNoResult');
+            // Tabel Data Spasial pakai DataTables (sama seperti tabel Daftar Layer di
+            // spatial-layers/index.blade.php) supaya dapat pagination & info jumlah
+            // data sungguhan, bukan cuma sembunyikan baris lewat JS manual seperti
+            // sebelumnya — penting untuk Layer yang datanya ratusan baris.
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex, rowData, counter) {
+                if (settings.nTable.id !== 'dataSpasialLayerTable') {
+                    return true;
+                }
 
-            function applyDataSpasialTableView() {
-                if (! tableBody) {
+                const selected = $('#dataSpasialStatusFilter').val();
+                if (!selected) {
+                    return true;
+                }
+
+                const row = settings.aoData[dataIndex].nTr;
+                return $(row).data('status') === selected;
+            });
+
+            const dataSpasialTable = $('#dataSpasialLayerTable').DataTable({
+                pageLength: 25,
+                lengthChange: false,
+                ordering: false,
+                columnDefs: [{
+                        searchable: false,
+                        orderable: false,
+                        targets: [1, -1]
+                    },
+                    {
+                        className: 'text-center',
+                        targets: [0, 1, -1]
+                    },
+                ],
+                language: {
+                    processing: "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>",
+                    zeroRecords: 'Tidak ada data yang cocok dengan pencarian',
+                    emptyTable: @json($dataSpasialEmptyHtml),
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ Data Spasial',
+                    infoEmpty: 'Menampilkan 0 sampai 0 dari 0 Data Spasial',
+                    infoFiltered: '(difilter dari _MAX_ total Data Spasial)',
+                    paginate: {
+                        first: 'Pertama',
+                        last: 'Terakhir',
+                        next: 'Selanjutnya',
+                        previous: 'Sebelumnya'
+                    },
+                },
+                dom: '<"row"<"col-sm-12"tr>>' +
+                    '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            });
+
+            $('#dataSpasialSearchInput').on('keyup', function() {
+                dataSpasialTable.search(this.value).draw();
+            });
+
+            document.getElementById('dataSpasialSearchBtn')?.addEventListener('click', () => {
+                dataSpasialTable.search($('#dataSpasialSearchInput').val()).draw();
+            });
+
+            $('#dataSpasialStatusFilter').on('change', function() {
+                dataSpasialTable.draw();
+            });
+
+            $('#dataSpasialPerPage').on('change', function() {
+                dataSpasialTable.page.len(parseInt(this.value, 10)).draw();
+            });
+
+            // Detail Data Spasial dibuka lewat modal saat baris diklik (tidak perlu
+            // halaman terpisah) — delegated ke document karena baris di-redraw ulang
+            // oleh DataTables tiap ganti halaman/filter.
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function openFeatureDetailModal(feature) {
+                const $imageWrap = $('#featureDetailImageWrap');
+                if (feature.gambar) {
+                    $('#featureDetailImage').attr('src', feature.gambar);
+                    $imageWrap.show();
+                } else {
+                    $imageWrap.hide();
+                }
+
+                $('#featureDetailKode').text(feature.kode || '-');
+                $('#featureDetailWilayah').text(feature.wilayah || '-');
+                $('#featureDetailTanggal').text(feature.tanggal_input || '-');
+                $('#featureDetailStatus').html(feature.status_lengkap ?
+                    '<span class="badge bg-gradient-success text-white">Lengkap</span>' :
+                    '<span class="badge bg-gradient-warning text-white">Belum lengkap</span>');
+
+                const $metadata = $('#featureDetailMetadata').empty();
+                if (feature.metadata && feature.metadata.length) {
+                    feature.metadata.forEach((row) => {
+                        const label = escapeHtml(row.label) + (row.satuan ? ' (' + escapeHtml(row.satuan) +
+                            ')' : '');
+                        const value = (row.value === null || row.value === '') ?
+                            '<span class="text-muted">-</span>' : escapeHtml(row.value);
+                        $metadata.append(
+                            `<tr><th style="width:200px;">${label}</th><td>${value}</td></tr>`);
+                    });
+                } else {
+                    $metadata.append(
+                        '<tr><td colspan="2" class="text-muted">Tidak ada Metadata Dinamis untuk Jenis Layer ini.</td></tr>'
+                    );
+                }
+
+                $('#featureDetailEditBtn').attr('href', feature.edit_url);
+                $('#featureDetailDeleteForm').attr('action', feature.delete_url);
+                $('#featureDetailDeleteForm').attr('data-name', feature.delete_name);
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('featureDetailModal')).show();
+            }
+
+            $(document).on('click', '#dataSpasialLayerTable tbody tr[data-feature-row]', function(e) {
+                if ($(e.target).closest('a, button, form').length) {
                     return;
                 }
-
-                const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
-                const limit = ! perPageSelect || perPageSelect.value === 'all' ? Infinity : parseInt(perPageSelect.value, 10);
-                let matchedCount = 0;
-                let shownCount = 0;
-
-                tableBody.querySelectorAll('tr[data-feature-row]').forEach((row) => {
-                    const matches = row.textContent.toLowerCase().includes(term);
-                    if (matches) {
-                        matchedCount++;
-                    }
-
-                    const visible = matches && shownCount < limit;
-                    if (visible) {
-                        shownCount++;
-                    }
-
-                    row.classList.toggle('d-none', ! visible);
-                });
-
-                if (noResultEl) {
-                    noResultEl.classList.toggle('d-none', matchedCount > 0);
-                }
-            }
-
-            if (searchInput) {
-                searchInput.addEventListener('keyup', applyDataSpasialTableView);
-            }
-
-            if (perPageSelect) {
-                perPageSelect.addEventListener('change', applyDataSpasialTableView);
-            }
-
-            applyDataSpasialTableView();
+                openFeatureDetailModal($(this).data('feature'));
+            });
 
             @if ($errors->any())
                 const editLayerModalEl = document.getElementById('editLayerModal');
@@ -877,7 +1326,7 @@
          * prefix "layer_edit_" karena di sini cuma ada satu instance (tidak ada modal
          * "add" terpisah seperti di categories).
          */
-        $(function () {
+        $(function() {
             const prefix = 'layer_edit';
 
             function updateIconPreview(iconClass, colorValue) {
@@ -921,12 +1370,12 @@
 
                 let $itemsWrap = null;
 
-                $select.children('option, optgroup').each(function () {
+                $select.children('option, optgroup').each(function() {
                     if (this.tagName === 'OPTGROUP') {
                         $grid.append(`<div class="icon-picker-group-title">${$(this).attr('label')}</div>`);
                         $itemsWrap = $('<div class="icon-picker-items"></div>');
                         $grid.append($itemsWrap);
-                        $(this).children('option').each(function () {
+                        $(this).children('option').each(function() {
                             appendIconItem($itemsWrap, $(this));
                         });
                     } else {
@@ -949,7 +1398,8 @@
                 $(`#${prefix}_warna`).val(newColor);
                 $(`#${prefix}_warnaHex`).val(newColor.toUpperCase());
                 $(`#${prefix}_colorSwatches .color-swatch`).removeClass('active');
-                $(`#${prefix}_colorSwatches .color-swatch[data-color="${newColor.toLowerCase()}"]`).addClass('active');
+                $(`#${prefix}_colorSwatches .color-swatch[data-color="${newColor.toLowerCase()}"]`).addClass(
+                    'active');
 
                 const iconElement = $(`#${prefix}_iconPreview .icon-preview-icon`);
                 if (iconElement.length) {
@@ -959,39 +1409,39 @@
 
             buildIconPicker(`#${prefix}_icon`, `#${prefix}_iconGrid`);
 
-            $(document).on('click', `#${prefix}_iconGrid .icon-picker-item`, function () {
+            $(document).on('click', `#${prefix}_iconGrid .icon-picker-item`, function() {
                 const iconValue = $(this).data('icon-value');
                 $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active');
                 $(this).addClass('active');
                 $(`#${prefix}_icon`).val(iconValue).trigger('change');
             });
 
-            $(document).on('input', `#${prefix}_iconSearch`, function () {
+            $(document).on('input', `#${prefix}_iconSearch`, function() {
                 const $grid = $(`#${prefix}_iconGrid`);
                 const query = $(this).val().trim().toLowerCase();
 
-                $grid.find('.icon-picker-item').each(function () {
+                $grid.find('.icon-picker-item').each(function() {
                     const matches = !query || $(this).data('search').toString().includes(query);
                     $(this).toggle(matches);
                 });
 
-                $grid.find('.icon-picker-items').each(function () {
+                $grid.find('.icon-picker-items').each(function() {
                     const hasVisible = $(this).find('.icon-picker-item:visible').length > 0;
                     $(this).toggle(hasVisible);
                     $(this).prev('.icon-picker-group-title').toggle(hasVisible);
                 });
             });
 
-            $(`#${prefix}_icon`).on('change', function () {
+            $(`#${prefix}_icon`).on('change', function() {
                 const colorValue = $(`#${prefix}_warna`).val() || '#007bff';
                 updateIconPreview($(this).val(), colorValue);
             });
 
-            $(`#${prefix}_warna`).on('change input', function () {
+            $(`#${prefix}_warna`).on('change input', function() {
                 applyColor($(this).val());
             });
 
-            $(`#${prefix}_warnaHex`).on('input', function () {
+            $(`#${prefix}_warnaHex`).on('input', function() {
                 let value = $(this).val().trim();
                 if (value && value[0] !== '#') {
                     value = '#' + value;
@@ -1003,11 +1453,11 @@
                 }
             });
 
-            $(document).on('click', `#${prefix}_colorSwatches .color-swatch`, function () {
+            $(document).on('click', `#${prefix}_colorSwatches .color-swatch`, function() {
                 applyColor($(this).data('color'));
             });
 
-            $(`#${prefix}_is_marker`).on('change', function () {
+            $(`#${prefix}_is_marker`).on('change', function() {
                 if ($(this).is(':checked')) {
                     $(`#${prefix}_iconContainer`).slideDown(300);
                 } else {
@@ -1015,7 +1465,8 @@
                     $(`#${prefix}_icon`).val('');
                     updateIconPreview('', '#007bff');
                     $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active').show();
-                    $(`#${prefix}_iconGrid .icon-picker-items, #${prefix}_iconGrid .icon-picker-group-title`).show();
+                    $(`#${prefix}_iconGrid .icon-picker-items, #${prefix}_iconGrid .icon-picker-group-title`)
+                        .show();
                     $(`#${prefix}_iconSearch`).val('');
                 }
             });
