@@ -75,8 +75,7 @@
 /* Sidebar styles */
 #sidebar-layer,
 #sidebar-basemap,
-#sidebar-legend,
-#sidebar-download {
+#sidebar-legend {
     width: 320px;
     padding: 15px;
     overflow-y: auto;
@@ -90,8 +89,7 @@
 
 #layer-list,
 #basemap-list,
-#legend-content,
-#download-content {
+#legend-content {
     max-height: calc(100vh - 250px);
     overflow-y: auto;
 }

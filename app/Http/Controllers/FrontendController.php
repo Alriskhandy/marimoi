@@ -7,7 +7,6 @@ use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\Category;
 use App\Models\DataSpatial;
-use App\Models\Dokumen;
 use App\Models\KategoriAspirasi;
 use App\Models\ProjectFeedback;
 use App\Models\Publication;
@@ -289,12 +288,10 @@ class FrontendController extends Controller
     // TAMPILAN PETA //
     public function tematik()
     {
-        $documents = Dokumen::all();
-
         // Get selected category from session if exists
         $selectedCategory = session('selectedCategory');
 
-        return view('frontend.pages.peta', compact('documents', 'selectedCategory'));
+        return view('frontend.pages.peta', compact('selectedCategory'));
     }
 
     public function lihatTematik($id)
@@ -364,16 +361,14 @@ class FrontendController extends Controller
      */
     public function showSharedMap(string $slug)
     {
-        $documents = Dokumen::all();
-
         $sharedMap = SharedMap::where('slug', $slug)->first();
 
         if (! $sharedMap || $sharedMap->isExpired()) {
-            return view('frontend.pages.peta', compact('documents'))
+            return view('frontend.pages.peta')
                 ->with('sharedMapError', 'Link share tidak valid atau sudah kedaluwarsa.');
         }
 
-        return view('frontend.pages.peta', compact('documents'))
+        return view('frontend.pages.peta')
             ->with('sharedMapState', [
                 'layers' => $sharedMap->layers,
                 'viewport' => $sharedMap->viewport,
@@ -384,9 +379,7 @@ class FrontendController extends Controller
     // NANTINYA DIISI PETA RPJMD //
     public function prioritas()
     {
-        $documents = Dokumen::all();
-
-        return view('frontend.pages.prioritas', compact('documents'));
+        return view('frontend.pages.prioritas');
     }
 
     // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE - OPTIMIZED VERSION //

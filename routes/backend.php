@@ -4,7 +4,6 @@ use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataSpatialController;
-use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LogController;
@@ -234,19 +233,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/', [SpatialFeedbackController::class, 'index'])->name('index')->middleware('permission:spatial-feedbacks.view');
         Route::put('/{spatialFeedback}/respond', [SpatialFeedbackController::class, 'respond'])->name('respond')->middleware('permission:spatial-feedbacks.respond');
         Route::delete('/{spatialFeedback}', [SpatialFeedbackController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-feedbacks.delete');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Document Upload Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('upload-dokumen')->name('dokumen.')->group(function () {
-        Route::get('/', [DokumenController::class, 'index'])->name('index')->middleware('permission:dokumen.view');
-        Route::post('/', [DokumenController::class, 'store'])->name('store')->middleware('permission:dokumen.create');
-        Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update')->middleware('permission:dokumen.edit');
-        Route::delete('/{id}', [DokumenController::class, 'destroy'])->where('id', '[0-9]+')->name('destroy')->middleware('permission:dokumen.delete');
     });
 
     /*

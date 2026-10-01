@@ -72,15 +72,6 @@ class Permission extends SpatiePermission
                 'view' => 'Lihat dashboard progres pembangunan',
             ],
         ],
-        'dokumen' => [
-            'label' => 'Upload Dokumen',
-            'actions' => [
-                'view' => 'Lihat dokumen',
-                'create' => 'Unggah dokumen',
-                'edit' => 'Ubah dokumen',
-                'delete' => 'Hapus dokumen',
-            ],
-        ],
         'aspirasi' => [
             'label' => 'Aspirasi',
             'actions' => [

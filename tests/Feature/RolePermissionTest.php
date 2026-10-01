@@ -163,21 +163,6 @@ class RolePermissionTest extends TestCase
         $response->assertDontSee('Log Sistem');
     }
 
-    public function test_dokumen_buttons_follow_permissions(): void
-    {
-        $viewer = $this->userFor($this->roleWith('admin-bappeda', ['dokumen.view']));
-
-        $this->actingAs($viewer)->get(route('dokumen.index'))
-            ->assertOk()
-            ->assertDontSee('data-bs-target="#addModal"', false);
-
-        $editor = $this->userFor($this->roleWith('admin-opd', ['dokumen.view', 'dokumen.create']));
-
-        $this->actingAs($editor)->get(route('dokumen.index'))
-            ->assertOk()
-            ->assertSee('data-bs-target="#addModal"', false);
-    }
-
     public function test_log_action_buttons_require_manage_permission(): void
     {
         $viewer = $this->userFor($this->roleWith('admin-bappeda', ['logs.view']));

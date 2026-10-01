@@ -22,7 +22,6 @@ class PermissionSeeder extends Seeder
             'categories.*',
             'project-feedbacks.*',
             'project-progress.*',
-            'dokumen.*',
             'aspirasi.*',
             'kategori-aspirasi.*',
             'opd.*',

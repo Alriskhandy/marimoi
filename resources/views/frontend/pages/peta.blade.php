@@ -158,16 +158,11 @@
                             </div>
                             <div class="guide-step hidden" data-step="7">
                                 <p>Tombol <strong><i
-                                            class="bi bi-file-earmark-arrow-down-fill border border-gray-700 p-1 text-gray-700"></i>
-                                        Download Peta</strong> memungkinkan Anda mengunduh peta.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="8">
-                                <p>Tombol <strong><i
                                             class="bi bi-arrows-fullscreen border border-gray-700 p-1 text-gray-700"></i>
                                         Fullscreen</strong> memungkinkan Anda untuk masuk dan keluar dari tampilan
                                     penuh.</p>
                             </div>
-                            <div class="guide-step hidden" data-step="9">
+                            <div class="guide-step hidden" data-step="8">
                                 <p>Tombol <strong><i
                                             class="bi bi-house-door-fill border border-gray-700 p-1 text-gray-700"></i>
                                         Home</strong>
@@ -383,46 +378,6 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Download Map -->
-                <div id="sidebar-download"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
-
-                    <!-- Header with gradient background -->
-                    <div
-                        class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
-                        <h6 class="text-white mb-0 text-sm font-semibold">Unduh Data/Informasi</h6>
-                        <button id="btn-close-sidebar-download"
-                            class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
-                            <i class="bi bi-x-lg text-white"></i>
-                        </button>
-                    </div>
-
-                    <!-- Content area -->
-                    <div id="download-content" class="ml-2 max-h-[calc(100vh-250px)] overflow-y-auto">
-                        <p class="text-sm text-black mb-3">Daftar Dokumen :</p>
-
-                        <!-- Document list -->
-                        <ul class="text-sm space-y-2">
-                            @foreach ($documents as $doc)
-                                <li>
-                                    <a href="{{ asset('storage/' . $doc->file) }}" title="{{ $doc->nama }}" download
-                                        class="text-black hover:text-blue-800 hover:underline transition-colors duration-200 flex items-center gap-2">
-                                        <i class="bi bi-file-earmark-arrow-down text-gray-700"></i>
-                                        {{ $doc->nama }}
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-
-
-                        <!-- Empty state when no documents -->
-                        <div id="empty-state" class="hidden text-center py-8">
-                            <i class="bi bi-folder2-open text-4xl text-gray-400 mb-3 block"></i>
-                            <p class="text-gray-700 text-sm">Tidak ada dokumen tersedia</p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Sidebar Control Buttons -->
                 <div id="sidebar-control-buttons"
                     class="absolute top-2.5 right-2.5 z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
@@ -457,12 +412,6 @@
                 <div id="nav-control-buttons"
                     class="absolute bottom-[30px] right-2.5 z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
                     role="group" aria-label="Navigation Control Buttons">
-
-                    <button id="btn-toggle-sidebar-download" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Unduh Data/Informasi" data-tooltip="Download Peta">
-                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                    </button>
 
                     <button id="btn-share-map" type="button"
                         class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"

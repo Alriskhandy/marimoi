@@ -10,7 +10,6 @@
         (request()->routeIs('categories.*') && request()->get('type') == 'tematik') ||
         request()->routeIs('kategori-tematik.*') ||
         (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik');
-    $isDokumenActive = request()->routeIs('dokumen.*');
     $isAspirasiMenuActive =
         request()->routeIs('aspirasi.*') || request()->routeIs('opd.*') || request()->routeIs('kategori-aspirasi.*');
     $isPublicationActive = request()->routeIs('publications.*');
@@ -80,7 +79,7 @@
             @endif
         @endcan
 
-        @if ($canPetaTematik || $canAspirasi || ($slug != 'admin-opd' && $user?->can('dokumen.view')))
+        @if ($canPetaTematik || $canAspirasi)
             <div class="nav-section-label">Master Data</div>
         @endif
 
@@ -145,14 +144,6 @@
                     @endcan
                 </div>
             </div>
-        @endif
-
-        {{-- Upload Dokumen --}}
-        @if ($slug != 'admin-opd' && Route::has('dokumen.index') && $user?->can('dokumen.view'))
-            <a class="nav-link {{ $isDokumenActive ? 'active' : '' }}" href="{{ route('dokumen.index') }}">
-                <span class="nav-icon"><i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i></span>
-                <span class="nav-text">Upload Dokumen</span>
-            </a>
         @endif
 
         {{-- Aspirasi --}}

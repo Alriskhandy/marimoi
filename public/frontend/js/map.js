@@ -2803,7 +2803,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
         legend: document.getElementById("sidebar-legend"),
-        download: document.getElementById("sidebar-download"),
         help: document.getElementById("guideModal"),
     };
 
@@ -2812,7 +2811,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
         legend: document.getElementById("btn-toggle-sidebar-legend"),
-        download: document.getElementById("btn-toggle-sidebar-download"),
         help: document.getElementById("btn-toggle-sidebar-help"),
     };
 
@@ -2828,7 +2826,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         toggleButtons.legend,
         toggleButtons.basemap,
         toggleButtons.layer,
-        toggleButtons.download,
         document.getElementById("btn-fullscreen"),
         document.getElementById("btn-default-zoom"),
     ];
@@ -2921,7 +2918,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Close sidebar buttons
-    ["layer", "basemap", "legend", "download"].forEach((type) => {
+    ["layer", "basemap", "legend"].forEach((type) => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
             closeBtn.addEventListener("click", () => {
