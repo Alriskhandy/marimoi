@@ -37,7 +37,7 @@ class AdministrativeRegionTest extends TestCase
     public function test_feature_region_id_is_set_null_when_region_deleted(): void
     {
         $region = AdministrativeRegion::create(['code_kemendagri' => '82.01', 'name' => 'Halmahera Barat', 'level' => 'kabupaten_kota']);
-        $layer = SpatialLayer::create(['slug' => 'jalan-wilayah', 'name' => 'Jalan', 'title' => 'Jalan', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-wilayah', 'name' => 'Jalan', 'title' => 'Jalan']);
 
         $feature = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
@@ -54,7 +54,7 @@ class AdministrativeRegionTest extends TestCase
 
     public function test_spatial_layer_can_cover_multiple_regions(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'jalan-lintas', 'name' => 'Jalan Lintas', 'title' => 'Jalan Lintas', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-lintas', 'name' => 'Jalan Lintas', 'title' => 'Jalan Lintas']);
         $regionA = AdministrativeRegion::create(['code_kemendagri' => '82.01', 'name' => 'Halmahera Barat', 'level' => 'kabupaten_kota']);
         $regionB = AdministrativeRegion::create(['code_kemendagri' => '82.02', 'name' => 'Halmahera Tengah', 'level' => 'kabupaten_kota']);
 

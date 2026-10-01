@@ -41,7 +41,7 @@ class AssignRegionsFromLegacyLocationTextTest extends TestCase
 
     private function makeFeatureFor(DataSpatial $ds): SpatialLayerFeature
     {
-        $layer = SpatialLayer::create(['slug' => 'layer-'.$ds->id, 'name' => 'Layer', 'title' => 'Layer', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.$ds->id, 'name' => 'Layer', 'title' => 'Layer']);
 
         return SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,

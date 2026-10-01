@@ -26,7 +26,7 @@ class SpatialLayerFeatureTest extends TestCase
         $pupr = Sector::where('code', 'pupr')->firstOrFail();
         $layer = SpatialLayer::create([
             'slug' => 'jalan-sektor', 'name' => 'Jalan', 'title' => 'Jalan',
-            'layer_class' => 'thematic', 'sector_id' => $pupr->id,
+            'sector_id' => $pupr->id,
         ]);
 
         $this->assertTrue($layer->sector->is($pupr));
@@ -35,7 +35,7 @@ class SpatialLayerFeatureTest extends TestCase
 
     public function test_feature_belongs_to_layer_and_casts_attributes_as_array(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'jalan-fitur', 'name' => 'Jalan', 'title' => 'Jalan', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-fitur', 'name' => 'Jalan', 'title' => 'Jalan']);
 
         $feature = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
@@ -49,7 +49,7 @@ class SpatialLayerFeatureTest extends TestCase
 
     public function test_intervention_links_two_features_both_directions(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'jalan-intervensi', 'name' => 'Jalan', 'title' => 'Jalan', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-intervensi', 'name' => 'Jalan', 'title' => 'Jalan']);
 
         $eksisting = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
@@ -72,7 +72,7 @@ class SpatialLayerFeatureTest extends TestCase
 
     public function test_intervention_pair_must_be_unique(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'jalan-unik', 'name' => 'Jalan', 'title' => 'Jalan', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-unik', 'name' => 'Jalan', 'title' => 'Jalan']);
         $a = SpatialLayerFeature::create(['spatial_layer_id' => $layer->id, 'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
         $b = SpatialLayerFeature::create(['spatial_layer_id' => $layer->id, 'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)')]);
 

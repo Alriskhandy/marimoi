@@ -45,7 +45,6 @@ class SpatialLayerControllerTest extends TestCase
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
             'map_type_id' => $jenis->id,
             'name' => 'Jalan Provinsi',
-            'layer_class' => 'thematic',
         ])->assertRedirect(route('spatial-layers.index'));
 
         $this->assertDatabaseHas('spatial_layers', ['name' => 'Jalan Provinsi', 'map_type_id' => $jenis->id]);
@@ -55,15 +54,14 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $level1 = SpatialLayer::create(['slug' => 'l1', 'name' => 'Level 1', 'title' => 'Level 1', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        $level2 = SpatialLayer::create(['slug' => 'l2', 'name' => 'Level 2', 'title' => 'Level 2', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $level1->id]);
-        $level3 = SpatialLayer::create(['slug' => 'l3', 'name' => 'Level 3', 'title' => 'Level 3', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $level2->id]);
+        $level1 = SpatialLayer::create(['slug' => 'l1', 'name' => 'Level 1', 'title' => 'Level 1', 'map_type_id' => $jenis->id]);
+        $level2 = SpatialLayer::create(['slug' => 'l2', 'name' => 'Level 2', 'title' => 'Level 2', 'map_type_id' => $jenis->id, 'parent_id' => $level1->id]);
+        $level3 = SpatialLayer::create(['slug' => 'l3', 'name' => 'Level 3', 'title' => 'Level 3', 'map_type_id' => $jenis->id, 'parent_id' => $level2->id]);
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
             'map_type_id' => $jenis->id,
             'parent_id' => $level3->id,
             'name' => 'Level 4',
-            'layer_class' => 'thematic',
         ])->assertRedirect(route('spatial-layers.index'));
 
         $level4 = SpatialLayer::where('name', 'Level 4')->firstOrFail();
@@ -74,13 +72,12 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'l1', 'name' => 'Layer', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'l1', 'name' => 'Layer', 'title' => 'Layer', 'map_type_id' => $jenis->id]);
 
         $this->actingAs($admin)->put(route('spatial-layers.update', $layer), [
             'map_type_id' => $jenis->id,
             'parent_id' => $layer->id,
             'name' => 'Layer',
-            'layer_class' => 'thematic',
         ])->assertSessionHasErrors('parent_id');
     }
 
@@ -88,15 +85,14 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $root = SpatialLayer::create(['slug' => 'root', 'name' => 'Root', 'title' => 'Root', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        $child = SpatialLayer::create(['slug' => 'child', 'name' => 'Child', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+        $root = SpatialLayer::create(['slug' => 'root', 'name' => 'Root', 'title' => 'Root', 'map_type_id' => $jenis->id]);
+        $child = SpatialLayer::create(['slug' => 'child', 'name' => 'Child', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
 
         // Coba jadikan root sebagai anak dari child-nya sendiri -> cycle berantai.
         $this->actingAs($admin)->put(route('spatial-layers.update', $root), [
             'map_type_id' => $jenis->id,
             'parent_id' => $child->id,
             'name' => 'Root',
-            'layer_class' => 'thematic',
         ])->assertSessionHasErrors('parent_id');
     }
 
@@ -104,8 +100,8 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $root = SpatialLayer::create(['slug' => 'root', 'name' => 'Root', 'title' => 'Root', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        SpatialLayer::create(['slug' => 'child', 'name' => 'Child', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+        $root = SpatialLayer::create(['slug' => 'root', 'name' => 'Root', 'title' => 'Root', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'child', 'name' => 'Child', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
 
         $this->actingAs($admin)->delete(route('spatial-layers.destroy', $root))->assertRedirect();
 
@@ -140,8 +136,8 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root', 'title' => 'Root', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root', 'title' => 'Root', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $root));
 
@@ -165,7 +161,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Modal Uji', 'title' => 'Layer Modal Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'color' => '#28a745', 'is_marker' => true, 'icon' => 'mdi mdi-road']);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Modal Uji', 'title' => 'Layer Modal Uji', 'map_type_id' => $jenis->id, 'color' => '#28a745', 'is_marker' => true, 'icon' => 'mdi mdi-road']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -177,7 +173,6 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('class="settings-switch-group"', false)
             ->assertSee('name="map_type_id"', false)
             ->assertSee('name="parent_id"', false)
-            ->assertSee('name="layer_class"', false)
             ->assertSee('btn-gradient-warning', false);
     }
 
@@ -185,9 +180,50 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root Tree Uji', 'title' => 'Root', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Root Tree Uji', 'title' => 'Root', 'map_type_id' => $jenis->id]);
 
         $this->actingAs($admin)->get(route('spatial-layers.index'))->assertOk()->assertSee('Root Tree Uji');
+    }
+
+    /**
+     * Regresi: "Tambah Layer" di index sekarang modal (pola sama dengan modal
+     * Tambah Kategori di categories/index.blade.php), bukan lagi link ke halaman
+     * penuh /spatial-layers/create — tombolnya membuka #addLayerModal, dan form
+     * di dalam modal itu POST langsung ke spatial-layers.store.
+     */
+    public function test_index_page_has_add_layer_modal_instead_of_create_page_link(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk()
+            ->assertSee('id="addLayerModal"', false)
+            ->assertSee('data-bs-target="#addLayerModal"', false)
+            ->assertSee('id="addLayerForm"', false)
+            ->assertSee('action="'.route('spatial-layers.store').'"', false)
+            ->assertDontSee('href="'.route('spatial-layers.create').'"', false);
+    }
+
+    /**
+     * Regresi: kalau submit modal Tambah Layer gagal validasi, halaman index
+     * harus otomatis membuka ulang modalnya (bukan diam-diam gagal tanpa ada
+     * indikasi ke user) — pola sama dengan modal edit Layer di show.blade.php.
+     */
+    public function test_index_page_reopens_add_layer_modal_after_validation_error(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->from(route('spatial-layers.index'))
+            ->post(route('spatial-layers.store'), ['name' => 'Tanpa Jenis']);
+
+        $response->assertRedirect(route('spatial-layers.index'))->assertSessionHasErrors('map_type_id');
+
+        $followUp = $this->actingAs($admin)->get(route('spatial-layers.index'));
+        $followUp->assertOk()
+            ->assertSee("document.getElementById('addLayerModal')", false)
+            ->assertSee('value="Tanpa Jenis"', false);
     }
 
     /**
@@ -199,8 +235,8 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Layer Stats Uji', 'title' => 'Layer Stats Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Stats Uji', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
+        $root = SpatialLayer::create(['slug' => 'root-'.uniqid(), 'name' => 'Layer Stats Uji', 'title' => 'Layer Stats Uji', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Stats Uji', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $root->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
@@ -220,7 +256,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kolom Uji', 'title' => 'Layer Kolom Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kolom Uji', 'title' => 'Layer Kolom Uji', 'map_type_id' => $jenis->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
@@ -236,8 +272,8 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $parent = SpatialLayer::create(['slug' => 'parent-'.uniqid(), 'name' => 'Parent Detail Uji', 'title' => 'Parent', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        $child = SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Detail Uji', 'title' => 'Child', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id, 'parent_id' => $parent->id]);
+        $parent = SpatialLayer::create(['slug' => 'parent-'.uniqid(), 'name' => 'Parent Detail Uji', 'title' => 'Parent', 'map_type_id' => $jenis->id]);
+        $child = SpatialLayer::create(['slug' => 'child-'.uniqid(), 'name' => 'Child Detail Uji', 'title' => 'Child', 'map_type_id' => $jenis->id, 'parent_id' => $parent->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $child));
 
@@ -255,7 +291,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Peta Uji', 'title' => 'Layer Peta Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Peta Uji', 'title' => 'Layer Peta Uji', 'map_type_id' => $jenis->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -277,7 +313,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Aksi Uji', 'title' => 'Layer Aksi Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Aksi Uji', 'title' => 'Layer Aksi Uji', 'map_type_id' => $jenis->id]);
         $feature = SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,
             'external_id' => 'FTR-001',
@@ -302,7 +338,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Tambah Uji', 'title' => 'Layer Tambah Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Tambah Uji', 'title' => 'Layer Tambah Uji', 'map_type_id' => $jenis->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -317,7 +353,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_user_without_permission_cannot_view_detail_page(): void
     {
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji', 'map_type_id' => $jenis->id]);
         $user = User::factory()->create(['role_id' => Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null])->id]);
 
         $this->actingAs($user)->get(route('spatial-layers.show', $layer))->assertForbidden();
@@ -327,7 +363,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kolom Gambar Uji', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Kolom Gambar Uji', 'title' => 'Layer', 'map_type_id' => $jenis->id]);
 
         $this->actingAs($admin)->get(route('spatial-layers.index'))
             ->assertOk()
@@ -342,7 +378,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Filter Uji', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Filter Uji', 'title' => 'Layer', 'map_type_id' => $jenis->id]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
@@ -365,9 +401,9 @@ class SpatialLayerControllerTest extends TestCase
         $jenis = $this->jenis();
         $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
 
-        $layerA = SpatialLayer::create(['slug' => 'layer-a-'.uniqid(), 'name' => 'Layer A', 'title' => 'Layer A', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        $layerB = SpatialLayer::create(['slug' => 'layer-b-'.uniqid(), 'name' => 'Layer B', 'title' => 'Layer B', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
-        $untouched = SpatialLayer::create(['slug' => 'layer-c-'.uniqid(), 'name' => 'Layer C', 'title' => 'Layer C', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layerA = SpatialLayer::create(['slug' => 'layer-a-'.uniqid(), 'name' => 'Layer A', 'title' => 'Layer A', 'map_type_id' => $jenis->id]);
+        $layerB = SpatialLayer::create(['slug' => 'layer-b-'.uniqid(), 'name' => 'Layer B', 'title' => 'Layer B', 'map_type_id' => $jenis->id]);
+        $untouched = SpatialLayer::create(['slug' => 'layer-c-'.uniqid(), 'name' => 'Layer C', 'title' => 'Layer C', 'map_type_id' => $jenis->id]);
 
         $response = $this->actingAs($admin)->put(route('spatial-layers.bulk-update-map-type'), [
             'ids' => [$layerA->id, $layerB->id],
@@ -394,7 +430,7 @@ class SpatialLayerControllerTest extends TestCase
     {
         $jenis = $this->jenis();
         $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Permission Uji', 'title' => 'Layer', 'layer_class' => 'thematic', 'map_type_id' => $jenis->id]);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Permission Uji', 'title' => 'Layer', 'map_type_id' => $jenis->id]);
 
         $role = Role::create(['name' => 'Viewer Layer', 'slug' => 'viewer-layer', 'description' => null]);
         $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.view', 'guard_name' => 'web']));

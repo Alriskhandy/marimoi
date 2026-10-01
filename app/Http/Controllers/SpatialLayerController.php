@@ -6,7 +6,6 @@ use App\Models\MapType;
 use App\Models\SpatialLayer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -21,8 +20,9 @@ class SpatialLayerController extends Controller
         $layers = SpatialLayer::with('mapType')->withCount(['children', 'features'])->orderBy('name')->get();
         $roots = $layers->whereNull('parent_id')->values();
         $mapTypes = MapType::active()->orderBy('nama')->get();
+        $parentOptions = SpatialLayer::orderBy('name')->get(['id', 'name']);
 
-        return view('backend.pages.spatial-layers.index', compact('layers', 'roots', 'mapTypes'));
+        return view('backend.pages.spatial-layers.index', compact('layers', 'roots', 'mapTypes', 'parentOptions'));
     }
 
     public function create()
@@ -111,7 +111,6 @@ class SpatialLayerController extends Controller
             'name' => 'required|string|max:255',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'layer_class' => ['required', Rule::in(['thematic', 'development'])],
             'color' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
             'opacity' => 'nullable|numeric|min:0|max:1',

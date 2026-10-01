@@ -61,7 +61,7 @@ class ReconcileSpatialLayersBackfill extends Command
     {
         DB::statement("
             INSERT INTO spatial_layers
-                (public_id, slug, name, title, description, layer_class, map_type_id,
+                (public_id, slug, name, title, description, map_type_id,
                  owner_user_id, visibility, is_active, is_group,
                  legacy_category_id, created_at, updated_at)
             SELECT
@@ -70,7 +70,6 @@ class ReconcileSpatialLayersBackfill extends Command
                 c.nama,
                 c.nama,
                 c.deskripsi,
-                CASE WHEN c.type = 'tematik' THEN 'thematic' ELSE 'development' END,
                 mt.id,
                 c.user_id,
                 'private',

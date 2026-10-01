@@ -42,7 +42,6 @@ class SpatialLayerFeatureControllerTest extends TestCase
             'slug' => 'layer-'.uniqid(),
             'name' => 'Layer Uji',
             'title' => 'Layer Uji',
-            'layer_class' => 'thematic',
             'map_type_id' => $jenis->id,
         ], $overrides));
     }

@@ -31,13 +31,6 @@
         </select>
         @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
-    <div class="col-md-6 mb-3">
-        <label class="form-label">Kelas Layer</label>
-        <select name="layer_class" class="form-select" required>
-            <option value="thematic" @selected(old('layer_class', $layer?->layer_class ?? 'thematic') === 'thematic')>Thematic</option>
-            <option value="development" @selected(old('layer_class', $layer?->layer_class) === 'development')>Development</option>
-        </select>
-    </div>
 </div>
 
 <div class="mb-3">

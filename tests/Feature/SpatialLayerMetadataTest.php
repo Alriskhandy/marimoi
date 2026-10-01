@@ -33,7 +33,7 @@ class SpatialLayerMetadataTest extends TestCase
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
         SpatialLayer::create([
             'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'layer_class' => 'thematic', 'legacy_category_id' => $category->id,
+            'legacy_category_id' => $category->id,
         ]);
 
         $this->actingAs($admin)->get(route('categories.metadata.edit', $category->id))->assertOk();
@@ -55,7 +55,7 @@ class SpatialLayerMetadataTest extends TestCase
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
         $layer = SpatialLayer::create([
             'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'layer_class' => 'thematic', 'legacy_category_id' => $category->id,
+            'legacy_category_id' => $category->id,
         ]);
 
         $this->actingAs($admin)->put(route('categories.metadata.update', $category->id), [
@@ -81,7 +81,7 @@ class SpatialLayerMetadataTest extends TestCase
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
         $layer = SpatialLayer::create([
             'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'layer_class' => 'thematic', 'legacy_category_id' => $category->id,
+            'legacy_category_id' => $category->id,
         ]);
         SpatialLayerMetadata::create(['spatial_layer_id' => $layer->id, 'source_name' => 'Sumber Awal', 'license' => 'CC-BY-4.0']);
 

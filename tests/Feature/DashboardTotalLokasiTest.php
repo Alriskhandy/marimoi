@@ -34,7 +34,7 @@ class DashboardTotalLokasiTest extends TestCase
 
     private function makeFeature(?int $createdBy = null): SpatialLayerFeature
     {
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer', 'title' => 'Layer', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer', 'title' => 'Layer']);
 
         return SpatialLayerFeature::create([
             'spatial_layer_id' => $layer->id,

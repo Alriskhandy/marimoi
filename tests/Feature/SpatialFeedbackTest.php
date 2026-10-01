@@ -21,7 +21,7 @@ class SpatialFeedbackTest extends TestCase
 
     private function layer(): SpatialLayer
     {
-        return SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji', 'layer_class' => 'thematic']);
+        return SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji']);
     }
 
     private function feature(SpatialLayer $layer): SpatialLayerFeature

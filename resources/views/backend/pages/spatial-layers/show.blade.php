@@ -63,10 +63,6 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th>Kelas Layer</th>
-                                <td>{{ ucfirst($layer->layer_class) }}</td>
-                            </tr>
-                            <tr>
                                 <th>Style</th>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
@@ -275,37 +271,7 @@
                                     @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
                                 </div>
 
-                                <div class="form-group mb-2">
-                                    <label for="layer_edit_layer_class" class="form-label">Kelas Layer <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="layer_edit_layer_class" name="layer_class" required>
-                                        <option value="thematic" @selected(old('layer_class', $layer->layer_class) === 'thematic')>Thematic</option>
-                                        <option value="development" @selected(old('layer_class', $layer->layer_class) === 'development')>Development</option>
-                                    </select>
-                                    @error('layer_class') <div class="text-danger small">{{ $message }}</div> @enderror
-                                </div>
-
-                                <div class="form-group mb-0">
-                                    <label class="form-label d-block">Status & Jenis Layer</label>
-                                    <div class="settings-switch-group">
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_active" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_active" name="is_active" @checked(old('is_active', $layer->is_active))>
-                                            <label class="form-check-label" for="layer_edit_is_active">
-                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Layer
-                                            </label>
-                                        </div>
-
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_marker" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_marker" name="is_marker" @checked(old('is_marker', $layer->is_marker))>
-                                            <label class="form-check-label" for="layer_edit_is_marker">
-                                                <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </div>
 
                             <!-- RIGHT COLUMN -->
@@ -341,6 +307,29 @@
                                     <input type="number" class="form-control" id="layer_edit_opacity" name="opacity"
                                         step="0.1" min="0" max="1" value="{{ old('opacity', $layer->opacity ?? 1) }}">
                                     @error('opacity') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="form-group mb-0">
+                                    <label class="form-label d-block">Status & Jenis Layer</label>
+                                    <div class="settings-switch-group">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_active" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_edit_is_active" name="is_active" @checked(old('is_active', $layer->is_active))>
+                                            <label class="form-check-label" for="layer_edit_is_active">
+                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Layer
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_marker" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_edit_is_marker" name="is_marker" @checked(old('is_marker', $layer->is_marker))>
+                                            <label class="form-check-label" for="layer_edit_is_marker">
+                                                <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

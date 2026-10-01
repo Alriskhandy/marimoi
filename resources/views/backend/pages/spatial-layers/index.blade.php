@@ -92,9 +92,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="card-title">Daftar Layer</h4>
-                        <a href="{{ route('spatial-layers.create') }}" class="btn btn-gradient-primary">
-                            <i class="mdi mdi-plus"></i> Tambah Layer
-                        </a>
+                        @can('spatial-layers.create')
+                            <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
+                                data-bs-target="#addLayerModal">
+                                <i class="mdi mdi-plus"></i> Tambah Layer
+                            </button>
+                        @endcan
                     </div>
 
                     <div class="row mb-4 g-3 align-items-end">
@@ -272,9 +275,12 @@
                                             <i class="mdi mdi-layers-outline mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada Layer yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Layer" untuk memulai</p>
-                                            <a href="{{ route('spatial-layers.create') }}" class="btn btn-primary">
-                                                <i class="mdi mdi-plus"></i> Tambah Layer Pertama
-                                            </a>
+                                            @can('spatial-layers.create')
+                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                    data-bs-target="#addLayerModal">
+                                                    <i class="mdi mdi-plus"></i> Tambah Layer Pertama
+                                                </button>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endif
@@ -329,6 +335,169 @@
         <div id="bulkMapTypeIds"></div>
         <input type="hidden" name="map_type_id" id="bulkMapTypeSelectInput">
     </form>
+
+    <!-- Tambah Layer Modal (pola sama dengan modal edit Layer di spatial-layers/show.blade.php
+         dan modal tambah Kategori di categories/index.blade.php) -->
+    <div class="modal fade" id="addLayerModal" tabindex="-1" aria-labelledby="addLayerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addLayerModalLabel">
+                        <i class="mdi mdi-plus"></i> Tambah Layer
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form id="addLayerForm" method="POST" action="{{ route('spatial-layers.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- LEFT COLUMN -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_map_type_id" class="form-label">Jenis <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="layer_add_map_type_id" name="map_type_id" required>
+                                        <option value="">-- Pilih Jenis --</option>
+                                        @foreach ($mapTypes as $mapType)
+                                            <option value="{{ $mapType->id }}" @selected(old('map_type_id') == $mapType->id)>{{ $mapType->nama }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('map_type_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_name" class="form-label">Nama Layer <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="layer_add_name" name="name" value="{{ old('name') }}" required>
+                                    @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_description" class="form-label">Deskripsi</label>
+                                    <textarea class="form-control" id="layer_add_description" name="description" rows="2">{{ old('description') }}</textarea>
+                                    @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_parent_id" class="form-label">Layer Induk</label>
+                                    <select class="form-control" id="layer_add_parent_id" name="parent_id">
+                                        <option value="">-- Tidak ada (jadi akar) --</option>
+                                        @foreach ($parentOptions as $option)
+                                            <option value="{{ $option->id }}" @selected(old('parent_id') == $option->id)>{{ $option->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                            </div>
+
+                            <!-- RIGHT COLUMN -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_warna" class="form-label">Warna</label>
+                                    <div class="color-picker-widget">
+                                        <div class="color-swatch-list" id="layer_add_colorSwatches">
+                                            <button type="button" class="color-swatch" data-color="#007bff" style="background-color:#007bff" title="#007bff"></button>
+                                            <button type="button" class="color-swatch" data-color="#28a745" style="background-color:#28a745" title="#28a745"></button>
+                                            <button type="button" class="color-swatch" data-color="#dc3545" style="background-color:#dc3545" title="#dc3545"></button>
+                                            <button type="button" class="color-swatch" data-color="#ffc107" style="background-color:#ffc107" title="#ffc107"></button>
+                                            <button type="button" class="color-swatch" data-color="#17a2b8" style="background-color:#17a2b8" title="#17a2b8"></button>
+                                            <button type="button" class="color-swatch" data-color="#6f42c1" style="background-color:#6f42c1" title="#6f42c1"></button>
+                                            <button type="button" class="color-swatch" data-color="#fd7e14" style="background-color:#fd7e14" title="#fd7e14"></button>
+                                            <button type="button" class="color-swatch" data-color="#20c997" style="background-color:#20c997" title="#20c997"></button>
+                                            <button type="button" class="color-swatch" data-color="#6c757d" style="background-color:#6c757d" title="#6c757d"></button>
+                                            <button type="button" class="color-swatch" data-color="#212529" style="background-color:#212529" title="#212529"></button>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color"
+                                                id="layer_add_warna" name="color" value="{{ old('color', '#007bff') }}">
+                                            <input type="text" class="form-control text-uppercase" id="layer_add_warnaHex"
+                                                maxlength="7" placeholder="#RRGGBB" autocomplete="off"
+                                                value="{{ strtoupper(old('color', '#007bff')) }}">
+                                        </div>
+                                        @error('color') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_add_opacity" class="form-label">Opacity</label>
+                                    <input type="number" class="form-control" id="layer_add_opacity" name="opacity"
+                                        step="0.1" min="0" max="1" value="{{ old('opacity', 1) }}">
+                                    @error('opacity') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="form-group mb-0">
+                                    <label class="form-label d-block">Status & Jenis Layer</label>
+                                    <div class="settings-switch-group">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_active" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_add_is_active" name="is_active" @checked(old('is_active', true))>
+                                            <label class="form-check-label" for="layer_add_is_active">
+                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Layer
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_marker" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_add_is_marker" name="is_marker" @checked(old('is_marker'))>
+                                            <label class="form-check-label" for="layer_add_is_marker">
+                                                <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ICON MARKER PICKER (1 column, full width) -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group mb-0" id="layer_add_iconContainer" style="display: none;">
+                                    <label class="form-label">
+                                        <i class="mdi mdi-map-marker me-1"></i> Ikon Marker
+                                    </label>
+
+                                    <!-- Hidden select acts as the source of truth & data source for the picker -->
+                                    <select id="layer_add_icon" name="icon" class="d-none">
+                                        <option value="">-- Pilih Ikon --</option>
+                                        @include('backend.partials.icon-options')
+                                    </select>
+
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-7">
+                                            <div class="icon-picker-search h-100">
+                                                <div class="input-group input-group-sm h-100">
+                                                    <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+                                                    <input type="text" class="form-control" id="layer_add_iconSearch"
+                                                        placeholder="Cari ikon berdasarkan nama atau class...">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div id="layer_add_iconPreview" class="icon-preview-container icon-preview-inline">
+                                                <span class="text-muted">Pilih ikon untuk melihat pratinjau</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="icon-picker-grid" id="layer_add_iconGrid"></div>
+
+                                    <div class="form-text">Ikon hanya berlaku untuk Layer bertipe marker. Klik salah satu ikon di atas untuk memilih.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-gradient-primary">
+                            <i class="mdi mdi-content-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('styles')
@@ -489,6 +658,252 @@
 
         .hierarchy-toggle.text-primary {
             color: #6c757d !important;
+        }
+
+        /* ===========================================
+           ICON & COLOR PICKER — modal Tambah Layer, disamakan dengan modal edit
+           Layer di spatial-layers/show.blade.php (prefix "layer_add_" di sini).
+           =========================================== */
+        .icon-picker-grid {
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+
+        .icon-picker-group-title {
+            margin: 12px 0 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9aa4af;
+        }
+
+        .icon-picker-group-title:first-child {
+            margin-top: 0;
+        }
+
+        .icon-picker-items {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        @media (max-width: 576px) {
+            .icon-picker-items {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .icon-picker-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 4px;
+            padding: 10px 4px;
+            border: 1px solid #eef2f7;
+            border-radius: 6px;
+            background: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .icon-picker-item:hover {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.06);
+        }
+
+        .icon-picker-item.active {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.12);
+            box-shadow: 0 0 0 1px #007bff inset;
+        }
+
+        .icon-picker-glyph {
+            font-size: 1.9rem;
+            line-height: 1;
+            color: #495057;
+        }
+
+        .icon-picker-item.active .icon-picker-glyph {
+            color: #007bff;
+        }
+
+        .icon-picker-name {
+            display: -webkit-box;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #343a40;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .icon-picker-class {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.58rem;
+            color: #868e96;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .icon-picker-empty {
+            padding: 20px 0;
+            color: #adb5bd;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .color-picker-widget {
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .color-swatch-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 0.65rem;
+        }
+
+        .color-swatch {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #dee2e6;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.12);
+        }
+
+        .color-swatch.active {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+        }
+
+        .color-picker-widget .input-group .form-control-color {
+            max-width: 50px;
+        }
+
+        .settings-switch-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            padding: 0.65rem 0.85rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .settings-switch-group .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 0;
+            margin: 0;
+            min-height: auto;
+        }
+
+        .settings-switch-group .form-check-input {
+            flex-shrink: 0;
+            float: none;
+            margin: 0;
+        }
+
+        .settings-switch-group .form-check-label {
+            margin: 0;
+        }
+
+        .icon-preview-container {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .icon-preview-container.has-icon {
+            background-color: #fff;
+            border-color: #007bff;
+            border-style: solid;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        }
+
+        .icon-preview-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .icon-preview-icon {
+            font-size: 2.5em;
+            margin-right: 15px;
+            color: #007bff;
+        }
+
+        .icon-preview-details h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .icon-preview-details small {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+
+        .icon-preview-code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            color: #d63384;
+        }
+
+        .icon-preview-inline {
+            min-height: 31px;
+            padding: 4px 10px;
+        }
+
+        .icon-preview-inline span.text-muted {
+            font-size: 0.72rem;
+        }
+
+        .icon-preview-inline .icon-preview-icon {
+            font-size: 1.4em;
+            margin-right: 8px;
+        }
+
+        .icon-preview-inline .icon-preview-details h6 {
+            display: none;
+        }
+
+        .icon-preview-inline .icon-preview-details small {
+            font-size: 0.72em;
+        }
+
+        .icon-preview-inline .icon-preview-code {
+            font-size: 0.68em;
+            padding: 1px 4px;
         }
     </style>
 @endpush
@@ -757,6 +1172,188 @@
             document.getElementById('bulkMapTypeSelectInput').value = select.value;
 
             document.getElementById('bulkMapTypeForm').submit();
+        });
+    </script>
+
+    <script>
+        /**
+         * Icon-picker & color-picker modal Tambah Layer — pola & markup sama persis
+         * dengan modal edit Layer di spatial-layers/show.blade.php (prefix "layer_edit_"
+         * di sana, "layer_add_" di sini), yang pada gilirannya disamakan dengan modal
+         * Kategori di categories/index.blade.php.
+         */
+        $(function () {
+            const prefix = 'layer_add';
+
+            function updateIconPreview(iconClass, colorValue) {
+                const $previewElement = $(`#${prefix}_iconPreview`);
+
+                if (iconClass && iconClass.trim()) {
+                    const iconHtml = `
+                        <div class="icon-preview-content">
+                            <i class="${iconClass} icon-preview-icon" style="color: ${colorValue}; font-size: 2.5em;"></i>
+                            <div class="icon-preview-details">
+                                <h6>Icon Preview</h6>
+                                <small>Class: <span class="icon-preview-code">${iconClass}</span></small>
+                            </div>
+                        </div>
+                    `;
+                    $previewElement.html(iconHtml).addClass('has-icon');
+                } else {
+                    $previewElement.html('<span class="text-muted">Pilih ikon untuk melihat pratinjau</span>')
+                        .removeClass('has-icon');
+                }
+            }
+
+            function appendIconItem($container, $option) {
+                const value = $option.val();
+                const label = $option.text().trim();
+                const searchText = (label + ' ' + value).toLowerCase();
+
+                $container.append(`
+                    <div class="icon-picker-item" data-icon-value="${value}" data-search="${searchText}">
+                        <i class="${value} icon-picker-glyph"></i>
+                        <span class="icon-picker-name">${label}</span>
+                        <code class="icon-picker-class">${value}</code>
+                    </div>
+                `);
+            }
+
+            function buildIconPicker(selectId, gridId) {
+                const $select = $(selectId);
+                const $grid = $(gridId);
+                $grid.empty();
+
+                let $itemsWrap = null;
+
+                $select.children('option, optgroup').each(function () {
+                    if (this.tagName === 'OPTGROUP') {
+                        $grid.append(`<div class="icon-picker-group-title">${$(this).attr('label')}</div>`);
+                        $itemsWrap = $('<div class="icon-picker-items"></div>');
+                        $grid.append($itemsWrap);
+                        $(this).children('option').each(function () {
+                            appendIconItem($itemsWrap, $(this));
+                        });
+                    } else {
+                        const value = $(this).val();
+                        if (!value) return;
+                        if (!$itemsWrap) {
+                            $itemsWrap = $('<div class="icon-picker-items"></div>');
+                            $grid.append($itemsWrap);
+                        }
+                        appendIconItem($itemsWrap, $(this));
+                    }
+                });
+
+                if ($grid.find('.icon-picker-item').length === 0) {
+                    $grid.html('<div class="icon-picker-empty">Tidak ada ikon tersedia</div>');
+                }
+            }
+
+            function applyColor(newColor) {
+                $(`#${prefix}_warna`).val(newColor);
+                $(`#${prefix}_warnaHex`).val(newColor.toUpperCase());
+                $(`#${prefix}_colorSwatches .color-swatch`).removeClass('active');
+                $(`#${prefix}_colorSwatches .color-swatch[data-color="${newColor.toLowerCase()}"]`).addClass('active');
+
+                const iconElement = $(`#${prefix}_iconPreview .icon-preview-icon`);
+                if (iconElement.length) {
+                    iconElement.css('color', newColor);
+                }
+            }
+
+            buildIconPicker(`#${prefix}_icon`, `#${prefix}_iconGrid`);
+
+            $(document).on('click', `#${prefix}_iconGrid .icon-picker-item`, function () {
+                const iconValue = $(this).data('icon-value');
+                $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active');
+                $(this).addClass('active');
+                $(`#${prefix}_icon`).val(iconValue).trigger('change');
+            });
+
+            $(document).on('input', `#${prefix}_iconSearch`, function () {
+                const $grid = $(`#${prefix}_iconGrid`);
+                const query = $(this).val().trim().toLowerCase();
+
+                $grid.find('.icon-picker-item').each(function () {
+                    const matches = !query || $(this).data('search').toString().includes(query);
+                    $(this).toggle(matches);
+                });
+
+                $grid.find('.icon-picker-items').each(function () {
+                    const hasVisible = $(this).find('.icon-picker-item:visible').length > 0;
+                    $(this).toggle(hasVisible);
+                    $(this).prev('.icon-picker-group-title').toggle(hasVisible);
+                });
+            });
+
+            $(`#${prefix}_icon`).on('change', function () {
+                const colorValue = $(`#${prefix}_warna`).val() || '#007bff';
+                updateIconPreview($(this).val(), colorValue);
+            });
+
+            $(`#${prefix}_warna`).on('change input', function () {
+                applyColor($(this).val());
+            });
+
+            $(`#${prefix}_warnaHex`).on('input', function () {
+                let value = $(this).val().trim();
+                if (value && value[0] !== '#') {
+                    value = '#' + value;
+                }
+                $(this).val(value.toUpperCase());
+
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    applyColor(value);
+                }
+            });
+
+            $(document).on('click', `#${prefix}_colorSwatches .color-swatch`, function () {
+                applyColor($(this).data('color'));
+            });
+
+            $(`#${prefix}_is_marker`).on('change', function () {
+                if ($(this).is(':checked')) {
+                    $(`#${prefix}_iconContainer`).slideDown(300);
+                } else {
+                    $(`#${prefix}_iconContainer`).slideUp(300);
+                    $(`#${prefix}_icon`).val('');
+                    updateIconPreview('', '#007bff');
+                    $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active').show();
+                    $(`#${prefix}_iconGrid .icon-picker-items, #${prefix}_iconGrid .icon-picker-group-title`).show();
+                    $(`#${prefix}_iconSearch`).val('');
+                }
+            });
+
+            // Reset form tiap kali modal "Tambah Layer" dibuka (beda dari modal edit
+            // yang selalu pra-isi data Layer tertentu — di sini harus mulai kosong
+            // supaya tidak membawa sisa input percobaan sebelumnya).
+            $(`#addLayerModal`).on('show.bs.modal', function () {
+                if (document.querySelector('#addLayerForm [name=name]').value) {
+                    // Ada old-input (submit sebelumnya gagal validasi) — biarkan terisi
+                    // supaya user tidak perlu mengetik ulang, cukup sinkronkan picker-nya.
+                } else {
+                    $(`#${prefix}_iconContainer`).hide();
+                    $(`#${prefix}_iconGrid .icon-picker-item`).removeClass('active').show();
+                    $(`#${prefix}_iconSearch`).val('');
+                }
+
+                const initialColor = ($(`#${prefix}_warna`).val() || '#007bff');
+                applyColor(initialColor);
+
+                if ($(`#${prefix}_is_marker`).is(':checked')) {
+                    $(`#${prefix}_iconContainer`).show();
+                    updateIconPreview($(`#${prefix}_icon`).val(), initialColor);
+                    $(`#${prefix}_iconGrid .icon-picker-item[data-icon-value="${$(`#${prefix}_icon`).val()}"]`).addClass('active');
+                }
+            });
+
+            @if ($errors->any() && old('name') !== null)
+                const addLayerModalEl = document.getElementById('addLayerModal');
+                if (addLayerModalEl && window.bootstrap) {
+                    bootstrap.Modal.getOrCreateInstance(addLayerModalEl).show();
+                }
+            @endif
         });
     </script>
 @endpush

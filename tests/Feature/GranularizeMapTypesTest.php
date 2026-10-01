@@ -21,7 +21,6 @@ class GranularizeMapTypesTest extends TestCase
             'slug' => 'layer-'.uniqid(),
             'name' => 'Layer Uji',
             'title' => 'Layer Uji',
-            'layer_class' => 'thematic',
         ], $overrides));
     }
 

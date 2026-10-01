@@ -27,7 +27,6 @@ class SpatialLayerTest extends TestCase
             'slug' => 'jalan-uji',
             'name' => 'Jalan Uji',
             'title' => 'Jalan Uji',
-            'layer_class' => 'thematic',
             'map_type_id' => $tematik->id,
         ]);
 
@@ -37,8 +36,8 @@ class SpatialLayerTest extends TestCase
 
     public function test_selectable_scope_excludes_group_layers(): void
     {
-        SpatialLayer::create(['slug' => 'kelompok-a', 'name' => 'Kelompok A', 'title' => 'Kelompok A', 'layer_class' => 'thematic', 'is_group' => true]);
-        $layer = SpatialLayer::create(['slug' => 'jalan-b', 'name' => 'Jalan B', 'title' => 'Jalan B', 'layer_class' => 'thematic', 'is_group' => false]);
+        SpatialLayer::create(['slug' => 'kelompok-a', 'name' => 'Kelompok A', 'title' => 'Kelompok A', 'is_group' => true]);
+        $layer = SpatialLayer::create(['slug' => 'jalan-b', 'name' => 'Jalan B', 'title' => 'Jalan B', 'is_group' => false]);
 
         $selectable = SpatialLayer::selectable()->pluck('slug');
 
@@ -49,8 +48,8 @@ class SpatialLayerTest extends TestCase
 
     public function test_parent_child_hierarchy_relation(): void
     {
-        $parent = SpatialLayer::create(['slug' => 'induk', 'name' => 'Induk', 'title' => 'Induk', 'layer_class' => 'thematic', 'is_group' => true]);
-        $child = SpatialLayer::create(['slug' => 'anak', 'name' => 'Anak', 'title' => 'Anak', 'layer_class' => 'thematic', 'parent_id' => $parent->id]);
+        $parent = SpatialLayer::create(['slug' => 'induk', 'name' => 'Induk', 'title' => 'Induk', 'is_group' => true]);
+        $child = SpatialLayer::create(['slug' => 'anak', 'name' => 'Anak', 'title' => 'Anak', 'parent_id' => $parent->id]);
 
         $this->assertTrue($child->parent->is($parent));
         $this->assertTrue($parent->children->pluck('id')->contains($child->id));
@@ -62,7 +61,6 @@ class SpatialLayerTest extends TestCase
             'slug' => 'jalan-skema',
             'name' => 'Jalan Skema',
             'title' => 'Jalan Skema',
-            'layer_class' => 'thematic',
             'atribut_schema' => [
                 'version' => 1,
                 'fields' => [
@@ -80,14 +78,14 @@ class SpatialLayerTest extends TestCase
 
     public function test_layer_without_atribut_schema_has_no_dynamic_rules(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'freeform', 'name' => 'Freeform', 'title' => 'Freeform', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'freeform', 'name' => 'Freeform', 'title' => 'Freeform']);
 
         $this->assertSame([], $layer->atributValidationRules());
     }
 
     public function test_spatial_layer_metadata_is_one_to_one(): void
     {
-        $layer = SpatialLayer::create(['slug' => 'jalan-meta', 'name' => 'Jalan Meta', 'title' => 'Jalan Meta', 'layer_class' => 'thematic']);
+        $layer = SpatialLayer::create(['slug' => 'jalan-meta', 'name' => 'Jalan Meta', 'title' => 'Jalan Meta']);
 
         SpatialLayerMetadata::create([
             'spatial_layer_id' => $layer->id,

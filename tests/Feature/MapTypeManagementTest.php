@@ -360,7 +360,7 @@ class MapTypeManagementTest extends TestCase
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
-        SpatialLayer::create(['slug' => 'jalan', 'name' => 'Jalan', 'title' => 'Jalan', 'layer_class' => 'thematic', 'map_type_id' => $mapType->id]);
+        SpatialLayer::create(['slug' => 'jalan', 'name' => 'Jalan', 'title' => 'Jalan', 'map_type_id' => $mapType->id]);
 
         $this->actingAs($admin)
             ->delete(route('map-types.destroy', $mapType))

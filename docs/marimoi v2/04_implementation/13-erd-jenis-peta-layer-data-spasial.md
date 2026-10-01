@@ -98,7 +98,6 @@ erDiagram
         string slug UK
         string name
         string title
-        string layer_class
         string source_type
         bigint map_type_id FK
         bigint sector_id FK
@@ -298,7 +297,6 @@ Soft-delete aktif. Model: `App\Models\SpatialLayer`.
 | `name` | varchar(255) | tidak | Nama internal/teknis. |
 | `title` | varchar(255) | tidak | Judul tampil (bisa beda dari `name`). |
 | `description` | text | ya | |
-| `layer_class` | varchar(30) | tidak | `thematic` atau `development` (lihat `Rule::in` di controller). |
 | `source_type` | varchar(50), default `feature` | tidak | Sumber data Layer. |
 | `legacy_category_id` | bigint FK → `categories.id` (`set null`) | ya | Jejak migrasi dari `categories` lama — bukan relasi fungsional aktif. |
 | `map_type_id` | bigint FK → `map_types.id` (`set null`) | ya | Jenis Peta Layer ini. Nullable di DB (data lama hasil backfill bisa kosong) meski form create/edit mewajibkannya. |
@@ -530,3 +528,8 @@ rencana retirement penuhnya.
 6. **Fitur "Kelola Peta" (tabel `maps`, `map_layers`, dst.) sudah dihapus**
    (2026-10-01) — bukan bagian dari skema ini. Lihat riwayat commit terkait
    penghapusan menu "Kelola Peta".
+7. **`spatial_layers.layer_class` sudah dihapus** (2026-10-01). Rancangan awal
+   memaksudkannya sebagai klasifikasi stabil lintas fitur (dashboard, routing,
+   policy — lihat `db-schema-v2.md`), tapi tidak pernah benar-benar dibaca/
+   difilter oleh controller manapun — murni kolom wajib diisi tanpa konsumen.
+   Dihapus lewat migrasi `drop_layer_class_from_spatial_layers_table`.

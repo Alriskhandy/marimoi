@@ -30,7 +30,7 @@ class SpatialFeedbackControllerTest extends TestCase
 
     private function layer(): SpatialLayer
     {
-        return SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji', 'layer_class' => 'thematic']);
+        return SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji']);
     }
 
     public function test_public_can_submit_feedback_for_a_layer_without_auth(): void
