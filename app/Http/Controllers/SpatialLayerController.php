@@ -40,7 +40,7 @@ class SpatialLayerController extends Controller
      */
     public function show(SpatialLayer $spatialLayer)
     {
-        $spatialLayer->load(['mapType.opdPenanggungJawab', 'parent', 'children', 'features.region']);
+        $spatialLayer->load(['mapType', 'parent', 'children', 'features.region']);
         $mapTypes = MapType::active()->get();
         $parentOptions = SpatialLayer::where('id', '!=', $spatialLayer->id)->orderBy('name')->get(['id', 'name']);
 

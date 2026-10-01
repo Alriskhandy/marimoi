@@ -60,6 +60,24 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ));
     }
 
+    /**
+     * sumber_data/opd_penanggung_jawab/tanggal_data dipasang otomatis & wajib ke
+     * SETIAP Jenis Peta (lihat MapTypeController::syncCoreAttributes(), migrasi
+     * move_map_type_core_attributes_to_metadata_definitions) — jadi tiap kali
+     * membuat/mengubah Data Spasial, 3 field metadata_dinamis ini wajib diisi
+     * terlepas dari atribut tambahan apa pun yang dikonfigurasi di Jenisnya.
+     *
+     * @return array<string, string>
+     */
+    private function coreMetadataDinamis(): array
+    {
+        return [
+            'sumber_data' => 'Dinas Uji',
+            'opd_penanggung_jawab' => 'Dinas Uji',
+            'tanggal_data' => '2026-01-01',
+        ];
+    }
+
     public function test_admin_can_create_a_feature_with_wkt_geometry(): void
     {
         $admin = $this->admin();
@@ -67,6 +85,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
@@ -91,6 +110,7 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
@@ -109,11 +129,11 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->put(route('spatial-layers.features.update', [$layer, $feature]), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
-            'metadata_dinamis' => ['pagu' => '5000000'],
+            'metadata_dinamis' => $this->coreMetadataDinamis() + ['pagu' => '5000000'],
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $feature->refresh();
-        $this->assertSame(['pagu' => '5000000'], $feature->metadata_dinamis);
+        $this->assertEqualsCanonicalizing($this->coreMetadataDinamis() + ['pagu' => '5000000'], $feature->metadata_dinamis);
         $this->assertSame(['KODE_ASLI' => 'ABC123'], $feature->attributes);
     }
 
@@ -140,13 +160,27 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ])->assertSessionHasErrors('metadata_dinamis.status_progres');
     }
 
-    public function test_jenis_without_active_dynamic_attributes_requires_no_extra_field(): void
+    /**
+     * Regresi: Jenis TANPA atribut tambahan yang dikonfigurasi manual tetap
+     * mewajibkan 3 field metadata_dinamis inti (otomatis terpasang ke semua
+     * Jenis) — bukan berarti "tidak ada field wajib sama sekali".
+     */
+    public function test_jenis_without_custom_dynamic_attributes_still_requires_core_fields(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'geometry_wkt' => 'POINT(127.5 0.8)',
+        ])->assertSessionHasErrors([
+            'metadata_dinamis.sumber_data',
+            'metadata_dinamis.opd_penanggung_jawab',
+            'metadata_dinamis.tanggal_data',
+        ]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
+            'geometry_wkt' => 'POINT(127.5 0.8)',
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());

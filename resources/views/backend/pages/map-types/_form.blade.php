@@ -4,6 +4,7 @@
     // Disiapkan sebagai array PHP biasa di sini (bukan langsung di dalam @json()
     // multi-baris) — direktif @json() Blade tidak menangani argumen array literal
     // multi-baris dengan banyak koma dengan benar (hasil kompilasinya terpotong).
+    $coreAttributeCodes = \App\Http\Controllers\MapTypeController::CORE_ATTRIBUTE_CODES;
     $existingAttributesForJs = $existingAttributes->map(
         fn($a) => [
             'metadata_definition_id' => $a->metadata_definition_id,
@@ -13,6 +14,7 @@
             'data_type' => $a->metadataDefinition->data_type,
             'is_system' => $a->metadataDefinition->is_system,
             'is_wajib' => $a->is_wajib,
+            'is_core' => in_array($a->metadataDefinition->kode, $coreAttributeCodes, true),
         ],
     );
 @endphp
@@ -37,7 +39,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="mdi mdi-lock-outline"></i></span>
                         <input type="text" name="slug" id="map_type_slug" class="form-control" readonly
-                            value="{{ old('slug', $mapType?->slug) }}" pattern="[a-z0-9_]+" required>
+                            value="{{ old('slug', $mapType?->slug) }}" pattern="[a-z0-9_]+" required disabled>
                     </div>
                     @error('slug')
                         <div class="text-danger small">{{ $message }}</div>
@@ -95,6 +97,13 @@
     </div>
     <div class="form-section-body">
 
+        <p class="text-muted small mb-2">
+            <i class="mdi mdi-information-outline"></i>
+            <strong>Sumber Data</strong>, <strong>OPD Penanggung Jawab</strong>, dan
+            <strong>Tahun/Tanggal Data</strong> otomatis terpasang sebagai atribut wajib
+            untuk setiap Jenis Peta (tampil di tabel setelah Jenis ini disimpan).
+        </p>
+
         <div class="row g-2 align-items-center mb-2">
             <div class="col-sm-6">
                 <div class="input-group input-group-sm">
@@ -124,66 +133,6 @@
                         <th style="width:50px;"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr class="core-attribute-row">
-                        <td>
-                            <code>sumber_data</code>
-                            <div class="small text-muted">Sumber Data</div>
-                        </td>
-                        <td>
-                            <input type="text" name="sumber_data" class="form-control form-control-sm"
-                                placeholder="mis. Dinas Perkim" value="{{ old('sumber_data', $mapType?->sumber_data) }}" required>
-                            @error('sumber_data')
-                                <div class="text-danger small">{{ $message }}</div>
-                            @enderror
-                        </td>
-                        <td class="text-muted">-</td>
-                        <td><span class="badge bg-secondary">text</span></td>
-                        <td class="text-center"><span class="badge bg-danger-subtle text-danger">Wajib</span></td>
-                        <td class="text-center text-muted small">-</td>
-                        <td></td>
-                    </tr>
-                    <tr class="core-attribute-row">
-                        <td>
-                            <code>opd_penanggung_jawab_id</code>
-                            <div class="small text-muted">OPD Penanggung Jawab</div>
-                        </td>
-                        <td>
-                            <select name="opd_penanggung_jawab_id" class="form-select form-select-sm" required>
-                                <option value="">Pilih OPD</option>
-                                @foreach ($opdOptions as $opd)
-                                    <option value="{{ $opd->id }}" @selected(old('opd_penanggung_jawab_id', $mapType?->opd_penanggung_jawab_id) == $opd->id)>{{ $opd->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('opd_penanggung_jawab_id')
-                                <div class="text-danger small">{{ $message }}</div>
-                            @enderror
-                        </td>
-                        <td class="text-muted">-</td>
-                        <td><span class="badge bg-secondary">select</span></td>
-                        <td class="text-center"><span class="badge bg-danger-subtle text-danger">Wajib</span></td>
-                        <td class="text-center text-muted small">-</td>
-                        <td></td>
-                    </tr>
-                    <tr class="core-attribute-row">
-                        <td>
-                            <code>tanggal_data</code>
-                            <div class="small text-muted">Tahun/Tanggal Data</div>
-                        </td>
-                        <td>
-                            <input type="date" name="tanggal_data" class="form-control form-control-sm"
-                                value="{{ old('tanggal_data', $mapType?->tanggal_data?->format('Y-m-d')) }}" required>
-                            @error('tanggal_data')
-                                <div class="text-danger small">{{ $message }}</div>
-                            @enderror
-                        </td>
-                        <td class="text-muted">-</td>
-                        <td><span class="badge bg-secondary">date</span></td>
-                        <td class="text-center"><span class="badge bg-danger-subtle text-danger">Wajib</span></td>
-                        <td class="text-center text-muted small">-</td>
-                        <td></td>
-                    </tr>
-                </tbody>
                 <tbody id="dynamic-attributes-list">
                     <tr id="dynamic-attributes-empty">
                         <td colspan="7" class="text-center text-muted py-3">
@@ -214,7 +163,10 @@
 
 <template id="new-row-template">
     <tr class="dynamic-attribute-row new-row">
-        <td><input type="text" class="form-control form-control-sm attr-kode" placeholder="mis. lebar_jalan"></td>
+        <td>
+            <input type="text" class="form-control form-control-sm attr-kode" disabled tabindex="-1"
+                placeholder="otomatis dari Label">
+        </td>
         <td><input type="text" class="form-control form-control-sm attr-label" placeholder="mis. Lebar Jalan">
         </td>
         <td><input type="text" class="form-control form-control-sm attr-satuan" placeholder="mis. meter"></td>
@@ -260,12 +212,20 @@
             emptyRow.style.display = hasRows ? 'none' : '';
         }
 
+        // sumber_data/opd_penanggung_jawab/tanggal_data dipasang otomatis & wajib ke
+        // setiap Jenis Peta lewat server (MapTypeController::syncCoreAttributes()) —
+        // tidak bisa dilepas/diubah lewat form ini, jadi ditampilkan tanpa checkbox
+        // atau tombol hapus, cuma badge "Wajib (bawaan)" sebagai info.
+        const coreAttributeCodes = ['sumber_data', 'opd_penanggung_jawab', 'tanggal_data'];
+
         function addPickedRow(data) {
             const id = String(data.metadata_definition_id);
             if (usedDefinitionIds.has(id)) {
                 return;
             }
             usedDefinitionIds.add(id);
+
+            const isCore = coreAttributeCodes.includes(data.kode);
 
             const clone = pickedTemplate.content.cloneNode(true);
             const row = clone.querySelector('.dynamic-attribute-row');
@@ -274,12 +234,21 @@
             row.querySelector('.picked-label').textContent = data.label;
             row.querySelector('.picked-satuan').textContent = data.satuan || '-';
             row.querySelector('.picked-data-type').textContent = data.data_type || 'text';
-            row.querySelector('.attr-wajib').checked = !!data.is_wajib;
-            row.querySelector('.btn-remove-attribute').addEventListener('click', () => {
-                usedDefinitionIds.delete(id);
-                row.remove();
-                updateEmptyState();
-            });
+
+            if (isCore) {
+                row.dataset.core = '1';
+                const wajibCell = row.querySelector('.attr-wajib').closest('td');
+                wajibCell.innerHTML = '<span class="badge bg-danger-subtle text-danger">Wajib (bawaan)</span>';
+                row.querySelector('.btn-remove-attribute').closest('td').innerHTML = '';
+            } else {
+                row.querySelector('.attr-wajib').checked = !!data.is_wajib;
+                row.querySelector('.btn-remove-attribute').addEventListener('click', () => {
+                    usedDefinitionIds.delete(id);
+                    row.remove();
+                    updateEmptyState();
+                });
+            }
+
             tbody.appendChild(row);
             updateEmptyState();
         }
@@ -299,6 +268,17 @@
             row.querySelector('.attr-filterable').checked = !!data.is_filterable;
             opsiRow.querySelector('.attr-opsi').value = Array.isArray(data.opsi) ? data.opsi.join('\n') : '';
 
+            // Nama/Key cukup diisi sekali lewat Label — kode (key teknis) otomatis
+            // di-generate dari Label (pola sama dengan Slug<-Nama di "Informasi
+            // Dasar"), supaya user tidak perlu mengetik hal yang sama dua kali.
+            row.querySelector('.attr-label').addEventListener('input', (e) => {
+                row.querySelector('.attr-kode').value = e.target.value
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+            });
+
             function syncOpsiVisibility() {
                 opsiRow.style.display = row.querySelector('.attr-data-type').value === 'select' ? '' : 'none';
             }
@@ -315,7 +295,7 @@
             tbody.appendChild(row);
             tbody.appendChild(opsiRow);
             updateEmptyState();
-            row.querySelector('.attr-kode').focus();
+            row.querySelector('.attr-label').focus();
         }
 
         // Atribut yang sudah dipakai Jenis ini (existing, apa pun sumbernya — dulu
@@ -402,6 +382,11 @@
             let index = 0;
 
             tbody.querySelectorAll('.picked-row').forEach((row) => {
+                // Baris core (sumber_data/opd_penanggung_jawab/tanggal_data) sengaja TIDAK
+                // dikirim — server selalu memaksa sinkronnya sendiri (syncCoreAttributes()),
+                // bukan dari payload form (lihat komentar coreAttributeCodes di atas).
+                if (row.dataset.core === '1') return;
+
                 appendHidden(index, 'metadata_definition_id', row.dataset.metadataDefinitionId);
                 appendHidden(index, 'is_wajib', row.querySelector('.attr-wajib').checked ? '1' :
                     '0');
@@ -470,7 +455,13 @@
             opacity: 0.35;
         }
 
-        .core-attribute-row {
+        .attr-kode:disabled {
+            background-color: #e9ecef;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        #dynamic-attributes-list tr[data-core="1"] {
             background-color: #f8f9fa;
         }
 

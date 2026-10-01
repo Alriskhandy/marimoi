@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\MapType;
 use App\Models\MapTypeDynamicAttribute;
 use App\Models\MetadataDefinition;
-use App\Models\Opd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -21,6 +20,16 @@ use Illuminate\Validation\Rule;
  */
 class MapTypeController extends Controller
 {
+    /**
+     * Definisi yang WAJIB dipasang ke setiap Jenis Peta (baru & lama), dulu kolom
+     * hardcode di map_types (sumber_data/opd_penanggung_jawab_id/tanggal_data) —
+     * sekarang jadi definisi katalog `is_system=true` biasa (lihat migrasi
+     * move_map_type_core_attributes_to_metadata_definitions), tapi tetap dipaksa
+     * terpasang & wajib lewat kode ini, bukan lewat form — user tidak bisa
+     * melepas atau mengubah status wajibnya dari form Jenis Peta.
+     */
+    public const CORE_ATTRIBUTE_CODES = ['sumber_data', 'opd_penanggung_jawab', 'tanggal_data'];
+
     public function index()
     {
         $mapTypes = MapType::withCount([
@@ -36,9 +45,7 @@ class MapTypeController extends Controller
 
     public function create()
     {
-        $opdOptions = Opd::orderBy('name')->get(['id', 'name', 'singkatan']);
-
-        return view('backend.pages.map-types.create', compact('opdOptions'));
+        return view('backend.pages.map-types.create');
     }
 
     public function store(Request $request)
@@ -68,9 +75,8 @@ class MapTypeController extends Controller
         $mapType->load('dynamicAttributes.metadataDefinition');
         $mapType->loadCount('spatialLayers');
         $mapType->load(['spatialLayers' => fn ($query) => $query->orderBy('name')]);
-        $opdOptions = Opd::orderBy('name')->get(['id', 'name', 'singkatan']);
 
-        return view('backend.pages.map-types.edit', compact('mapType', 'opdOptions'));
+        return view('backend.pages.map-types.edit', compact('mapType'));
     }
 
     public function update(Request $request, MapType $mapType)
@@ -115,7 +121,7 @@ class MapTypeController extends Controller
         foreach ($rows as $row) {
             $definition = $this->resolveDefinition($row);
 
-            if (! $definition) {
+            if (! $definition || in_array($definition->kode, self::CORE_ATTRIBUTE_CODES, true)) {
                 continue;
             }
 
@@ -132,7 +138,41 @@ class MapTypeController extends Controller
             $keptIds[] = $attribute->id;
         }
 
+        $keptIds = array_merge($keptIds, $this->syncCoreAttributes($mapType));
+
         $mapType->dynamicAttributes()->whereNotIn('id', $keptIds)->delete();
+    }
+
+    /**
+     * Pasang paksa 3 definisi inti (lihat CORE_ATTRIBUTE_CODES) sebagai wajib —
+     * tidak bergantung pada payload form sama sekali, supaya tidak bisa
+     * dilepas/diubah lewat manipulasi request.
+     *
+     * @return array<int, int> ID baris pivot yang harus dipertahankan.
+     */
+    private function syncCoreAttributes(MapType $mapType): array
+    {
+        $definitionsByKode = MetadataDefinition::where('is_system', true)
+            ->whereIn('kode', self::CORE_ATTRIBUTE_CODES)
+            ->get()
+            ->keyBy('kode');
+
+        $keptIds = [];
+
+        foreach (self::CORE_ATTRIBUTE_CODES as $urutan => $kode) {
+            $definition = $definitionsByKode->get($kode);
+
+            if (! $definition) {
+                continue;
+            }
+
+            $keptIds[] = MapTypeDynamicAttribute::updateOrCreate(
+                ['map_type_id' => $mapType->id, 'metadata_definition_id' => $definition->id],
+                ['is_wajib' => true, 'is_enabled' => true, 'is_active' => true, 'urutan' => $urutan]
+            )->id;
+        }
+
+        return $keptIds;
     }
 
     private function resolveDefinition(array $row): ?MetadataDefinition
@@ -176,17 +216,11 @@ class MapTypeController extends Controller
             ],
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'sumber_data' => 'required|string|max:255',
-            'opd_penanggung_jawab_id' => 'required|exists:opd,id',
-            'tanggal_data' => 'required|date',
             'urutan' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
         ], [
             'slug.regex' => 'Slug hanya boleh huruf kecil, angka, dan underscore',
             'slug.unique' => 'Slug sudah dipakai jenis peta lain',
-            'sumber_data.required' => 'Sumber Data wajib diisi (Metadata Utama)',
-            'opd_penanggung_jawab_id.required' => 'OPD Penanggung Jawab wajib dipilih (Metadata Utama)',
-            'tanggal_data.required' => 'Tahun/Tanggal Data wajib diisi (Metadata Utama)',
         ]);
     }
 }

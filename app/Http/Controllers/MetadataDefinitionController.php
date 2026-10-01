@@ -20,6 +20,10 @@ class MetadataDefinitionController extends Controller
         $query = trim((string) $request->get('q', ''));
 
         $definitions = MetadataDefinition::query()
+            // sumber_data/opd_penanggung_jawab/tanggal_data dipasang otomatis & wajib
+            // ke tiap Jenis Peta (lihat MapTypeController::syncCoreAttributes()),
+            // tidak boleh dipilih manual lewat katalog — akan selalu "sudah dipakai".
+            ->whereNotIn('kode', MapTypeController::CORE_ATTRIBUTE_CODES)
             ->when($query !== '', fn ($q) => $q->where(function ($q) use ($query) {
                 $q->where('kode', 'ILIKE', "%{$query}%")->orWhere('label', 'ILIKE', "%{$query}%");
             }))

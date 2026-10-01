@@ -64,4 +64,23 @@ class MetadataDefinitionControllerTest extends TestCase
 
         $response->assertOk()->assertJsonCount(0);
     }
+
+    /**
+     * Regresi: sumber_data/opd_penanggung_jawab/tanggal_data dipasang otomatis &
+     * wajib ke tiap Jenis Peta (MapTypeController::syncCoreAttributes()), tidak
+     * boleh muncul di hasil pencarian katalog supaya tidak bisa "dipilih manual"
+     * lewat form Jenis Peta.
+     */
+    public function test_search_excludes_core_attribute_codes(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->getJson(route('metadata-definitions.search', ['q' => 'data']));
+
+        $response->assertOk();
+        $kodes = collect($response->json())->pluck('kode');
+        $this->assertFalse($kodes->contains('sumber_data'));
+        $this->assertFalse($kodes->contains('opd_penanggung_jawab'));
+        $this->assertFalse($kodes->contains('tanggal_data'));
+    }
 }

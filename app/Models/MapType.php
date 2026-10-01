@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MapType extends Model
@@ -13,9 +12,6 @@ class MapType extends Model
         'slug',
         'nama',
         'deskripsi',
-        'sumber_data',
-        'opd_penanggung_jawab_id',
-        'tanggal_data',
         'urutan',
         'is_active',
         'konfigurasi',
@@ -26,7 +22,6 @@ class MapType extends Model
         return [
             'is_active' => 'boolean',
             'konfigurasi' => 'array',
-            'tanggal_data' => 'date',
         ];
     }
 
@@ -38,11 +33,6 @@ class MapType extends Model
     public function dynamicAttributes(): HasMany
     {
         return $this->hasMany(MapTypeDynamicAttribute::class);
-    }
-
-    public function opdPenanggungJawab(): BelongsTo
-    {
-        return $this->belongsTo(Opd::class, 'opd_penanggung_jawab_id');
     }
 
     public function scopeActive(Builder $query): Builder

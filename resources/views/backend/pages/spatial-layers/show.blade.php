@@ -96,25 +96,10 @@
                             </tr>
                         </table>
 
-                        <p class="card-title">Jenis: {{ $layer->mapType?->nama ?? '-' }}</p>
-                        @if ($layer->mapType)
-                            <table class="table table-sm">
-                                <tr>
-                                    <th style="width:200px;">Sumber Data</th>
-                                    <td>{{ $layer->mapType->sumber_data ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>OPD Penanggung Jawab</th>
-                                    <td>{{ $layer->mapType->opdPenanggungJawab?->name ?? '-' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Tahun/Tanggal Data</th>
-                                    <td>{{ $layer->mapType->tanggal_data?->format('d M Y') ?? '-' }}</td>
-                                </tr>
-                            </table>
-                        @else
+                        <p class="card-title mb-0">Jenis: {{ $layer->mapType?->nama ?? '-' }}</p>
+                        @unless ($layer->mapType)
                             <p class="text-muted">Layer ini belum memiliki Jenis.</p>
-                        @endif
+                        @endunless
                     </div>
                 </div>
             </div>

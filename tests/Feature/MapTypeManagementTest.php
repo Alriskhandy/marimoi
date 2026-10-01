@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\MapType;
 use App\Models\MetadataDefinition;
-use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -31,22 +30,6 @@ class MapTypeManagementTest extends TestCase
     private function userFor(Role $role): User
     {
         return User::factory()->create(['role_id' => $role->id]);
-    }
-
-    /**
-     * Metadata Utama (Bagian 3.1 docs/marimoi v2/04_implementation/
-     * 12-implementasi-perbaikan-pemetaan.md) wajib diisi saat store/update — payload
-     * dasar yang valid, dipakai berulang di test lain lewat array_merge.
-     */
-    private function validMetadataUtama(): array
-    {
-        $opd = Opd::create(['name' => 'Dinas Uji '.uniqid(), 'singkatan' => 'DU']);
-
-        return [
-            'sumber_data' => 'Dinas Uji',
-            'opd_penanggung_jawab_id' => $opd->id,
-            'tanggal_data' => '2026-01-01',
-        ];
     }
 
     public function test_user_without_permission_cannot_access_map_types(): void
@@ -114,14 +97,15 @@ class MapTypeManagementTest extends TestCase
 
     /**
      * Regresi Opsi B (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md
-     * Bagian 6): section "Metadata" sekarang SATU tabel gabungan (`#dynamic-attributes-table`)
-     * — 3 baris "Atribut Utama" (Sumber Data/OPD/Tanggal, fixed di atas) diikuti
-     * baris atribut dinamis (existing/custom). Tabel "Atribut Siap Pakai" yang dulu
-     * berdiri sendiri (toggle checklist 4 definisi is_system) DIHAPUS — definisi
-     * is_system tetap bisa dipakai lewat pencarian katalog yang sudah ada, bukan
-     * lewat daftar terpisah yang selalu tampil.
+     * Bagian 6): section "Metadata" satu tabel (`#dynamic-attributes-table`) berisi
+     * atribut dinamis (existing/custom), diisi lewat katalog/"Buat Atribut Baru".
+     * sumber_data/opd_penanggung_jawab/tanggal_data TIDAK LAGI jadi kolom input di
+     * form ini (dulu "Atribut Utama" wajib diketik manual) — ketiganya sekarang
+     * dipasang otomatis sebagai definisi `is_system=true` setelah Jenis disimpan
+     * (lihat test_store_automatically_attaches_core_attributes_as_wajib()), jadi
+     * saat membuat Jenis baru (belum ada id) tidak ada apa pun untuk ditampilkan.
      */
-    public function test_metadata_shown_as_single_merged_table(): void
+    public function test_create_form_no_longer_has_manual_core_attribute_inputs(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
 
@@ -131,28 +115,61 @@ class MapTypeManagementTest extends TestCase
             ->assertSee('Metadata')
             ->assertDontSee('Metadata Utama')
             ->assertDontSee('Metadata Dinamis')
-            ->assertSee('Atribut Utama')
-            ->assertDontSee('Atribut Siap Pakai')
-            ->assertDontSee('Atribut Tambahan')
-            ->assertDontSee('id="core-attributes-table"', false)
-            ->assertDontSee('id="system-definitions-table"', false)
+            ->assertDontSee('name="sumber_data"', false)
+            ->assertDontSee('name="opd_penanggung_jawab_id"', false)
+            ->assertDontSee('name="tanggal_data"', false)
+            ->assertDontSee('<code>sumber_data</code>', false)
+            ->assertDontSee('<code>opd_penanggung_jawab_id</code>', false)
+            ->assertDontSee('<code>tanggal_data</code>', false)
+            ->assertSee('otomatis terpasang')
             ->assertSee('id="dynamic-attributes-table"', false)
-            ->assertSee('class="core-attribute-row"', false)
-            ->assertSee('<code>sumber_data</code>', false)
-            ->assertSee('<code>opd_penanggung_jawab_id</code>', false)
-            ->assertSee('<code>tanggal_data</code>', false)
             ->assertSee('Nama/Key')
             ->assertSee('Nilai (Label)')
             ->assertSee('Satuan')
-            // Wajib untuk Atribut Utama sekarang badge teks, BUKAN checkbox disabled
-            // (nilai yang tidak perlu diisi/diklik user tidak perlu dibuat disabled).
-            ->assertSee('bg-danger-subtle text-danger">Wajib</span>', false)
-            ->assertDontSee('checked disabled', false)
-            // 4 definisi is_system tidak lagi di-render langsung sebagai daftar
-            // tetap — cuma bisa ditemukan lewat pencarian katalog (AJAX).
+            // 4 definisi is_system lama tidak di-render sebagai daftar tetap — cuma
+            // bisa ditemukan lewat pencarian katalog (AJAX).
             ->assertDontSee('<code>pagu</code>', false)
             ->assertSee('id="catalog-search-input"', false)
             ->assertSee('id="btn-add-custom-attribute"', false);
+    }
+
+    /**
+     * Regresi: dulu "Buat Atribut Baru" minta user mengetik Nama/Key DAN Label
+     * secara terpisah (dua input untuk 1 konsep yang sama) — sekarang Nama/Key
+     * (`attr-kode`) disabled (beda warna, jelas non-interaktif) & otomatis
+     * di-generate dari Label lewat JS (pola sama dengan Slug<-Nama di
+     * "Informasi Dasar"), user cuma mengetik Label.
+     */
+    public function test_new_attribute_kode_input_is_disabled_and_derived_from_label(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+
+        $response = $this->actingAs($admin)->get(route('map-types.create'));
+
+        $response->assertOk()
+            ->assertSee('class="form-control form-control-sm attr-kode" disabled', false)
+            ->assertSee('placeholder="otomatis dari Label"', false)
+            ->assertSee("querySelector('.attr-kode').value = e.target.value", false);
+    }
+
+    /**
+     * Regresi: setelah Jenis disimpan, 3 atribut inti tampil di halaman edit
+     * sebagai data JSON yang dipakai JS untuk render baris "picked" non-interaktif
+     * (badge "Wajib (bawaan)", tanpa tombol hapus) — lihat is_core di
+     * $existingAttributesForJs pada _form.blade.php.
+     */
+    public function test_edit_form_lists_core_attributes_as_non_removable(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+
+        $response = $this->actingAs($admin)->get(route('map-types.edit', $mapType));
+
+        $response->assertOk()
+            ->assertSee('"kode":"sumber_data"', false)
+            ->assertSee('"kode":"opd_penanggung_jawab"', false)
+            ->assertSee('"kode":"tanggal_data"', false)
+            ->assertSee('"is_core":true', false);
     }
 
     public function test_edit_page_renders_without_compile_error_and_includes_existing_dynamic_attribute(): void
@@ -176,11 +193,11 @@ class MapTypeManagementTest extends TestCase
 
         $this->actingAs($admin)->get(route('map-types.index'))->assertOk();
 
-        $response = $this->actingAs($admin)->post(route('map-types.store'), array_merge($this->validMetadataUtama(), [
+        $response = $this->actingAs($admin)->post(route('map-types.store'), [
             'slug' => 'rawan_bencana',
             'nama' => 'Kawasan Rawan Bencana',
             'urutan' => 6,
-        ]));
+        ]);
         $response->assertRedirect();
 
         $this->assertDatabaseHas('map_types', ['slug' => 'rawan_bencana', 'nama' => 'Kawasan Rawan Bencana']);
@@ -192,19 +209,74 @@ class MapTypeManagementTest extends TestCase
 
         // 'tematik' sudah ada dari seed migration create_map_types_table.
         $this->actingAs($admin)
-            ->post(route('map-types.store'), array_merge($this->validMetadataUtama(), ['slug' => 'tematik', 'nama' => 'Duplikat']))
+            ->post(route('map-types.store'), ['slug' => 'tematik', 'nama' => 'Duplikat'])
             ->assertSessionHasErrors('slug');
     }
 
-    public function test_store_rejects_submission_without_metadata_utama(): void
+    /**
+     * Regresi: sumber_data/opd_penanggung_jawab_id/tanggal_data DIHAPUS dari
+     * map_types & form Jenis Peta (dulu "Metadata Utama" wajib diketik manual) —
+     * sekarang store sukses tanpa field-field itu sama sekali, lihat
+     * test_store_automatically_attaches_core_attributes_as_wajib() untuk
+     * penggantinya (dipasang otomatis lewat metadata_definitions).
+     */
+    public function test_store_succeeds_without_the_removed_core_attribute_fields(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
 
         $this->actingAs($admin)
             ->post(route('map-types.store'), ['slug' => 'tanpa_metadata', 'nama' => 'Tanpa Metadata'])
-            ->assertSessionHasErrors(['sumber_data', 'opd_penanggung_jawab_id', 'tanggal_data']);
+            ->assertSessionDoesntHaveErrors();
 
-        $this->assertDatabaseMissing('map_types', ['slug' => 'tanpa_metadata']);
+        $this->assertDatabaseHas('map_types', ['slug' => 'tanpa_metadata']);
+    }
+
+    /**
+     * Regresi: sumber_data/opd_penanggung_jawab/tanggal_data dipasang OTOMATIS &
+     * wajib ke Jenis Peta baru lewat MapTypeController::syncCoreAttributes() —
+     * bukan kolom yang diketik user di form (lihat migrasi
+     * move_map_type_core_attributes_to_metadata_definitions).
+     */
+    public function test_store_automatically_attaches_core_attributes_as_wajib(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+
+        $this->actingAs($admin)->post(route('map-types.store'), ['slug' => 'otomatis', 'nama' => 'Otomatis']);
+
+        $mapType = MapType::where('slug', 'otomatis')->firstOrFail();
+
+        foreach (['sumber_data', 'opd_penanggung_jawab', 'tanggal_data'] as $kode) {
+            $definition = MetadataDefinition::where('kode', $kode)->where('is_system', true)->firstOrFail();
+            $this->assertDatabaseHas('map_type_dynamic_attributes', [
+                'map_type_id' => $mapType->id,
+                'metadata_definition_id' => $definition->id,
+                'is_wajib' => true,
+            ]);
+        }
+    }
+
+    /**
+     * Regresi: core attributes "tidak bisa diubah" lewat form — mengirim
+     * dynamic_attributes kosong (seolah user menghapus semua baris) TIDAK boleh
+     * melepas 3 atribut inti, karena server selalu memaksa sinkronnya sendiri.
+     */
+    public function test_core_attributes_cannot_be_removed_via_update(): void
+    {
+        $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
+        $mapType = MapType::where('slug', 'tematik')->firstOrFail();
+        $sumberData = MetadataDefinition::where('kode', 'sumber_data')->firstOrFail();
+
+        $this->actingAs($admin)->put(route('map-types.update', $mapType), [
+            'slug' => 'tematik',
+            'nama' => $mapType->nama,
+            'dynamic_attributes' => [],
+        ]);
+
+        $this->assertDatabaseHas('map_type_dynamic_attributes', [
+            'map_type_id' => $mapType->id,
+            'metadata_definition_id' => $sumberData->id,
+            'is_wajib' => true,
+        ]);
     }
 
     public function test_update_changes_map_type_fields(): void
@@ -213,9 +285,9 @@ class MapTypeManagementTest extends TestCase
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
 
         $this->actingAs($admin)
-            ->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+            ->put(route('map-types.update', $mapType), [
                 'slug' => 'tematik', 'nama' => 'Peta Tematik Baru',
-            ]))
+            ])
             ->assertRedirect(route('map-types.edit', $mapType));
 
         $this->assertDatabaseHas('map_types', ['id' => $mapType->id, 'nama' => 'Peta Tematik Baru']);
@@ -227,13 +299,13 @@ class MapTypeManagementTest extends TestCase
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
         $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
 
-        $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+        $this->actingAs($admin)->put(route('map-types.update', $mapType), [
             'slug' => 'tematik',
             'nama' => $mapType->nama,
             'dynamic_attributes' => [
                 ['metadata_definition_id' => $pagu->id, 'is_wajib' => '1'],
             ],
-        ]));
+        ]);
 
         $this->assertDatabaseHas('map_type_dynamic_attributes', [
             'map_type_id' => $mapType->id,
@@ -252,13 +324,13 @@ class MapTypeManagementTest extends TestCase
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
 
-        $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+        $this->actingAs($admin)->put(route('map-types.update', $mapType), [
             'slug' => 'tematik',
             'nama' => $mapType->nama,
             'dynamic_attributes' => [
                 ['kode' => 'lebar_jalan', 'label' => 'Lebar Jalan', 'satuan' => 'meter', 'data_type' => 'text', 'is_wajib' => '0'],
             ],
-        ]));
+        ]);
 
         $this->assertDatabaseHas('metadata_definitions', ['kode' => 'lebar_jalan', 'label' => 'Lebar Jalan', 'is_system' => false]);
         $definition = MetadataDefinition::where('kode', 'lebar_jalan')->firstOrFail();
@@ -275,11 +347,11 @@ class MapTypeManagementTest extends TestCase
         $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
         $mapType->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id]);
 
-        $this->actingAs($admin)->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+        $this->actingAs($admin)->put(route('map-types.update', $mapType), [
             'slug' => 'tematik',
             'nama' => $mapType->nama,
             'dynamic_attributes' => [],
-        ]));
+        ]);
 
         $this->assertDatabaseMissing('map_type_dynamic_attributes', ['map_type_id' => $mapType->id, 'metadata_definition_id' => $pagu->id]);
     }
@@ -406,11 +478,11 @@ class MapTypeManagementTest extends TestCase
         $this->assertFalse($mapType->is_active);
 
         $this->actingAs($admin)
-            ->put(route('map-types.update', $mapType), array_merge($this->validMetadataUtama(), [
+            ->put(route('map-types.update', $mapType), [
                 'slug' => 'psd',
                 'nama' => $mapType->nama,
                 'is_active' => '1',
-            ]))
+            ])
             ->assertRedirect(route('map-types.edit', $mapType));
 
         $this->assertDatabaseHas('map_types', ['id' => $mapType->id, 'is_active' => true]);
