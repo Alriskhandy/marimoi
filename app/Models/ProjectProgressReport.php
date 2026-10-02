@@ -79,7 +79,7 @@ class ProjectProgressReport extends Model
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id');
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id');
     }
 
     public function pelapor(): BelongsTo

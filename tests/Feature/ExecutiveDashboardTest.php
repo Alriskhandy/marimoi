@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\AdministrativeRegion;
-use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\DevelopmentProject;
+use App\Models\LegacyCategory as Category;
 use App\Models\Permission;
 use App\Models\ProjectProgressReport;
 use App\Models\Role;

@@ -38,12 +38,16 @@
                     </thead>
                     <tbody>
                         @forelse ($feedbacks as $feedback)
+                            @php
+                                $legacyLayer = $feedback->legacyLayer();
+                                $legacyFeature = $legacyLayer ? null : $feedback->legacyFeature();
+                            @endphp
                             <tr>
                                 <td>
-                                    @if ($feedback->layer)
-                                        Layer: {{ $feedback->layer->name }}
-                                    @elseif ($feedback->feature)
-                                        Data Spasial #{{ $feedback->feature->id }} ({{ $feedback->feature->layer?->name }})
+                                    @if ($legacyLayer)
+                                        Layer: {{ $legacyLayer->name }}
+                                    @elseif ($legacyFeature)
+                                        Data Spasial #{{ $legacyFeature->id }} ({{ $legacyFeature->layer_name }})
                                     @endif
                                 </td>
                                 <td>{{ $feedback->nama_pemberi }}<br><small class="text-muted">{{ $feedback->email }}</small></td>

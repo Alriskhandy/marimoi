@@ -3,14 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\AdministrativeRegion;
-use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\DevelopmentProject;
+use App\Models\LegacyCategory as Category;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AssignRegionsFromLegacyLocationTextTest extends TestCase
@@ -41,11 +42,27 @@ class AssignRegionsFromLegacyLocationTextTest extends TestCase
 
     private function makeFeatureFor(DataSpatial $ds): SpatialLayerFeature
     {
-        $layer = SpatialLayer::create(['slug' => 'layer-'.$ds->id, 'name' => 'Layer', 'title' => 'Layer']);
+        $categoryId = DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+
+        $layer = SpatialLayer::create([
+            'category_id' => $categoryId,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.$ds->id,
+            'slug' => 'layer-'.$ds->id,
+            'name' => 'Layer',
+        ]);
 
         return SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
             'legacy_data_spatial_id' => $ds->id,
         ]);
     }

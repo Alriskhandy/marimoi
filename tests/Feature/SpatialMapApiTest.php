@@ -3,13 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\AdministrativeRegion;
-use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\LegacyCategory as Category;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -17,29 +18,64 @@ use Tests\TestCase;
  * halaman & API baru yang membaca SpatialLayer/SpatialLayerFeature secara read-only,
  * berdampingan dengan /peta-tematik lama. Tidak menyentuh Category/DataSpatial kecuali
  * untuk join balik read-only di featureDetail().
+ *
+ * Disesuaikan ke skema v3 (plan mellow-weaving-eclipse Fase 3): layer tidak
+ * lagi bertingkat antar-sesama (parent_id dihapus, jadi `test_layer_tree_includes_children`
+ * dihapus — SpatialMapController::layerTree() sekarang mengembalikan daftar
+ * flat, bukan tree), dan color/is_marker pindah ke layer_styles (tidak lagi
+ * kolom langsung di layer).
  */
 class SpatialMapApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function categoryId(): string
+    {
+        return DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+    }
+
     private function makeLayer(array $overrides = []): SpatialLayer
     {
-        return SpatialLayer::create(array_merge([
+        $isActive = $overrides['is_active'] ?? true;
+        $color = $overrides['color'] ?? '#ff0000';
+        $isMarker = $overrides['is_marker'] ?? true;
+        unset($overrides['is_active'], $overrides['color'], $overrides['is_marker']);
+
+        $layer = SpatialLayer::create(array_merge([
+            'category_id' => $this->categoryId(),
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.uniqid(),
             'name' => 'Layer Uji',
-            'title' => 'Layer Uji',
-            'color' => '#ff0000',
-            'is_marker' => true,
-            'is_active' => true,
+            'status' => $isActive ? 'published' : 'draft',
+            'published_at' => $isActive ? now() : null,
         ], $overrides));
+
+        $style = $layer->styles()->create([
+            'name' => 'Default',
+            'style_type' => 'simple',
+            'is_default' => true,
+            'definition' => ['color' => $color, 'icon' => null, 'is_marker' => $isMarker, 'opacity' => 1],
+        ]);
+        $layer->update(['default_style_id' => $style->id]);
+
+        return $layer;
     }
 
     private function makeFeature(SpatialLayer $layer, array $overrides = []): SpatialLayerFeature
     {
         return SpatialLayerFeature::create(array_merge([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'attributes' => ['NAMA' => 'Contoh'],
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => ['NAMA' => 'Contoh'],
         ], $overrides));
     }
 
@@ -48,7 +84,7 @@ class SpatialMapApiTest extends TestCase
         $this->get('/peta-v2')->assertOk();
     }
 
-    public function test_layer_tree_returns_only_active_root_layers(): void
+    public function test_layer_tree_returns_only_published_layers(): void
     {
         $active = $this->makeLayer();
         $this->makeLayer(['is_active' => false]);
@@ -58,17 +94,6 @@ class SpatialMapApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1);
         $response->assertJsonFragment(['id' => $active->id]);
-    }
-
-    public function test_layer_tree_includes_children(): void
-    {
-        $parent = $this->makeLayer();
-        $child = $this->makeLayer(['parent_id' => $parent->id]);
-
-        $response = $this->getJson('/peta-v2/layers');
-
-        $response->assertOk();
-        $response->assertJsonPath('0.children.0.id', $child->id);
     }
 
     public function test_geojson_endpoint_returns_feature_collection_for_layer(): void

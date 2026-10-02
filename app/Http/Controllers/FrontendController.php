@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Mail\AspirasiMail;
 use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
-use App\Models\Category;
 use App\Models\DataSpatial;
 use App\Models\KategoriAspirasi;
+use App\Models\LegacyCategory as Category;
 use App\Models\ProjectFeedback;
 use App\Models\Publication;
 use App\Models\SharedMap;
@@ -140,7 +140,7 @@ class FrontendController extends Controller
                  select ST_SimplifyPreserveTopology(p.geom, 0.02) as g
                  from (
                      select (ST_Dump(ST_Force2D(geom))).geom as geom
-                     from data_spatial
+                     from data_spatial_legacy_v1
                      where kategori_id in ({$ids})
                        and GeometryType(geom) in ('POLYGON', 'MULTIPOLYGON')
                        and ST_XMin(geom) > ? and ST_XMax(geom) < ? and ST_YMin(geom) > ? and ST_YMax(geom) < ?
@@ -172,7 +172,7 @@ class FrontendController extends Controller
         return Cache::remember('home.spatial-summary', 3600, function () {
             $top = DB::select(
                 'select c.nama, c.warna, count(d.id) as total
-                 from data_spatial d join categories c on c.id = d.kategori_id
+                 from data_spatial_legacy_v1 d join categories_legacy_v1 c on c.id = d.kategori_id
                  group by c.id, c.nama, c.warna order by total desc limit 7'
             );
 
@@ -185,14 +185,14 @@ class FrontendController extends Controller
                         d.sumber_data, o.name as opd_pengelola, d.tanggal_data,
                         case when GeometryType(d.geom) = 'POINT' then ST_X(d.geom) end as px,
                         case when GeometryType(d.geom) = 'POINT' then ST_Y(d.geom) end as py
-                 from data_spatial d
+                 from data_spatial_legacy_v1 d
                  left join opd o on o.id = d.opd_pengelola_id";
             $pointBindings = [self::HOME_LON_MIN, self::HOME_LON_MAX, self::HOME_LAT_MIN, self::HOME_LAT_MAX];
             $inRange = 'p.px between ? and ? and p.py between ? and ?';
 
             $layers = DB::select(
                 'select c.id, c.nama, c.warna, count(p.id) as total
-                 from ('.$pointSource.') p join categories c on c.id = p.kategori_id
+                 from ('.$pointSource.') p join categories_legacy_v1 c on c.id = p.kategori_id
                  where '.$inRange.' group by c.id, c.nama, c.warna order by total desc',
                 $pointBindings
             );
@@ -216,7 +216,7 @@ class FrontendController extends Controller
             ])->all();
 
             return [
-                'total' => DB::table('data_spatial')->count(),
+                'total' => DB::table('data_spatial_legacy_v1')->count(),
                 'categories' => Category::where('is_active', true)->count(),
                 'top' => $top,
                 'layers' => $layers,
@@ -394,6 +394,39 @@ class FrontendController extends Controller
             ->header('Cache-Control', 'no-store');
     }
 
+    /**
+     * Kebalikan dari getCategoryTypeByDataType() — dipakai saat `type` request
+     * tidak diisi (mode "semua tipe"), karena tiap fitur v3 tidak lagi
+     * menyimpan data_type/sub_type langsung (itu atribut kategori/layer,
+     * bukan kolom per-fitur seperti data_spatial lama).
+     *
+     * @return array{0: ?string, 1: ?string} [data_type, sub_type]
+     */
+    private function dataTypeFromCategoryType(?string $categoryType): array
+    {
+        return match ($categoryType) {
+            'tematik' => ['tematik', null],
+            'usulan_musrenbang' => ['usulan_musrenbang', null],
+            'pokir_dprd' => ['pokir_dprd', null],
+            'psd' => ['proyek_strategis', 'psd'],
+            'psn' => ['proyek_strategis', 'psn'],
+            default => [$categoryType, null],
+        };
+    }
+
+    /**
+     * Sejak Fase 4 (plan mellow-weaving-eclipse) dibaca dari skema v3
+     * (spatial_features_v3/layers_v3/categories_v3/category_nodes) — bukan
+     * lagi data_spatial/categories lama. `data_spatial` tetap jadi sumber
+     * tulis admin (DataSpatialController, belum direwrite, lihat Fase 5) dan
+     * direplikasi real-time ke spatial_features_v3 lewat
+     * App\Support\SpatialFeaturesV3Sync (lihat AppServiceProvider), supaya
+     * endpoint ini tetap up-to-date tanpa menunggu command migrasi manual.
+     * Field deskripsi/sumber_data/tanggal_data/opd_pengelola yang tidak ada
+     * di `properties` v3 dibaca balik lewat LEFT JOIN ke data_spatial via
+     * `legacy_data_spatial_id` (read-only, pola sama seperti
+     * SpatialMapController::featureDetail()).
+     */
     public function getGeojsonByDataType(Request $request)
     {
         try {
@@ -407,49 +440,39 @@ class FrontendController extends Controller
                 return $this->getCategoriesMetadata($dataType, $subType);
             }
 
-            // Build base query with proper joins and error handling
-            $query = DB::table('data_spatial')
-                ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
-                ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
+            $query = DB::table('spatial_features as sf')
+                ->join('layers as l', 'l.id', '=', 'sf.layer_id')
+                ->join('categories_v3 as cat_root', 'cat_root.id', '=', 'l.category_id')
+                ->leftJoin('category_nodes as node_leaf', 'node_leaf.id', '=', 'l.category_node_id')
+                ->leftJoin('layer_styles as ls', 'ls.id', '=', 'l.default_style_id')
+                ->leftJoin('data_spatial_legacy_v1 as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
+                ->leftJoin('opd', 'opd.id', '=', 'ds.opd_pengelola_id')
                 ->select(
-                    'data_spatial.id',
-                    'data_spatial.uuid',
-                    'data_spatial.data_type',
-                    'data_spatial.sub_type',
-                    'data_spatial.gambar',
-                    'data_spatial.kategori_id',
-                    'data_spatial.tahun',
-                    'categories.nama as kategori',
-                    'data_spatial.deskripsi',
-                    'data_spatial.sumber_data',
-                    'data_spatial.tanggal_data',
-                    'opd.name as opd_pengelola',
-                    'data_spatial.dbf_attributes',
-                    'categories.icon',
-                    'categories.warna',
-                    'categories.is_marker'
+                    'sf.id',
+                    'ds.uuid',
+                    'sf.gambar',
+                    'l.legacy_category_id as kategori_id',
+                    'sf.properties',
+                    'cat_root.type as kategori_type',
+                    DB::raw('COALESCE(node_leaf.name, cat_root.name) as kategori'),
+                    DB::raw('ds.deskripsi as deskripsi'),
+                    DB::raw("COALESCE(ds.sumber_data, sf.properties->>'sumber_data') as sumber_data"),
+                    DB::raw("COALESCE(opd.name, sf.properties->>'opd_penanggung_jawab') as opd_pengelola"),
+                    DB::raw("COALESCE(ds.tanggal_data, NULLIF(sf.properties->>'tanggal_data', '')::date) as tanggal_data"),
+                    DB::raw("COALESCE(ds.tahun, NULLIF(sf.properties->>'tahun', '')::int) as tahun"),
+                    DB::raw("ls.definition->>'icon' as icon"),
+                    DB::raw("ls.definition->>'color' as warna"),
+                    DB::raw("COALESCE((ls.definition->>'is_marker')::boolean, false) as is_marker"),
+                    DB::raw('ST_AsGeoJSON(sf.geom) as geojson')
                 );
-
-            // Only select geometry if it exists and is valid
-            try {
-                $query->addSelect(DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson'));
-            } catch (\Exception $e) {
-                // If ST_AsGeoJSON fails, fall back to simple geometry selection
-                Log::warning('ST_AsGeoJSON failed, using alternative method: '.$e->getMessage());
-                $query->addSelect('data_spatial.geom as geojson');
-            }
 
             // Apply filters with validation
             if ($dataType && is_string($dataType)) {
-                $query->where('data_spatial.data_type', $dataType);
-            }
-
-            if ($subType && is_string($subType)) {
-                $query->where('data_spatial.sub_type', $subType);
+                $query->where('cat_root.type', $this->getCategoryTypeByDataType($dataType, $subType));
             }
 
             if ($year && is_numeric($year)) {
-                $query->where('data_spatial.tahun', intval($year));
+                $query->whereRaw("COALESCE(ds.tahun, NULLIF(sf.properties->>'tahun', '')::int) = ?", [intval($year)]);
             }
 
             // Filter by specific categories (untuk on-demand loading)
@@ -458,7 +481,10 @@ class FrontendController extends Controller
                 // Sanitize category names
                 $categories = array_filter(array_map('trim', $categories));
                 if (! empty($categories)) {
-                    $query->whereIn('categories.nama', $categories);
+                    $query->whereRaw(
+                        'COALESCE(node_leaf.name, cat_root.name) IN ('.implode(',', array_fill(0, count($categories), '?')).')',
+                        array_values($categories)
+                    );
                 }
             }
 
@@ -475,7 +501,7 @@ class FrontendController extends Controller
                         $bbox[3] >= -90 && $bbox[3] <= 90
                     ) {
                         try {
-                            $query->whereRaw('ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))', $bbox);
+                            $query->whereRaw('ST_Intersects(sf.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))', $bbox);
                         } catch (\Exception $e) {
                             Log::warning('Bounding box filter failed: '.$e->getMessage());
                         }
@@ -488,15 +514,9 @@ class FrontendController extends Controller
                 $search = trim($request->search);
                 if (strlen($search) > 0) {
                     $query->where(function ($q) use ($search) {
-                        $q->where('categories.nama', 'ILIKE', "%{$search}%")
-                            ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%");
-
-                        // Only add JSON search if dbf_attributes column exists
-                        try {
-                            $q->orWhereRaw('dbf_attributes::text ILIKE ?', ["%{$search}%"]);
-                        } catch (\Exception $e) {
-                            Log::debug('DBF attributes search skipped: '.$e->getMessage());
-                        }
+                        $q->whereRaw('COALESCE(node_leaf.name, cat_root.name) ILIKE ?', ["%{$search}%"])
+                            ->orWhere('ds.deskripsi', 'ILIKE', "%{$search}%")
+                            ->orWhereRaw('sf.properties::text ILIKE ?', ["%{$search}%"]);
                     });
                 }
             }
@@ -506,7 +526,7 @@ class FrontendController extends Controller
                 foreach ($request->dbf_filter as $attribute => $value) {
                     if (is_string($attribute) && ! empty($attribute)) {
                         try {
-                            $query->whereRaw('dbf_attributes->? = ?', [$attribute, json_encode($value)]);
+                            $query->whereRaw('sf.properties->? = ?::jsonb', [$attribute, json_encode($value)]);
                         } catch (\Exception $e) {
                             Log::warning("DBF filter failed for {$attribute}: ".$e->getMessage());
                         }
@@ -522,7 +542,7 @@ class FrontendController extends Controller
             $query->limit($limit)->offset($offset);
 
             // Add ordering untuk konsistensi
-            $query->orderBy('data_spatial.id');
+            $query->orderBy('sf.id');
 
             // Execute query with timeout protection
             $startTime = microtime(true);
@@ -536,21 +556,22 @@ class FrontendController extends Controller
                 Log::warning("Slow query detected: {$queryTime} seconds");
             }
 
+            // Key struktural yang sudah disurfacekan eksplisit sebagai field
+            // tetap di bawah — jangan ikut di-spread lagi dari raw properties,
+            // supaya tidak menimpa balik format yang sudah diformat (tanggal_data
+            // d-m-Y, dst) dengan nilai mentahnya.
+            $structuralKeys = ['sumber_data', 'tanggal_data', 'tahun', 'opd_penanggung_jawab'];
+
             $features = [];
             $processedCount = 0;
 
             foreach ($lokasis as $lokasi) {
                 try {
-                    // Safely decode DBF attributes
                     $dbfAttributes = [];
-                    if (! empty($lokasi->dbf_attributes)) {
-                        if (is_string($lokasi->dbf_attributes)) {
-                            $decoded = json_decode($lokasi->dbf_attributes, true);
-                            if (is_array($decoded)) {
-                                $dbfAttributes = $decoded;
-                            }
-                        } elseif (is_array($lokasi->dbf_attributes)) {
-                            $dbfAttributes = $lokasi->dbf_attributes;
+                    if (! empty($lokasi->properties)) {
+                        $decoded = is_string($lokasi->properties) ? json_decode($lokasi->properties, true) : $lokasi->properties;
+                        if (is_array($decoded)) {
+                            $dbfAttributes = array_diff_key($decoded, array_flip($structuralKeys));
                         }
                     }
 
@@ -564,13 +585,17 @@ class FrontendController extends Controller
                         }
                     }
 
+                    [$featureDataType, $featureSubType] = $dataType
+                        ? [$dataType, $subType]
+                        : $this->dataTypeFromCategoryType($lokasi->kategori_type);
+
                     $feature = [
                         'type' => 'Feature',
                         'properties' => array_merge([
                             'id' => $lokasi->id,
                             'uuid' => $lokasi->uuid,
-                            'data_type' => $lokasi->data_type,
-                            'sub_type' => $lokasi->sub_type,
+                            'data_type' => $featureDataType,
+                            'sub_type' => $featureSubType,
                             'gambar' => $lokasi->gambar ? asset('storage/'.$lokasi->gambar) : null,
                             'kategori_id' => $lokasi->kategori_id,
                             'kategori' => $lokasi->kategori,
@@ -675,7 +700,7 @@ class FrontendController extends Controller
         $subType = $request->get('sub_type');
         $year = $request->get('year');
 
-        $base = DB::table('data_spatial')
+        $base = DB::table('data_spatial_legacy_v1 as data_spatial')
             ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
             ->where('data_spatial.data_type', $dataType);
 
@@ -732,8 +757,8 @@ class FrontendController extends Controller
         $tahun = $request->get('tahun');
         $opdPengelola = $request->get('opd_pengelola');
 
-        $query = DB::table('data_spatial')
-            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+        $query = DB::table('data_spatial_legacy_v1 as data_spatial')
+            ->join('categories_legacy_v1 as categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
             ->where('data_spatial.data_type', $dataType);
 

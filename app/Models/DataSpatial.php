@@ -34,7 +34,7 @@ class DataSpatial extends Model
         });
     }
 
-    protected $table = 'data_spatial';
+    protected $table = 'data_spatial_legacy_v1';
 
     protected $fillable = [
         'data_type',
@@ -62,7 +62,7 @@ class DataSpatial extends Model
     // Relasi ke kategori
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id');
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id');
     }
 
     // Relasi ke OPD pengelola data (metadata)
@@ -263,7 +263,7 @@ class Lokasi extends DataSpatial
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id')
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id')
             ->where('type', 'tematik');
     }
 }
@@ -283,7 +283,7 @@ class UsulanMusrenbang extends DataSpatial
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id')
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id')
             ->where('type', 'usulan_musrenbang');
     }
 }
@@ -303,7 +303,7 @@ class PokirDprd extends DataSpatial
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id')
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id')
             ->where('type', 'pokir_dprd');
     }
 }
@@ -325,7 +325,7 @@ class ProyekStrategisDaerah extends DataSpatial
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id')
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id')
             ->where('type', 'psd');
     }
 }
@@ -347,7 +347,7 @@ class ProyekStrategisNasional extends DataSpatial
 
     public function kategori(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'kategori_id')
+        return $this->belongsTo(LegacyCategory::class, 'kategori_id')
             ->where('type', 'psn');
     }
 }

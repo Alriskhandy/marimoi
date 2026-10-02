@@ -26,8 +26,8 @@
             <div class="card">
                 <div class="card-body">
                     <p class="card-title">
-                        Metadata standar untuk layer <code>{{ $layer->slug }}</code> (skema baru
-                        <code>spatial_layer_metadata</code>) — belum ada padanannya di sistem lama.
+                        Metadata standar untuk layer <code>{{ $layer->slug }}</code> (skema v3
+                        <code>layer_metadata</code>) — belum ada padanannya di sistem lama.
                     </p>
 
                     <form method="POST" action="{{ route('categories.metadata.update', $category->id) }}">
@@ -41,12 +41,12 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Nama Sumber Data</label>
-                                <input type="text" name="source_name" class="form-control" value="{{ old('source_name', $metadata->source_name) }}">
+                                <label class="form-label">Organisasi Produsen Data</label>
+                                <input type="text" name="producer_organization" class="form-control" value="{{ old('producer_organization', $metadata->producer_organization) }}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">URL Sumber</label>
-                                <input type="url" name="source_url" class="form-control" value="{{ old('source_url', $metadata->source_url) }}">
+                                <input type="url" name="source_url" class="form-control" value="{{ old('source_url', $metadata->extra['source_url'] ?? null) }}">
                             </div>
                         </div>
 
@@ -57,20 +57,25 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Frekuensi Pembaruan</label>
-                                <input type="text" name="update_frequency" class="form-control" placeholder="mis. Tahunan, Triwulan" value="{{ old('update_frequency', $metadata->update_frequency) }}">
+                                <select name="update_frequency" class="form-select">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach ($updateFrequencies as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('update_frequency', $metadata->update_frequency) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Tahun Referensi Data</label>
-                                <input type="number" name="data_reference_year" class="form-control" min="1900" max="2100" value="{{ old('data_reference_year', $metadata->data_reference_year) }}">
+                                <label class="form-label">Tahun Data</label>
+                                <input type="number" name="data_year" class="form-control" min="1900" max="2100" value="{{ old('data_year', $metadata->data_year) }}">
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Atribusi</label>
-                            <textarea name="attribution" class="form-control" rows="2">{{ old('attribution', $metadata->attribution) }}</textarea>
+                            <textarea name="attribution" class="form-control" rows="2">{{ old('attribution', $metadata->extra['attribution'] ?? null) }}</textarea>
                         </div>
 
                         <button type="submit" class="btn btn-gradient-primary">Simpan Metadata</button>

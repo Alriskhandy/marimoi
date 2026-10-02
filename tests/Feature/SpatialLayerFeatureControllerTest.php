@@ -12,14 +12,16 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Regresi untuk SpatialLayerFeatureController (docs/marimoi v2/04_implementation/
- * 12-implementasi-perbaikan-pemetaan.md Bagian 3.2) — attributes (impor) vs
- * metadata_dinamis (terstruktur) tersimpan terpisah, is_wajib divalidasi.
- * MapTypeDynamicAttribute sekarang pivot ke katalog global MetadataDefinition
- * (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md Bagian 6, Opsi B).
+ * Regresi untuk SpatialLayerFeatureController — skema v3 (plan
+ * mellow-weaving-eclipse Fase 3). `attributes` (impor) dan `metadata_dinamis`
+ * (terstruktur) dulu 2 kolom jsonb terpisah di v2 — sekarang tergabung jadi
+ * satu `properties` (dokumen v3 §5.11 tidak membedakan keduanya). update()
+ * MEMERGE metadata_dinamis baru ke atas properties yang sudah ada (bukan
+ * overwrite total), jadi atribut impor lama tetap bertahan setelah edit.
  */
 class SpatialLayerFeatureControllerTest extends TestCase
 {
@@ -35,14 +37,29 @@ class SpatialLayerFeatureControllerTest extends TestCase
         return User::factory()->create(['role_id' => $role->id]);
     }
 
+    private function categoryId(): string
+    {
+        return DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+    }
+
     private function layer(array $overrides = []): SpatialLayer
     {
         $jenis = MapType::where('slug', 'tematik')->firstOrFail();
 
         return SpatialLayer::create(array_merge([
+            'category_id' => $this->categoryId(),
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.uniqid(),
             'name' => 'Layer Uji',
-            'title' => 'Layer Uji',
             'map_type_id' => $jenis->id,
         ], $overrides));
     }
@@ -122,10 +139,10 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ]))->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(2, $layer->features()->count());
-        $this->assertEqualsCanonicalizing(
-            $this->coreMetadataDinamis(),
-            $layer->features()->first()->metadata_dinamis
-        );
+        $feature = $layer->features()->first();
+        foreach ($this->coreMetadataDinamis() as $kode => $value) {
+            $this->assertSame($value, $feature->properties[$kode]);
+        }
     }
 
     /**
@@ -161,7 +178,7 @@ KML;
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
-        $this->assertSame('Titik KML Uji', $layer->features()->first()->attributes['NAMA']);
+        $this->assertSame('Titik KML Uji', $layer->features()->first()->properties['NAMA']);
 
         unlink($path);
     }
@@ -199,15 +216,20 @@ KML;
         $this->assertSame(1, $layer->features()->count());
     }
 
-    public function test_metadata_dinamis_stored_separately_from_imported_attributes(): void
+    /**
+     * update() mem-merge metadata_dinamis baru KE ATAS properties yang sudah
+     * ada (bukan overwrite total) — atribut impor lama (KODE_ASLI) harus tetap
+     * bertahan setelah field metadata_dinamis baru (pagu, dst.) ditambahkan.
+     */
+    public function test_update_merges_metadata_dinamis_without_losing_imported_attributes(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
         $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
         $feature = SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'attributes' => ['KODE_ASLI' => 'ABC123'],
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => ['KODE_ASLI' => 'ABC123'],
         ]);
 
         $this->actingAs($admin)->put(route('spatial-layers.features.update', [$layer, $feature]), [
@@ -216,8 +238,11 @@ KML;
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $feature->refresh();
-        $this->assertEqualsCanonicalizing($this->coreMetadataDinamis() + ['pagu' => '5000000'], $feature->metadata_dinamis);
-        $this->assertSame(['KODE_ASLI' => 'ABC123'], $feature->attributes);
+        $this->assertSame('ABC123', $feature->properties['KODE_ASLI']);
+        $this->assertSame('5000000', $feature->properties['pagu']);
+        foreach ($this->coreMetadataDinamis() as $kode => $value) {
+            $this->assertSame($value, $feature->properties[$kode]);
+        }
     }
 
     /**
@@ -286,10 +311,9 @@ KML;
         $layer = $this->layer();
         $this->attachDefinition($layer, 'pagu');
         $feature = SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'attributes' => ['KODE_ASLI' => 'ABC123'],
-            'metadata_dinamis' => ['pagu' => '5000000'],
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => ['KODE_ASLI' => 'ABC123', 'pagu' => '5000000'],
         ]);
 
         $this->actingAs($admin)->get(route('spatial-layers.features.edit', [$layer, $feature]))

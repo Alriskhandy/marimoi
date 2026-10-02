@@ -5,14 +5,19 @@ namespace Tests\Feature;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialFeedback;
-use App\Models\SpatialLayer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
  * Regresi untuk SpatialFeedbackController (docs/marimoi v2/04_implementation/
- * 12-implementasi-perbaikan-pemetaan.md Bagian 3.3).
+ * 12-implementasi-perbaikan-pemetaan.md Bagian 3.3). Fixture Layer ditulis
+ * lewat DB::table('spatial_layers') langsung — kolom
+ * `spatial_feedbacks.spatial_layer_id` punya FK sungguhan ke tabel v2
+ * tersebut (bigint), bukan ke layers_v3 (uuid) yang sejak Fase 3 jadi
+ * representasi Eloquent `SpatialLayer` (lihat juga SpatialFeedbackTest).
  */
 class SpatialFeedbackControllerTest extends TestCase
 {
@@ -28,22 +33,30 @@ class SpatialFeedbackControllerTest extends TestCase
         return User::factory()->create(['role_id' => $role->id]);
     }
 
-    private function layer(): SpatialLayer
+    private function layerId(): int
     {
-        return SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer Uji', 'title' => 'Layer Uji']);
+        return DB::table('spatial_layers_legacy_v2')->insertGetId([
+            'public_id' => (string) Str::uuid(),
+            'slug' => 'layer-'.Str::random(8),
+            'name' => 'Layer Uji',
+            'title' => 'Layer Uji',
+            'visibility' => 'private',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     public function test_public_can_submit_feedback_for_a_layer_without_auth(): void
     {
-        $layer = $this->layer();
+        $layerId = $this->layerId();
 
         $this->postJson(route('spatial-feedbacks.store'), [
-            'spatial_layer_id' => $layer->id,
+            'spatial_layer_id' => $layerId,
             'nama_pemberi' => 'Warga Uji',
             'pesan' => 'Contoh pesan',
         ])->assertCreated();
 
-        $this->assertDatabaseHas('spatial_feedbacks', ['spatial_layer_id' => $layer->id, 'nama_pemberi' => 'Warga Uji']);
+        $this->assertDatabaseHas('spatial_feedbacks', ['spatial_layer_id' => $layerId, 'nama_pemberi' => 'Warga Uji']);
     }
 
     public function test_public_submission_without_any_target_is_rejected(): void
@@ -56,10 +69,10 @@ class SpatialFeedbackControllerTest extends TestCase
 
     public function test_public_submission_with_both_targets_is_rejected(): void
     {
-        $layer = $this->layer();
+        $layerId = $this->layerId();
 
         $this->postJson(route('spatial-feedbacks.store'), [
-            'spatial_layer_id' => $layer->id,
+            'spatial_layer_id' => $layerId,
             'spatial_layer_feature_id' => 999,
             'nama_pemberi' => 'Warga Uji',
             'pesan' => 'Contoh pesan',
@@ -69,9 +82,8 @@ class SpatialFeedbackControllerTest extends TestCase
     public function test_admin_can_respond_to_feedback(): void
     {
         $admin = $this->admin();
-        $layer = $this->layer();
         $feedback = SpatialFeedback::create([
-            'spatial_layer_id' => $layer->id, 'nama_pemberi' => 'Warga Uji', 'pesan' => 'Contoh pesan',
+            'spatial_layer_id' => $this->layerId(), 'nama_pemberi' => 'Warga Uji', 'pesan' => 'Contoh pesan',
         ]);
 
         $this->actingAs($admin)->put(route('spatial-feedbacks.respond', $feedback), [
@@ -100,8 +112,7 @@ class SpatialFeedbackControllerTest extends TestCase
     public function test_admin_can_view_feedback_index_with_data(): void
     {
         $admin = $this->admin();
-        $layer = $this->layer();
-        SpatialFeedback::create(['spatial_layer_id' => $layer->id, 'nama_pemberi' => 'Warga Uji', 'pesan' => 'Contoh pesan']);
+        SpatialFeedback::create(['spatial_layer_id' => $this->layerId(), 'nama_pemberi' => 'Warga Uji', 'pesan' => 'Contoh pesan']);
 
         $this->actingAs($admin)->get(route('spatial-feedbacks.index'))->assertOk()->assertSee('Warga Uji');
     }

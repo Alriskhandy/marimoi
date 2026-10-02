@@ -9,7 +9,9 @@ use App\Models\Role;
 use App\Models\SpatialLayer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class MapTypeManagementTest extends TestCase
@@ -360,7 +362,16 @@ class MapTypeManagementTest extends TestCase
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
-        SpatialLayer::create(['slug' => 'jalan', 'name' => 'Jalan', 'title' => 'Jalan', 'map_type_id' => $mapType->id]);
+        $categoryId = DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+        SpatialLayer::create(['category_id' => $categoryId, 'layer_type_id' => 4, 'code' => 'layer-jalan', 'slug' => 'jalan', 'name' => 'Jalan', 'map_type_id' => $mapType->id]);
 
         $this->actingAs($admin)
             ->delete(route('map-types.destroy', $mapType))

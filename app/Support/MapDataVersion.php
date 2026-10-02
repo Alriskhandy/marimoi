@@ -34,12 +34,12 @@ class MapDataVersion
 
     private static function compute(): string
     {
-        $data = DB::table('data_spatial')
+        $data = DB::table('data_spatial_legacy_v1')
             ->where('data_type', 'tematik')
             ->selectRaw('count(*) as total, max(updated_at) as latest, coalesce(sum(kategori_id), 0) as category_sum, coalesce(sum(id), 0) as id_sum')
             ->first();
 
-        $categories = DB::table('categories')
+        $categories = DB::table('categories_legacy_v1')
             ->where('type', 'tematik')
             ->selectRaw('count(*) as total, max(updated_at) as latest, coalesce(sum(id), 0) as id_sum, coalesce(sum(parent_id), 0) as parent_sum')
             ->first();

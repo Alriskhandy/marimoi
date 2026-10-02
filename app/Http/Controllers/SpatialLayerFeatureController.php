@@ -14,14 +14,17 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Data Spasial di bawah satu Layer (docs/marimoi v2/04_implementation/
- * 12-implementasi-perbaikan-pemetaan.md Bagian 3.2) — form punya dua bagian atribut
- * terpisah (Keputusan #2): attributes (mentah, hasil impor) dan metadata_dinamis
- * (terstruktur sesuai skema Jenis). store() sekarang mendukung 3 metode input
- * (Shapefile/Koordinat manual/KMZ) lewat SpatialGeometryBatchImporter, disamakan
- * dengan wizard data-spatial/create lama — bisa membuat BANYAK SpatialLayerFeature
- * sekaligus dalam satu submit (satu per geometri hasil parsing), semuanya memakai
- * metadata_dinamis & gambar yang sama dari form.
+ * Data Spasial di bawah satu Layer — skema v3 (plan mellow-weaving-eclipse
+ * Fase 3). store() mendukung 3 metode input (Shapefile/Koordinat manual/
+ * KMZ) lewat SpatialGeometryBatchImporter, bisa membuat BANYAK
+ * SpatialLayerFeature sekaligus dalam satu submit.
+ *
+ * Deviasi dari v2: `attributes` (mentah hasil impor) dan `metadata_dinamis`
+ * (terstruktur sesuai skema Jenis) dulu dua kolom jsonb terpisah — di v3
+ * tergabung jadi satu `properties` (dokumen tidak membedakan keduanya).
+ * Saat update(), nilai metadata_dinamis baru di-merge ke atas `properties`
+ * yang sudah ada (bukan overwrite total) supaya atribut mentah hasil impor
+ * tidak hilang.
  */
 class SpatialLayerFeatureController extends Controller
 {
@@ -63,10 +66,9 @@ class SpatialLayerFeatureController extends Controller
                 $quotedWkt = DB::connection()->getPdo()->quote($result['wkt']);
 
                 SpatialLayerFeature::create([
-                    'spatial_layer_id' => $spatialLayer->id,
-                    'geometry' => DB::raw("ST_GeomFromText({$quotedWkt}, 4326)"),
-                    'attributes' => $result['attributes'],
-                    'metadata_dinamis' => $metadataDinamis,
+                    'layer_id' => $spatialLayer->id,
+                    'geom' => DB::raw("ST_GeomFromText({$quotedWkt}, 4326)"),
+                    'properties' => array_merge($result['attributes'], $metadataDinamis),
                     'gambar' => $gambarPath,
                     'created_by' => auth()->id(),
                 ]);
@@ -122,12 +124,12 @@ class SpatialLayerFeatureController extends Controller
 
     public function edit(SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
     {
-        abort_unless($feature->spatial_layer_id === $spatialLayer->id, 404);
+        abort_unless($feature->layer_id === $spatialLayer->id, 404);
 
         $dynamicAttributes = $this->activeDynamicAttributesFor($spatialLayer);
-        $geometryWkt = DB::table('spatial_layer_features')
+        $geometryWkt = DB::table('spatial_features')
             ->where('id', $feature->id)
-            ->selectRaw('ST_AsText(geometry) as wkt')
+            ->selectRaw('ST_AsText(geom) as wkt')
             ->value('wkt');
 
         return view('backend.pages.spatial-layers.features.edit', [
@@ -140,7 +142,7 @@ class SpatialLayerFeatureController extends Controller
 
     public function update(Request $request, SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
     {
-        abort_unless($feature->spatial_layer_id === $spatialLayer->id, 404);
+        abort_unless($feature->layer_id === $spatialLayer->id, 404);
 
         $validated = $this->validated($request, $spatialLayer, $feature);
 
@@ -151,7 +153,7 @@ class SpatialLayerFeatureController extends Controller
 
     public function destroy(SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
     {
-        abort_unless($feature->spatial_layer_id === $spatialLayer->id, 404);
+        abort_unless($feature->layer_id === $spatialLayer->id, 404);
 
         $feature->delete();
 
@@ -235,8 +237,8 @@ class SpatialLayerFeatureController extends Controller
         $quotedWkt = DB::connection()->getPdo()->quote($validated['geometry_wkt']);
 
         $result = [
-            'geometry' => DB::raw("ST_GeomFromText({$quotedWkt}, 4326)"),
-            'metadata_dinamis' => $validated['metadata_dinamis'] ?? [],
+            'geom' => DB::raw("ST_GeomFromText({$quotedWkt}, 4326)"),
+            'properties' => array_merge($feature?->properties ?? [], $validated['metadata_dinamis'] ?? []),
         ];
 
         if ($request->hasFile('gambar')) {

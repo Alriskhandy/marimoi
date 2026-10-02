@@ -20,22 +20,14 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label class="form-label">Layer Induk (opsional)</label>
-        <select name="parent_id" class="form-select">
-            <option value="">Tidak ada (jadi akar)</option>
-            @foreach ($parentOptions as $option)
-                <option value="{{ $option->id }}" @selected(old('parent_id', $layer?->parent_id) == $option->id)>{{ $option->name }}</option>
-            @endforeach
-        </select>
-        @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-</div>
+@include('backend.pages.spatial-layers._category-picker', [
+    'selectedCategoryId' => $layer?->category_id,
+    'selectedCategoryNodeId' => $layer?->category_node_id,
+])
 
 <div class="mb-3">
     <label class="form-label">Deskripsi</label>
-    <textarea name="description" class="form-control" rows="2">{{ old('description', $layer?->description) }}</textarea>
+    <textarea name="short_description" class="form-control" rows="2">{{ old('short_description', $layer?->short_description) }}</textarea>
 </div>
 
 <hr>
@@ -51,7 +43,7 @@
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Opacity</label>
-        <input type="number" name="opacity" class="form-control" step="0.1" min="0" max="1" value="{{ old('opacity', $layer?->opacity ?? 1) }}">
+        <input type="number" name="default_opacity" class="form-control" step="0.1" min="0" max="1" value="{{ old('default_opacity', $layer?->opacity ?? 1) }}">
     </div>
     <div class="col-md-3 mb-3 form-check mt-4">
         <input type="checkbox" name="is_marker" value="1" class="form-check-input" @checked(old('is_marker', $layer?->is_marker))>

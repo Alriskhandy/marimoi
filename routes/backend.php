@@ -165,10 +165,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index')->middleware('permission:categories.view');
-        Route::get('/create', [CategoryController::class, 'create'])->name('create')->middleware('permission:categories.create');
         Route::post('/store', [CategoryController::class, 'store'])->name('store')->middleware('permission:categories.create');
-        Route::get('/{id}', [CategoryController::class, 'show'])->name('show')->middleware('permission:categories.view');
-        Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit')->middleware('permission:categories.edit');
         Route::put('/{id}', [CategoryController::class, 'update'])->name('update')->middleware('permission:categories.edit');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy')->middleware('permission:categories.delete');
 
@@ -177,9 +174,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::get('/{id}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:categories.edit');
         Route::put('/{id}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:categories.edit');
 
-        // API routes untuk categories
-        Route::get('/api/by-type/{type}', [CategoryController::class, 'getByType'])->name('api.by-type')->middleware('permission:categories.view');
-        Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree')->middleware('permission:categories.view');
+        // API cascading select (3 level) dipakai index.blade.php — satu-satunya
+        // endpoint API Category yang benar-benar dikonsumsi JS (lihat Category
+        // model/controller untuk method lain yang sudah tidak diroutekan: sempat
+        // ada getByType/getTree tapi tidak dipanggil di mana pun).
         Route::get('/api/options/{type}', [CategoryController::class, 'getOptions'])->name('api.options')->middleware('permission:categories.view');
     });
 

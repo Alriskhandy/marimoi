@@ -15,12 +15,12 @@
                     @if ($attribute->is_wajib) required @endif>
                     <option value="">-- Pilih --</option>
                     @foreach ($definition->opsi as $opsi)
-                        <option value="{{ $opsi }}" @selected(old('metadata_dinamis.'.$definition->kode, $feature?->metadata_dinamis[$definition->kode] ?? '') == $opsi)>{{ $opsi }}</option>
+                        <option value="{{ $opsi }}" @selected(old('metadata_dinamis.'.$definition->kode, $feature?->properties[$definition->kode] ?? '') == $opsi)>{{ $opsi }}</option>
                     @endforeach
                 </select>
             @else
                 <input type="text" name="metadata_dinamis[{{ $definition->kode }}]" class="form-control"
-                    value="{{ old('metadata_dinamis.'.$definition->kode, $feature?->metadata_dinamis[$definition->kode] ?? '') }}"
+                    value="{{ old('metadata_dinamis.'.$definition->kode, $feature?->properties[$definition->kode] ?? '') }}"
                     @if ($attribute->is_wajib) required @endif>
             @endif
             @error('metadata_dinamis.'.$definition->kode) <div class="text-danger small">{{ $message }}</div> @enderror

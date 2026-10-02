@@ -48,10 +48,13 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="stat-label">Sub Layer</p>
-                            <h3 class="stat-value">{{ $layer->children->count() }}</h3>
+                            <p class="stat-label">Kategori</p>
+                            @php
+                                $categoryKey = $layer->category_node_id ? 'node:'.$layer->category_node_id : 'cat:'.$layer->category_id;
+                            @endphp
+                            <h3 class="stat-value" style="font-size:1rem;">{{ $categoryPaths[$categoryKey] ?? '-' }}</h3>
                         </div>
-                        <i class="mdi mdi-subdirectory-arrow-right stat-icon"></i>
+                        <i class="mdi mdi-shape-outline stat-icon"></i>
                     </div>
                 </div>
             </div>
@@ -106,13 +109,10 @@
                                     class="badge {{ $layer->is_marker ? 'bg-warning text-dark' : 'bg-info text-white' }}">
                                     {{ $layer->is_marker ? 'Marker' : 'Layer' }}
                                 </span>
-                                @if ($layer->parent)
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="mdi mdi-subdirectory-arrow-right"></i>
-                                        Anak dari <a href="{{ route('spatial-layers.show', $layer->parent) }}"
-                                            class="text-decoration-none">{{ $layer->parent->name }}</a>
-                                    </span>
-                                @endif
+                                <span class="badge bg-light text-dark border">
+                                    <i class="mdi mdi-shape-outline"></i>
+                                    {{ $categoryPaths[$categoryKey] ?? '-' }}
+                                </span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
@@ -120,7 +120,7 @@
                                 data-bs-target="#editLayerModal" title="Edit">
                                 <i class="mdi mdi-pencil"></i> Edit
                             </button>
-                            @if ($layer->children->isEmpty() && $layer->features->isEmpty())
+                            @if ($layer->features->isEmpty())
                                 <form action="{{ route('spatial-layers.destroy', $layer) }}" method="POST"
                                     style="display:inline-block;" data-confirm="delete" data-name="{{ $layer->name }}">
                                     @csrf
@@ -146,18 +146,11 @@
                             </tr>
                             <tr>
                                 <th>Deskripsi</th>
-                                <td>{{ $layer->description ?? '-' }}</td>
+                                <td>{{ $layer->short_description ?? '-' }}</td>
                             </tr>
                             <tr>
-                                <th>Layer Induk</th>
-                                <td>
-                                    @if ($layer->parent)
-                                        <a
-                                            href="{{ route('spatial-layers.show', $layer->parent) }}">{{ $layer->parent->name }}</a>
-                                    @else
-                                        <span class="text-muted">Tidak ada (akar)</span>
-                                    @endif
-                                </td>
+                                <th>Kategori</th>
+                                <td>{{ $categoryPaths[$categoryKey] ?? '-' }}</td>
                             </tr>
                             <tr>
                                 <th>Style</th>
@@ -292,24 +285,28 @@
                                                 return [
                                                     'label' => $definition->label,
                                                     'satuan' => $definition->satuan,
-                                                    'value' => $feature->metadata_dinamis[$definition->kode] ?? null,
+                                                    'value' => $feature->properties[$definition->kode] ?? null,
                                                 ];
                                             })->values();
 
+                                            $isMetadataLengkap = $dynamicAttributes->contains(
+                                                fn ($attribute) => filled($feature->properties[$attribute->metadataDefinition->kode] ?? null)
+                                            );
+
                                             $featureDetailPayload = [
-                                                'kode' => $feature->external_id ?? '#'.$feature->id,
+                                                'kode' => $feature->label ?? '#'.$feature->id,
                                                 'wilayah' => $feature->region->name ?? null,
                                                 'gambar' => $feature->gambar ? asset('storage/'.$feature->gambar) : null,
-                                                'status_lengkap' => ! empty($feature->metadata_dinamis),
+                                                'status_lengkap' => $isMetadataLengkap,
                                                 'tanggal_input' => $feature->created_at?->format('d M Y H:i'),
                                                 'metadata' => $featureMetadataRows,
                                                 'edit_url' => route('spatial-layers.features.edit', [$layer, $feature]),
                                                 'delete_url' => route('spatial-layers.features.destroy', [$layer, $feature]),
-                                                'delete_name' => $feature->external_id ?? '#'.$feature->id,
+                                                'delete_name' => $feature->label ?? '#'.$feature->id,
                                             ];
                                         @endphp
                                         <tr data-feature-row
-                                            data-status="{{ empty($feature->metadata_dinamis) ? 'belum' : 'lengkap' }}"
+                                            data-status="{{ $isMetadataLengkap ? 'lengkap' : 'belum' }}"
                                             data-feature="{{ json_encode($featureDetailPayload) }}"
                                             style="cursor: pointer;" title="Klik untuk lihat detail">
                                             <td>{{ $loop->iteration }}</td>
@@ -323,10 +320,10 @@
                                                         style="font-size:1.3rem;"></i>
                                                 @endif
                                             </td>
-                                            <td>{{ $feature->external_id ?? '-' }}</td>
+                                            <td>{{ $feature->label ?? '-' }}</td>
                                             <td>{{ $feature->region->name ?? '-' }}</td>
                                             <td class="text-center">
-                                                @if (!empty($feature->metadata_dinamis))
+                                                @if ($isMetadataLengkap)
                                                     <span class="badge bg-gradient-success text-white">Lengkap</span>
                                                 @else
                                                     <span class="badge bg-gradient-warning text-white">Belum lengkap</span>
@@ -344,7 +341,7 @@
                                                         action="{{ route('spatial-layers.features.destroy', [$layer, $feature]) }}"
                                                         method="POST" style="display:inline-block;"
                                                         data-confirm="delete"
-                                                        data-name="{{ $feature->external_id ?? '#' . $feature->id }}">
+                                                        data-name="{{ $feature->label ?? '#' . $feature->id }}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -430,27 +427,18 @@
                                 </div>
 
                                 <div class="form-group mb-2">
-                                    <label for="layer_edit_description" class="form-label">Deskripsi</label>
-                                    <textarea class="form-control" id="layer_edit_description" name="description" rows="2">{{ old('description', $layer->description) }}</textarea>
-                                    @error('description')
+                                    <label for="layer_edit_short_description" class="form-label">Deskripsi</label>
+                                    <textarea class="form-control" id="layer_edit_short_description" name="short_description" rows="2">{{ old('short_description', $layer->short_description) }}</textarea>
+                                    @error('short_description')
                                         <div class="text-danger small">{{ $message }}</div>
                                     @enderror
                                 </div>
 
-                                <div class="form-group mb-2">
-                                    <label for="layer_edit_parent_id" class="form-label">Layer Induk</label>
-                                    <select class="form-control" id="layer_edit_parent_id" name="parent_id">
-                                        <option value="">-- Tidak ada (jadi akar) --</option>
-                                        @foreach ($parentOptions as $option)
-                                            <option value="{{ $option->id }}" @selected(old('parent_id', $layer->parent_id) == $option->id)>
-                                                {{ $option->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('parent_id')
-                                        <div class="text-danger small">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
+                                @include('backend.pages.spatial-layers._category-picker', [
+                                    'prefix' => 'layer_edit',
+                                    'selectedCategoryId' => $layer->category_id,
+                                    'selectedCategoryNodeId' => $layer->category_node_id,
+                                ])
 
                             </div>
 
@@ -498,10 +486,10 @@
 
                                 <div class="form-group mb-2">
                                     <label for="layer_edit_opacity" class="form-label">Opacity</label>
-                                    <input type="number" class="form-control" id="layer_edit_opacity" name="opacity"
+                                    <input type="number" class="form-control" id="layer_edit_opacity" name="default_opacity"
                                         step="0.1" min="0" max="1"
-                                        value="{{ old('opacity', $layer->opacity ?? 1) }}">
-                                    @error('opacity')
+                                        value="{{ old('default_opacity', $layer->opacity ?? 1) }}">
+                                    @error('default_opacity')
                                         <div class="text-danger small">{{ $message }}</div>
                                     @enderror
                                 </div>

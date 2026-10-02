@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\LegacyCategory as Category;
 use App\Models\Opd;
 use App\Models\ProjectProgressReport;
 use Illuminate\Http\Request;

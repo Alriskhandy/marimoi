@@ -2,18 +2,23 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\LegacyCategory as Category;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerMetadata;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Regresi untuk metadata layer (docs/marimoi v2/04_implementation/
- * 11-plan-dashboard-skema-baru.md Bagian A).
+ * Regresi untuk metadata layer — skema v3 (plan mellow-weaving-eclipse Fase
+ * 3). Tabel fisik berganti nama (`spatial_layer_metadata` -> `layer_metadata`),
+ * PK berubah dari `spatial_layer_id` jadi `layer_id`, dan field
+ * `source_name`/`data_reference_year` dipetakan ulang ke
+ * `producer_organization`/`data_year` (lihat SpatialLayerMetadataController).
  */
 class SpatialLayerMetadataTest extends TestCase
 {
@@ -27,14 +32,35 @@ class SpatialLayerMetadataTest extends TestCase
         return User::factory()->create(['role_id' => $role->id]);
     }
 
+    private function categoryId(): string
+    {
+        return DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+    }
+
+    private function createLayer(array $overrides = []): SpatialLayer
+    {
+        return SpatialLayer::create(array_merge([
+            'category_id' => $this->categoryId(),
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'slug' => 'layer-uji',
+            'name' => 'Kategori Uji',
+        ], $overrides));
+    }
+
     public function test_edit_page_loads_for_category_with_matching_layer(): void
     {
         $admin = $this->admin();
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
-        SpatialLayer::create([
-            'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'legacy_category_id' => $category->id,
-        ]);
+        $this->createLayer(['legacy_category_id' => $category->id]);
 
         $this->actingAs($admin)->get(route('categories.metadata.edit', $category->id))->assertOk();
     }
@@ -53,22 +79,19 @@ class SpatialLayerMetadataTest extends TestCase
     {
         $admin = $this->admin();
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
-        $layer = SpatialLayer::create([
-            'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'legacy_category_id' => $category->id,
-        ]);
+        $layer = $this->createLayer(['legacy_category_id' => $category->id]);
 
         $this->actingAs($admin)->put(route('categories.metadata.update', $category->id), [
-            'source_name' => 'BPS Maluku Utara',
+            'producer_organization' => 'BPS Maluku Utara',
             'license' => 'CC-BY-4.0',
-            'data_reference_year' => 2025,
+            'data_year' => 2025,
         ])->assertRedirect(route('categories.metadata.edit', $category->id));
 
-        $this->assertDatabaseHas('spatial_layer_metadata', [
-            'spatial_layer_id' => $layer->id,
-            'source_name' => 'BPS Maluku Utara',
+        $this->assertDatabaseHas('layer_metadata', [
+            'layer_id' => $layer->id,
+            'producer_organization' => 'BPS Maluku Utara',
             'license' => 'CC-BY-4.0',
-            'data_reference_year' => 2025,
+            'data_year' => 2025,
         ]);
     }
 
@@ -79,19 +102,16 @@ class SpatialLayerMetadataTest extends TestCase
         // benar-benar ada di $validated, jadi 'license' lama tetap bertahan.
         $admin = $this->admin();
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'warna' => '#000']);
-        $layer = SpatialLayer::create([
-            'slug' => 'layer-uji', 'name' => 'Kategori Uji', 'title' => 'Kategori Uji',
-            'legacy_category_id' => $category->id,
-        ]);
-        SpatialLayerMetadata::create(['spatial_layer_id' => $layer->id, 'source_name' => 'Sumber Awal', 'license' => 'CC-BY-4.0']);
+        $layer = $this->createLayer(['legacy_category_id' => $category->id]);
+        SpatialLayerMetadata::create(['layer_id' => $layer->id, 'producer_organization' => 'Sumber Awal', 'license' => 'CC-BY-4.0']);
 
         $this->actingAs($admin)->put(route('categories.metadata.update', $category->id), [
-            'source_name' => 'Sumber Baru',
+            'producer_organization' => 'Sumber Baru',
         ]);
 
-        $this->assertDatabaseHas('spatial_layer_metadata', [
-            'spatial_layer_id' => $layer->id,
-            'source_name' => 'Sumber Baru',
+        $this->assertDatabaseHas('layer_metadata', [
+            'layer_id' => $layer->id,
+            'producer_organization' => 'Sumber Baru',
             'license' => 'CC-BY-4.0',
         ]);
     }
@@ -101,7 +121,7 @@ class SpatialLayerMetadataTest extends TestCase
         $admin = $this->admin();
         $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Tanpa Layer', 'warna' => '#000']);
 
-        $this->actingAs($admin)->put(route('categories.metadata.update', $category->id), ['source_name' => 'X'])
+        $this->actingAs($admin)->put(route('categories.metadata.update', $category->id), ['producer_organization' => 'X'])
             ->assertRedirect(route('categories.index'))
             ->assertSessionHas('error');
     }

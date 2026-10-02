@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\LegacyCategory as Category;
 use App\Models\Opd;
 use App\Models\User;
 use App\Support\MapDataVersion;
@@ -229,7 +229,7 @@ class FrontendPagesTest extends TestCase
         $before = $this->getJson(route('tematik.version'))->json('version');
 
         // Query massal (tanpa event model), seperti "Ubah Kategori/Layer" pada aksi bulk.
-        DB::table('data_spatial')->update(['kategori_id' => $b->id]);
+        DB::table('data_spatial_legacy_v1')->update(['kategori_id' => $b->id]);
         MapDataVersion::forget();
 
         $this->assertNotSame($before, $this->getJson(route('tematik.version'))->json('version'));

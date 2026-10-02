@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\MapType;
-use App\Models\SpatialLayer;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -15,6 +15,14 @@ use Illuminate\Support\Str;
  *
  * Idempoten: dijalankan dua kali tidak membuat Jenis duplikat (slug disertakan id
  * root, unik permanen) dan tidak mengubah assignment yang sudah benar.
+ *
+ * SENGAJA memakai DB::table('spatial_layers_legacy_v2') langsung (bukan
+ * Eloquent `SpatialLayer`) — kelas itu sudah diarahkan ke `layers` (plan
+ * mellow-weaving-eclipse, final setelah Fase 6) yang TIDAK punya kolom
+ * `parent_id` lagi (hirarki pindah ke categories_v3/category_nodes).
+ * `spatial_layers_legacy_v2` sudah beku (tidak ada lagi arus data baru sejak
+ * ReconcileSpatialLayersBackfill dihapus) — command ini dipertahankan untuk
+ * review/riwayat, bukan lagi jalur hidup.
  */
 class GranularizeMapTypes extends Command
 {
@@ -25,10 +33,10 @@ class GranularizeMapTypes extends Command
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
-        $roots = SpatialLayer::whereNull('parent_id')->orderBy('id')->get();
+        $roots = DB::table('spatial_layers_legacy_v2')->whereNull('parent_id')->orderBy('id')->get();
 
         if ($roots->isEmpty()) {
-            $this->warn('Tidak ada spatial_layers dengan parent_id null — tidak ada yang bisa digranularisasi.');
+            $this->warn('Tidak ada spatial_layers_legacy_v2 dengan parent_id null — tidak ada yang bisa digranularisasi.');
 
             return self::SUCCESS;
         }
@@ -51,7 +59,8 @@ class GranularizeMapTypes extends Command
                 ['nama' => $root->name, 'is_active' => true]
             );
 
-            SpatialLayer::whereIn('id', array_merge([$root->id], $descendantIds))
+            DB::table('spatial_layers_legacy_v2')
+                ->whereIn('id', array_merge([$root->id], $descendantIds))
                 ->update(['map_type_id' => $mapType->id]);
         }
 
@@ -63,8 +72,12 @@ class GranularizeMapTypes extends Command
             return self::SUCCESS;
         }
 
+        // Dicek lewat kedua tabel (spatial_layers v2 DAN layers_v3) — Jenis bisa
+        // masih dipakai salah satu tanpa yang lain selama Kategori belum
+        // dimigrasikan penuh ke v3.
         $deactivated = MapType::whereIn('slug', ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'psd', 'psn'])
-            ->whereDoesntHave('spatialLayers')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('spatial_layers_legacy_v2')->whereColumn('spatial_layers_legacy_v2.map_type_id', 'map_types.id'))
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('layers')->whereColumn('layers.map_type_id', 'map_types.id'))
             ->update(['is_active' => false]);
 
         $this->info("Jenis lama yang dinonaktifkan (tidak ada Layer lagi menunjuk ke situ): {$deactivated}");
@@ -78,12 +91,12 @@ class GranularizeMapTypes extends Command
     private function collectDescendantIds(int $parentId): array
     {
         $ids = [];
-        $queue = SpatialLayer::where('parent_id', $parentId)->pluck('id')->all();
+        $queue = DB::table('spatial_layers_legacy_v2')->where('parent_id', $parentId)->pluck('id')->all();
 
         while (! empty($queue)) {
             $id = array_shift($queue);
             $ids[] = $id;
-            $children = SpatialLayer::where('parent_id', $id)->pluck('id')->all();
+            $children = DB::table('spatial_layers_legacy_v2')->where('parent_id', $id)->pluck('id')->all();
             array_push($queue, ...$children);
         }
 

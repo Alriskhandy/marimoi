@@ -19,11 +19,20 @@
     @endif
 </div>
 
-@if ($feature?->attributes)
+@php
+    // `properties` v3 menggabungkan atribut mentah hasil impor DAN metadata
+    // dinamis (dulu 2 kolom terpisah, lihat SpatialLayerFeatureController) —
+    // kode yang sudah tampil di bagian "Metadata Dinamis" di bawah dikecualikan
+    // di sini supaya tidak dobel tampil.
+    $dynamicCodes = $dynamicAttributes->pluck('metadataDefinition.kode')->all();
+    $rawAttributes = \Illuminate\Support\Arr::except($feature?->properties ?? [], $dynamicCodes);
+@endphp
+
+@if (! empty($rawAttributes))
     <hr>
     <h6>Atribut Impor (hasil SHP/KMZ/KML — apa adanya, tidak diedit di sini)</h6>
     <table class="table table-sm">
-        @foreach ($feature->attributes as $key => $value)
+        @foreach ($rawAttributes as $key => $value)
             <tr><th>{{ $key }}</th><td>{{ is_scalar($value) ? $value : json_encode($value) }}</td></tr>
         @endforeach
     </table>

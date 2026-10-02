@@ -9,6 +9,7 @@ use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -34,11 +35,27 @@ class DashboardTotalLokasiTest extends TestCase
 
     private function makeFeature(?int $createdBy = null): SpatialLayerFeature
     {
-        $layer = SpatialLayer::create(['slug' => 'layer-'.uniqid(), 'name' => 'Layer', 'title' => 'Layer']);
+        $categoryId = DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+
+        $layer = SpatialLayer::create([
+            'category_id' => $categoryId,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'slug' => 'layer-'.uniqid(),
+            'name' => 'Layer',
+        ]);
 
         return SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
             'created_by' => $createdBy,
         ]);
     }

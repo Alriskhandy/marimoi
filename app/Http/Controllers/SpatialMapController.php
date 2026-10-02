@@ -14,6 +14,12 @@ use Illuminate\Http\Response;
  * berdampingan dengan FrontendController lama (categories/data_spatial) yang tetap
  * jadi halaman produksi. Lihat docs/marimoi v2/04_implementation/10-plan-peta-skema-baru.md
  * untuk rasional kenapa ini dibuat paralel, bukan swap langsung.
+ *
+ * Disesuaikan ke skema v3 (plan mellow-weaving-eclipse Fase 3) karena model
+ * `SpatialLayer`/`SpatialLayerFeature` sudah diarahkan ke layers_v3/
+ * spatial_features_v3 — penyesuaian MINIMAL supaya endpoint ini tidak error
+ * (bukan redesain penuh; perbandingan output lama vs baru sebelum cutover
+ * publik sungguhan tetap Fase 4 terpisah, lihat plan).
  */
 class SpatialMapController extends Controller
 {
@@ -22,20 +28,33 @@ class SpatialMapController extends Controller
         return response()->view('frontend.pages.peta-v2');
     }
 
+    /**
+     * Layer tidak lagi bertingkat antar-sesama di v3 (parent_id dihapus,
+     * organisasi pindah ke categories_v3/category_nodes) — daftar flat
+     * layer published, bukan tree.
+     */
     public function layerTree(): JsonResponse
     {
-        $layers = SpatialLayer::with('children')
-            ->whereNull('parent_id')
-            ->where('is_active', true)
-            ->get(['id', 'slug', 'name', 'title', 'color', 'icon', 'opacity', 'is_marker', 'parent_id']);
+        $layers = SpatialLayer::with('defaultStyle')
+            ->where('status', 'published')
+            ->get(['id', 'slug', 'name', 'short_description', 'default_opacity', 'default_style_id', 'category_id', 'category_node_id']);
 
-        return response()->json($layers);
+        return response()->json($layers->map(fn (SpatialLayer $layer) => [
+            'id' => $layer->id,
+            'slug' => $layer->slug,
+            'name' => $layer->name,
+            'title' => $layer->short_description,
+            'color' => $layer->color,
+            'icon' => $layer->icon,
+            'opacity' => $layer->opacity,
+            'is_marker' => $layer->is_marker,
+        ]));
     }
 
     public function geojson(SpatialLayer $layer): JsonResponse
     {
-        $features = SpatialLayerFeature::where('spatial_layer_id', $layer->id)
-            ->selectRaw('id, external_id, region_id, attributes, ST_AsGeoJSON(geometry) as geojson')
+        $features = SpatialLayerFeature::where('layer_id', $layer->id)
+            ->selectRaw('id, label, region_id, properties, ST_AsGeoJSON(geom) as geojson')
             ->get();
 
         return response()->json([
@@ -45,8 +64,8 @@ class SpatialMapController extends Controller
                 'geometry' => json_decode($feature->geojson),
                 'properties' => [
                     'id' => $feature->id,
-                    'external_id' => $feature->external_id,
-                    'attributes' => $feature->attributes,
+                    'external_id' => $feature->label,
+                    'attributes' => $feature->properties,
                     'region_id' => $feature->region_id,
                 ],
             ]),
@@ -61,7 +80,7 @@ class SpatialMapController extends Controller
             : null;
 
         return response()->json([
-            'attributes' => $feature->attributes,
+            'attributes' => $feature->properties,
             'metadata_dinamis' => $this->labeledMetadataDinamis($feature),
             'gambar' => $feature->gambar,
             'region' => $feature->region?->only(['name', 'level']),
@@ -71,18 +90,18 @@ class SpatialMapController extends Controller
     }
 
     /**
-     * metadata_dinamis (Bagian 1.4/5 docs/marimoi v2/04_implementation/
-     * 12-implementasi-perbaikan-pemetaan.md) disimpan dengan key kode metadata
-     * mentah — gabungkan dengan label/satuan dari katalog MetadataDefinition
-     * (docs/marimoi v2/03_plan/14-penyesuaian-database-jenis-peta.md Bagian 6,
-     * Opsi B) lewat pivot MapTypeDynamicAttribute Jenis-nya, supaya popup detail
-     * menampilkan label yang dipahami pengguna, bukan key jsonb mentah.
+     * Nilai atribut dinamis (Bagian 1.4/5 docs/marimoi v2/04_implementation/
+     * 12-implementasi-perbaikan-pemetaan.md) sekarang tergabung di `properties`
+     * (bersama atribut mentah hasil impor, lihat Fase 2 migrasi) — disaring di
+     * sini berdasarkan kode yang memang terdaftar sebagai atribut dinamis
+     * Jenis Peta layer-nya, supaya popup detail tidak menampilkan field mentah
+     * yang tidak relevan.
      *
      * @return array<int, array{label: string, satuan: ?string, value: mixed}>
      */
     private function labeledMetadataDinamis(SpatialLayerFeature $feature): array
     {
-        $values = $feature->metadata_dinamis ?? [];
+        $values = $feature->properties ?? [];
 
         if (empty($values) || ! $feature->layer->map_type_id) {
             return [];
@@ -96,12 +115,11 @@ class SpatialMapController extends Controller
             ->keyBy('kode');
 
         $result = [];
-        foreach ($values as $kode => $value) {
-            $definition = $definitions->get($kode);
+        foreach ($definitions as $kode => $definition) {
             $result[] = [
-                'label' => $definition?->label ?? $kode,
-                'satuan' => $definition?->satuan,
-                'value' => $value,
+                'label' => $definition->label,
+                'satuan' => $definition->satuan,
+                'value' => $values[$kode],
             ];
         }
 

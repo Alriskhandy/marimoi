@@ -33,10 +33,10 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <p class="stat-label">Layer Akar</p>
-                                <h3 class="stat-value">{{ $roots->count() }}</h3>
+                                <p class="stat-label">Total Layer</p>
+                                <h3 class="stat-value">{{ $layers->count() }}</h3>
                             </div>
-                            <i class="mdi mdi-format-list-bulleted-type stat-icon"></i>
+                            <i class="mdi mdi-layers stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -47,10 +47,10 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <p class="stat-label">Sub Layer</p>
-                                <h3 class="stat-value">{{ $layers->whereNotNull('parent_id')->count() }}</h3>
+                                <p class="stat-label">Punya Data Spasial</p>
+                                <h3 class="stat-value">{{ $layers->where('features_count', '>', 0)->count() }}</h3>
                             </div>
-                            <i class="mdi mdi-subdirectory-arrow-right stat-icon"></i>
+                            <i class="mdi mdi-map-marker-multiple stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -180,98 +180,69 @@
                                         </div>
                                     </th>
                                     <th>No</th>
-                                    <th>Nama & Hirarki</th>
+                                    <th>Nama</th>
+                                    <th>Kategori</th>
                                     <th>Jenis</th>
                                     <th style="width: 15%;">Style</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @php
-                                    $no = 1;
-
-                                    // Guard function_exists() wajib — deklarasi fungsi top-level di dalam view
-                                    // Blade akan fatal "Cannot redeclare" kalau halaman ini dirender lebih dari
-                                    // sekali dalam satu proses PHP (mis. beberapa test yang GET index ini di
-                                    // satu test run, atau di production kalau view pernah ter-include ganda).
-                                    if (! function_exists('renderSpatialLayerHierarchy')) {
-                                    function renderSpatialLayerHierarchy($layers, &$no, $parentId = null, $level = 0)
-                                    {
-                                        $filtered = $layers->where('parent_id', $parentId)->sortBy('name');
-                                        $output = '';
-
-                                        foreach ($filtered as $layer) {
-                                            $hasChildren = $layer->children_count > 0;
-                                            $indentStyle = $level > 0 ? 'padding-left:' . ($level * 1.5) . 'rem;' : '';
-
-                                            $output .= '<tr data-layer-id="' . $layer->id . '" data-parent-id="' . $layer->parent_id . '" data-map-type-id="' . ($layer->map_type_id ?? '0') . '"';
-                                            $output .= ' class="spatial-layer-row' . ($level > 0 ? ' children-of-' . $layer->parent_id : '') . '"';
-                                            if ($level > 0) {
-                                                $output .= ' style="display:none;"';
-                                            }
-                                            $output .= '>';
-
-                                            $output .= '<td><div class="checkbox-wrapper"><input class="form-check-input row-checkbox" type="checkbox" value="' . $layer->id . '" id="check-' . $layer->id . '"><label class="form-check-label" for="check-' . $layer->id . '"><span class="visually-hidden">Select row</span></label></div></td>';
-
-                                            $output .= '<td>' . $no++ . '</td>';
-
-                                            $output .= '<td><div class="d-flex align-items-center" style="' . $indentStyle . '">';
-                                            if ($hasChildren) {
-                                                $output .= '<button type="button" class="btn btn-link btn-sm p-0 me-2 hierarchy-toggle text-secondary" data-target="children-of-' . $layer->id . '" title="Expand"><i class="mdi mdi-chevron-right"></i></button>';
-                                            } else {
-                                                $output .= '<span class="me-4"></span>';
-                                            }
-                                            $output .= '<div><span class="text-dark ' . ($level == 0 ? 'fw-bold' : 'fw-medium') . '">' . e($layer->name) . '</span>';
-                                            if ($layer->description) {
-                                                $output .= '<br><small class="text-muted">' . e(\Illuminate\Support\Str::limit($layer->description, 50)) . '</small>';
-                                            }
-                                            if ($hasChildren) {
-                                                $output .= '<span class="badge bg-info text-white ms-2" style="font-size:0.65em;">' . $layer->children_count . ' sub</span>';
-                                            }
-                                            if ($layer->features_count > 0) {
-                                                $output .= '<span class="badge bg-success text-white ms-2" style="font-size:0.65em;">' . $layer->features_count . ' data</span>';
-                                            }
-                                            $output .= '</div></div></td>';
-
-                                            $output .= '<td>' . ($layer->mapType?->nama ? '<span class="badge bg-primary text-white">' . e($layer->mapType->nama) . '</span>' : '<span class="text-muted">-</span>') . '</td>';
-
-                                            // Style — gabungan warna, tipe (marker/layer), dan icon dalam 1 kolom.
-                                            $output .= '<td><div class="d-flex align-items-center gap-2 flex-wrap">';
-                                            if ($layer->color) {
-                                                $output .= '<span class="color-box" style="display:inline-block;background-color:' . $layer->color . ';width:18px;height:18px;border-radius:4px;border:1px solid #dee2e6;box-shadow:0 1px 3px rgba(0,0,0,0.1);" title="' . $layer->color . '"></span>';
-                                            }
-                                            if ($layer->is_marker && $layer->icon) {
-                                                $output .= '<i class="' . $layer->icon . '" style="color:' . ($layer->color ?? '#007bff') . ';font-size:1.2em;" title="' . e($layer->icon) . '"></i>';
-                                            }
-                                            $output .= $layer->is_marker
-                                                ? '<span class="badge bg-warning text-dark"><i class="mdi mdi-map-marker"></i> Marker</span>'
-                                                : '<span class="badge bg-info text-white"><i class="mdi mdi-layers"></i> Layer</span>';
-                                            $output .= '</div></td>';
-
-                                            $output .= '<td><div class="btn-group" role="group">';
-                                            $output .= '<a href="' . route('spatial-layers.show', $layer->id) . '" class="btn btn-sm btn-outline-primary" title="Detail"><i class="mdi mdi-eye"></i></a>';
-                                            $output .= '<form action="' . route('spatial-layers.destroy', $layer->id) . '" method="POST" style="display:inline-block" data-confirm="delete" data-name="' . e($layer->name) . '">';
-                                            $output .= csrf_field() . method_field('DELETE');
-                                            $output .= '<button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus"><i class="mdi mdi-delete"></i></button>';
-                                            $output .= '</form></div></td>';
-
-                                            $output .= '</tr>';
-
-                                            if ($hasChildren) {
-                                                $output .= renderSpatialLayerHierarchy($layers, $no, $layer->id, $level + 1);
-                                            }
-                                        }
-
-                                        return $output;
-                                    }
-                                    }
-
-                                    echo renderSpatialLayerHierarchy($layers, $no);
-                                @endphp
+                                @foreach ($layers->sortBy('name') as $layer)
+                                    @php
+                                        $categoryKey = $layer->category_node_id ? 'node:'.$layer->category_node_id : 'cat:'.$layer->category_id;
+                                        $categoryLabel = $categoryPaths[$categoryKey] ?? '-';
+                                    @endphp
+                                    <tr data-layer-id="{{ $layer->id }}" data-map-type-id="{{ $layer->map_type_id ?? '0' }}" class="spatial-layer-row">
+                                        <td>
+                                            <div class="checkbox-wrapper">
+                                                <input class="form-check-input row-checkbox" type="checkbox" value="{{ $layer->id }}" id="check-{{ $layer->id }}">
+                                                <label class="form-check-label" for="check-{{ $layer->id }}"><span class="visually-hidden">Select row</span></label>
+                                            </div>
+                                        </td>
+                                        <td>{{ $loop->iteration }}</td>
+                                        <td>
+                                            <span class="text-dark fw-bold">{{ $layer->name }}</span>
+                                            @if ($layer->short_description)
+                                                <br><small class="text-muted">{{ \Illuminate\Support\Str::limit($layer->short_description, 50) }}</small>
+                                            @endif
+                                            @if ($layer->features_count > 0)
+                                                <span class="badge bg-success text-white ms-2" style="font-size:0.65em;">{{ $layer->features_count }} data</span>
+                                            @endif
+                                        </td>
+                                        <td><small class="text-muted">{{ $categoryLabel }}</small></td>
+                                        <td>{!! $layer->mapType?->nama ? '<span class="badge bg-primary text-white">'.e($layer->mapType->nama).'</span>' : '<span class="text-muted">-</span>' !!}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                @if ($layer->color)
+                                                    <span class="color-box" style="display:inline-block;background-color:{{ $layer->color }};width:18px;height:18px;border-radius:4px;border:1px solid #dee2e6;box-shadow:0 1px 3px rgba(0,0,0,0.1);" title="{{ $layer->color }}"></span>
+                                                @endif
+                                                @if ($layer->is_marker && $layer->icon)
+                                                    <i class="{{ $layer->icon }}" style="color:{{ $layer->color ?? '#007bff' }};font-size:1.2em;" title="{{ $layer->icon }}"></i>
+                                                @endif
+                                                @if ($layer->is_marker)
+                                                    <span class="badge bg-warning text-dark"><i class="mdi mdi-map-marker"></i> Marker</span>
+                                                @else
+                                                    <span class="badge bg-info text-white"><i class="mdi mdi-layers"></i> Layer</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ route('spatial-layers.show', $layer->id) }}" class="btn btn-sm btn-outline-primary" title="Detail"><i class="mdi mdi-eye"></i></a>
+                                                <form action="{{ route('spatial-layers.destroy', $layer->id) }}" method="POST" style="display:inline-block" data-confirm="delete" data-name="{{ $layer->name }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus"><i class="mdi mdi-delete"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
 
                                 @if ($layers->count() == 0)
                                     <tr>
-                                        <td colspan="6" class="text-center py-4">
+                                        <td colspan="7" class="text-center py-4">
                                             <i class="mdi mdi-layers-outline mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada Layer yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Layer" untuk memulai</p>
@@ -377,16 +348,7 @@
                                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                                 </div>
 
-                                <div class="form-group mb-2">
-                                    <label for="layer_add_parent_id" class="form-label">Layer Induk</label>
-                                    <select class="form-control" id="layer_add_parent_id" name="parent_id">
-                                        <option value="">-- Tidak ada (jadi akar) --</option>
-                                        @foreach ($parentOptions as $option)
-                                            <option value="{{ $option->id }}" @selected(old('parent_id') == $option->id)>{{ $option->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('parent_id') <div class="text-danger small">{{ $message }}</div> @enderror
-                                </div>
+                                @include('backend.pages.spatial-layers._category-picker', ['prefix' => 'layer_add'])
 
                             </div>
 
@@ -601,63 +563,6 @@
         .stat-card-compact .stat-icon {
             font-size: 2rem;
             opacity: 0.5;
-        }
-
-        /* ===========================================
-           HIERARCHY CONTROLS STYLING — sempat lewat tersalin dari categories/
-           index.blade.php, tombol "Expand All" jadi tanpa gaya (warna default
-           Bootstrap polos, kontras buruk).
-           =========================================== */
-        .hierarchy-controls {
-            margin-bottom: 10px;
-        }
-
-        .hierarchy-toggle-all {
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.25);
-        }
-
-        .hierarchy-toggle-all:hover {
-            background: linear-gradient(135deg, #0056b3, #004085);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.35);
-            color: white;
-        }
-
-        .hierarchy-toggle-all:active {
-            transform: translateY(0);
-        }
-
-        .hierarchy-toggle-all[data-state="expanded"] {
-            background: linear-gradient(135deg, #6c757d, #545b62);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .hierarchy-toggle-all[data-state="expanded"]:hover {
-            background: linear-gradient(135deg, #545b62, #383d41);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-        }
-
-        /* Tombol expand per-baris — warna eksplisit, bukan cuma text-secondary/
-           text-primary bawaan Bootstrap yang gampang tertimpa .btn-link.
-           Ditukar (2026-09-30): default (collapsed) sekarang biru, expanded abu. */
-        .hierarchy-toggle {
-            color: #0d6efd !important;
-        }
-
-        .hierarchy-toggle:hover {
-            color: #6c757d !important;
-        }
-
-        .hierarchy-toggle.text-primary {
-            color: #6c757d !important;
         }
 
         /* ===========================================
@@ -1000,12 +905,8 @@
                     "search": "Cari Layer:",
                     "paginate": { "first": "Pertama", "last": "Terakhir", "next": "Selanjutnya", "previous": "Sebelumnya" },
                 },
-                "dom": '<"row mb-2"<"col-sm-12"<"hierarchy-controls text-start">>>' +
-                    '<"row"<"col-sm-12"tr>>' +
+                "dom": '<"row"<"col-sm-12"tr>>' +
                     '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "drawCallback": function () {
-                    initializeHierarchyControls();
-                },
                 "initComplete": function () {
                     $('#searchTableBtn').on('click', function () {
                         table.search($('#tableSearch').val()).draw();
@@ -1019,57 +920,8 @@
                     $('#mapTypeFilter').on('change', function () {
                         table.draw();
                     });
-
-                    if ($('.hierarchy-toggle').length > 0) {
-                        $('.hierarchy-controls').html(
-                            '<button type="button" class="btn hierarchy-toggle-all" id="hierarchyToggleAll" data-state="collapsed">' +
-                            '<i class="mdi mdi-chevron-down me-1"></i><span class="toggle-text">Expand All</span></button>'
-                        );
-                    }
-
-                    initializeHierarchyControls();
-                    $('.spatial-layer-row[class*="children-of-"]').hide();
-                    $('.hierarchy-toggle i').addClass('collapsed');
                 }
             });
-
-            function initializeHierarchyControls() {
-                if ($('.hierarchy-toggle').length === 0) return;
-
-                $('.hierarchy-toggle').off('click').on('click', function (e) {
-                    e.preventDefault();
-                    const target = $(this).data('target');
-                    const childRows = $(`.${target}`);
-                    const icon = $(this).find('i');
-
-                    if (childRows.is(':visible')) {
-                        childRows.slideUp(200);
-                        icon.addClass('collapsed');
-                        $(this).attr('title', 'Expand').removeClass('text-primary').addClass('text-secondary');
-                    } else {
-                        childRows.slideDown(200);
-                        icon.removeClass('collapsed');
-                        $(this).attr('title', 'Collapse').removeClass('text-secondary').addClass('text-primary');
-                    }
-                });
-
-                $('#hierarchyToggleAll').off('click').on('click', function () {
-                    const $btn = $(this);
-                    const currentState = $btn.attr('data-state');
-
-                    if (currentState === 'collapsed') {
-                        $('[class*="children-of-"]').slideDown(200);
-                        $('.hierarchy-toggle i').removeClass('collapsed');
-                        $btn.attr('data-state', 'expanded').find('.toggle-text').text('Collapse All');
-                        $btn.find('i').removeClass('mdi-chevron-down').addClass('mdi-chevron-up');
-                    } else {
-                        $('[class*="children-of-"]').slideUp(200);
-                        $('.hierarchy-toggle i').addClass('collapsed');
-                        $btn.attr('data-state', 'collapsed').find('.toggle-text').text('Expand All');
-                        $btn.find('i').removeClass('mdi-chevron-up').addClass('mdi-chevron-down');
-                    }
-                });
-            }
         });
 
         function updateBulkActionsBar() {

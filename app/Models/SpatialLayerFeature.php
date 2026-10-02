@@ -4,34 +4,46 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Skema v3 §5.11 — tabel fisik `spatial_features_v3` (nama final
+ * `spatial_features` menyusul di Fase 6 cutover). `gambar`/`created_by`
+ * adalah kolom tambahan non-dokumen (lihat migration
+ * add_gambar_and_created_by_to_spatial_features_v3_table) — fitur foto
+ * per-fitur yang sudah berjalan di admin UI, dipertahankan.
+ *
+ * Relasi ke SpatialLayerFeatureIntervention (v2) SENGAJA dihapus di sini —
+ * tabel itu belum punya rekan v3 dan tidak dipakai di mana pun selain
+ * definisi relasinya sendiri (dead code).
+ */
 class SpatialLayerFeature extends Model
 {
+    protected $table = 'spatial_features';
+
     protected $fillable = [
-        'spatial_layer_id',
-        'source_version_id',
-        'external_id',
-        'geometry',
+        'layer_id',
+        'layer_import_id',
+        'source_fid',
+        'geom',
+        'properties',
+        'label',
         'region_id',
-        'attributes',
         'gambar',
-        'metadata_dinamis',
         'created_by',
         'legacy_data_spatial_id',
+        'legacy_spatial_layer_feature_id',
     ];
 
     protected function casts(): array
     {
         return [
-            'attributes' => 'array',
-            'metadata_dinamis' => 'array',
+            'properties' => 'array',
         ];
     }
 
     public function layer(): BelongsTo
     {
-        return $this->belongsTo(SpatialLayer::class, 'spatial_layer_id');
+        return $this->belongsTo(SpatialLayer::class, 'layer_id');
     }
 
     public function region(): BelongsTo
@@ -39,13 +51,8 @@ class SpatialLayerFeature extends Model
         return $this->belongsTo(AdministrativeRegion::class, 'region_id');
     }
 
-    public function intervensiTerkait(): HasMany
+    public function import(): BelongsTo
     {
-        return $this->hasMany(SpatialLayerFeatureIntervention::class, 'feature_id_eksisting');
-    }
-
-    public function kondisiEksistingTerkait(): HasMany
-    {
-        return $this->hasMany(SpatialLayerFeatureIntervention::class, 'feature_id_intervensi');
+        return $this->belongsTo(LayerImport::class, 'layer_import_id');
     }
 }

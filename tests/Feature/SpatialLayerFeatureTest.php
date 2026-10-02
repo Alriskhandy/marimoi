@@ -5,12 +5,23 @@ namespace Tests\Feature;
 use App\Models\Sector;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
-use App\Models\SpatialLayerFeatureIntervention;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * Regresi model SpatialLayerFeature — skema v3 (plan mellow-weaving-eclipse
+ * Fase 3). Test lama untuk relasi layer->sector() dan intervensi antar-fitur
+ * (SpatialLayerFeatureIntervention) DIHAPUS di sini:
+ * - `sector_id`/`sector()`: kolom ini tidak ada lagi di layers_v3 (dokumen
+ *   v3 §5.4 tidak punya kolom sektor).
+ * - Intervensi antar-fitur: tabel `spatial_layer_feature_interventions` FK
+ *   ke `spatial_layer_features` (v2) lama, belum punya rekan v3 (plan Fase 7
+ *   catatan retirement) — dan relasinya sudah dihapus dari model
+ *   SpatialLayerFeature karena sebelumnya terbukti dead code (tidak dipakai
+ *   controller/view mana pun selain test ini sendiri).
+ */
 class SpatialLayerFeatureTest extends TestCase
 {
     use RefreshDatabase;
@@ -21,65 +32,33 @@ class SpatialLayerFeatureTest extends TestCase
         $this->assertTrue(Sector::where('code', 'pupr')->exists());
     }
 
-    public function test_spatial_layer_belongs_to_sector(): void
+    public function test_feature_belongs_to_layer_and_casts_properties_as_array(): void
     {
-        $pupr = Sector::where('code', 'pupr')->firstOrFail();
+        $categoryId = DB::table('categories_v3')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'code' => 'cat-'.Str::random(8),
+            'name' => 'Kategori Uji',
+            'slug' => 'kategori-uji-'.Str::random(6),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+
         $layer = SpatialLayer::create([
-            'slug' => 'jalan-sektor', 'name' => 'Jalan', 'title' => 'Jalan',
-            'sector_id' => $pupr->id,
+            'category_id' => $categoryId,
+            'layer_type_id' => 4,
+            'code' => 'layer-jalan-fitur',
+            'slug' => 'jalan-fitur',
+            'name' => 'Jalan',
         ]);
 
-        $this->assertTrue($layer->sector->is($pupr));
-        $this->assertTrue($pupr->spatialLayers->pluck('id')->contains($layer->id));
-    }
-
-    public function test_feature_belongs_to_layer_and_casts_attributes_as_array(): void
-    {
-        $layer = SpatialLayer::create(['slug' => 'jalan-fitur', 'name' => 'Jalan', 'title' => 'Jalan']);
-
         $feature = SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'attributes' => ['kondisi' => 'baik'],
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => ['kondisi' => 'baik'],
         ]);
 
         $this->assertTrue($feature->fresh()->layer->is($layer));
-        $this->assertSame(['kondisi' => 'baik'], $feature->fresh()->attributes);
-    }
-
-    public function test_intervention_links_two_features_both_directions(): void
-    {
-        $layer = SpatialLayer::create(['slug' => 'jalan-intervensi', 'name' => 'Jalan', 'title' => 'Jalan']);
-
-        $eksisting = SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-        ]);
-        $intervensi = SpatialLayerFeature::create([
-            'spatial_layer_id' => $layer->id,
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)'),
-        ]);
-
-        SpatialLayerFeatureIntervention::create([
-            'feature_id_eksisting' => $eksisting->id,
-            'feature_id_intervensi' => $intervensi->id,
-            'jenis_hubungan' => 'peningkatan',
-        ]);
-
-        $this->assertTrue($eksisting->fresh()->intervensiTerkait->first()->intervensi->is($intervensi));
-        $this->assertTrue($intervensi->fresh()->kondisiEksistingTerkait->first()->eksisting->is($eksisting));
-    }
-
-    public function test_intervention_pair_must_be_unique(): void
-    {
-        $layer = SpatialLayer::create(['slug' => 'jalan-unik', 'name' => 'Jalan', 'title' => 'Jalan']);
-        $a = SpatialLayerFeature::create(['spatial_layer_id' => $layer->id, 'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
-        $b = SpatialLayerFeature::create(['spatial_layer_id' => $layer->id, 'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)')]);
-
-        SpatialLayerFeatureIntervention::create(['feature_id_eksisting' => $a->id, 'feature_id_intervensi' => $b->id]);
-
-        $this->expectException(QueryException::class);
-
-        SpatialLayerFeatureIntervention::create(['feature_id_eksisting' => $a->id, 'feature_id_intervensi' => $b->id]);
+        $this->assertSame(['kondisi' => 'baik'], $feature->fresh()->properties);
     }
 }

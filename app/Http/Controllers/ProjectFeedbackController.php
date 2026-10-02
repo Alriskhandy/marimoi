@@ -297,7 +297,7 @@ class ProjectFeedbackController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'data_spatial_id' => 'nullable|exists:data_spatial,id',
+            'data_spatial_id' => 'nullable|exists:data_spatial_legacy_v1,id',
             'nama_pemberi_aspirasi' => 'required|string|max:255',
             'nama_proyek' => 'required|string|max:255',
             'kabupaten_kota' => 'required|string|max:255',
@@ -370,7 +370,7 @@ class ProjectFeedbackController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'data_spatial_id' => 'nullable|exists:data_spatial,id',
+            'data_spatial_id' => 'nullable|exists:data_spatial_legacy_v1,id',
             'nama_pemberi_aspirasi' => 'required|string|max:255',
             'nama_proyek' => 'required|string|max:255',
             'kabupaten_kota' => 'required|string|max:255',

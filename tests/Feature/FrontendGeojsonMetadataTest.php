@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\DataSpatial;
+use App\Models\LegacyCategory as Category;
 use App\Models\Opd;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
