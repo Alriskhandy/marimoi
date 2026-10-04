@@ -17,15 +17,8 @@ class Permission extends SpatiePermission
             'label' => 'Dashboard',
             'actions' => ['view' => 'Lihat dashboard'],
         ],
-        'data-spatial' => [
-            'label' => 'Data Spasial & Peta',
-            'actions' => [
-                'view' => 'Lihat data & peta',
-                'create' => 'Tambah data',
-                'edit' => 'Ubah data',
-                'delete' => 'Hapus data',
-            ],
-        ],
+        // 'data-spatial' dihapus — Fase I/D13 (plan mellow-weaving-eclipse):
+        // modul "Data Spasial" lama di-retire, digantikan 'spatial-layers'.
         'categories' => [
             'label' => 'Kategori Peta',
             'actions' => [
@@ -48,6 +41,7 @@ class Permission extends SpatiePermission
                 'create' => 'Tambah Layer & Data Spasial',
                 'edit' => 'Ubah Layer & Data Spasial',
                 'delete' => 'Hapus Layer & Data Spasial',
+                'publish' => 'Ubah status Layer (draft/published/archived)',
             ],
         ],
         'spatial-feedbacks' => [

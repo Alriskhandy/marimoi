@@ -7,6 +7,8 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -222,5 +224,113 @@ class CategoryControllerTest extends TestCase
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $this->actingAs($user)->get(route('categories.index'))->assertForbidden();
+    }
+
+    /**
+     * Fase H butir 1 (spec-admin-manajemen-peta.md §5.1 butir 2) — memindahkan
+     * subkategori ke induk lain harus memperbarui category_id/depth/path
+     * SELURUH keturunannya, bukan cuma parent_id node yang dipindah sendiri
+     * (bug yang ditemukan: field ini sebelumnya ditinggal basi).
+     */
+    public function test_moving_a_node_cascades_category_and_depth_to_descendants(): void
+    {
+        $admin = $this->admin();
+        $rootA = Category::create(['type' => 'tematik', 'nama' => 'Root A']);
+        $rootB = Category::create(['type' => 'tematik', 'nama' => 'Root B']);
+        $child = Category::create(['type' => 'tematik', 'nama' => 'Child', 'parent_id' => $rootA->id]);
+        $grandchild = Category::create(['type' => 'tematik', 'nama' => 'Grandchild', 'parent_id' => $child->id]);
+
+        $this->actingAs($admin)->putJson(route('categories.update', $child->id), [
+            'type' => 'tematik',
+            'nama' => 'Child',
+            'parent_id' => $rootB->id,
+        ], $this->ajaxHeaders())->assertOk();
+
+        $childRow = DB::table('category_nodes')->where('id', $child->id)->first();
+        $this->assertSame($rootB->id, $childRow->category_id);
+        $this->assertSame(1, $childRow->depth);
+
+        $grandchildRow = DB::table('category_nodes')->where('id', $grandchild->id)->first();
+        $this->assertSame($rootB->id, $grandchildRow->category_id);
+        $this->assertSame(2, $grandchildRow->depth);
+        $this->assertStringStartsWith((string) $childRow->path, (string) $grandchildRow->path);
+    }
+
+    public function test_sort_order_can_be_set_on_create_and_update(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori', 'sort_order' => 0]);
+        $this->assertDatabaseHas('categories_v3', ['id' => $category->id, 'sort_order' => 0]);
+
+        $this->actingAs($admin)->putJson(route('categories.update', $category->id), [
+            'type' => 'tematik',
+            'nama' => 'Kategori',
+            'sort_order' => 7,
+        ], $this->ajaxHeaders())->assertOk();
+
+        $this->assertDatabaseHas('categories_v3', ['id' => $category->id, 'sort_order' => 7]);
+    }
+
+    public function test_sort_order_controls_display_order_over_alphabetical(): void
+    {
+        $admin = $this->admin();
+        Category::create(['type' => 'tematik', 'nama' => 'Zebra', 'sort_order' => 1, 'is_active' => true]);
+        Category::create(['type' => 'tematik', 'nama' => 'Apple', 'sort_order' => 2, 'is_active' => true]);
+
+        $html = $this->actingAs($admin)->get(route('categories.index', ['type' => 'tematik']))->getContent();
+
+        $this->assertLessThan(strpos($html, 'Apple'), strpos($html, 'Zebra'));
+    }
+
+    /**
+     * Fase H butir 4 (spec-admin-manajemen-peta.md §5.1 butir 5) — pesan
+     * hapus-aman harus menyebut jumlah & nama penghalang, bukan generik.
+     */
+    public function test_destroy_blocked_message_names_blocking_children(): void
+    {
+        $admin = $this->admin();
+        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
+        Category::create(['type' => 'tematik', 'nama' => 'Anak Satu', 'parent_id' => $root->id]);
+
+        $response = $this->actingAs($admin)->delete(route('categories.destroy', $root->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', fn ($message) => str_contains($message, 'Anak Satu') && str_contains($message, '1 sub-kategori'));
+    }
+
+    public function test_destroy_blocked_message_names_blocking_layers(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Dipakai']);
+        DB::table('layers')->insert([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'name' => 'Layer Uji',
+            'slug' => 'layer-uji-'.Str::random(6),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('categories.destroy', $category->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', fn ($message) => str_contains($message, 'Layer Uji') && str_contains($message, '1 Layer'));
+    }
+
+    /**
+     * Fase H butir 3 (spec-admin-manajemen-peta.md §5.1 butir 4) — "panel isi
+     * katalog": link dari halaman Kategori langsung ke Daftar Layer yang
+     * sudah terfilter ke kategori ini.
+     */
+    public function test_index_page_has_link_to_filtered_layer_list(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'is_active' => true]);
+
+        $response = $this->actingAs($admin)->get(route('categories.index', ['type' => 'tematik']));
+
+        $response->assertOk()->assertSee(route('spatial-layers.index', ['category' => 'cat:'.$category->id]), false);
     }
 }

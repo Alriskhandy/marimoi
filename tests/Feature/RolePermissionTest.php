@@ -98,13 +98,23 @@ class RolePermissionTest extends TestCase
         $this->assertFalse($opd->hasPermissionTo('users.delete'));
     }
 
+    /**
+     * DEFAULTS tidak pernah menimpa role yang sudah di-customize (`logs.view`
+     * tetap ada) — tapi `spatial-layers.*` wajib selalu ditambahkan secara
+     * aditif lewat `ADDITIONAL_GRANTS` (lihat PermissionSeeder), karena modul
+     * "Daftar Layer & Data" v3 harus bisa dipakai admin-opd/admin-bappeda
+     * meski role-nya sudah lama di-seed dengan permission lain.
+     */
     public function test_seeder_does_not_overwrite_customised_role(): void
     {
         $opd = $this->roleWith('admin-opd', ['logs.view']);
 
         $this->seed(PermissionSeeder::class);
 
-        $this->assertSame(['logs.view'], $opd->permissions()->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(
+            ['logs.view', 'spatial-layers.view', 'spatial-layers.create', 'spatial-layers.edit', 'spatial-layers.delete'],
+            $opd->permissions()->pluck('name')->all()
+        );
     }
 
     public function test_super_admin_can_load_and_sync_role_permissions(): void

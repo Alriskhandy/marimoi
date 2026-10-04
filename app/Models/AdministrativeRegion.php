@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class AdministrativeRegion extends Model
 {
@@ -50,5 +51,21 @@ class AdministrativeRegion extends Model
     public function scopeLevel(Builder $query, string $level): Builder
     {
         return $query->where('level', $level);
+    }
+
+    /**
+     * Daftar wilayah aktif dikelompokkan per level (provinsi/kabupaten_kota/
+     * kecamatan) untuk dropdown `region_id` di form Data Spasial (§5.7 butir
+     * 4) — hanya ~130 baris total, jadi select datar per level sudah cukup,
+     * tidak perlu cascading select bertingkat.
+     *
+     * @return Collection<string, \Illuminate\Database\Eloquent\Collection>
+     */
+    public static function optionsGroupedByLevel(): Collection
+    {
+        return self::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'level'])
+            ->groupBy('level');
     }
 }

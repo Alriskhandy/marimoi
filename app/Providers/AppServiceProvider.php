@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Models\DataSpatial;
 use App\Models\LegacyCategory;
 use App\Support\MapDataVersion;
-use App\Support\SpatialFeaturesV3Sync;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -41,14 +40,6 @@ class AppServiceProvider extends ServiceProvider
         DataSpatial::deleted(fn () => MapDataVersion::forget());
         LegacyCategory::saved(fn () => MapDataVersion::forget());
         LegacyCategory::deleted(fn () => MapDataVersion::forget());
-
-        // Jembatan Fase 4/5 (plan mellow-weaving-eclipse): DataSpatialController
-        // sengaja belum direwrite ke v3, tapi /geojson publik sudah baca v3 —
-        // setiap tulis ke data_spatial direplikasi real-time ke spatial_features_v3
-        // supaya tidak ada data baru yang "hilang" dari peta publik.
-        DataSpatial::created(fn (DataSpatial $d) => SpatialFeaturesV3Sync::upsert($d));
-        DataSpatial::updated(fn (DataSpatial $d) => SpatialFeaturesV3Sync::upsert($d));
-        DataSpatial::deleted(fn (DataSpatial $d) => SpatialFeaturesV3Sync::delete($d));
 
         RateLimiter::for('api-v1', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());

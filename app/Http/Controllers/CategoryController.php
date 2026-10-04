@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\MapType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -53,6 +54,7 @@ class CategoryController extends Controller
         }
 
         $categories = $query->orderBy('parent_id', 'asc')
+            ->orderBy('sort_order', 'asc')
             ->orderBy('nama', 'asc')
             ->get();
 
@@ -119,6 +121,7 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories_tree_v3,id',
+            'sort_order' => 'nullable|integer|min:0',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
             'type.exists' => 'Tipe kategori tidak valid',
@@ -168,6 +171,7 @@ class CategoryController extends Controller
                 'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
                 'parent_id' => $request->parent_id,
+                'sort_order' => $request->input('sort_order', 0),
             ]);
 
             Log::info('Category created successfully', [
@@ -219,6 +223,7 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories_tree_v3,id',
+            'sort_order' => 'nullable|integer|min:0',
         ], [
             'type.required' => 'Tipe kategori harus dipilih',
             'type.exists' => 'Tipe kategori tidak valid',
@@ -275,6 +280,7 @@ class CategoryController extends Controller
                 'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
                 'parent_id' => $request->parent_id,
+                'sort_order' => $request->filled('sort_order') ? $request->input('sort_order') : $category->sort_order,
             ];
 
             if ($request->hasFile('gambar')) {
@@ -336,6 +342,31 @@ class CategoryController extends Controller
         }
     }
 
+    /**
+     * §5.1 butir 5 — pesan hapus-aman menyebut jumlah & nama penghalang,
+     * bukan sekadar "masih memiliki sub-kategori"/"masih digunakan".
+     */
+    private function blockedByChildrenMessage(Category $category): string
+    {
+        $names = $category->children->pluck('nama');
+        $shown = $names->take(5)->implode(', ');
+        $suffix = $names->count() > 5 ? ', dst.' : '';
+
+        return "Kategori tidak dapat dihapus karena masih memiliki {$names->count()} sub-kategori: {$shown}{$suffix}";
+    }
+
+    private function blockedByLayersMessage(Category $category): string
+    {
+        $names = DB::table('layers')
+            ->where('category_id', $category->id)
+            ->orWhere('category_node_id', $category->id)
+            ->pluck('name');
+        $shown = $names->take(5)->implode(', ');
+        $suffix = $names->count() > 5 ? ', dst.' : '';
+
+        return "Kategori tidak dapat dihapus karena masih dipakai {$names->count()} Layer: {$shown}{$suffix}";
+    }
+
     public function destroy(string $id)
     {
         $category = Category::with('children')->findOrFail($id);
@@ -347,11 +378,11 @@ class CategoryController extends Controller
         }
 
         if ($category->children->count() > 0) {
-            return redirect()->back()->with('error', 'Kategori tidak dapat dihapus karena masih memiliki sub-kategori');
+            return redirect()->back()->with('error', $this->blockedByChildrenMessage($category));
         }
 
         if ($category->hasLinkedLayers()) {
-            return redirect()->back()->with('error', 'Kategori tidak dapat dihapus karena masih digunakan oleh data spatial');
+            return redirect()->back()->with('error', $this->blockedByLayersMessage($category));
         }
 
         try {
@@ -382,6 +413,7 @@ class CategoryController extends Controller
     {
         $categories = Category::where('type', $type)
             ->with(['children.children'])
+            ->orderBy('sort_order')
             ->orderBy('nama')
             ->get();
 

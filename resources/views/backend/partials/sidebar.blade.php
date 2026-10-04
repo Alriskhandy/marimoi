@@ -4,9 +4,9 @@
     $isSuperAdmin = $slug === 'super-admin';
 
     $isPetaTematikActive =
-        request()->routeIs('tematik.*') ||
-        request()->routeIs('data-spatial.map') ||
-        (request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik') ||
+        request()->routeIs('spatial-layers.*') ||
+        request()->routeIs('map-types.*') ||
+        request()->routeIs('spatial-feedbacks.*') ||
         (request()->routeIs('categories.*') && request()->get('type') == 'tematik') ||
         request()->routeIs('kategori-tematik.*') ||
         (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik');
@@ -21,7 +21,7 @@
         request()->routeIs('visitors.*') ||
         request()->routeIs('logs.*');
 
-    $canPetaTematik = $user?->canAny(['data-spatial.view', 'categories.view', 'project-feedbacks.view']);
+    $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'project-feedbacks.view']);
     $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
     $canPublikasi = $user?->can('publications.view');
     $canSistem = $user?->canAny(['users.view', 'roles.view', 'opd.view', 'visitors.view', 'logs.view']);
@@ -94,40 +94,22 @@
             </a>
             <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
                 <div class="sidebar-submenu">
-                    {{-- Menu baru docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
-                     — SENGAJA aditif berdampingan dengan menu lama di atas, BUKAN pengganti.
-                     Bagian 6: menu lama baru dicabut setelah QA paralel selesai. --}}
                     @can('spatial-layers.view')
                         <a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
                             href="{{ route('spatial-layers.index') }}">
-                            <span class="nav-text">Daftar Layer & Data (Baru)</span>
+                            <span class="nav-text">Daftar Layer & Data</span>
                         </a>
                     @endcan
                     @can('map-types.manage')
                         <a class="nav-link {{ request()->routeIs('map-types.*') ? 'active' : '' }}"
                             href="{{ route('map-types.index') }}">
-                            <span class="nav-text">Jenis Peta (Baru)</span>
+                            <span class="nav-text">Jenis Peta</span>
                         </a>
                     @endcan
                     @can('spatial-feedbacks.view')
                         <a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
                             href="{{ route('spatial-feedbacks.index') }}">
-                            <span class="nav-text">Feedback Pemetaan (Baru)</span>
-                        </a>
-                    @endcan
-                    {{-- Menu lama docs/marimoi v2/04_implementation/12-implementasi-perbaikan-pemetaan.md
-                     — SENGAJA aditif berdampingan dengan menu baru di atas, BUKAN pengganti.
-                     Bagian 6: menu lama baru dicabut setelah QA paralel selesai. --}}
-                    @can('data-spatial.view')
-                        <a class="nav-link {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
-                            href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
-                            <span class="nav-text">Data Peta Tematik</span>
-                        </a>
-                    @endcan
-                    @can('data-spatial.view')
-                        <a class="nav-link {{ request()->routeIs('data-spatial.map') ? 'active' : '' }}"
-                            href="{{ route('data-spatial.map') }}">
-                            <span class="nav-text">Tampilan Peta</span>
+                            <span class="nav-text">Feedback Pemetaan</span>
                         </a>
                     @endcan
                     @can('categories.view')

@@ -199,6 +199,12 @@
                                     $role = $user->role->slug ?? null;
 
                                     // Function to recursively render hierarchy with 3 levels
+                                    //
+                                    // Dibungkus function_exists(): halaman ini bisa dirender lebih dari
+                                    // sekali dalam satu proses PHP yang sama (mis. beberapa feature test
+                                    // yang me-render view ini di satu run PHPUnit) — tanpa guard ini,
+                                    // render kedua akan fatal error "Cannot redeclare".
+                                    if (! function_exists('renderCategoryHierarchy')) {
                                     function renderCategoryHierarchy(
                                         $categories,
                                         $parentId = null,
@@ -209,7 +215,7 @@
                                     ) {
                                         $filteredCategories = $categories
                                             ->where('parent_id', $parentId)
-                                            ->sortBy('nama');
+                                            ->sortBy(['sort_order', 'nama']);
                                         $output = '';
 
                                         foreach ($filteredCategories as $kategori) {
@@ -486,6 +492,7 @@
                                                 $output .= 'data-is-active="' . ($kategori->is_active ? 1 : 0) . '" ';
                                                 $output .= 'data-icon="' . $kategori->icon . '" ';
                                                 $output .= 'data-gambar="' . $kategori->gambar . '" ';
+                                                $output .= 'data-sort-order="' . $kategori->sort_order . '" ';
                                                 $output .=
                                                     'data-deskripsi="' . htmlspecialchars($kategori->deskripsi) . '" ';
                                                 $output .=
@@ -499,6 +506,17 @@
                                                 $output .= '<i class="mdi mdi-file-document-outline"></i>';
                                                 $output .= '</a>';
                                                 }
+
+                                                // §5.1 butir 4 — panel isi katalog: buka Daftar Layer sudah
+                                                // terfilter ke kategori/node ini, bukan harus pindah halaman
+                                                // lalu memfilter manual.
+                                                $categoryKey = ($level === 0 ? 'cat:' : 'node:') . $kategori->id;
+                                                $output .=
+                                                    '<a href="' .
+                                                    route('spatial-layers.index', ['category' => $categoryKey]) .
+                                                    '" class="btn btn-sm btn-outline-primary" title="Lihat Layer di kategori ini">';
+                                                $output .= '<i class="mdi mdi-layers-outline"></i>';
+                                                $output .= '</a>';
 
                                                 if ($user->can('categories.delete')) {
                                                 $output .=
@@ -536,6 +554,7 @@
                                         }
 
                                         return $output;
+                                    }
                                     }
 
                                     // Render the hierarchy starting from root categories
@@ -632,6 +651,13 @@
                                     <select class="form-control" id="add_parent_id" name="parent_id">
                                         <option value="">-- Pilih Parent (Opsional) --</option>
                                     </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="add_sort_order" class="form-label">Urutan Tampil</label>
+                                    <input type="number" class="form-control" id="add_sort_order" name="sort_order" min="0" value="0">
+                                    <div class="form-text">Angka lebih kecil ditampilkan lebih dulu.</div>
                                     <div class="invalid-feedback"></div>
                                 </div>
 
@@ -826,6 +852,14 @@
                                     <select class="form-control" id="edit_parent_id" name="parent_id">
                                         <option value="">-- Pilih Parent (Opsional) --</option>
                                     </select>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Memindahkan parent otomatis memperbarui urutan hirarki seluruh sub-kategori di bawahnya.</div>
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="edit_sort_order" class="form-label">Urutan Tampil</label>
+                                    <input type="number" class="form-control" id="edit_sort_order" name="sort_order" min="0">
+                                    <div class="form-text">Angka lebih kecil ditampilkan lebih dulu.</div>
                                     <div class="invalid-feedback"></div>
                                 </div>
 
@@ -2360,6 +2394,7 @@
                 $('#edit_nama').val($(this).data('nama'));
                 $('#edit_type').val($(this).data('type'));
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
+                $('#edit_sort_order').val($(this).data('sort-order') ?? 0);
                 applyColor('edit', $(this).data('warna') || '#007bff');
 
                 // Handle is_active checkbox

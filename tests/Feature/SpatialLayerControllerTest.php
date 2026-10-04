@@ -266,10 +266,16 @@ class SpatialLayerControllerTest extends TestCase
     }
 
     /**
-     * Regresi: tabel index digabung (Warna/Tipe/Icon -> 1 kolom Style), kolom
-     * Status dihapus, dan tombol detail (mata) ditambahkan di kolom Aksi.
+     * Regresi: tabel index digabung (Warna/Tipe/Icon -> 1 kolom Style), dan
+     * tombol detail (mata) ditambahkan di kolom Aksi.
+     *
+     * Catatan: kolom Status sempat dihapus pada iterasi UI sebelumnya untuk
+     * mengurangi "clutter" (lihat riwayat git), tapi dikembalikan di Fase B
+     * (implementasi spec-admin-manajemen-peta.md §5.2 butir 7) karena filter
+     * & tampilan status draft/published/archived sekarang jadi kebutuhan inti
+     * alur kurasi OPD→Bappeda (R17), bukan sekadar dekorasi.
      */
-    public function test_index_table_has_no_status_column_and_links_to_detail_page(): void
+    public function test_index_table_merges_style_columns_and_links_to_detail_page(): void
     {
         $admin = $this->admin();
         $jenis = $this->jenis();
@@ -278,10 +284,10 @@ class SpatialLayerControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
         $response->assertOk()
-            ->assertDontSee('<th>Status</th>', false)
             ->assertDontSee('<th>Warna</th>', false)
             ->assertDontSee('<th>Icon</th>', false)
             ->assertSee('>Style</th>', false)
+            ->assertSee('>Status</th>', false)
             ->assertSee(route('spatial-layers.show', $layer), false);
     }
 
@@ -593,5 +599,101 @@ class SpatialLayerControllerTest extends TestCase
         ])->assertForbidden();
 
         $this->assertEquals($jenis->id, $layer->fresh()->map_type_id);
+    }
+
+    /**
+     * Fase B (spec-admin-manajemen-peta.md §5.2): layer_type_id, visibility,
+     * is_default_on/is_queryable/is_downloadable, min/max_zoom, dan sort_order
+     * sudah ada di skema & model sejak Fase A tapi belum pernah tersimpan
+     * lewat form — ini mengunci bahwa form sekarang benar-benar menulisnya.
+     */
+    public function test_store_saves_layer_type_visibility_and_display_properties(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $categoryId = $this->categoryId();
+        $layerType = DB::table('layer_types')->where('code', 'vector_point')->first();
+
+        $this->actingAs($admin)->post(route('spatial-layers.store'), [
+            'map_type_id' => $jenis->id,
+            'category_id' => $categoryId,
+            'layer_type_id' => $layerType->id,
+            'visibility' => 'internal',
+            'name' => 'Layer Properti Uji',
+            'is_default_on' => '1',
+            'is_queryable' => '0',
+            'is_downloadable' => '1',
+            'min_zoom' => 5,
+            'max_zoom' => 18,
+            'sort_order' => 3,
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertDatabaseHas('layers', [
+            'name' => 'Layer Properti Uji',
+            'layer_type_id' => $layerType->id,
+            'visibility' => 'internal',
+            'is_default_on' => true,
+            'is_queryable' => false,
+            'is_downloadable' => true,
+            'min_zoom' => 5,
+            'max_zoom' => 18,
+            'sort_order' => 3,
+        ]);
+    }
+
+    public function test_update_persists_display_properties_without_touching_status(): void
+    {
+        $role = Role::create(['name' => 'Editor Layer', 'slug' => 'editor-layer', 'description' => null]);
+        foreach (['spatial-layers.view', 'spatial-layers.create', 'spatial-layers.edit'] as $perm) {
+            $role->givePermissionTo(Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']));
+        }
+        $editor = User::factory()->create(['role_id' => $role->id]);
+        $jenis = $this->jenis();
+        $layer = $this->createLayer(['name' => 'Layer Update Properti', 'map_type_id' => $jenis->id, 'status' => 'published', 'published_at' => now()]);
+
+        $this->actingAs($editor)->put(route('spatial-layers.update', $layer), [
+            'map_type_id' => $jenis->id,
+            'category_id' => $layer->category_id,
+            'name' => 'Layer Update Properti',
+            'sort_order' => 9,
+            'min_zoom' => 2,
+            'max_zoom' => 20,
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $layer->refresh();
+        $this->assertSame(9, $layer->sort_order);
+        $this->assertSame(2, $layer->min_zoom);
+        $this->assertSame(20, $layer->max_zoom);
+        // Role ini tidak punya permission spatial-layers.publish — status
+        // layer published yang sudah ada harus tetap dipertahankan (R17),
+        // bukan ikut jatuh ke draft hanya karena form ini tidak mengirim
+        // is_active=1 (lihat SpatialLayerController::validated()).
+        $this->assertSame('published', $layer->status);
+    }
+
+    public function test_max_zoom_must_be_greater_than_or_equal_to_min_zoom(): void
+    {
+        $admin = $this->admin();
+        $jenis = $this->jenis();
+        $categoryId = $this->categoryId();
+
+        $this->actingAs($admin)->post(route('spatial-layers.store'), [
+            'map_type_id' => $jenis->id,
+            'category_id' => $categoryId,
+            'name' => 'Layer Zoom Salah',
+            'min_zoom' => 15,
+            'max_zoom' => 5,
+        ])->assertSessionHasErrors('max_zoom');
+    }
+
+    public function test_index_page_shows_status_and_opd_filter_dropdowns(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk()
+            ->assertSee('id="statusFilter"', false)
+            ->assertSee('id="opdFilter"', false);
     }
 }

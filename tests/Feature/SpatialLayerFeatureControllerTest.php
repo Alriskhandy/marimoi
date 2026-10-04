@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdministrativeRegion;
 use App\Models\MapType;
 use App\Models\MetadataDefinition;
 use App\Models\Permission;
@@ -10,7 +11,6 @@ use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -146,41 +146,21 @@ class SpatialLayerFeatureControllerTest extends TestCase
     }
 
     /**
-     * Regresi end-to-end jalur KMZ lewat HTTP — parsing KML itu sendiri sudah
-     * diuji detail di tests/Unit/SpatialGeometryBatchImporterTest.php, di sini
-     * cuma pastikan wiring controller (upload file, validasi, redirect) benar.
+     * Regresi: input_type SELAIN 'coordinates' (shapefile/kmz) ditolak di sini
+     * sejak Fase D.2 — impor file sudah pindah ke wizard 2 tahap
+     * (LayerImportController::upload()/editMapping()/processMapping(), lihat
+     * tests/Feature/LayerImportControllerTest.php), bukan lagi lewat store()
+     * satu langkah ini.
      */
-    public function test_admin_can_create_features_from_kml_upload(): void
+    public function test_store_rejects_file_based_input_types(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
 
-        $kml = <<<'KML'
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <Placemark>
-      <name>Titik KML Uji</name>
-      <Point><coordinates>127.5,0.8,0</coordinates></Point>
-    </Placemark>
-  </Document>
-</kml>
-KML;
-
-        $path = tempnam(sys_get_temp_dir(), 'kml').'.kml';
-        file_put_contents($path, $kml);
-        $file = new UploadedFile($path, 'lokasi.kml', 'application/vnd.google-earth.kml+xml', null, true);
-
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), [
             'input_type' => 'kmz',
-            'kmz_file' => $file,
             'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ])->assertRedirect(route('spatial-layers.show', $layer));
-
-        $this->assertSame(1, $layer->features()->count());
-        $this->assertSame('Titik KML Uji', $layer->features()->first()->properties['NAMA']);
-
-        unlink($path);
+        ])->assertSessionHasErrors('input_type');
     }
 
     public function test_store_requires_input_type(): void
@@ -320,5 +300,237 @@ KML;
             ->assertOk()
             ->assertSee('KODE_ASLI')
             ->assertSee('POINT');
+    }
+
+    /**
+     * Fase D.1 (spec-admin-manajemen-peta.md §5.5 butir 1): setiap impor file
+     * (bukan input koordinat manual) wajib menghasilkan satu baris riwayat
+     * `layer_imports` — sebelumnya impor sama sekali tidak tercatat.
+     */
+    public function test_coordinates_input_does_not_create_layer_import_row(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame(0, DB::table('layer_imports')->where('layer_id', $layer->id)->count());
+    }
+
+    /**
+     * R18: feature_count/bbox (kolom cache di `layers`) harus ikut diperbarui
+     * setiap kali fitur berubah lewat modul admin baru — sebelumnya hanya
+     * App\Support\SpatialFeaturesV3Sync (jembatan modul lama) yang melakukan ini.
+     */
+    public function test_feature_count_cache_is_refreshed_after_store_and_destroy(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]));
+
+        $this->assertSame(1, $layer->fresh()->feature_count);
+
+        $feature = $layer->features()->first();
+        $this->actingAs($admin)->delete(route('spatial-layers.features.destroy', [$layer, $feature]));
+
+        $this->assertSame(0, $layer->fresh()->feature_count);
+    }
+
+    /**
+     * §5.7 butir 3 — bulk edit atribut: set satu atribut untuk beberapa Data
+     * Spasial sekaligus, porting dari DataSpatialController::bulkUpdateAttribute()
+     * (modul lama). Bentuknya satu kunci + satu aksi (set/remove), bukan merge
+     * properties penuh.
+     */
+    public function test_bulk_update_attribute_sets_value_for_selected_features(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $featureA = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'), 'properties' => ['kondisi' => 'Buruk']]);
+        $featureB = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)'), 'properties' => []]);
+        $untouched = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.7, 1.0), 4326)'), 'properties' => ['kondisi' => 'Awal']]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-update-attribute', $layer), [
+            'ids' => [$featureA->id, $featureB->id],
+            'action' => 'set',
+            'key' => 'kondisi',
+            'value' => 'Baik',
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame('Baik', $featureA->fresh()->properties['kondisi']);
+        $this->assertSame('Baik', $featureB->fresh()->properties['kondisi']);
+        $this->assertSame('Awal', $untouched->fresh()->properties['kondisi']);
+    }
+
+    public function test_bulk_update_attribute_can_remove_key(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'), 'properties' => ['kondisi' => 'Buruk', 'lain' => 'x']]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-update-attribute', $layer), [
+            'ids' => [$feature->id],
+            'action' => 'remove',
+            'key' => 'kondisi',
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $feature->refresh();
+        $this->assertArrayNotHasKey('kondisi', $feature->properties);
+        $this->assertSame('x', $feature->properties['lain']);
+    }
+
+    public function test_bulk_update_attribute_rejects_invalid_key_name(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-update-attribute', $layer), [
+            'ids' => [$feature->id],
+            'action' => 'set',
+            'key' => '123 invalid',
+            'value' => 'x',
+        ])->assertSessionHasErrors('key');
+    }
+
+    public function test_bulk_update_attribute_only_affects_features_of_this_layer(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $otherLayer = $this->layer();
+        $foreignFeature = SpatialLayerFeature::create(['layer_id' => $otherLayer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'), 'properties' => ['kondisi' => 'Awal']]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-update-attribute', $layer), [
+            'ids' => [$foreignFeature->id],
+            'action' => 'set',
+            'key' => 'kondisi',
+            'value' => 'Diubah',
+        ]);
+
+        $this->assertSame('Awal', $foreignFeature->fresh()->properties['kondisi']);
+    }
+
+    public function test_bulk_destroy_deletes_selected_features_and_refreshes_cache(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $featureA = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+        $featureB = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)')]);
+        $kept = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.7, 1.0), 4326)')]);
+        $layer->refreshFeatureCache();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-destroy', $layer), [
+            'ids' => [$featureA->id, $featureB->id],
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame(1, $layer->features()->count());
+        $this->assertTrue($layer->features()->where('id', $kept->id)->exists());
+        $this->assertSame(1, $layer->fresh()->feature_count);
+    }
+
+    public function test_bulk_destroy_requires_at_least_one_id(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-destroy', $layer), [
+            'ids' => [],
+        ])->assertSessionHasErrors('ids');
+    }
+
+    public function test_show_page_renders_bulk_actions_bar_and_row_checkboxes(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('id="featureBulkActionsBar"', false)
+            ->assertSee('id="featureSelectAll"', false)
+            ->assertSee('id="check-feature-'.$feature->id.'"', false)
+            ->assertSee(route('spatial-layers.features.bulk-update-attribute', $layer), false)
+            ->assertSee(route('spatial-layers.features.bulk-destroy', $layer), false);
+    }
+
+    /**
+     * §5.7 butir 1 — filter per atribut dinamis di tabel Data Spasial, selain
+     * pencarian/status yang sudah ada.
+     */
+    public function test_show_page_renders_per_attribute_filter_when_layer_has_dynamic_attributes(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $this->attachDefinition($layer, 'kondisi', ['label' => 'Kondisi Jalan']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee('id="dataSpasialAttributeFilterField"', false)
+            ->assertSee('Kondisi Jalan');
+    }
+
+    /**
+     * §5.7 butir 4 — `region_id` sudah dipakai peta publik (peta-v2) tapi
+     * sebelum ini belum bisa diisi dari UI admin sama sekali.
+     */
+    public function test_coordinates_input_can_set_region_id(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $region = AdministrativeRegion::create(['code_kemendagri' => 'RG-1', 'name' => 'Kota Ternate', 'level' => 'kabupaten_kota', 'is_active' => true]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'region_id' => $region->id,
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]))->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame($region->id, $layer->features()->first()->region_id);
+    }
+
+    public function test_update_can_set_region_id(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $region = AdministrativeRegion::create(['code_kemendagri' => 'RG-1', 'name' => 'Kota Ternate', 'level' => 'kabupaten_kota', 'is_active' => true]);
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->put(route('spatial-layers.features.update', [$layer, $feature]), [
+            'geometry_wkt' => 'POINT(127.5 0.8)',
+            'region_id' => $region->id,
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $this->assertSame($region->id, $feature->fresh()->region_id);
+    }
+
+    public function test_invalid_region_id_is_rejected(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
+            'region_id' => 999999,
+            'metadata_dinamis' => $this->coreMetadataDinamis(),
+        ]))->assertSessionHasErrors('region_id');
+    }
+
+    public function test_create_and_edit_pages_render_region_select(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        AdministrativeRegion::create(['code_kemendagri' => 'RG-1', 'name' => 'Kota Ternate', 'level' => 'kabupaten_kota', 'is_active' => true]);
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->get(route('spatial-layers.features.create', $layer))
+            ->assertOk()->assertSee('Kota Ternate');
+
+        $this->actingAs($admin)->get(route('spatial-layers.features.edit', [$layer, $feature]))
+            ->assertOk()->assertSee('Kota Ternate');
     }
 }

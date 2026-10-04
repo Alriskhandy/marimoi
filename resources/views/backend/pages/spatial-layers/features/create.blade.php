@@ -364,6 +364,25 @@
                                 </div>
                             </div>
 
+                            @if ($layer->features()->exists())
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Mode Impor</label>
+                                    <div class="form-check">
+                                        <input type="radio" class="form-check-input" name="import_mode" id="import_mode_append" value="append" checked>
+                                        <label class="form-check-label" for="import_mode_append">
+                                            Tambahkan ke Data Spasial yang sudah ada ({{ $layer->features()->count() }} data)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="radio" class="form-check-input" name="import_mode" id="import_mode_replace" value="replace">
+                                        <label class="form-check-label" for="import_mode_replace">
+                                            <span class="text-danger">Ganti seluruh</span> Data Spasial layer ini dengan hasil impor ini
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Mode "Ganti" menghapus seluruh Data Spasial layer ini sebelum mengisi hasil impor baru, dalam satu transaksi.</div>
+                                </div>
+                            @endif
+
                             <!-- Shapefile -->
                             <div class="input-content" id="shapefile-content">
                                 <div class="row">
@@ -508,7 +527,7 @@
                             </div>
 
                             <div class="text-end mt-4">
-                                <button type="button" class="btn btn-gradient-primary" onclick="nextStep(1)">
+                                <button type="button" class="btn btn-gradient-primary" onclick="handleStep1Next()" id="step1NextBtn">
                                     Lanjut <i class="mdi mdi-arrow-right ms-1"></i>
                                 </button>
                             </div>
@@ -524,6 +543,27 @@
                             @include('backend.pages.spatial-layers.features._metadata-dinamis', ['dynamicAttributes' => $dynamicAttributes, 'feature' => null])
 
                             <hr>
+                            @php
+                                $regionLevelLabels = ['provinsi' => 'Provinsi', 'kabupaten_kota' => 'Kabupaten/Kota', 'kecamatan' => 'Kecamatan'];
+                            @endphp
+                            @if (($regionsByLevel ?? collect())->isNotEmpty())
+                                <div class="mb-3">
+                                    <label class="form-label">Penanda Wilayah</label>
+                                    <select name="region_id" class="form-select">
+                                        <option value="">-- Tidak ditandai --</option>
+                                        @foreach ($regionsByLevel as $level => $regions)
+                                            <optgroup label="{{ $regionLevelLabels[$level] ?? $level }}">
+                                                @foreach ($regions as $region)
+                                                    <option value="{{ $region->id }}" @selected(old('region_id') == $region->id)>{{ $region->name }}</option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endforeach
+                                    </select>
+                                    @error('region_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                                    <div class="form-text">Berlaku untuk semua Data Spasial yang dibuat dari satu kali submit ini.</div>
+                                </div>
+                            @endif
+
                             <div class="mb-3">
                                 <label class="form-label">Gambar (opsional)</label>
                                 <input type="file" name="gambar" class="form-control" accept="image/*">
@@ -588,6 +628,9 @@
         let selectedInputType = '';
         let coordinateCount = 1;
 
+        const storeUrl = @json(route('spatial-layers.features.store', $layer));
+        const uploadUrl = @json(route('spatial-layers.imports.upload', $layer));
+
         function selectInputType(type) {
             selectedInputType = type;
             document.getElementById('input_type').value = type;
@@ -597,6 +640,32 @@
 
             document.querySelectorAll('.input-content').forEach((content) => content.classList.remove('active'));
             document.getElementById(`${type}-content`).classList.add('active');
+
+            const form = document.getElementById('featureForm');
+            const nextBtn = document.getElementById('step1NextBtn');
+
+            if (type === 'coordinates') {
+                form.action = storeUrl;
+                nextBtn.innerHTML = 'Lanjut <i class="mdi mdi-arrow-right ms-1"></i>';
+            } else {
+                // Shapefile/KMZ: dipetakan 2 tahap (D.2) — submit di sini HANYA
+                // mengunggah & parsing file, metadata/pemetaan kolom diisi di
+                // halaman berikutnya (lihat handleStep1Next()).
+                form.action = uploadUrl;
+                nextBtn.innerHTML = 'Unggah & Lanjut Pemetaan <i class="mdi mdi-arrow-right ms-1"></i>';
+            }
+        }
+
+        function handleStep1Next() {
+            if (!validateStep(1)) {
+                return;
+            }
+
+            if (selectedInputType === 'coordinates') {
+                nextStep(1);
+            } else {
+                document.getElementById('featureForm').submit();
+            }
         }
 
         function addCoordinateInput() {

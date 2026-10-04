@@ -116,6 +116,18 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
+                            <a href="{{ route('spatial-layers.metadata.edit', $layer) }}" class="btn btn-sm btn-outline-info" title="Metadata">
+                                <i class="mdi mdi-file-document-outline"></i> Metadata
+                            </a>
+                            <a href="{{ route('spatial-layers.imports.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Riwayat Impor">
+                                <i class="mdi mdi-history"></i> Riwayat Impor
+                            </a>
+                            <a href="{{ route('spatial-layers.sources.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Sumber Data">
+                                <i class="mdi mdi-cloud-outline"></i> Sumber Data
+                            </a>
+                            <a href="{{ route('spatial-layers.styles.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Style">
+                                <i class="mdi mdi-palette-outline"></i> Style
+                            </a>
                             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                                 data-bs-target="#editLayerModal" title="Edit">
                                 <i class="mdi mdi-pencil"></i> Edit
@@ -237,12 +249,47 @@
                             <option value="lengkap">Metadata Lengkap</option>
                             <option value="belum">Metadata Belum Lengkap</option>
                         </select>
+                        @if ($dynamicAttributes->isNotEmpty())
+                            <select class="form-select form-select-sm" id="dataSpasialAttributeFilterField" style="width: auto;">
+                                <option value="">Filter per Atribut...</option>
+                                @foreach ($dynamicAttributes as $attribute)
+                                    <option value="{{ $attribute->metadataDefinition->kode }}">{{ $attribute->metadataDefinition->label }}</option>
+                                @endforeach
+                            </select>
+                            <input type="text" class="form-control form-control-sm d-none" id="dataSpasialAttributeFilterValue"
+                                placeholder="Nilai..." style="width: 160px;">
+                        @endif
                         <select class="form-select form-select-sm" id="dataSpasialPerPage" style="width: auto;">
                             <option value="10">10 / halaman</option>
                             <option value="25" selected>25 / halaman</option>
                             <option value="50">50 / halaman</option>
                             <option value="100">100 / halaman</option>
                         </select>
+                    </div>
+
+                    <!-- Bulk Actions Bar (§5.7 butir 3 — porting dari Data Spasial lama) -->
+                    <div id="featureBulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <i class="mdi mdi-checkbox-multiple-marked me-2"></i>
+                                <span id="featureSelectedCount">0</span> Data Spasial dipilih
+                            </div>
+                            <div>
+                                @can('spatial-layers.edit')
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="bulkEditFeatureAttribute()">
+                                        <i class="mdi mdi-pencil-box-multiple-outline me-1"></i> Ubah Atribut
+                                    </button>
+                                @endcan
+                                @can('spatial-layers.delete')
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDeleteFeatures()">
+                                        <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
+                                    </button>
+                                @endcan
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearFeatureSelection()">
+                                    <i class="mdi mdi-close me-1"></i> Batal
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     @php
@@ -259,6 +306,14 @@
                                 .'<i class="mdi mdi-map-marker-plus"></i> Tambah Data Spasial Pertama</a>';
                         }
                         $dataSpasialEmptyHtml .= '</div>';
+
+                        // Dikenal dari dua sumber: kode atribut dinamis Jenis Peta layer, DAN
+                        // nama kunci mentah hasil impor yang sudah ada di properties fitur —
+                        // bulk edit atribut bisa menyasar keduanya (sama seperti modul lama yang
+                        // bisa ubah sembarang kolom DBF, bukan cuma atribut terdefinisi).
+                        $knownAttributeKeys = $dynamicAttributes->pluck('metadataDefinition.kode')
+                            ->merge($layer->features->flatMap(fn ($f) => array_keys($f->properties ?? [])))
+                            ->filter()->unique()->sort()->values();
                     @endphp
 
                     <!-- TABEL -->
@@ -267,6 +322,14 @@
                             <table class="table table-striped" id="dataSpasialLayerTable">
                                 <thead>
                                     <tr>
+                                        <th style="width: 36px;">
+                                            <div class="checkbox-wrapper">
+                                                <input class="form-check-input" type="checkbox" id="featureSelectAll">
+                                                <label class="form-check-label" for="featureSelectAll">
+                                                    <span class="visually-hidden">Select All</span>
+                                                </label>
+                                            </div>
+                                        </th>
                                         <th>No</th>
                                         <th style="width:56px;">Gambar</th>
                                         <th>Kode</th>
@@ -283,6 +346,7 @@
                                                 $definition = $attribute->metadataDefinition;
 
                                                 return [
+                                                    'kode' => $definition->kode,
                                                     'label' => $definition->label,
                                                     'satuan' => $definition->satuan,
                                                     'value' => $feature->properties[$definition->kode] ?? null,
@@ -309,6 +373,15 @@
                                             data-status="{{ $isMetadataLengkap ? 'lengkap' : 'belum' }}"
                                             data-feature="{{ json_encode($featureDetailPayload) }}"
                                             style="cursor: pointer;" title="Klik untuk lihat detail">
+                                            <td>
+                                                <div class="checkbox-wrapper">
+                                                    <input class="form-check-input feature-row-checkbox" type="checkbox"
+                                                        value="{{ $feature->id }}" id="check-feature-{{ $feature->id }}">
+                                                    <label class="form-check-label" for="check-feature-{{ $feature->id }}">
+                                                        <span class="visually-hidden">Select row</span>
+                                                    </label>
+                                                </div>
+                                            </td>
                                             <td>{{ $loop->iteration }}</td>
                                             <td class="text-center">
                                                 @if ($feature->gambar)
@@ -417,6 +490,31 @@
                                 </div>
 
                                 <div class="form-group mb-2">
+                                    <label for="layer_edit_layer_type_id" class="form-label">Jenis Layer</label>
+                                    <select class="form-control" id="layer_edit_layer_type_id" name="layer_type_id">
+                                        @foreach ($layerTypes as $layerType)
+                                            <option value="{{ $layerType->id }}" @selected(old('layer_type_id', $layer->layer_type_id) == $layerType->id)>
+                                                {{ $layerType->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('layer_type_id')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_edit_visibility" class="form-label">Visibility</label>
+                                    <select class="form-control" id="layer_edit_visibility" name="visibility">
+                                        @foreach (['public' => 'Publik', 'internal' => 'Internal', 'private' => 'Privat'] as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('visibility', $layer->visibility) === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('visibility')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-2">
                                     <label for="layer_edit_name" class="form-label">Nama Layer <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="layer_edit_name" name="name"
@@ -439,6 +537,25 @@
                                     'selectedCategoryId' => $layer->category_id,
                                     'selectedCategoryNodeId' => $layer->category_node_id,
                                 ])
+
+                                <div class="form-group mb-2">
+                                    <label for="layer_edit_opd_id" class="form-label">OPD Pemilik</label>
+                                    @if ($opds->isNotEmpty())
+                                        <select class="form-control" id="layer_edit_opd_id" name="opd_id">
+                                            <option value="">-- Provinsi/Bappeda --</option>
+                                            @foreach ($opds as $opd)
+                                                <option value="{{ $opd->id }}" @selected(old('opd_id', $layer->opd_id) == $opd->id)>
+                                                    {{ $opd->singkatan }} - {{ $opd->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    @else
+                                        <input type="text" class="form-control" value="{{ $layer->opd?->name ?? '-' }}" disabled>
+                                        <div class="form-text">OPD pemilik otomatis mengikuti OPD Anda.</div>
+                                    @endif
+                                    @error('opd_id')
+                                        <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
+                                </div>
 
                             </div>
 
@@ -497,14 +614,21 @@
                                 <div class="form-group mb-0">
                                     <label class="form-label d-block">Status & Jenis Layer</label>
                                     <div class="settings-switch-group">
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_active" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_active" name="is_active" @checked(old('is_active', $layer->is_active))>
-                                            <label class="form-check-label" for="layer_edit_is_active">
-                                                <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Layer
-                                            </label>
-                                        </div>
+                                        @can('spatial-layers.publish')
+                                            <div class="form-check form-switch">
+                                                <input type="hidden" name="is_active" value="0">
+                                                <input class="form-check-input" type="checkbox" value="1"
+                                                    id="layer_edit_is_active" name="is_active" @checked(old('is_active', $layer->is_active))>
+                                                <label class="form-check-label" for="layer_edit_is_active">
+                                                    <i class="mdi mdi-check-circle text-success me-1"></i>Aktifkan Layer
+                                                </label>
+                                            </div>
+                                        @else
+                                            <p class="text-muted small mb-2">
+                                                Status: <strong>{{ $layer->status }}</strong> — hanya super-admin/admin-bappeda
+                                                yang bisa mengubah status Layer.
+                                            </p>
+                                        @endcan
 
                                         <div class="form-check form-switch">
                                             <input type="hidden" name="is_marker" value="0">
@@ -514,6 +638,60 @@
                                                 <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
                                             </label>
                                         </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_default_on" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_edit_is_default_on" name="is_default_on" @checked(old('is_default_on', $layer->is_default_on))>
+                                            <label class="form-check-label" for="layer_edit_is_default_on">
+                                                Aktif otomatis saat peta dibuka
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_queryable" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_edit_is_queryable" name="is_queryable" @checked(old('is_queryable', $layer->is_queryable))>
+                                            <label class="form-check-label" for="layer_edit_is_queryable">
+                                                Bisa diklik untuk info (queryable)
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="is_downloadable" value="0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                id="layer_edit_is_downloadable" name="is_downloadable" @checked(old('is_downloadable', $layer->is_downloadable))>
+                                            <label class="form-check-label" for="layer_edit_is_downloadable">
+                                                Bisa diunduh publik
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-2">
+                                    <div class="col-4">
+                                        <label for="layer_edit_min_zoom" class="form-label">Min Zoom</label>
+                                        <input type="number" class="form-control" id="layer_edit_min_zoom" name="min_zoom"
+                                            min="0" max="24" value="{{ old('min_zoom', $layer->min_zoom) }}">
+                                        @error('min_zoom')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-4">
+                                        <label for="layer_edit_max_zoom" class="form-label">Max Zoom</label>
+                                        <input type="number" class="form-control" id="layer_edit_max_zoom" name="max_zoom"
+                                            min="0" max="24" value="{{ old('max_zoom', $layer->max_zoom) }}">
+                                        @error('max_zoom')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-4">
+                                        <label for="layer_edit_sort_order" class="form-label">Urutan Tampil</label>
+                                        <input type="number" class="form-control" id="layer_edit_sort_order" name="sort_order"
+                                            min="0" value="{{ old('sort_order', $layer->sort_order ?? 0) }}">
+                                        @error('sort_order')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                             </div>
@@ -629,6 +807,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Edit Atribut Modal (§5.7 butir 3) -->
+    <div class="modal fade" id="bulkFeatureAttributeModal" tabindex="-1" aria-labelledby="bulkFeatureAttributeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="bulkFeatureAttributeModalLabel">
+                        <i class="mdi mdi-pencil-box-multiple-outline me-2"></i>Ubah Atribut
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Mengubah satu atribut untuk <strong id="bulkFeatureAttributeCount">0</strong> Data Spasial yang dipilih.
+                    </p>
+
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="bulkFeatureAction" id="bulkFeatureActionSet" value="set" checked>
+                            <label class="form-check-label" for="bulkFeatureActionSet">Set (isi/timpa)</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="bulkFeatureAction" id="bulkFeatureActionRemove" value="remove">
+                            <label class="form-check-label" for="bulkFeatureActionRemove">Hapus atribut ini</label>
+                        </div>
+                    </div>
+
+                    <label for="bulkFeatureKey" class="form-label fw-semibold">Nama Atribut</label>
+                    <input type="text" class="form-control" id="bulkFeatureKey" list="bulkFeatureKeyList" placeholder="mis. kondisi, sumber_dana">
+                    <datalist id="bulkFeatureKeyList">
+                        @foreach ($knownAttributeKeys as $key)
+                            <option value="{{ $key }}"></option>
+                        @endforeach
+                    </datalist>
+                    <div class="form-text">Huruf, angka, underscore — diawali huruf/underscore.</div>
+
+                    <div class="mt-3" id="bulkFeatureValueWrapper">
+                        <label for="bulkFeatureValue" class="form-label fw-semibold">Nilai Baru</label>
+                        <input type="text" class="form-control" id="bulkFeatureValue">
+                    </div>
+
+                    <div id="bulkFeatureAttributeError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmBulkFeatureAttribute">
+                        <i class="mdi mdi-check me-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Edit Atribut Form (Hidden) -->
+    <form id="bulkFeatureAttributeForm" method="POST" action="{{ route('spatial-layers.features.bulk-update-attribute', $layer) }}" style="display: none;">
+        @csrf
+        <div id="bulkFeatureAttributeIds"></div>
+        <input type="hidden" name="action" id="bulkFeatureActionInput">
+        <input type="hidden" name="key" id="bulkFeatureKeyInput">
+        <input type="hidden" name="value" id="bulkFeatureValueInput">
+    </form>
+
+    <!-- Bulk Hapus Form (Hidden) -->
+    <form id="bulkFeatureDestroyForm" method="POST" action="{{ route('spatial-layers.features.bulk-destroy', $layer) }}" style="display: none;" data-confirm="delete" data-name="Data Spasial terpilih">
+        @csrf
+        <div id="bulkFeatureDestroyIds"></div>
+    </form>
 @endsection
 
 @push('styles')
@@ -1184,13 +1431,26 @@
                     return true;
                 }
 
-                const selected = $('#dataSpasialStatusFilter').val();
-                if (!selected) {
-                    return true;
+                const row = settings.aoData[dataIndex].nTr;
+
+                const statusFilter = $('#dataSpasialStatusFilter').val();
+                if (statusFilter && $(row).data('status') !== statusFilter) {
+                    return false;
                 }
 
-                const row = settings.aoData[dataIndex].nTr;
-                return $(row).data('status') === selected;
+                const attributeField = $('#dataSpasialAttributeFilterField').val();
+                const attributeValue = $('#dataSpasialAttributeFilterValue').val().trim().toLowerCase();
+                if (attributeField && attributeValue) {
+                    const feature = $(row).data('feature');
+                    const entry = (feature.metadata || []).find((m) => m.kode === attributeField);
+                    const value = entry && entry.value !== null && entry.value !== undefined ? String(entry.value)
+                        .toLowerCase() : '';
+                    if (!value.includes(attributeValue)) {
+                        return false;
+                    }
+                }
+
+                return true;
             });
 
             const dataSpasialTable = $('#dataSpasialLayerTable').DataTable({
@@ -1200,11 +1460,11 @@
                 columnDefs: [{
                         searchable: false,
                         orderable: false,
-                        targets: [1, -1]
+                        targets: [0, 2, -1]
                     },
                     {
                         className: 'text-center',
-                        targets: [0, 1, -1]
+                        targets: [0, 1, 2, -1]
                     },
                 ],
                 language: {
@@ -1234,6 +1494,15 @@
             });
 
             $('#dataSpasialStatusFilter').on('change', function() {
+                dataSpasialTable.draw();
+            });
+
+            $('#dataSpasialAttributeFilterField').on('change', function() {
+                $('#dataSpasialAttributeFilterValue').toggleClass('d-none', !this.value).val('');
+                dataSpasialTable.draw();
+            });
+
+            $('#dataSpasialAttributeFilterValue').on('keyup', function() {
                 dataSpasialTable.draw();
             });
 
@@ -1292,7 +1561,7 @@
             }
 
             $(document).on('click', '#dataSpasialLayerTable tbody tr[data-feature-row]', function(e) {
-                if ($(e.target).closest('a, button, form').length) {
+                if ($(e.target).closest('a, button, form, input, label').length) {
                     return;
                 }
                 openFeatureDetailModal($(this).data('feature'));
@@ -1305,6 +1574,163 @@
                 }
             @endif
         })();
+    </script>
+
+    <script>
+        /**
+         * Bulk edit atribut / hapus Data Spasial terpilih (§5.7 butir 3) — pola
+         * checkbox + bar sama dengan bulk "Ubah Jenis Peta" di spatial-layers/
+         * index.blade.php (selectedLayerItems/updateBulkActionsBar), diberi nama
+         * terpisah di sini ("Feature") supaya tidak bentrok kalau kedua halaman
+         * pernah disatukan.
+         */
+        let selectedFeatureItems = [];
+
+        function updateFeatureBulkActionsBar() {
+            const bar = document.getElementById('featureBulkActionsBar');
+            const countEl = document.getElementById('featureSelectedCount');
+
+            if (selectedFeatureItems.length > 0) {
+                bar.classList.remove('d-none');
+                countEl.textContent = selectedFeatureItems.length;
+            } else {
+                bar.classList.add('d-none');
+            }
+        }
+
+        function updateFeatureSelectAllState() {
+            const checkboxes = $('.feature-row-checkbox');
+            const selectAllCheckbox = document.getElementById('featureSelectAll');
+            const checkedCount = checkboxes.filter(':checked').length;
+
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        function clearFeatureSelection() {
+            selectedFeatureItems = [];
+            document.querySelectorAll('.feature-row-checkbox').forEach((cb) => {
+                cb.checked = false;
+                cb.closest('tr')?.classList.remove('table-active');
+            });
+            document.getElementById('featureSelectAll').checked = false;
+            document.getElementById('featureSelectAll').indeterminate = false;
+            updateFeatureBulkActionsBar();
+        }
+
+        $(document).on('change', '#featureSelectAll', function() {
+            const isChecked = this.checked;
+
+            $('.feature-row-checkbox').each(function() {
+                this.checked = isChecked;
+                const value = this.value;
+                $(this).closest('tr').toggleClass('table-active', isChecked);
+
+                if (isChecked && !selectedFeatureItems.includes(value)) {
+                    selectedFeatureItems.push(value);
+                } else if (!isChecked) {
+                    selectedFeatureItems = selectedFeatureItems.filter((id) => id !== value);
+                }
+            });
+
+            updateFeatureBulkActionsBar();
+        });
+
+        $(document).on('change', '.feature-row-checkbox', function() {
+            const value = this.value;
+
+            if (this.checked) {
+                if (!selectedFeatureItems.includes(value)) {
+                    selectedFeatureItems.push(value);
+                }
+            } else {
+                selectedFeatureItems = selectedFeatureItems.filter((id) => id !== value);
+            }
+
+            $(this).closest('tr').toggleClass('table-active', this.checked);
+            updateFeatureBulkActionsBar();
+            updateFeatureSelectAllState();
+        });
+
+        function bulkEditFeatureAttribute() {
+            if (selectedFeatureItems.length === 0) {
+                return;
+            }
+
+            document.getElementById('bulkFeatureAttributeCount').textContent = selectedFeatureItems.length;
+            document.getElementById('bulkFeatureKey').value = '';
+            document.getElementById('bulkFeatureValue').value = '';
+            document.getElementById('bulkFeatureActionSet').checked = true;
+            document.getElementById('bulkFeatureValueWrapper').style.display = '';
+            document.getElementById('bulkFeatureAttributeError').classList.add('d-none');
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkFeatureAttributeModal')).show();
+        }
+
+        document.querySelectorAll('input[name="bulkFeatureAction"]').forEach((radio) => {
+            radio.addEventListener('change', function() {
+                document.getElementById('bulkFeatureValueWrapper').style.display =
+                    this.value === 'set' ? '' : 'none';
+            });
+        });
+
+        document.getElementById('confirmBulkFeatureAttribute').addEventListener('click', function() {
+            const key = document.getElementById('bulkFeatureKey').value.trim();
+            const action = document.querySelector('input[name="bulkFeatureAction"]:checked').value;
+            const errorEl = document.getElementById('bulkFeatureAttributeError');
+
+            if (!key) {
+                errorEl.textContent = 'Nama atribut harus diisi.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            const idsContainer = document.getElementById('bulkFeatureAttributeIds');
+            idsContainer.innerHTML = '';
+            selectedFeatureItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                idsContainer.appendChild(input);
+            });
+
+            document.getElementById('bulkFeatureActionInput').value = action;
+            document.getElementById('bulkFeatureKeyInput').value = key;
+            document.getElementById('bulkFeatureValueInput').value = document.getElementById('bulkFeatureValue').value;
+
+            document.getElementById('bulkFeatureAttributeForm').submit();
+        });
+
+        function bulkDeleteFeatures() {
+            if (selectedFeatureItems.length === 0) {
+                return;
+            }
+
+            const idsContainer = document.getElementById('bulkFeatureDestroyIds');
+            idsContainer.innerHTML = '';
+            selectedFeatureItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                idsContainer.appendChild(input);
+            });
+
+            // requestSubmit() (bukan submit()) supaya event 'submit' tetap
+            // terpicu — handler global data-confirm="delete" di
+            // backend.partials.main menunggu event ini untuk menampilkan
+            // konfirmasi SweetAlert sebelum benar-benar mengirim form.
+            document.getElementById('bulkFeatureDestroyForm').requestSubmit();
+        }
     </script>
 
     <script>

@@ -117,6 +117,18 @@
                                 </div>
 
                                 <div class="col-lg-3 col-md-3">
+                                    <label for="categoryFilter" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-shape-outline me-1"></i>Kategori
+                                    </label>
+                                    <select class="form-select filter-control" id="categoryFilter">
+                                        <option value="">Semua Kategori</option>
+                                        @foreach (collect($categoryPaths)->sort() as $key => $label)
+                                            <option value="{{ $key }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3 col-md-3">
                                     <label for="mapTypeFilter" class="form-label fw-semibold mb-1">
                                         <i class="mdi mdi-shape me-1"></i>Jenis Peta
                                     </label>
@@ -126,6 +138,31 @@
                                             <option value="{{ $mapType->id }}">{{ $mapType->nama }}</option>
                                         @endforeach
                                         <option value="0">- Tanpa Jenis -</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3 col-md-3">
+                                    <label for="statusFilter" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-flag me-1"></i>Status
+                                    </label>
+                                    <select class="form-select filter-control" id="statusFilter">
+                                        <option value="">Semua Status</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3 col-md-3">
+                                    <label for="opdFilter" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-domain me-1"></i>OPD Pemilik
+                                    </label>
+                                    <select class="form-select filter-control" id="opdFilter">
+                                        <option value="">Semua OPD</option>
+                                        @foreach ($opds as $opd)
+                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }}</option>
+                                        @endforeach
+                                        <option value="0">- Tanpa OPD -</option>
                                     </select>
                                 </div>
 
@@ -184,6 +221,8 @@
                                     <th>Kategori</th>
                                     <th>Jenis</th>
                                     <th style="width: 15%;">Style</th>
+                                    <th>Status</th>
+                                    <th>OPD</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -192,8 +231,9 @@
                                     @php
                                         $categoryKey = $layer->category_node_id ? 'node:'.$layer->category_node_id : 'cat:'.$layer->category_id;
                                         $categoryLabel = $categoryPaths[$categoryKey] ?? '-';
+                                        $statusBadge = ['draft' => 'secondary', 'published' => 'success', 'archived' => 'dark'][$layer->status] ?? 'secondary';
                                     @endphp
-                                    <tr data-layer-id="{{ $layer->id }}" data-map-type-id="{{ $layer->map_type_id ?? '0' }}" class="spatial-layer-row">
+                                    <tr data-layer-id="{{ $layer->id }}" data-map-type-id="{{ $layer->map_type_id ?? '0' }}" data-status="{{ $layer->status }}" data-opd-id="{{ $layer->opd_id ?? '0' }}" data-category-key="{{ $categoryKey }}" class="spatial-layer-row">
                                         <td>
                                             <div class="checkbox-wrapper">
                                                 <input class="form-check-input row-checkbox" type="checkbox" value="{{ $layer->id }}" id="check-{{ $layer->id }}">
@@ -209,6 +249,10 @@
                                             @if ($layer->features_count > 0)
                                                 <span class="badge bg-success text-white ms-2" style="font-size:0.65em;">{{ $layer->features_count }} data</span>
                                             @endif
+                                            @php $metadataPercent = $layer->metadata?->completenessPercent() ?? 0; @endphp
+                                            <span class="badge {{ $metadataPercent >= 80 ? 'bg-success' : ($metadataPercent > 0 ? 'bg-warning text-dark' : 'bg-light text-muted border') }} ms-2" style="font-size:0.65em;" title="Kelengkapan metadata">
+                                                Metadata {{ $metadataPercent }}%
+                                            </span>
                                         </td>
                                         <td><small class="text-muted">{{ $categoryLabel }}</small></td>
                                         <td>{!! $layer->mapType?->nama ? '<span class="badge bg-primary text-white">'.e($layer->mapType->nama).'</span>' : '<span class="text-muted">-</span>' !!}</td>
@@ -227,6 +271,8 @@
                                                 @endif
                                             </div>
                                         </td>
+                                        <td><span class="badge bg-{{ $statusBadge }} text-white">{{ ucfirst($layer->status) }}</span></td>
+                                        <td><small class="text-muted">{{ $layer->opd?->singkatan ?? '-' }}</small></td>
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <a href="{{ route('spatial-layers.show', $layer->id) }}" class="btn btn-sm btn-outline-primary" title="Detail"><i class="mdi mdi-eye"></i></a>
@@ -242,7 +288,7 @@
 
                                 @if ($layers->count() == 0)
                                     <tr>
-                                        <td colspan="7" class="text-center py-4">
+                                        <td colspan="9" class="text-center py-4">
                                             <i class="mdi mdi-layers-outline mdi-48px text-muted"></i>
                                             <h5 class="text-muted mt-2">Belum ada Layer yang dibuat</h5>
                                             <p class="text-muted">Klik tombol "Tambah Layer" untuk memulai</p>
@@ -876,13 +922,29 @@
                     return true;
                 }
 
-                const selected = $('#mapTypeFilter').val();
-                if (!selected) {
-                    return true;
+                const row = settings.aoData[dataIndex].nTr;
+
+                const mapType = $('#mapTypeFilter').val();
+                if (mapType && $(row).data('map-type-id').toString() !== mapType) {
+                    return false;
                 }
 
-                const row = settings.aoData[dataIndex].nTr;
-                return $(row).data('map-type-id').toString() === selected;
+                const status = $('#statusFilter').val();
+                if (status && $(row).data('status') !== status) {
+                    return false;
+                }
+
+                const opd = $('#opdFilter').val();
+                if (opd && $(row).data('opd-id').toString() !== opd) {
+                    return false;
+                }
+
+                const category = $('#categoryFilter').val();
+                if (category && $(row).data('category-key') !== category) {
+                    return false;
+                }
+
+                return true;
             });
 
             const table = $('#spatialLayersTable').DataTable({
@@ -917,9 +979,18 @@
                     $('#per_page').on('change', function () {
                         table.page.len(parseInt($(this).val(), 10)).draw();
                     });
-                    $('#mapTypeFilter').on('change', function () {
+                    $('#mapTypeFilter, #statusFilter, #opdFilter, #categoryFilter').on('change', function () {
                         table.draw();
                     });
+
+                    // §5.1 butir 4 — "panel isi katalog": link dari halaman
+                    // Kategori (?category=cat:ID atau node:ID) langsung
+                    // menerapkan filter ini saat halaman dimuat.
+                    const categoryParam = new URLSearchParams(window.location.search).get('category');
+                    if (categoryParam) {
+                        $('#categoryFilter').val(categoryParam);
+                        table.draw();
+                    }
                 }
             });
         });

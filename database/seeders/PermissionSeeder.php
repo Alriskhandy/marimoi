@@ -10,6 +10,36 @@ use Spatie\Permission\PermissionRegistrar;
 class PermissionSeeder extends Seeder
 {
     /**
+     * Permission tambahan yang WAJIB dimiliki role ini, ditambahkan secara
+     * aditif (tidak menimpa/menghapus permission lain milik role) setiap kali
+     * seeder ini jalan — berbeda dari DEFAULTS yang hanya berlaku sekali untuk
+     * role yang belum punya permission apa pun sama sekali.
+     *
+     * Dipakai untuk `spatial-layers.*` (modul "Daftar Layer & Data" v3):
+     * role `admin-bappeda`/`admin-opd` yang sudah lama di-seed dengan
+     * permission lain (mis. `data-spatial.*`) tidak akan pernah lolos guard
+     * DEFAULTS, padahal keduanya wajib bisa memakai modul baru ini
+     * (lihat docs/marimoi v2/spec-admin-manajemen-peta.md §2, R17, R19–R21).
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const ADDITIONAL_GRANTS = [
+        'admin-bappeda' => [
+            'spatial-layers.view',
+            'spatial-layers.create',
+            'spatial-layers.edit',
+            'spatial-layers.delete',
+            'spatial-layers.publish',
+        ],
+        'admin-opd' => [
+            'spatial-layers.view',
+            'spatial-layers.create',
+            'spatial-layers.edit',
+            'spatial-layers.delete',
+        ],
+    ];
+
+    /**
      * Hak akses awal tiap role bawaan. Role yang sudah punya permission
      * (mis. diubah lewat menu Manajemen Role) tidak ditimpa.
      *
@@ -18,7 +48,6 @@ class PermissionSeeder extends Seeder
     private const DEFAULTS = [
         'admin-bappeda' => [
             'dashboard.view',
-            'data-spatial.*',
             'categories.*',
             'project-feedbacks.*',
             'project-progress.*',
@@ -29,7 +58,6 @@ class PermissionSeeder extends Seeder
         ],
         'admin-opd' => [
             'dashboard.view',
-            'data-spatial.*',
             'categories.view',
             'project-feedbacks.view',
             'project-feedbacks.respond',
@@ -42,6 +70,16 @@ class PermissionSeeder extends Seeder
             'dashboard.view',
         ],
     ];
+
+    /**
+     * Permission yang sudah dihapus dari katalog tapi mungkin masih
+     * tersimpan di DB (role lama yang sudah pernah di-seed) — Fase I/D13:
+     * modul "Data Spasial" lama di-retire, permission ini dicabut permanen
+     * dari role yang memegangnya lalu baris-nya sendiri dihapus.
+     *
+     * @var array<int, string>
+     */
+    private const RETIRED_PREFIXES = ['data-spatial.'];
 
     public function run(): void
     {
@@ -63,6 +101,27 @@ class PermissionSeeder extends Seeder
             }
 
             $role->syncPermissions($this->expand($patterns, $names));
+        }
+
+        foreach (self::ADDITIONAL_GRANTS as $slug => $permissionNames) {
+            $role = Role::where('slug', $slug)->first();
+
+            if (! $role) {
+                continue;
+            }
+
+            foreach ($permissionNames as $name) {
+                if (! $role->hasPermissionTo($name)) {
+                    $role->givePermissionTo($name);
+                }
+            }
+        }
+
+        foreach (self::RETIRED_PREFIXES as $prefix) {
+            Permission::where('name', 'like', $prefix.'%')->get()->each(function (Permission $permission) {
+                $permission->roles()->detach();
+                $permission->delete();
+            });
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

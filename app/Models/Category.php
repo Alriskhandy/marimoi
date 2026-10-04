@@ -44,13 +44,14 @@ class Category extends Model
 
     protected $fillable = [
         'type', 'nama', 'warna', 'icon', 'is_marker', 'user_id',
-        'deskripsi', 'parent_id', 'is_active', 'gambar',
+        'deskripsi', 'parent_id', 'is_active', 'gambar', 'sort_order',
     ];
 
     protected $casts = [
         'is_marker' => 'boolean',
         'is_active' => 'boolean',
         'depth' => 'integer',
+        'sort_order' => 'integer',
     ];
 
     public static function create(array $attributes = []): self
@@ -72,6 +73,7 @@ class Category extends Model
                 'is_marker' => $attributes['is_marker'] ?? false,
                 'is_active' => $attributes['is_active'] ?? false,
                 'gambar' => $attributes['gambar'] ?? null,
+                'sort_order' => $attributes['sort_order'] ?? 0,
                 'created_by' => $attributes['user_id'] ?? null,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -97,6 +99,7 @@ class Category extends Model
                 'is_active' => $attributes['is_active'] ?? false,
                 'gambar' => $attributes['gambar'] ?? null,
                 'is_marker' => $attributes['is_marker'] ?? false,
+                'sort_order' => $attributes['sort_order'] ?? 0,
                 'created_by' => $attributes['user_id'] ?? null,
                 'path' => DB::raw("'{$path}'::ltree"),
                 'created_at' => $now,
@@ -123,12 +126,16 @@ class Category extends Model
                 'is_marker' => $attributes['is_marker'] ?? $this->is_marker,
                 'is_active' => $attributes['is_active'] ?? $this->is_active,
                 'gambar' => array_key_exists('gambar', $attributes) ? $attributes['gambar'] : $this->gambar,
+                'sort_order' => $attributes['sort_order'] ?? $this->sort_order,
                 'updated_at' => $now,
             ]);
         } else {
+            $isMoving = isset($attributes['parent_id']) && (string) $attributes['parent_id'] !== (string) $this->parent_id;
+
             [$categoryId, $parentNodeId, $depth] = isset($attributes['parent_id'])
                 ? self::resolveParentNode($attributes['parent_id'])
                 : [null, null, null];
+            $newPath = null;
 
             $update = [
                 'name' => $attributes['nama'] ?? $this->nama,
@@ -138,6 +145,7 @@ class Category extends Model
                 'is_marker' => $attributes['is_marker'] ?? $this->is_marker,
                 'is_active' => $attributes['is_active'] ?? $this->is_active,
                 'gambar' => array_key_exists('gambar', $attributes) ? $attributes['gambar'] : $this->gambar,
+                'sort_order' => $attributes['sort_order'] ?? $this->sort_order,
                 'updated_at' => $now,
             ];
 
@@ -145,9 +153,25 @@ class Category extends Model
                 $update['category_id'] = $categoryId;
                 $update['parent_id'] = $parentNodeId;
                 $update['depth'] = $depth;
+
+                // "Move node" (§5.1 butir 2) — path ltree node ini SENDIRI juga
+                // ikut dihitung ulang (bukan cuma parent_id/depth), dan setiap
+                // kali pindah, seluruh keturunannya (yang parent_id-nya sendiri
+                // TIDAK berubah) harus ikut mendapat category_id/depth/path baru
+                // berdasarkan posisi barunya — sebelumnya field ini ditinggal
+                // basi, cuma parent_id node teratas yang berubah.
+                $parentPath = $parentNodeId ? DB::table('category_nodes')->where('id', $parentNodeId)->value('path') : null;
+                $newPath = $parentPath ? "{$parentPath}.".self::ltreeLabel($this->id) : self::ltreeLabel($this->id);
+                $update['path'] = DB::raw("'{$newPath}'::ltree");
             }
 
-            DB::table('category_nodes')->where('id', $this->id)->update($update);
+            DB::transaction(function () use ($update, $isMoving, $categoryId, $newPath) {
+                DB::table('category_nodes')->where('id', $this->id)->update($update);
+
+                if ($isMoving && $categoryId !== null) {
+                    self::cascadeMoveToDescendants($this->id, $newPath, $update['depth'], $categoryId);
+                }
+            });
         }
 
         self::bustTreeCache();
@@ -177,6 +201,32 @@ class Category extends Model
         $node = DB::table('category_nodes')->where('id', $parentId)->firstOrFail();
 
         return [$node->category_id, $node->id, $node->depth + 1];
+    }
+
+    /**
+     * Setelah node pindah, turunannya (parent_id-nya sendiri tidak berubah,
+     * cuma posisi leluhurnya) butuh category_id/depth/path baru juga — jalan
+     * rekursif turun dari node yang baru dipindah, murni dari parent_id yang
+     * SUDAH ada (bukan menghitung ulang dari path lama), supaya konsisten
+     * dengan posisi baru di pohon.
+     */
+    private static function cascadeMoveToDescendants(string $parentId, string $parentPath, int $parentDepth, string $rootCategoryId): void
+    {
+        $children = DB::table('category_nodes')->where('parent_id', $parentId)->get(['id']);
+
+        foreach ($children as $child) {
+            $childPath = "{$parentPath}.".self::ltreeLabel($child->id);
+            $childDepth = $parentDepth + 1;
+
+            DB::table('category_nodes')->where('id', $child->id)->update([
+                'category_id' => $rootCategoryId,
+                'depth' => $childDepth,
+                'path' => DB::raw("'{$childPath}'::ltree"),
+                'updated_at' => now(),
+            ]);
+
+            self::cascadeMoveToDescendants($child->id, $childPath, $childDepth, $rootCategoryId);
+        }
     }
 
     private static function ltreeLabel(string $uuid): string
@@ -217,7 +267,7 @@ class Category extends Model
 
     public function children(): HasMany
     {
-        return $this->hasMany(Category::class, 'parent_id');
+        return $this->hasMany(Category::class, 'parent_id')->orderBy('sort_order')->orderBy('nama');
     }
 
     public function parent(): BelongsTo

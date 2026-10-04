@@ -3,9 +3,11 @@
 use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DataSpatialController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
+use App\Http\Controllers\LayerImportController;
+use App\Http\Controllers\LayerSourceController;
+use App\Http\Controllers\LayerStyleController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MapTypeController;
 use App\Http\Controllers\MetadataDefinitionController;
@@ -22,7 +24,6 @@ use App\Http\Controllers\SpatialLayerFeatureController;
 use App\Http\Controllers\SpatialLayerMetadataController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitorsController;
-use App\Models\DataSpatial;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -101,48 +102,38 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::resource('visitors', VisitorsController::class)->only(['destroy'])->middleware('permission:visitors.delete');
     /*
     |--------------------------------------------------------------------------
-    | Unified Data Spatial Management
+    | Data Spatial (RETIRED — D13/§5.9, plan mellow-weaving-eclipse Fase I)
     |--------------------------------------------------------------------------
+    | Modul ini digantikan "Daftar Layer & Data" (spatial-layers.*). Rute di
+    | bawah DIPERTAHANKAN (bukan dihapus) sebagai redirect murni supaya
+    | bookmark admin lama tidak langsung 404 — tidak ada lagi jalur yang
+    | menulis ke data_spatial_legacy_v1 lewat sini (lihat juga penghapusan
+    | App\Support\SpatialFeaturesV3Sync di AppServiceProvider).
     */
 
     Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'index'])->name('index')->middleware('permission:data-spatial.view');
-        Route::get('/peta', [DataSpatialController::class, 'map'])->name('map')->middleware('permission:data-spatial.view');
-        Route::get('/geojson', [DataSpatialController::class, 'geojson'])->name('geojson')->middleware('permission:data-spatial.view');
-        Route::get('/geojson-version', [DataSpatialController::class, 'geojsonVersion'])->name('geojson-version')->middleware('permission:data-spatial.view');
-        Route::post('/export-drawings', [DataSpatialController::class, 'exportDrawings'])->name('export-drawings')->middleware('permission:data-spatial.view');
-        Route::get('/create', [DataSpatialController::class, 'create'])->name('create')->middleware('permission:data-spatial.create');
-        Route::post('/store', [DataSpatialController::class, 'store'])->name('store')->middleware('permission:data-spatial.create');
-        Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit')->middleware('permission:data-spatial.edit');
-        Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update')->middleware('permission:data-spatial.edit');
-        Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy')->middleware('permission:data-spatial.delete');
-        Route::post('/bulk-update-category', [DataSpatialController::class, 'bulkUpdateCategory'])->name('bulk-update-category')->middleware('permission:data-spatial.edit');
-        Route::post('/bulk-update-attribute', [DataSpatialController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute')->middleware('permission:data-spatial.edit');
+        $retired = fn () => redirect()->route('spatial-layers.index')
+            ->with('info', 'Modul "Data Spasial" sudah digantikan "Daftar Layer & Data".');
 
-        // Debug routes for file uploads
-        Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile')->middleware('permission:data-spatial.create');
-        Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz')->middleware('permission:data-spatial.create');
-
-        // Detail endpoint for modal
-        Route::get('/{uuid}/details', function ($uuid) {
-            $data = DataSpatial::with(['kategori', 'opdPengelola'])->where('uuid', $uuid)->first();
-
-            return response()->json([
-                'success' => $data ? true : false,
-                'data' => $data,
-                'message' => $data ? 'Data found' : 'Data not found',
-            ]);
-        })->name('details')->middleware('permission:data-spatial.view');
+        Route::get('/', $retired)->name('index')->middleware('permission:spatial-layers.view');
+        Route::get('/peta', $retired)->name('map')->middleware('permission:spatial-layers.view');
+        Route::get('/geojson', $retired)->name('geojson')->middleware('permission:spatial-layers.view');
+        Route::get('/geojson-version', $retired)->name('geojson-version')->middleware('permission:spatial-layers.view');
+        Route::post('/export-drawings', $retired)->name('export-drawings')->middleware('permission:spatial-layers.view');
+        Route::get('/create', $retired)->name('create')->middleware('permission:spatial-layers.view');
+        Route::post('/store', $retired)->name('store')->middleware('permission:spatial-layers.view');
+        Route::get('/{uuid}/edit', $retired)->name('edit')->middleware('permission:spatial-layers.view');
+        Route::put('/{uuid}', $retired)->name('update')->middleware('permission:spatial-layers.view');
+        Route::delete('/{uuid}', $retired)->name('destroy')->middleware('permission:spatial-layers.view');
+        Route::post('/bulk-update-category', $retired)->name('bulk-update-category')->middleware('permission:spatial-layers.view');
+        Route::post('/bulk-update-attribute', $retired)->name('bulk-update-attribute')->middleware('permission:spatial-layers.view');
+        Route::get('/{uuid}/details', $retired)->name('details')->middleware('permission:spatial-layers.view');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Peta RPJMD (Tematik) Routes
-    |--------------------------------------------------------------------------
-    */
-
     Route::prefix('tematik')->name('tematik.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index')->middleware('permission:data-spatial.view');
+        Route::get('/', fn () => redirect()->route('spatial-layers.index')
+            ->with('info', 'Modul "Data Spasial" sudah digantikan "Daftar Layer & Data".'))
+            ->name('index')->middleware('permission:spatial-layers.view');
         Route::get('/create', function () {
             return redirect()->route('data-spatial.create').'?type=tematik';
         })->name('create');
@@ -169,10 +160,12 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/{id}', [CategoryController::class, 'update'])->name('update')->middleware('permission:categories.edit');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy')->middleware('permission:categories.delete');
 
-        // Metadata layer skema baru (spatial_layer_metadata) — docs/marimoi v2/
-        // 04_implementation/11-plan-dashboard-skema-baru.md Bagian A.
-        Route::get('/{id}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:categories.edit');
-        Route::put('/{id}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:categories.edit');
+        // Metadata layer PINDAH ke konteks Layer sejak Fase C (plan
+        // mellow-weaving-eclipse, implementasi spec-admin-manajemen-peta.md
+        // §5.3) — rute ini dipertahankan HANYA sebagai redirect ke
+        // spatial-layers.metadata.* supaya bookmark admin lama tidak mati.
+        Route::get('/{id}/metadata', [SpatialLayerMetadataController::class, 'editByCategory'])->name('metadata.edit')->middleware('permission:categories.edit');
+        Route::put('/{id}/metadata', [SpatialLayerMetadataController::class, 'updateByCategory'])->name('metadata.update')->middleware('permission:categories.edit');
 
         // API cascading select (3 level) dipakai index.blade.php — satu-satunya
         // endpoint API Category yang benar-benar dikonsumsi JS (lihat Category
@@ -209,11 +202,40 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/bulk-update-map-type', [SpatialLayerController::class, 'bulkUpdateMapType'])->name('bulk-update-map-type')->middleware('permission:spatial-layers.edit');
         Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
         Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+        Route::patch('/{spatialLayer}/status', [SpatialLayerController::class, 'updateStatus'])->name('update-status')->middleware('permission:spatial-layers.publish');
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+
+        Route::get('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:spatial-layers.edit');
+        Route::put('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:spatial-layers.edit');
+
+        Route::prefix('{spatialLayer}/styles')->name('styles.')->group(function () {
+            Route::get('/', [LayerStyleController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+            Route::post('/', [LayerStyleController::class, 'store'])->name('store')->middleware('permission:spatial-layers.edit');
+            Route::put('/{style}', [LayerStyleController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::delete('/{style}', [LayerStyleController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.edit');
+        });
+
+        Route::prefix('{spatialLayer}/sources')->name('sources.')->group(function () {
+            Route::get('/', [LayerSourceController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+            Route::post('/', [LayerSourceController::class, 'store'])->name('store')->middleware('permission:spatial-layers.edit');
+            Route::put('/{source}', [LayerSourceController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::delete('/{source}', [LayerSourceController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.edit');
+            Route::post('/{source}/test-connection', [LayerSourceController::class, 'testConnection'])->name('test-connection')->middleware('permission:spatial-layers.edit');
+        });
+
+        Route::prefix('{spatialLayer}/imports')->name('imports.')->group(function () {
+            Route::get('/', [LayerImportController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+            Route::get('/{import}/log', [LayerImportController::class, 'downloadLog'])->name('log')->middleware('permission:spatial-layers.view');
+            Route::post('/', [LayerImportController::class, 'upload'])->name('upload')->middleware('permission:spatial-layers.create');
+            Route::get('/{import}/mapping', [LayerImportController::class, 'editMapping'])->name('mapping.edit')->middleware('permission:spatial-layers.create');
+            Route::post('/{import}/mapping', [LayerImportController::class, 'processMapping'])->name('mapping.process')->middleware('permission:spatial-layers.create');
+        });
 
         Route::prefix('{spatialLayer}/features')->name('features.')->group(function () {
             Route::get('/create', [SpatialLayerFeatureController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
             Route::post('/', [SpatialLayerFeatureController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+            Route::post('/bulk-update-attribute', [SpatialLayerFeatureController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute')->middleware('permission:spatial-layers.edit');
+            Route::post('/bulk-destroy', [SpatialLayerFeatureController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
             Route::get('/{feature}/edit', [SpatialLayerFeatureController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
             Route::put('/{feature}', [SpatialLayerFeatureController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
             Route::delete('/{feature}', [SpatialLayerFeatureController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
@@ -347,24 +369,10 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     Route::prefix('api')->name('api.')->group(function () {
-
-        // Categories
-        Route::get('/categories', [DataSpatialController::class, 'getCategories'])->name('categories')->middleware('permission:data-spatial.view');
-
-        // DBF attribute columns (for bulk attribute editor autocomplete)
-        Route::get('/dbf-columns', [DataSpatialController::class, 'getDbfColumns'])->name('dbf-columns')->middleware('permission:data-spatial.view');
+        // categories/dbf-columns/data-spatial.details (modul Data Spasial
+        // lama) dihapus di sini — Fase I/D13, hanya dikonsumsi JS halaman
+        // yang sudah di-retire, tidak ada pemanggil lain yang tersisa.
         Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd')->middleware('permission:aspirasi.view');
-
-        // Data Spatial Details
-        Route::get('/data-spatial/{uuid}/details', function ($uuid) {
-            $data = DataSpatial::with(['kategori', 'opdPengelola'])->where('uuid', $uuid)->first();
-
-            return response()->json([
-                'success' => $data ? true : false,
-                'data' => $data,
-                'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan',
-            ]);
-        })->name('data-spatial.details')->middleware('permission:data-spatial.view');
     });
 
     /*

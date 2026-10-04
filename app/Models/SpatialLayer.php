@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -39,6 +40,7 @@ class SpatialLayer extends Model
         'category_node_id',
         'layer_type_id',
         'map_type_id',
+        'opd_id',
         'code',
         'name',
         'slug',
@@ -87,6 +89,14 @@ class SpatialLayer extends Model
         return $this->belongsTo(MapType::class);
     }
 
+    /**
+     * OPD pemilik layer (R19–R21, D16). `NULL` berarti milik provinsi/Bappeda.
+     */
+    public function opd(): BelongsTo
+    {
+        return $this->belongsTo(Opd::class);
+    }
+
     public function layerType(): BelongsTo
     {
         return $this->belongsTo(LayerType::class);
@@ -125,6 +135,30 @@ class SpatialLayer extends Model
     public function imports(): HasMany
     {
         return $this->hasMany(LayerImport::class, 'layer_id');
+    }
+
+    /**
+     * Hitung ulang `feature_count`/`bbox` dari `spatial_features` (R18) —
+     * dulu hanya dilakukan oleh App\Support\SpatialFeaturesV3Sync untuk jalur
+     * tulis DataSpatialController lama; jalur admin baru (Import/CRUD fitur
+     * lewat SpatialLayerFeatureController) perlu memanggil ini sendiri setiap
+     * kali fiturnya berubah (bukan cuma update()/destroy() biasa, karena tidak
+     * ada model event yang otomatis terpicu untuk operasi batch).
+     */
+    public function refreshFeatureCache(): void
+    {
+        DB::update(
+            <<<'SQL'
+                UPDATE layers lv
+                SET feature_count = sub.cnt, bbox = sub.bbox
+                FROM (
+                    SELECT COUNT(*) AS cnt, ST_Envelope(ST_Collect(geom)) AS bbox
+                    FROM spatial_features WHERE layer_id = ?
+                ) sub
+                WHERE lv.id = ?
+                SQL,
+            [$this->id, $this->id]
+        );
     }
 
     /**

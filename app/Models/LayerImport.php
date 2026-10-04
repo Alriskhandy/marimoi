@@ -85,4 +85,9 @@ class LayerImport extends Model
     {
         return $this->hasMany(SpatialLayerFeature::class, 'layer_import_id');
     }
+
+    public function importedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'imported_by');
+    }
 }
