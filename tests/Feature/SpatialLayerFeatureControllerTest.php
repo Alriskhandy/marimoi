@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\AdministrativeRegion;
-use App\Models\MapType;
-use App\Models\MetadataDefinition;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -50,37 +48,24 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
     private function layer(array $overrides = []): SpatialLayer
     {
-        $jenis = MapType::where('slug', 'tematik')->firstOrFail();
-
         return SpatialLayer::create(array_merge([
             'category_id' => $this->categoryId(),
             'layer_type_id' => 4,
             'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.uniqid(),
             'name' => 'Layer Uji',
-            'map_type_id' => $jenis->id,
         ], $overrides));
     }
 
-    private function attachDefinition(SpatialLayer $layer, string $kode, array $definitionOverrides = [], array $pivotOverrides = []): void
-    {
-        $definition = MetadataDefinition::firstOrCreate(
-            ['kode' => $kode],
-            array_merge(['label' => ucfirst($kode)], $definitionOverrides)
-        );
-
-        $layer->mapType->dynamicAttributes()->create(array_merge(
-            ['metadata_definition_id' => $definition->id],
-            $pivotOverrides
-        ));
-    }
-
     /**
-     * sumber_data/opd_penanggung_jawab/tanggal_data dipasang otomatis & wajib ke
-     * SETIAP Jenis Peta (lihat MapTypeController::syncCoreAttributes(), migrasi
-     * move_map_type_core_attributes_to_metadata_definitions) — jadi tiap kali
-     * membuat/mengubah Data Spasial, 3 field metadata_dinamis ini wajib diisi
-     * terlepas dari atribut tambahan apa pun yang dikonfigurasi di Jenisnya.
+     * Sejak `layers.map_type_id` dihapus (2026-10-06, lihat migration
+     * drop_map_type_id_and_visibility_from_layers_table), Layer TIDAK LAGI
+     * bisa dihubungkan ke Jenis Peta — `activeDynamicAttributesFor()` selalu
+     * mengembalikan collection kosong untuk SEMUA Layer (lihat
+     * SpatialLayerFeatureController), jadi field metadata_dinamis ini (dan
+     * aturan wajibnya) tidak lagi tervalidasi/tersimpan sama sekali. Helper
+     * ini dipertahankan hanya supaya test lama yang mengirim payload ini
+     * tetap terbaca jelas maksudnya — nilainya kini murni diabaikan backend.
      *
      * @return array<string, string>
      */
@@ -137,10 +122,6 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ]))->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(2, $layer->features()->count());
-        $feature = $layer->features()->first();
-        foreach ($this->coreMetadataDinamis() as $kode => $value) {
-            $this->assertSame($value, $feature->properties[$kode]);
-        }
     }
 
     /**
@@ -171,100 +152,22 @@ class SpatialLayerFeatureControllerTest extends TestCase
         ])->assertSessionHasErrors('input_type');
     }
 
-    public function test_required_dynamic_attribute_is_enforced(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
-
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload())
-            ->assertSessionHasErrors('metadata_dinamis.pagu');
-    }
-
-    public function test_optional_dynamic_attribute_can_be_left_blank(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan'], ['is_wajib' => false]);
-
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
-            'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ]))->assertRedirect(route('spatial-layers.show', $layer));
-
-        $this->assertSame(1, $layer->features()->count());
-    }
-
     /**
-     * update() mem-merge metadata_dinamis baru KE ATAS properties yang sudah
-     * ada (bukan overwrite total) — atribut impor lama (KODE_ASLI) harus tetap
-     * bertahan setelah field metadata_dinamis baru (pagu, dst.) ditambahkan.
+     * Regresi: sejak `layers.map_type_id` dihapus (2026-10-06), setiap Layer
+     * tidak lagi bisa punya atribut dinamis aktif (`activeDynamicAttributesFor()`
+     * selalu kosong) — field `metadata_dinamis` yang dikirim tidak lagi
+     * divalidasi/disimpan sama sekali, terlepas isinya apa. Menggantikan
+     * test_required_dynamic_attribute_is_enforced/test_jenis_without_custom_dynamic_attributes_still_requires_core_fields
+     * yang menguji perilaku lama (field itu wajib) — perilaku itu sengaja
+     * sudah tidak ada lagi, bukan regresi.
      */
-    public function test_update_merges_metadata_dinamis_without_losing_imported_attributes(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        $this->attachDefinition($layer, 'pagu', [], ['is_wajib' => true]);
-        $feature = SpatialLayerFeature::create([
-            'layer_id' => $layer->id,
-            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'properties' => ['KODE_ASLI' => 'ABC123'],
-        ]);
-
-        $this->actingAs($admin)->put(route('spatial-layers.features.update', [$layer, $feature]), [
-            'geometry_wkt' => 'POINT(127.5 0.8)',
-            'metadata_dinamis' => $this->coreMetadataDinamis() + ['pagu' => '5000000'],
-        ])->assertRedirect(route('spatial-layers.show', $layer));
-
-        $feature->refresh();
-        $this->assertSame('ABC123', $feature->properties['KODE_ASLI']);
-        $this->assertSame('5000000', $feature->properties['pagu']);
-        foreach ($this->coreMetadataDinamis() as $kode => $value) {
-            $this->assertSame($value, $feature->properties[$kode]);
-        }
-    }
-
-    /**
-     * Regresi Opsi B: kalau definisi katalognya `data_type = select` dengan
-     * `opsi` terisi, nilai di luar daftar opsi harus ditolak validasi server.
-     */
-    public function test_select_dynamic_attribute_rejects_value_outside_options(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        // Kode unik (bukan 'status' yang sudah di-seed migration dengan data_type
-        // default 'text') supaya firstOrCreate() beneran BUAT definisi baru dengan
-        // data_type=select, bukan reuse baris seed yang sudah ada.
-        $this->attachDefinition($layer, 'status_progres', [
-            'label' => 'Status Progres',
-            'data_type' => MetadataDefinition::TYPE_SELECT,
-            'opsi' => ['Berjalan', 'Selesai'],
-        ]);
-
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
-            'metadata_dinamis' => ['status_progres' => 'Batal'],
-        ]))->assertSessionHasErrors('metadata_dinamis.status_progres');
-    }
-
-    /**
-     * Regresi: Jenis TANPA atribut tambahan yang dikonfigurasi manual tetap
-     * mewajibkan 3 field metadata_dinamis inti (otomatis terpasang ke semua
-     * Jenis) — bukan berarti "tidak ada field wajib sama sekali".
-     */
-    public function test_jenis_without_custom_dynamic_attributes_still_requires_core_fields(): void
+    public function test_store_succeeds_without_metadata_dinamis_since_dynamic_attributes_no_longer_apply(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
 
         $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload())
-            ->assertSessionHasErrors([
-                'metadata_dinamis.sumber_data',
-                'metadata_dinamis.opd_penanggung_jawab',
-                'metadata_dinamis.tanggal_data',
-            ]);
-
-        $this->actingAs($admin)->post(route('spatial-layers.features.store', $layer), $this->coordinatesPayload([
-            'metadata_dinamis' => $this->coreMetadataDinamis(),
-        ]))->assertRedirect(route('spatial-layers.show', $layer));
+            ->assertRedirect(route('spatial-layers.show', $layer));
 
         $this->assertSame(1, $layer->features()->count());
     }
@@ -278,16 +181,14 @@ class SpatialLayerFeatureControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan']);
 
         $this->actingAs($admin)->get(route('spatial-layers.features.create', $layer))->assertOk();
     }
 
-    public function test_edit_page_renders_with_imported_attributes_and_metadata_dinamis(): void
+    public function test_edit_page_renders_with_imported_attributes(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $this->attachDefinition($layer, 'pagu');
         $feature = SpatialLayerFeature::create([
             'layer_id' => $layer->id,
             'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
@@ -455,22 +356,6 @@ class SpatialLayerFeatureControllerTest extends TestCase
             ->assertSee('id="check-feature-'.$feature->id.'"', false)
             ->assertSee(route('spatial-layers.features.bulk-update-attribute', $layer), false)
             ->assertSee(route('spatial-layers.features.bulk-destroy', $layer), false);
-    }
-
-    /**
-     * §5.7 butir 1 — filter per atribut dinamis di tabel Data Spasial, selain
-     * pencarian/status yang sudah ada.
-     */
-    public function test_show_page_renders_per_attribute_filter_when_layer_has_dynamic_attributes(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        $this->attachDefinition($layer, 'kondisi', ['label' => 'Kondisi Jalan']);
-
-        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
-            ->assertOk()
-            ->assertSee('id="dataSpasialAttributeFilterField"', false)
-            ->assertSee('Kondisi Jalan');
     }
 
     /**

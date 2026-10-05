@@ -72,12 +72,13 @@ class GranularizeMapTypes extends Command
             return self::SUCCESS;
         }
 
-        // Dicek lewat kedua tabel (spatial_layers v2 DAN layers_v3) — Jenis bisa
-        // masih dipakai salah satu tanpa yang lain selama Kategori belum
-        // dimigrasikan penuh ke v3.
+        // Sebelumnya dicek lewat kedua tabel (spatial_layers v2 DAN layers_v3) —
+        // cek kedua (`layers.map_type_id`) dihapus 2026-10-06 bersama kolom itu
+        // sendiri (lihat migration drop_map_type_id_and_visibility_from_layers_table):
+        // `layers` tidak lagi bisa menunjuk ke Jenis apa pun, jadi satu-satunya
+        // sumber kebenaran yang tersisa adalah `spatial_layers_legacy_v2`.
         $deactivated = MapType::whereIn('slug', ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'psd', 'psn'])
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('spatial_layers_legacy_v2')->whereColumn('spatial_layers_legacy_v2.map_type_id', 'map_types.id'))
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('layers')->whereColumn('layers.map_type_id', 'map_types.id'))
             ->update(['is_active' => false]);
 
         $this->info("Jenis lama yang dinonaktifkan (tidak ada Layer lagi menunjuk ke situ): {$deactivated}");

@@ -81,10 +81,10 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <p class="stat-label">Total Layer</p>
-                                <h3 class="stat-value">{{ $mapTypes->sum('spatial_layers_count') }}</h3>
+                                <p class="stat-label">Total Atribut Tambahan</p>
+                                <h3 class="stat-value">{{ $mapTypes->sum('atribut_tambahan_count') }}</h3>
                             </div>
-                            <i class="mdi mdi-layers stat-icon"></i>
+                            <i class="mdi mdi-shape-plus stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -144,7 +144,6 @@
                                     <th>Jenis Peta</th>
                                     <th class="text-center" title="Atribut baku (Pagu, Realisasi Anggaran, dst.) yang wajib diisi user saat menambah Layer dengan Jenis ini">Atribut Utama</th>
                                     <th class="text-center" title="Atribut tambahan khusus yang didefinisikan untuk Jenis ini">Atribut Tambahan</th>
-                                    <th class="text-center" title="Jumlah Layer yang memakai Jenis ini sebagai acuan atribut, bukan pengelompokan">Dipakai di Layer</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
@@ -171,9 +170,6 @@
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-primary text-white">{{ $mapType->spatial_layers_count }}</span>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge {{ $mapType->is_active ? 'bg-success' : 'bg-secondary' }} text-white">

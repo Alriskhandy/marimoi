@@ -292,8 +292,8 @@
 @push('styles')
     <style>
         /* ===========================================
-                                                                                                                                                                                                       TAXONOMY TREE (PANEL KIRI)
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           TAXONOMY TREE (PANEL KIRI)
+                                                                                                                                                                                                        =========================================== */
         .taxonomy-tree-card .card-body {
             max-height: 70vh;
             overflow-y: auto;
@@ -377,8 +377,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       CATEGORY DETAIL PANEL (PANEL KANAN)
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           CATEGORY DETAIL PANEL (PANEL KANAN)
+                                                                                                                                                                                                        =========================================== */
         .category-thumb {
             width: 48px;
             height: 48px;
@@ -409,8 +409,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       BADGE STYLING
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           BADGE STYLING
+                                                                                                                                                                                                        =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -435,8 +435,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       COLOR PREVIEW STYLING
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           COLOR PREVIEW STYLING
+                                                                                                                                                                                                        =========================================== */
         .color-preview {
             display: flex;
             align-items: center;
@@ -449,8 +449,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       BUTTON GROUP STYLING
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           BUTTON GROUP STYLING
+                                                                                                                                                                                                        =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -462,8 +462,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       MODAL STYLING
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           MODAL STYLING
+                                                                                                                                                                                                        =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -521,8 +521,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       ICON PICKER
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           ICON PICKER
+                                                                                                                                                                                                        =========================================== */
         .icon-picker-grid {
             max-height: 260px;
             overflow-y: auto;
@@ -622,8 +622,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       COLOR PICKER WIDGET
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           COLOR PICKER WIDGET
+                                                                                                                                                                                                        =========================================== */
         .color-picker-widget {
             padding: 0.75rem;
             background-color: #f8f9fa;
@@ -691,8 +691,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       ICON PREVIEW STYLING
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           ICON PREVIEW STYLING
+                                                                                                                                                                                                        =========================================== */
         .icon-preview-container {
             min-height: 60px;
             display: flex;
@@ -773,8 +773,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       STATISTICS CARDS (COMPACT)
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           STATISTICS CARDS (COMPACT)
+                                                                                                                                                                                                        =========================================== */
         .stats-row-compact {
             margin-bottom: 1rem;
         }
@@ -823,8 +823,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       UTILITY CLASSES
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           UTILITY CLASSES
+                                                                                                                                                                                                        =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -834,8 +834,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       RESPONSIVE IMPROVEMENTS
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           RESPONSIVE IMPROVEMENTS
+                                                                                                                                                                                                        =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -864,8 +864,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       FOCUS AND ACCESSIBILITY
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           FOCUS AND ACCESSIBILITY
+                                                                                                                                                                                                        =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -885,8 +885,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                                       ACTIVE COUNT WARNING STYLES
-                                                                                                                                                                                                    =========================================== */
+                                                                                                                                                                                                           ACTIVE COUNT WARNING STYLES
+                                                                                                                                                                                                        =========================================== */
         .form-text.text-warning {
             background-color: rgba(255, 193, 7, 0.1);
             border: 1px solid rgba(255, 193, 7, 0.3);

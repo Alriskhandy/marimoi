@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\LayerType;
-use App\Models\MapType;
-use App\Models\MapTypeDynamicAttribute;
 use App\Models\Opd;
 use App\Models\SpatialLayer;
 use Illuminate\Http\Request;
@@ -27,7 +25,7 @@ class SpatialLayerController extends Controller
 {
     public function index()
     {
-        $query = SpatialLayer::with(['mapType', 'categoryNode', 'defaultStyle', 'opd', 'metadata'])
+        $query = SpatialLayer::with(['categoryNode', 'defaultStyle', 'opd', 'metadata'])
             ->withCount('features');
 
         if ($this->isAdminOpd()) {
@@ -35,23 +33,21 @@ class SpatialLayerController extends Controller
         }
 
         $layers = $query->orderBy('name')->get();
-        $mapTypes = MapType::active()->orderBy('nama')->get();
         $layerTypes = LayerType::orderBy('name')->get();
         $opds = Opd::orderBy('name')->get(['id', 'name', 'singkatan']);
         $categoryPaths = $this->categoryPaths();
         [$categoryOptions, $categoryNodeOptions] = $this->categoryPickerOptions();
 
-        return view('backend.pages.spatial-layers.index', compact('layers', 'mapTypes', 'layerTypes', 'opds', 'categoryPaths', 'categoryOptions', 'categoryNodeOptions'));
+        return view('backend.pages.spatial-layers.index', compact('layers', 'layerTypes', 'opds', 'categoryPaths', 'categoryOptions', 'categoryNodeOptions'));
     }
 
     public function create()
     {
-        $mapTypes = MapType::active()->get();
         $layerTypes = LayerType::orderBy('name')->get();
         $opds = $this->canAssignOpd() ? Opd::orderBy('name')->get(['id', 'name', 'singkatan']) : collect();
         [$categoryOptions, $categoryNodeOptions] = $this->categoryPickerOptions();
 
-        return view('backend.pages.spatial-layers.create', compact('mapTypes', 'layerTypes', 'opds', 'categoryOptions', 'categoryNodeOptions'));
+        return view('backend.pages.spatial-layers.create', compact('layerTypes', 'opds', 'categoryOptions', 'categoryNodeOptions'));
     }
 
     /**
@@ -63,24 +59,20 @@ class SpatialLayerController extends Controller
     {
         $this->authorizeOpdAccess($spatialLayer);
 
-        $spatialLayer->load(['mapType', 'layerType', 'categoryNode', 'defaultStyle', 'opd', 'features.region']);
-        $mapTypes = MapType::active()->get();
+        $spatialLayer->load(['layerType', 'categoryNode', 'defaultStyle', 'opd', 'features.region']);
         $layerTypes = LayerType::orderBy('name')->get();
         $opds = $this->canAssignOpd() ? Opd::orderBy('name')->get(['id', 'name', 'singkatan']) : collect();
         $categoryPaths = $this->categoryPaths();
         [$categoryOptions, $categoryNodeOptions] = $this->categoryPickerOptions();
 
-        $dynamicAttributes = $spatialLayer->map_type_id
-            ? MapTypeDynamicAttribute::where('map_type_id', $spatialLayer->map_type_id)
-                ->where('is_active', true)
-                ->with('metadataDefinition')
-                ->orderBy('urutan')
-                ->get()
-            : collect();
+        // Layer tidak lagi punya map_type_id (lihat migration
+        // drop_map_type_id_and_visibility_from_layers_table) — Metadata
+        // Dinamis per Jenis Peta selalu kosong sekarang, tidak ada lagi yang
+        // bisa diresolusi.
+        $dynamicAttributes = collect();
 
         return view('backend.pages.spatial-layers.show', [
             'layer' => $spatialLayer,
-            'mapTypes' => $mapTypes,
             'layerTypes' => $layerTypes,
             'opds' => $opds,
             'categoryOptions' => $categoryOptions,
@@ -186,34 +178,6 @@ class SpatialLayerController extends Controller
     }
 
     /**
-     * Ubah Jenis Peta untuk beberapa Layer sekaligus (pola sama dengan bulk update
-     * kategori/layer di halaman Data Spasial).
-     */
-    public function bulkUpdateMapType(Request $request)
-    {
-        $validated = $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => ['required', 'uuid', 'exists:layers,id'],
-            'map_type_id' => 'required|exists:map_types,id',
-        ], [
-            'ids.required' => 'Tidak ada Layer yang dipilih.',
-            'map_type_id.required' => 'Jenis Peta tujuan harus dipilih.',
-            'map_type_id.exists' => 'Jenis Peta tidak valid.',
-        ]);
-
-        $query = SpatialLayer::whereIn('id', $validated['ids']);
-
-        if ($this->isAdminOpd()) {
-            $query->where('opd_id', $this->currentOpdId());
-        }
-
-        $updatedCount = $query->update(['map_type_id' => $validated['map_type_id']]);
-
-        return redirect()->route('spatial-layers.index')
-            ->with('success', "Berhasil mengubah Jenis Peta untuk {$updatedCount} Layer.");
-    }
-
-    /**
      * Tolak akses admin-opd ke Layer milik OPD lain atau tanpa OPD (R19).
      * Peran lain (super-admin/admin-bappeda) selalu lolos.
      */
@@ -249,7 +213,6 @@ class SpatialLayerController extends Controller
     private function validated(Request $request, ?SpatialLayer $spatialLayer = null): array
     {
         $validated = $request->validate([
-            'map_type_id' => 'nullable|exists:map_types,id',
             'layer_type_id' => 'nullable|exists:layer_types,id',
             'opd_id' => 'nullable|exists:opd,id',
             'category_id' => ['required', 'uuid', 'exists:categories_v3,id'],
@@ -259,14 +222,8 @@ class SpatialLayerController extends Controller
             'color' => 'nullable|string|max:25',
             'icon' => 'nullable|string|max:255',
             'default_opacity' => 'nullable|numeric|min:0|max:1',
-            'visibility' => 'nullable|in:public,internal,private',
             'is_marker' => 'boolean',
             'is_active' => 'boolean',
-            'is_default_on' => 'boolean',
-            'is_downloadable' => 'boolean',
-            'is_queryable' => 'boolean',
-            'min_zoom' => 'nullable|integer|min:0|max:24',
-            'max_zoom' => 'nullable|integer|min:0|max:24|gte:min_zoom',
             'sort_order' => 'nullable|integer|min:0',
         ]);
 
@@ -309,22 +266,15 @@ class SpatialLayerController extends Controller
         $layerData = [
             'category_id' => $validated['category_id'],
             'category_node_id' => $validated['category_node_id'] ?? null,
-            'map_type_id' => $validated['map_type_id'] ?? null,
             'opd_id' => $opdId,
             'layer_type_id' => $validated['layer_type_id'] ?? $spatialLayer?->layer_type_id ?? 4,
             'code' => $spatialLayer?->code ?? $this->uniqueCode(),
             'name' => $validated['name'],
             'slug' => $spatialLayer?->slug ?? $this->uniqueSlug($validated['name']),
             'short_description' => $validated['short_description'] ?? null,
-            'visibility' => $validated['visibility'] ?? $spatialLayer?->visibility ?? 'public',
             'status' => $status,
             'published_at' => $publishedAt,
             'default_opacity' => $opacity,
-            'is_default_on' => (bool) ($validated['is_default_on'] ?? $spatialLayer?->is_default_on ?? false),
-            'is_downloadable' => (bool) ($validated['is_downloadable'] ?? $spatialLayer?->is_downloadable ?? false),
-            'is_queryable' => (bool) ($validated['is_queryable'] ?? $spatialLayer?->is_queryable ?? true),
-            'min_zoom' => $validated['min_zoom'] ?? $spatialLayer?->min_zoom,
-            'max_zoom' => $validated['max_zoom'] ?? $spatialLayer?->max_zoom,
             'sort_order' => $validated['sort_order'] ?? $spatialLayer?->sort_order ?? 0,
         ];
 

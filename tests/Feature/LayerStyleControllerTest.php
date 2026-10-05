@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\LayerStyle;
-use App\Models\MapType;
-use App\Models\MetadataDefinition;
 use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
@@ -46,26 +44,13 @@ class LayerStyleControllerTest extends TestCase
 
     private function layer(array $overrides = []): SpatialLayer
     {
-        $jenis = MapType::where('slug', 'tematik')->firstOrFail();
-
         return SpatialLayer::create(array_merge([
             'category_id' => $this->categoryId(),
             'layer_type_id' => 4,
             'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.Str::random(8),
             'name' => 'Layer Uji',
-            'map_type_id' => $jenis->id,
         ], $overrides));
-    }
-
-    private function attachDefinition(SpatialLayer $layer, string $kode, array $definitionOverrides = []): void
-    {
-        $definition = MetadataDefinition::firstOrCreate(
-            ['kode' => $kode],
-            array_merge(['label' => ucfirst($kode)], $definitionOverrides)
-        );
-
-        $layer->mapType->dynamicAttributes()->create(['metadata_definition_id' => $definition->id]);
     }
 
     public function test_index_page_renders(): void
@@ -94,48 +79,35 @@ class LayerStyleControllerTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_create_a_categorized_style_with_classes(): void
+    /**
+     * Regresi: sejak `layers.map_type_id` dihapus (2026-10-06, lihat migration
+     * drop_map_type_id_and_visibility_from_layers_table), `classificationFieldsFor()`
+     * selalu mengembalikan collection kosong untuk SEMUA Layer — artinya
+     * `classification_field` tidak pernah lolos validasi `Rule::in([])` lagi,
+     * jadi style categorized/graduated tidak bisa lagi dibuat sama sekali.
+     * Menggantikan test_admin_can_create_a_categorized_style_with_classes dan
+     * test_graduated_style_stores_min_max_classes yang menguji perilaku lama
+     * (field klasifikasi valid) — perilaku itu sengaja sudah tidak bisa
+     * terjadi lagi, bukan regresi.
+     */
+    public function test_categorized_and_graduated_styles_can_no_longer_be_created(): void
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $this->attachDefinition($layer, 'kondisi', ['label' => 'Kondisi']);
 
         $this->actingAs($admin)->post(route('spatial-layers.styles.store', $layer), [
             'name' => 'Per Kondisi',
             'style_type' => 'categorized',
             'classification_field' => 'kondisi',
-            'classes' => [
-                ['value' => 'Baik', 'color' => '#00ff00', 'label' => 'Baik'],
-                ['value' => 'Buruk', 'color' => '#ff0000', 'label' => 'Buruk'],
-            ],
-        ])->assertRedirect(route('spatial-layers.styles.index', $layer));
-
-        $style = LayerStyle::where('name', 'Per Kondisi')->firstOrFail();
-        $this->assertSame('kondisi', $style->classification_field);
-        $this->assertCount(2, $style->definition['classes']);
-        $this->assertCount(2, $style->legend);
-        $this->assertSame('Baik', $style->legend[0]['label']);
-    }
-
-    public function test_graduated_style_stores_min_max_classes(): void
-    {
-        $admin = $this->admin();
-        $layer = $this->layer();
-        $this->attachDefinition($layer, 'panjang_km', ['label' => 'Panjang (km)']);
+            'classes' => [['value' => 'Baik', 'color' => '#00ff00']],
+        ])->assertSessionHasErrors('classification_field');
 
         $this->actingAs($admin)->post(route('spatial-layers.styles.store', $layer), [
             'name' => 'Per Panjang',
             'style_type' => 'graduated',
             'classification_field' => 'panjang_km',
-            'classes' => [
-                ['min' => 0, 'max' => 10, 'color' => '#ffff00'],
-                ['min' => 10, 'max' => 50, 'color' => '#ff8800'],
-            ],
-        ])->assertRedirect(route('spatial-layers.styles.index', $layer));
-
-        $style = LayerStyle::where('name', 'Per Panjang')->firstOrFail();
-        $this->assertSame(0, (int) $style->definition['classes'][0]['min']);
-        $this->assertSame(10, (int) $style->definition['classes'][0]['max']);
+            'classes' => [['min' => 0, 'max' => 10, 'color' => '#ffff00']],
+        ])->assertSessionHasErrors('classification_field');
     }
 
     public function test_classification_field_is_required_for_categorized_style(): void
@@ -153,7 +125,6 @@ class LayerStyleControllerTest extends TestCase
     {
         $admin = $this->admin();
         $layer = $this->layer();
-        $this->attachDefinition($layer, 'kondisi', ['label' => 'Kondisi']);
 
         $this->actingAs($admin)->post(route('spatial-layers.styles.store', $layer), [
             'name' => 'Field Salah',

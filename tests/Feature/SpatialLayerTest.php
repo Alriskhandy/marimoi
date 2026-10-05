@@ -18,6 +18,10 @@ use Tests\TestCase;
  * sudah tidak ada lagi secara sengaja di layers_v3 (hirarki pindah ke
  * categories_v3/category_nodes, atribut dinamis tetap di-scope per Jenis
  * Peta lewat MapTypeDynamicAttribute, bukan per-layer).
+ *
+ * `test_spatial_layer_belongs_to_map_type()` ikut dihapus 2026-10-06:
+ * `layers.map_type_id` (dan relasi `mapType()`) dihapus dari skema — lihat
+ * migration drop_map_type_id_and_visibility_from_layers_table.
  */
 class SpatialLayerTest extends TestCase
 {
@@ -39,23 +43,6 @@ class SpatialLayerTest extends TestCase
         $this->assertSame(5, MapType::count());
         $this->assertTrue(MapType::active()->pluck('slug')->contains('tematik'));
         $this->assertTrue(MapType::where('slug', 'psn')->exists());
-    }
-
-    public function test_spatial_layer_belongs_to_map_type(): void
-    {
-        $tematik = MapType::where('slug', 'tematik')->firstOrFail();
-
-        $layer = SpatialLayer::create([
-            'category_id' => $this->categoryId(),
-            'layer_type_id' => 4,
-            'code' => 'layer-jalan-uji',
-            'slug' => 'jalan-uji',
-            'name' => 'Jalan Uji',
-            'map_type_id' => $tematik->id,
-        ]);
-
-        $this->assertNotNull($layer->id);
-        $this->assertTrue($layer->mapType->is($tematik));
     }
 
     public function test_spatial_layer_metadata_is_one_to_one(): void

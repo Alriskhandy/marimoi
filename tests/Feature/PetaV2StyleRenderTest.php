@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\MapType;
-use App\Models\MetadataDefinition;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,52 +59,35 @@ class PetaV2StyleRenderTest extends TestCase
         $response->assertJsonFragment(['icon' => 'mdi mdi-road', 'opacity' => 0.7]);
     }
 
-    public function test_feature_detail_includes_labeled_metadata_dinamis(): void
+    /**
+     * Sejak `layers.map_type_id` dihapus (2026-10-06, lihat migration
+     * drop_map_type_id_and_visibility_from_layers_table), Layer tidak lagi
+     * bisa punya atribut dinamis aktif — endpoint ini SELALU mengembalikan
+     * `metadata_dinamis` kosong untuk SEMUA Layer, bukan cuma saat memang
+     * tidak ada yang tersimpan. Menggantikan
+     * test_feature_detail_includes_labeled_metadata_dinamis yang menguji
+     * perilaku lama (label dari MapTypeDynamicAttribute) — perilaku itu
+     * sengaja sudah tidak bisa terjadi lagi, bukan regresi.
+     */
+    public function test_feature_detail_always_returns_empty_metadata_dinamis(): void
     {
-        $jenis = MapType::where('slug', 'tematik')->firstOrFail();
-        $pagu = MetadataDefinition::where('kode', 'pagu')->firstOrFail();
-        $jenis->dynamicAttributes()->create(['metadata_definition_id' => $pagu->id]);
         $layer = SpatialLayer::create([
             'category_id' => $this->categoryId(),
             'layer_type_id' => 4,
             'code' => 'layer-uji',
             'slug' => 'layer-uji',
             'name' => 'Layer Uji',
-            'map_type_id' => $jenis->id,
         ]);
         $feature = SpatialLayerFeature::create([
             'layer_id' => $layer->id,
             'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-            'properties' => ['pagu' => '5000000'],
             'gambar' => 'images/spatial-layer-features/uji.jpg',
         ]);
 
         $response = $this->getJson("/peta-v2/feature/{$feature->id}");
 
         $response->assertOk();
-        $response->assertJsonPath('metadata_dinamis.0.label', 'Pagu');
-        $response->assertJsonPath('metadata_dinamis.0.satuan', 'Rp');
-        $response->assertJsonPath('metadata_dinamis.0.value', '5000000');
-        $response->assertJsonPath('gambar', 'images/spatial-layer-features/uji.jpg');
-    }
-
-    public function test_feature_detail_returns_empty_metadata_dinamis_when_none_stored(): void
-    {
-        $layer = SpatialLayer::create([
-            'category_id' => $this->categoryId(),
-            'layer_type_id' => 4,
-            'code' => 'layer-uji',
-            'slug' => 'layer-uji',
-            'name' => 'Layer Uji',
-        ]);
-        $feature = SpatialLayerFeature::create([
-            'layer_id' => $layer->id,
-            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-        ]);
-
-        $response = $this->getJson("/peta-v2/feature/{$feature->id}");
-
-        $response->assertOk();
         $response->assertJsonPath('metadata_dinamis', []);
+        $response->assertJsonPath('gambar', 'images/spatial-layer-features/uji.jpg');
     }
 }

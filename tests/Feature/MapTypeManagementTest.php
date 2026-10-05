@@ -6,12 +6,10 @@ use App\Models\MapType;
 use App\Models\MetadataDefinition;
 use App\Models\Permission;
 use App\Models\Role;
-use App\Models\SpatialLayer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class MapTypeManagementTest extends TestCase
@@ -358,24 +356,22 @@ class MapTypeManagementTest extends TestCase
         $this->assertDatabaseMissing('map_type_dynamic_attributes', ['map_type_id' => $mapType->id, 'metadata_definition_id' => $pagu->id]);
     }
 
-    public function test_destroy_blocks_deletion_when_still_used_by_a_layer(): void
+    /**
+     * Regresi: guard "masih dipakai oleh Layer" DIHAPUS 2026-10-06 bersama
+     * `layers.map_type_id` — Layer tidak lagi bisa dikaitkan ke Jenis Peta
+     * sama sekali, jadi destroy() sekarang selalu berhasil tanpa syarat ini.
+     * Menggantikan test_destroy_blocks_deletion_when_still_used_by_a_layer.
+     */
+    public function test_destroy_succeeds_even_if_layers_existed_under_the_old_schema(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
-        $categoryId = DB::table('categories_v3')->insertGetId([
-            'id' => (string) Str::uuid(),
-            'name' => 'Kategori Uji',
-            'slug' => 'kategori-uji-'.Str::random(6),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ], 'id');
-        SpatialLayer::create(['category_id' => $categoryId, 'layer_type_id' => 4, 'code' => 'layer-jalan', 'slug' => 'jalan', 'name' => 'Jalan', 'map_type_id' => $mapType->id]);
 
         $this->actingAs($admin)
             ->delete(route('map-types.destroy', $mapType))
-            ->assertRedirect();
+            ->assertRedirect(route('map-types.index'));
 
-        $this->assertDatabaseHas('map_types', ['id' => $mapType->id]);
+        $this->assertDatabaseMissing('map_types', ['id' => $mapType->id]);
     }
 
     public function test_destroy_succeeds_when_not_used(): void
@@ -409,8 +405,12 @@ class MapTypeManagementTest extends TestCase
 
     /**
      * Regresi: tampilan index diperbaiki — stats card (Total Jenis/Aktif/Nonaktif/
-     * Total Layer), toolbar cari + per-halaman via DataTables, kolom OPD Penanggung
-     * Jawab, dan tombol hapus pakai pola data-confirm (bukan onsubmit=confirm() polos).
+     * Total Atribut Tambahan), toolbar cari + per-halaman via DataTables, kolom OPD
+     * Penanggung Jawab, dan tombol hapus pakai pola data-confirm (bukan
+     * onsubmit=confirm() polos).
+     *
+     * Stat card "Total Layer" diganti "Total Atribut Tambahan" 2026-10-06 bersama
+     * `layers.map_type_id` — Layer tidak lagi bisa dikaitkan ke Jenis Peta.
      */
     public function test_index_page_shows_stats_cards_and_delete_button(): void
     {
@@ -423,7 +423,7 @@ class MapTypeManagementTest extends TestCase
             ->assertSee('Total Jenis')
             ->assertSee('Aktif')
             ->assertSee('Nonaktif')
-            ->assertSee('Total Layer')
+            ->assertSee('Total Atribut Tambahan')
             ->assertSee('id="mapTypesTable"', false)
             ->assertSee('id="tableSearch"', false)
             ->assertSee('data-confirm="delete"', false)
@@ -456,28 +456,21 @@ class MapTypeManagementTest extends TestCase
     }
 
     /**
-     * Regresi: index menegaskan Jenis Peta BUKAN pengelompokan Layer, melainkan
-     * definisi atribut/metadata acuan — user wajib pilih Jenis lalu isi Atribut
-     * Utama/Tambahan yang sudah ditentukan saat menambah Layer baru.
+     * Regresi: kolom "Jumlah Layer"/"Dipakai di Layer" DIHAPUS SELURUHNYA
+     * 2026-10-06 bersama `layers.map_type_id` (bukan cuma diganti nama lagi —
+     * Layer tidak lagi bisa dikaitkan ke Jenis Peta sama sekali, jadi tidak ada
+     * lagi apa pun untuk ditampilkan di kolom itu). Menggantikan
+     * test_index_page_renames_jumlah_layer_column_to_avoid_grouping_implication.
      */
-    /**
-     * Regresi: kolom "Jumlah Layer" diganti nama jadi "Dipakai di Layer" (+ tooltip)
-     * supaya tidak terkesan kolom pengelompokan/kategori — Jenis Peta cuma acuan
-     * atribut, bukan pengelompokan Layer.
-     *
-     * Catatan: banner info penjelas yang sebelumnya ada di atas tabel sempat
-     * dihapus dari file ini di luar sesi kerja ini (bukan oleh perubahan yang
-     * sedang dikerjakan) — assertion untuk banner tersebut sengaja tidak
-     * dipertahankan di sini supaya test tetap merefleksikan isi file yang
-     * sebenarnya, bukan versi yang sudah tidak ada.
-     */
-    public function test_index_page_renames_jumlah_layer_column_to_avoid_grouping_implication(): void
+    public function test_index_page_no_longer_shows_a_layer_usage_column(): void
     {
         $admin = $this->userFor($this->roleWith('super-admin', ['map-types.manage']));
 
         $response = $this->actingAs($admin)->get(route('map-types.index'));
 
-        $response->assertOk()->assertSee('Dipakai di Layer');
+        $response->assertOk()
+            ->assertDontSee('Dipakai di Layer')
+            ->assertDontSee('Jumlah Layer');
     }
 
     public function test_activating_a_previously_inactive_map_type_via_update_route_succeeds(): void

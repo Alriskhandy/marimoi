@@ -24,6 +24,15 @@ use Illuminate\Support\Str;
  * masih dipakai model lama (tabel `categories` bigint) sampai direwrite
  * bersamaan (plan Fase 3 bagian Kategori) — category_id dipakai langsung
  * sebagai kolom biasa untuk sementara.
+ *
+ * Sejak 2026-10-06, Layer TIDAK LAGI terhubung ke `map_types` (kolom
+ * `map_type_id` dihapus, lihat migration
+ * drop_map_type_id_and_visibility_from_layers_table) — relasi `mapType()`
+ * dibuang. Konsekuensinya, sistem "Metadata Dinamis per Jenis Peta"
+ * (MapTypeDynamicAttribute) SELALU kosong untuk semua Layer (konsumennya
+ * sudah null-safe lewat `if (! $layer->map_type_id)`, jadi tidak error, cuma
+ * tidak pernah menampilkan apa pun lagi). `visibility` juga dihapus — field
+ * itu memang tidak pernah ditegakkan untuk kontrol akses di mana pun.
  */
 class SpatialLayer extends Model
 {
@@ -39,7 +48,6 @@ class SpatialLayer extends Model
         'category_id',
         'category_node_id',
         'layer_type_id',
-        'map_type_id',
         'opd_id',
         'code',
         'name',
@@ -48,13 +56,7 @@ class SpatialLayer extends Model
         'geometry_type',
         'storage_srid',
         'default_style_id',
-        'visibility',
         'status',
-        'is_default_on',
-        'is_downloadable',
-        'is_queryable',
-        'min_zoom',
-        'max_zoom',
         'default_opacity',
         'sort_order',
         'published_at',
@@ -67,9 +69,6 @@ class SpatialLayer extends Model
     protected function casts(): array
     {
         return [
-            'is_default_on' => 'boolean',
-            'is_downloadable' => 'boolean',
-            'is_queryable' => 'boolean',
             'published_at' => 'datetime',
             'default_opacity' => 'float',
         ];
@@ -82,11 +81,6 @@ class SpatialLayer extends Model
         static::creating(function (self $layer) {
             $layer->id ??= (string) Str::uuid();
         });
-    }
-
-    public function mapType(): BelongsTo
-    {
-        return $this->belongsTo(MapType::class);
     }
 
     /**

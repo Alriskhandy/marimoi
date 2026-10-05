@@ -11,19 +11,6 @@
         @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
     <div class="col-md-6 mb-3">
-        <label class="form-label">Jenis Peta</label>
-        <select name="map_type_id" class="form-select" required>
-            <option value="">Pilih Jenis</option>
-            @foreach ($mapTypes as $mapType)
-                <option value="{{ $mapType->id }}" @selected(old('map_type_id', $layer?->map_type_id) == $mapType->id)>{{ $mapType->nama }}</option>
-            @endforeach
-        </select>
-        @error('map_type_id') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mb-3">
         <label class="form-label">Jenis Layer</label>
         <select name="layer_type_id" class="form-select">
             @foreach ($layerTypes as $layerType)
@@ -31,15 +18,6 @@
             @endforeach
         </select>
         @error('layer_type_id') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-    <div class="col-md-6 mb-3">
-        <label class="form-label">Visibility</label>
-        <select name="visibility" class="form-select">
-            @foreach (['public' => 'Publik', 'internal' => 'Internal', 'private' => 'Privat'] as $value => $label)
-                <option value="{{ $value }}" @selected(old('visibility', $layer?->visibility ?? 'public') === $value)>{{ $label }}</option>
-            @endforeach
-        </select>
-        @error('visibility') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
 </div>
 
@@ -92,38 +70,11 @@
 
 <hr>
 <h6>Properti Tampilan Peta</h6>
-<div class="row">
-    <div class="col-md-3 mb-3">
-        <label class="form-label">Min Zoom</label>
-        <input type="number" name="min_zoom" class="form-control" min="0" max="24" value="{{ old('min_zoom', $layer?->min_zoom) }}">
-        @error('min_zoom') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-    <div class="col-md-3 mb-3">
-        <label class="form-label">Max Zoom</label>
-        <input type="number" name="max_zoom" class="form-control" min="0" max="24" value="{{ old('max_zoom', $layer?->max_zoom) }}">
-        @error('max_zoom') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-    <div class="col-md-3 mb-3">
+<div class="row mb-3">
+    <div class="col-md-4 mb-3">
         <label class="form-label">Urutan Tampil</label>
         <input type="number" name="sort_order" class="form-control" min="0" value="{{ old('sort_order', $layer?->sort_order ?? 0) }}">
         @error('sort_order') <div class="text-danger small">{{ $message }}</div> @enderror
-    </div>
-</div>
-<div class="row mb-3">
-    <div class="col-md-4 form-check">
-        <input type="hidden" name="is_default_on" value="0">
-        <input type="checkbox" name="is_default_on" value="1" class="form-check-input" @checked(old('is_default_on', $layer?->is_default_on ?? false))>
-        <label class="form-check-label">Aktif otomatis saat peta dibuka</label>
-    </div>
-    <div class="col-md-4 form-check">
-        <input type="hidden" name="is_queryable" value="0">
-        <input type="checkbox" name="is_queryable" value="1" class="form-check-input" @checked(old('is_queryable', $layer?->is_queryable ?? true))>
-        <label class="form-check-label">Bisa diklik untuk info (queryable)</label>
-    </div>
-    <div class="col-md-4 form-check">
-        <input type="hidden" name="is_downloadable" value="0">
-        <input type="checkbox" name="is_downloadable" value="1" class="form-check-input" @checked(old('is_downloadable', $layer?->is_downloadable ?? false))>
-        <label class="form-check-label">Bisa diunduh publik</label>
     </div>
 </div>
 

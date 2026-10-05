@@ -35,8 +35,8 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <p class="stat-label">Jenis Peta</p>
-                            <h3 class="stat-value" style="font-size:1.15rem;">{{ $layer->mapType?->nama ?? '-' }}</h3>
+                            <p class="stat-label">Jenis Layer</p>
+                            <h3 class="stat-value" style="font-size:1.15rem;">{{ $layer->layerType?->name ?? '-' }}</h3>
                         </div>
                         <i class="mdi mdi-shape stat-icon"></i>
                     </div>
@@ -195,16 +195,6 @@
                                     @endif
                                 </td>
                             </tr>
-                            <tr>
-                                <th>Jenis Peta</th>
-                                <td>
-                                    @if ($layer->mapType)
-                                        {{ $layer->mapType->nama }}
-                                    @else
-                                        <span class="text-muted">Layer ini belum memiliki Jenis.</span>
-                                    @endif
-                                </td>
-                            </tr>
                         </table>
                     </div>
                 </div>
@@ -244,11 +234,6 @@
                                 <i class="mdi mdi-magnify"></i>
                             </button>
                         </div>
-                        <select class="form-select form-select-sm" id="dataSpasialStatusFilter" style="width: auto;">
-                            <option value="">Semua Status</option>
-                            <option value="lengkap">Metadata Lengkap</option>
-                            <option value="belum">Metadata Belum Lengkap</option>
-                        </select>
                         @if ($dynamicAttributes->isNotEmpty())
                             <select class="form-select form-select-sm" id="dataSpasialAttributeFilterField" style="width: auto;">
                                 <option value="">Filter per Atribut...</option>
@@ -334,7 +319,6 @@
                                         <th style="width:56px;">Gambar</th>
                                         <th>Kode</th>
                                         <th>Wilayah</th>
-                                        <th>Metadata</th>
                                         <th>Tanggal Input</th>
                                         <th>Aksi</th>
                                     </tr>
@@ -353,15 +337,10 @@
                                                 ];
                                             })->values();
 
-                                            $isMetadataLengkap = $dynamicAttributes->contains(
-                                                fn ($attribute) => filled($feature->properties[$attribute->metadataDefinition->kode] ?? null)
-                                            );
-
                                             $featureDetailPayload = [
                                                 'kode' => $feature->label ?? '#'.$feature->id,
                                                 'wilayah' => $feature->region->name ?? null,
                                                 'gambar' => $feature->gambar ? asset('storage/'.$feature->gambar) : null,
-                                                'status_lengkap' => $isMetadataLengkap,
                                                 'tanggal_input' => $feature->created_at?->format('d M Y H:i'),
                                                 'metadata' => $featureMetadataRows,
                                                 'edit_url' => route('spatial-layers.features.edit', [$layer, $feature]),
@@ -369,9 +348,7 @@
                                                 'delete_name' => $feature->label ?? '#'.$feature->id,
                                             ];
                                         @endphp
-                                        <tr data-feature-row
-                                            data-status="{{ $isMetadataLengkap ? 'lengkap' : 'belum' }}"
-                                            data-feature="{{ json_encode($featureDetailPayload) }}"
+                                        <tr data-feature-row data-feature="{{ json_encode($featureDetailPayload) }}"
                                             style="cursor: pointer;" title="Klik untuk lihat detail">
                                             <td>
                                                 <div class="checkbox-wrapper">
@@ -395,13 +372,6 @@
                                             </td>
                                             <td>{{ $feature->label ?? '-' }}</td>
                                             <td>{{ $feature->region->name ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if ($isMetadataLengkap)
-                                                    <span class="badge bg-gradient-success text-white">Lengkap</span>
-                                                @else
-                                                    <span class="badge bg-gradient-warning text-white">Belum lengkap</span>
-                                                @endif
-                                            </td>
                                             <td class="text-center">{{ $feature->created_at?->format('d M Y') ?? '-' }}
                                             </td>
                                             <td class="text-center">
@@ -475,21 +445,6 @@
                             <!-- LEFT COLUMN -->
                             <div class="col-md-6">
                                 <div class="form-group mb-2">
-                                    <label for="layer_edit_map_type_id" class="form-label">Jenis <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-control" id="layer_edit_map_type_id" name="map_type_id" required>
-                                        <option value="">-- Pilih Jenis --</option>
-                                        @foreach ($mapTypes as $mapType)
-                                            <option value="{{ $mapType->id }}" @selected(old('map_type_id', $layer->map_type_id) == $mapType->id)>
-                                                {{ $mapType->nama }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('map_type_id')
-                                        <div class="text-danger small">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group mb-2">
                                     <label for="layer_edit_layer_type_id" class="form-label">Jenis Layer</label>
                                     <select class="form-control" id="layer_edit_layer_type_id" name="layer_type_id">
                                         @foreach ($layerTypes as $layerType)
@@ -498,18 +453,6 @@
                                         @endforeach
                                     </select>
                                     @error('layer_type_id')
-                                        <div class="text-danger small">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group mb-2">
-                                    <label for="layer_edit_visibility" class="form-label">Visibility</label>
-                                    <select class="form-control" id="layer_edit_visibility" name="visibility">
-                                        @foreach (['public' => 'Publik', 'internal' => 'Internal', 'private' => 'Privat'] as $value => $label)
-                                            <option value="{{ $value }}" @selected(old('visibility', $layer->visibility) === $value)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('visibility')
                                         <div class="text-danger small">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -638,53 +581,10 @@
                                                 <i class="mdi mdi-map-marker text-warning me-1"></i>Gunakan sebagai Marker
                                             </label>
                                         </div>
-
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_default_on" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_default_on" name="is_default_on" @checked(old('is_default_on', $layer->is_default_on))>
-                                            <label class="form-check-label" for="layer_edit_is_default_on">
-                                                Aktif otomatis saat peta dibuka
-                                            </label>
-                                        </div>
-
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_queryable" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_queryable" name="is_queryable" @checked(old('is_queryable', $layer->is_queryable))>
-                                            <label class="form-check-label" for="layer_edit_is_queryable">
-                                                Bisa diklik untuk info (queryable)
-                                            </label>
-                                        </div>
-
-                                        <div class="form-check form-switch">
-                                            <input type="hidden" name="is_downloadable" value="0">
-                                            <input class="form-check-input" type="checkbox" value="1"
-                                                id="layer_edit_is_downloadable" name="is_downloadable" @checked(old('is_downloadable', $layer->is_downloadable))>
-                                            <label class="form-check-label" for="layer_edit_is_downloadable">
-                                                Bisa diunduh publik
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="row mt-2">
-                                    <div class="col-4">
-                                        <label for="layer_edit_min_zoom" class="form-label">Min Zoom</label>
-                                        <input type="number" class="form-control" id="layer_edit_min_zoom" name="min_zoom"
-                                            min="0" max="24" value="{{ old('min_zoom', $layer->min_zoom) }}">
-                                        @error('min_zoom')
-                                            <div class="text-danger small">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <div class="col-4">
-                                        <label for="layer_edit_max_zoom" class="form-label">Max Zoom</label>
-                                        <input type="number" class="form-control" id="layer_edit_max_zoom" name="max_zoom"
-                                            min="0" max="24" value="{{ old('max_zoom', $layer->max_zoom) }}">
-                                        @error('max_zoom')
-                                            <div class="text-danger small">{{ $message }}</div>
-                                        @enderror
-                                    </div>
                                     <div class="col-4">
                                         <label for="layer_edit_sort_order" class="form-label">Urutan Tampil</label>
                                         <input type="number" class="form-control" id="layer_edit_sort_order" name="sort_order"
@@ -775,10 +675,6 @@
                         <tr>
                             <th>Wilayah</th>
                             <td id="featureDetailWilayah">-</td>
-                        </tr>
-                        <tr>
-                            <th>Metadata</th>
-                            <td id="featureDetailStatus">-</td>
                         </tr>
                         <tr>
                             <th>Tanggal Input</th>
@@ -1433,11 +1329,6 @@
 
                 const row = settings.aoData[dataIndex].nTr;
 
-                const statusFilter = $('#dataSpasialStatusFilter').val();
-                if (statusFilter && $(row).data('status') !== statusFilter) {
-                    return false;
-                }
-
                 const attributeField = $('#dataSpasialAttributeFilterField').val();
                 const attributeValue = $('#dataSpasialAttributeFilterValue').val().trim().toLowerCase();
                 if (attributeField && attributeValue) {
@@ -1493,10 +1384,6 @@
                 dataSpasialTable.search($('#dataSpasialSearchInput').val()).draw();
             });
 
-            $('#dataSpasialStatusFilter').on('change', function() {
-                dataSpasialTable.draw();
-            });
-
             $('#dataSpasialAttributeFilterField').on('change', function() {
                 $('#dataSpasialAttributeFilterValue').toggleClass('d-none', !this.value).val('');
                 dataSpasialTable.draw();
@@ -1533,9 +1420,6 @@
                 $('#featureDetailKode').text(feature.kode || '-');
                 $('#featureDetailWilayah').text(feature.wilayah || '-');
                 $('#featureDetailTanggal').text(feature.tanggal_input || '-');
-                $('#featureDetailStatus').html(feature.status_lengkap ?
-                    '<span class="badge bg-gradient-success text-white">Lengkap</span>' :
-                    '<span class="badge bg-gradient-warning text-white">Belum lengkap</span>');
 
                 const $metadata = $('#featureDetailMetadata').empty();
                 if (feature.metadata && feature.metadata.length) {
@@ -1579,10 +1463,10 @@
     <script>
         /**
          * Bulk edit atribut / hapus Data Spasial terpilih (§5.7 butir 3) — pola
-         * checkbox + bar sama dengan bulk "Ubah Jenis Peta" di spatial-layers/
-         * index.blade.php (selectedLayerItems/updateBulkActionsBar), diberi nama
-         * terpisah di sini ("Feature") supaya tidak bentrok kalau kedua halaman
-         * pernah disatukan.
+         * checkbox + bar sendiri (bulk select Layer di spatial-layers/
+         * index.blade.php sudah dihapus bersama fitur "Ubah Jenis Peta" massal,
+         * 2026-10-06), diberi nama terpisah di sini ("Feature") supaya tidak
+         * bentrok kalau kedua halaman pernah disatukan.
          */
         let selectedFeatureItems = [];
 

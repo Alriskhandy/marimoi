@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\MapType;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -39,11 +38,6 @@ class SpatialLayerControllerTest extends TestCase
         return User::factory()->create(['role_id' => $role->id]);
     }
 
-    private function jenis(): MapType
-    {
-        return MapType::where('slug', 'tematik')->firstOrFail();
-    }
-
     private function categoryId(string $name = 'Kategori Uji'): string
     {
         return DB::table('categories_v3')->insertGetId([
@@ -69,25 +63,21 @@ class SpatialLayerControllerTest extends TestCase
     public function test_admin_can_create_a_layer(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
         $categoryId = $this->categoryId();
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'category_id' => $categoryId,
             'name' => 'Jalan Provinsi',
         ])->assertRedirect(route('spatial-layers.index'));
 
-        $this->assertDatabaseHas('layers', ['name' => 'Jalan Provinsi', 'map_type_id' => $jenis->id, 'category_id' => $categoryId]);
+        $this->assertDatabaseHas('layers', ['name' => 'Jalan Provinsi', 'category_id' => $categoryId]);
     }
 
     public function test_store_requires_category(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'name' => 'Tanpa Kategori',
         ])->assertSessionHasErrors('category_id');
     }
@@ -95,7 +85,6 @@ class SpatialLayerControllerTest extends TestCase
     public function test_category_node_must_belong_to_selected_category(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
         $categoryA = $this->categoryId('Kategori A');
         $categoryB = $this->categoryId('Kategori B');
         $nodeOfB = DB::table('category_nodes')->insertGetId([
@@ -110,7 +99,6 @@ class SpatialLayerControllerTest extends TestCase
         ], 'id');
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'category_id' => $categoryA,
             'category_node_id' => $nodeOfB,
             'name' => 'Salah Subkategori',
@@ -178,8 +166,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_edit_modal_matches_categories_edit_modal_widgets(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Modal Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Modal Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -189,7 +176,6 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('class="icon-picker-grid" id="layer_edit_iconGrid"', false)
             ->assertSee('id="layer_edit_iconSearch"', false)
             ->assertSee('class="settings-switch-group"', false)
-            ->assertSee('name="map_type_id"', false)
             ->assertSee('name="category_id"', false)
             ->assertSee('btn-gradient-warning', false);
     }
@@ -245,21 +231,19 @@ class SpatialLayerControllerTest extends TestCase
 
     /**
      * Regresi: tampilan index menampilkan stats card ringkas (Total Layer,
-     * Punya Data Spasial, Marker Aktif, Status Aktif) dan badge Jenis Peta.
+     * Punya Data Spasial, Marker Aktif, Status Aktif).
      */
-    public function test_index_page_shows_stats_cards_and_jenis_badge(): void
+    public function test_index_page_shows_stats_cards(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $this->createLayer(['name' => 'Layer Stats Uji', 'map_type_id' => $jenis->id]);
+        $this->createLayer(['name' => 'Layer Stats Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
         $response->assertOk()
             ->assertSee('Total Layer')
             ->assertSee('Punya Data Spasial')
-            ->assertSee('Marker Aktif')
-            ->assertSee($jenis->nama);
+            ->assertSee('Marker Aktif');
     }
 
     /**
@@ -275,15 +259,14 @@ class SpatialLayerControllerTest extends TestCase
     public function test_index_table_merges_style_columns_and_links_to_detail_page(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Kolom Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Kolom Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
         $response->assertOk()
             ->assertDontSee('<th>Warna</th>', false)
             ->assertDontSee('<th>Icon</th>', false)
-            ->assertSee('>Style</th>', false)
+            ->assertSee('>Tipe Geometri</th>', false)
             ->assertSee('>Status</th>', false)
             ->assertSee(route('spatial-layers.show', $layer), false);
     }
@@ -291,14 +274,12 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_renders_layer_detail(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Detail Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Detail Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
         $response->assertOk()
-            ->assertSee('Layer Detail Uji')
-            ->assertSee($jenis->nama);
+            ->assertSee('Layer Detail Uji');
     }
 
     /**
@@ -309,8 +290,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_renders_single_card_with_table_map_switcher(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Peta Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Peta Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -323,7 +303,6 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('id="layerMapBasemapSwitcher"', false)
             ->assertSee('data-basemap="satelit"', false)
             ->assertSee('<th>Wilayah</th>', false)
-            ->assertSee('<th>Metadata</th>', false)
             ->assertDontSee('id="layerMapCollapse"', false);
     }
 
@@ -335,8 +314,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_has_collapsible_info_card_search_and_delete_button(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Aksi Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Aksi Uji']);
         $feature = SpatialLayerFeature::create([
             'layer_id' => $layer->id,
             'label' => 'FTR-001',
@@ -359,8 +337,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_has_add_feature_button_and_per_page_select(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Tambah Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Tambah Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -375,14 +352,18 @@ class SpatialLayerControllerTest extends TestCase
     /**
      * Regresi: tabel Data Spasial sempat cuma sembunyi-tampilkan baris lewat JS
      * manual tanpa pagination sungguhan — sekarang pakai DataTables (pola sama
-     * dengan tabel Daftar Layer di spatial-layers/index.blade.php), dan dapat
-     * filter tambahan "Status Metadata" (Lengkap/Belum Lengkap).
+     * dengan tabel Daftar Layer di spatial-layers/index.blade.php).
+     *
+     * Filter "Status Metadata" (Lengkap/Belum Lengkap) yang dulu diuji di sini
+     * DIHAPUS 2026-10-06 bersama `layers.map_type_id` — status itu dihitung dari
+     * atribut dinamis Jenis Peta Layer, yang sekarang selalu kosong untuk semua
+     * Layer (lihat SpatialLayerController::show()), jadi labelnya tidak lagi
+     * punya sinyal nyata untuk dibedakan.
      */
-    public function test_show_page_data_spasial_table_has_pagination_and_status_filter(): void
+    public function test_show_page_data_spasial_table_has_pagination(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer DataTable Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer DataTable Uji']);
         SpatialLayerFeature::create([
             'layer_id' => $layer->id,
             'geom' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)', 4326)"),
@@ -396,11 +377,8 @@ class SpatialLayerControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
         $response->assertOk()
-            ->assertSee('id="dataSpasialStatusFilter"', false)
-            ->assertSee('Metadata Lengkap')
-            ->assertSee('Metadata Belum Lengkap')
-            ->assertSee('data-status="lengkap"', false)
-            ->assertSee('data-status="belum"', false);
+            ->assertSee('id="dataSpasialPerPage"', false)
+            ->assertSee('id="dataSpasialLayerTable"', false);
     }
 
     /**
@@ -412,8 +390,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_feature_row_carries_detail_payload_for_modal(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Detail Modal Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Detail Modal Uji']);
         $feature = SpatialLayerFeature::create([
             'layer_id' => $layer->id,
             'label' => 'KODE-001',
@@ -441,8 +418,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_empty_data_spasial_uses_datatables_empty_message_not_static_row(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Kosong DataTable Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Kosong DataTable Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -457,13 +433,12 @@ class SpatialLayerControllerTest extends TestCase
 
     /**
      * Regresi: halaman detail "diperbagus" dengan breadcrumb & kartu statistik
-     * (Jenis Peta, Kategori, Data Spasial, Status) di atas kartu Informasi Layer.
+     * (Jenis Layer, Kategori, Data Spasial, Status) di atas kartu Informasi Layer.
      */
     public function test_show_page_displays_breadcrumb_and_stats_cards(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Root Stats Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Root Stats Uji']);
         SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)', 4326)")]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
@@ -484,8 +459,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_hides_delete_button_when_layer_has_features(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Hapus Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Hapus Uji']);
         SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)', 4326)")]);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
@@ -496,8 +470,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_show_page_shows_delete_button_when_layer_is_empty(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Kosong Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Kosong Uji']);
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
@@ -506,8 +479,7 @@ class SpatialLayerControllerTest extends TestCase
 
     public function test_user_without_permission_cannot_view_detail_page(): void
     {
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Uji', 'map_type_id' => $jenis->id]);
+        $layer = $this->createLayer(['name' => 'Layer Uji']);
         $user = User::factory()->create(['role_id' => Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null])->id]);
 
         $this->actingAs($user)->get(route('spatial-layers.show', $layer))->assertForbidden();
@@ -516,8 +488,7 @@ class SpatialLayerControllerTest extends TestCase
     public function test_index_table_has_no_gambar_column(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
-        $this->createLayer(['name' => 'Layer Kolom Gambar Uji', 'map_type_id' => $jenis->id]);
+        $this->createLayer(['name' => 'Layer Kolom Gambar Uji']);
 
         $this->actingAs($admin)->get(route('spatial-layers.index'))
             ->assertOk()
@@ -525,115 +496,32 @@ class SpatialLayerControllerTest extends TestCase
     }
 
     /**
-     * Regresi: filter dropdown "Jenis Peta" di toolbar index, dan atribut
-     * data-map-type-id per baris yang dipakai custom search DataTables.
-     */
-    public function test_index_page_shows_map_type_filter_dropdown(): void
-    {
-        $admin = $this->admin();
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Filter Uji', 'map_type_id' => $jenis->id]);
-
-        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
-
-        $response->assertOk()
-            ->assertSee('id="mapTypeFilter"', false)
-            ->assertSee('<option value="'.$jenis->id.'">'.$jenis->nama.'</option>', false)
-            ->assertSee('data-map-type-id="'.$jenis->id.'"', false);
-
-        $this->assertNotNull($layer->fresh());
-    }
-
-    /**
-     * Regresi: bulk update Jenis Peta (referensi pola "Ubah Kategori/Layer" di
-     * halaman Data Spasial, docs/marimoi v2/04_implementation/
-     * 12-implementasi-perbaikan-pemetaan.md Bagian 3.2).
-     */
-    public function test_admin_can_bulk_update_map_type_for_selected_layers(): void
-    {
-        $admin = $this->admin();
-        $jenis = $this->jenis();
-        $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
-
-        $layerA = $this->createLayer(['name' => 'Layer A', 'map_type_id' => $jenis->id]);
-        $layerB = $this->createLayer(['name' => 'Layer B', 'map_type_id' => $jenis->id]);
-        $untouched = $this->createLayer(['name' => 'Layer C', 'map_type_id' => $jenis->id]);
-
-        $response = $this->actingAs($admin)->put(route('spatial-layers.bulk-update-map-type'), [
-            'ids' => [$layerA->id, $layerB->id],
-            'map_type_id' => $targetJenis->id,
-        ]);
-
-        $response->assertRedirect(route('spatial-layers.index'));
-        $this->assertEquals($targetJenis->id, $layerA->fresh()->map_type_id);
-        $this->assertEquals($targetJenis->id, $layerB->fresh()->map_type_id);
-        $this->assertEquals($jenis->id, $untouched->fresh()->map_type_id);
-    }
-
-    public function test_bulk_update_map_type_requires_ids_and_valid_map_type(): void
-    {
-        $admin = $this->admin();
-
-        $this->actingAs($admin)->put(route('spatial-layers.bulk-update-map-type'), [
-            'ids' => [],
-            'map_type_id' => '',
-        ])->assertSessionHasErrors(['ids', 'map_type_id']);
-    }
-
-    public function test_user_without_edit_permission_cannot_bulk_update_map_type(): void
-    {
-        $jenis = $this->jenis();
-        $targetJenis = MapType::where('slug', 'psd')->firstOrFail();
-        $layer = $this->createLayer(['name' => 'Layer Permission Uji', 'map_type_id' => $jenis->id]);
-
-        $role = Role::create(['name' => 'Viewer Layer', 'slug' => 'viewer-layer', 'description' => null]);
-        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.view', 'guard_name' => 'web']));
-        $user = User::factory()->create(['role_id' => $role->id]);
-
-        $this->actingAs($user)->put(route('spatial-layers.bulk-update-map-type'), [
-            'ids' => [$layer->id],
-            'map_type_id' => $targetJenis->id,
-        ])->assertForbidden();
-
-        $this->assertEquals($jenis->id, $layer->fresh()->map_type_id);
-    }
-
-    /**
-     * Fase B (spec-admin-manajemen-peta.md §5.2): layer_type_id, visibility,
-     * is_default_on/is_queryable/is_downloadable, min/max_zoom, dan sort_order
+     * Fase B (spec-admin-manajemen-peta.md §5.2): layer_type_id dan sort_order
      * sudah ada di skema & model sejak Fase A tapi belum pernah tersimpan
      * lewat form — ini mengunci bahwa form sekarang benar-benar menulisnya.
+     *
+     * `is_default_on`/`is_queryable`/`is_downloadable`/`min_zoom`/`max_zoom`
+     * dihapus 2026-10-06 (lihat migration
+     * drop_default_on_download_query_zoom_columns_from_layers_table) — tidak
+     * pernah dibaca oleh renderer peta publik mana pun, hanya dicatat lewat
+     * form admin yang kini juga sudah tidak menampilkannya lagi.
      */
-    public function test_store_saves_layer_type_visibility_and_display_properties(): void
+    public function test_store_saves_layer_type_and_display_properties(): void
     {
         $admin = $this->admin();
-        $jenis = $this->jenis();
         $categoryId = $this->categoryId();
         $layerType = DB::table('layer_types')->where('code', 'vector_point')->first();
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'category_id' => $categoryId,
             'layer_type_id' => $layerType->id,
-            'visibility' => 'internal',
             'name' => 'Layer Properti Uji',
-            'is_default_on' => '1',
-            'is_queryable' => '0',
-            'is_downloadable' => '1',
-            'min_zoom' => 5,
-            'max_zoom' => 18,
             'sort_order' => 3,
         ])->assertRedirect(route('spatial-layers.index'));
 
         $this->assertDatabaseHas('layers', [
             'name' => 'Layer Properti Uji',
             'layer_type_id' => $layerType->id,
-            'visibility' => 'internal',
-            'is_default_on' => true,
-            'is_queryable' => false,
-            'is_downloadable' => true,
-            'min_zoom' => 5,
-            'max_zoom' => 18,
             'sort_order' => 3,
         ]);
     }
@@ -645,42 +533,21 @@ class SpatialLayerControllerTest extends TestCase
             $role->givePermissionTo(Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']));
         }
         $editor = User::factory()->create(['role_id' => $role->id]);
-        $jenis = $this->jenis();
-        $layer = $this->createLayer(['name' => 'Layer Update Properti', 'map_type_id' => $jenis->id, 'status' => 'published', 'published_at' => now()]);
+        $layer = $this->createLayer(['name' => 'Layer Update Properti', 'status' => 'published', 'published_at' => now()]);
 
         $this->actingAs($editor)->put(route('spatial-layers.update', $layer), [
-            'map_type_id' => $jenis->id,
             'category_id' => $layer->category_id,
             'name' => 'Layer Update Properti',
             'sort_order' => 9,
-            'min_zoom' => 2,
-            'max_zoom' => 20,
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $layer->refresh();
         $this->assertSame(9, $layer->sort_order);
-        $this->assertSame(2, $layer->min_zoom);
-        $this->assertSame(20, $layer->max_zoom);
         // Role ini tidak punya permission spatial-layers.publish — status
         // layer published yang sudah ada harus tetap dipertahankan (R17),
         // bukan ikut jatuh ke draft hanya karena form ini tidak mengirim
         // is_active=1 (lihat SpatialLayerController::validated()).
         $this->assertSame('published', $layer->status);
-    }
-
-    public function test_max_zoom_must_be_greater_than_or_equal_to_min_zoom(): void
-    {
-        $admin = $this->admin();
-        $jenis = $this->jenis();
-        $categoryId = $this->categoryId();
-
-        $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
-            'category_id' => $categoryId,
-            'name' => 'Layer Zoom Salah',
-            'min_zoom' => 15,
-            'max_zoom' => 5,
-        ])->assertSessionHasErrors('max_zoom');
     }
 
     public function test_index_page_shows_status_and_opd_filter_dropdowns(): void

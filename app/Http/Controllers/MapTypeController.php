@@ -33,7 +33,6 @@ class MapTypeController extends Controller
     public function index()
     {
         $mapTypes = MapType::withCount([
-            'spatialLayers',
             'dynamicAttributes as atribut_utama_count' => fn ($query) => $query->where('is_active', true)
                 ->whereHas('metadataDefinition', fn ($q) => $q->where('is_system', true)),
             'dynamicAttributes as atribut_tambahan_count' => fn ($query) => $query->where('is_active', true)
@@ -67,14 +66,14 @@ class MapTypeController extends Controller
     }
 
     /**
-     * Halaman edit sekaligus jadi halaman detail (bukan dua halaman terpisah) —
-     * form ubah langsung disertai ringkasan Layer yang memakai Jenis ini.
+     * Halaman edit sekaligus jadi halaman detail (bukan dua halaman terpisah).
+     * Dulu juga memuat ringkasan Layer yang memakai Jenis ini — dihapus
+     * 2026-10-06 bersama `layers.map_type_id` (Layer tidak lagi bisa dikaitkan
+     * ke Jenis Peta sama sekali).
      */
     public function edit(MapType $mapType)
     {
         $mapType->load('dynamicAttributes.metadataDefinition');
-        $mapType->loadCount('spatialLayers');
-        $mapType->load(['spatialLayers' => fn ($query) => $query->orderBy('name')]);
 
         return view('backend.pages.map-types.edit', compact('mapType'));
     }
@@ -95,12 +94,14 @@ class MapTypeController extends Controller
         return redirect()->route('map-types.edit', $mapType)->with('success', 'Jenis peta berhasil diperbarui');
     }
 
+    /**
+     * Guard "masih dipakai oleh Layer" DIHAPUS 2026-10-06 — Layer tidak lagi
+     * bisa dikaitkan ke Jenis Peta sejak `layers.map_type_id` dihapus (lihat
+     * migration drop_map_type_id_and_visibility_from_layers_table), jadi
+     * kondisi itu sekarang mustahil terjadi.
+     */
     public function destroy(MapType $mapType)
     {
-        if ($mapType->spatialLayers()->exists()) {
-            return redirect()->back()->with('error', 'Jenis peta tidak dapat dihapus karena masih dipakai oleh Layer.');
-        }
-
         $mapType->delete();
 
         return redirect()->route('map-types.index')->with('success', 'Jenis peta berhasil dihapus');

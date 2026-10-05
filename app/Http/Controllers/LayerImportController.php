@@ -203,11 +203,24 @@ class LayerImportController extends Controller
                 }
 
                 $kode = str_starts_with($decision, 'map:') ? substr($decision, 4) : null;
+                $attributeDefinitionId = $kode ? ($definitionsByKode[$kode]->id ?? null) : null;
+
+                // Sejak `layers.map_type_id` dihapus (2026-10-06), Layer tidak
+                // lagi bisa punya atribut dinamis aktif — $definitionsByKode
+                // selalu kosong, jadi target "map:xxx" tidak akan pernah
+                // teresolusi lagi. CHECK constraint ck_layer_attr_map_target
+                // mewajibkan baris non-ignored punya attribute_definition_id
+                // terisi, jadi baris audit utk target yang tak teresolusi
+                // dilewati (field-nya SENDIRI tetap di-rename di properties,
+                // lihat applyMapping() — cuma jejak auditnya yang tidak ada).
+                if ($decision !== 'ignore' && $attributeDefinitionId === null) {
+                    continue;
+                }
 
                 LayerAttributeMapping::create([
                     'layer_import_id' => $import->id,
                     'source_field_name' => $field,
-                    'attribute_definition_id' => $kode ? ($definitionsByKode[$kode]->id ?? null) : null,
+                    'attribute_definition_id' => $attributeDefinitionId,
                     'is_ignored' => $decision === 'ignore',
                 ]);
             }

@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Relasi `spatialLayers()` (hasMany ke `layers` lewat `map_type_id`) dihapus
+ * 2026-10-06 bersama kolom `layers.map_type_id` itu sendiri — lihat migration
+ * drop_map_type_id_and_visibility_from_layers_table. Layer tidak lagi bisa
+ * dikaitkan ke Jenis Peta.
+ */
 class MapType extends Model
 {
     protected $fillable = [
@@ -23,11 +29,6 @@ class MapType extends Model
             'is_active' => 'boolean',
             'konfigurasi' => 'array',
         ];
-    }
-
-    public function spatialLayers(): HasMany
-    {
-        return $this->hasMany(SpatialLayer::class);
     }
 
     public function dynamicAttributes(): HasMany

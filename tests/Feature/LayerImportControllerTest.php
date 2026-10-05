@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\LayerImport;
-use App\Models\MapType;
-use App\Models\MetadataDefinition;
 use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
@@ -52,29 +50,13 @@ class LayerImportControllerTest extends TestCase
 
     private function layer(array $overrides = []): SpatialLayer
     {
-        $jenis = MapType::where('slug', 'tematik')->firstOrFail();
-
         return SpatialLayer::create(array_merge([
             'category_id' => $this->categoryId(),
             'layer_type_id' => 4,
             'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.Str::random(8),
             'name' => 'Layer Uji',
-            'map_type_id' => $jenis->id,
         ], $overrides));
-    }
-
-    private function attachDefinition(SpatialLayer $layer, string $kode, array $definitionOverrides = [], array $pivotOverrides = []): void
-    {
-        $definition = MetadataDefinition::firstOrCreate(
-            ['kode' => $kode],
-            array_merge(['label' => ucfirst($kode)], $definitionOverrides)
-        );
-
-        $layer->mapType->dynamicAttributes()->create(array_merge(
-            ['metadata_definition_id' => $definition->id],
-            $pivotOverrides
-        ));
     }
 
     /**
@@ -249,15 +231,23 @@ KML;
 
     /**
      * Kolom yang dipetakan admin ke atribut standar harus muncul di
-     * `properties` dengan kunci standar itu (bukan nama kolom mentah), dan
-     * tercatat sebagai `layer_attribute_mappings`.
+     * `properties` dengan kunci standar itu (bukan nama kolom mentah).
+     *
+     * Tidak lagi tercatat sebagai baris `layer_attribute_mappings` sejak
+     * `layers.map_type_id` dihapus (2026-10-06, lihat migration
+     * drop_map_type_id_and_visibility_from_layers_table) — Layer tidak lagi
+     * bisa punya atribut dinamis aktif, jadi target "map:xxx" tidak pernah
+     * teresolusi ke `MetadataDefinition` manapun lagi. CHECK constraint
+     * `ck_layer_attr_map_target` mewajibkan baris non-ignored punya
+     * `attribute_definition_id` terisi, jadi `LayerImportController` sengaja
+     * melewati baris audit untuk target yang tak teresolusi (lihat
+     * processMapping()) — field-nya sendiri tetap berganti nama.
      */
     public function test_field_mapped_to_standard_attribute_is_renamed_in_properties(): void
     {
         Storage::fake('public');
         $admin = $this->admin();
         $layer = $this->layer();
-        $this->attachDefinition($layer, 'catatan', ['label' => 'Catatan']);
         $this->actingAs($admin)->post(route('spatial-layers.imports.upload', $layer), [
             'input_type' => 'kmz',
             'kmz_file' => $this->kmlUploadedFile(),
@@ -271,11 +261,11 @@ KML;
 
         $feature = $layer->features()->first();
         $this->assertArrayNotHasKey('DESCRIPTION', $feature->properties);
+        $this->assertArrayHasKey('catatan', $feature->properties);
 
-        $this->assertDatabaseHas('layer_attribute_mappings', [
+        $this->assertDatabaseMissing('layer_attribute_mappings', [
             'layer_import_id' => $import->id,
             'source_field_name' => 'DESCRIPTION',
-            'is_ignored' => false,
         ]);
     }
 
