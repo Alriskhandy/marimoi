@@ -34,18 +34,10 @@ class CategoryNode extends Model
         'description',
         'depth',
         'sort_order',
-        'is_active',
         'created_by',
         'updated_by',
         'legacy_category_id',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
 
     protected static function boot(): void
     {

@@ -170,8 +170,9 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         // API cascading select (3 level) dipakai index.blade.php — satu-satunya
         // endpoint API Category yang benar-benar dikonsumsi JS (lihat Category
         // model/controller untuk method lain yang sudah tidak diroutekan: sempat
-        // ada getByType/getTree tapi tidak dipanggil di mana pun).
-        Route::get('/api/options/{type}', [CategoryController::class, 'getOptions'])->name('api.options')->middleware('permission:categories.view');
+        // ada getByType/getTree tapi tidak dipanggil di mana pun). Sejak kategori
+        // tidak lagi punya `type`, endpoint ini tidak lagi difilter per tipe.
+        Route::get('/api/options', [CategoryController::class, 'getOptions'])->name('api.options')->middleware('permission:categories.view');
     });
 
     /*

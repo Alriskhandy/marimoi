@@ -48,10 +48,8 @@ class SpatialLayerControllerTest extends TestCase
     {
         return DB::table('categories_v3')->insertGetId([
             'id' => (string) Str::uuid(),
-            'code' => 'cat-'.Str::random(8),
             'name' => $name,
             'slug' => Str::slug($name.'-'.Str::random(6)),
-            'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ], 'id');
@@ -106,7 +104,6 @@ class SpatialLayerControllerTest extends TestCase
             'name' => 'Node B',
             'slug' => 'node-b-'.Str::random(6),
             'depth' => 2,
-            'is_active' => true,
             'path' => DB::raw("'c1.c2'::ltree"),
             'created_at' => now(),
             'updated_at' => now(),

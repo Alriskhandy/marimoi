@@ -372,8 +372,11 @@ class SpatialLayerController extends Controller
      */
     private function categoryPickerOptions(): array
     {
+        // Sebelumnya menyembunyikan kategori sentinel "Uncategorized" lewat
+        // `where('code', '!=', 'uncategorized')` — kolom `code` dihapus dari
+        // categories_v3 (2026-10-06), jadi sentinel itu sekarang ikut muncul
+        // di dropdown seperti kategori biasa (belum diganti penggantinya).
         $categoryOptions = DB::table('categories_v3')
-            ->where('code', '!=', 'uncategorized')
             ->orderBy('name')
             ->get(['id', 'name']);
 

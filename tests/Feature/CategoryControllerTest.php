@@ -16,9 +16,15 @@ use Tests\TestCase;
  * Fase 3 lanjutan). `Category` dibaca dari view `categories_tree_v3`
  * (gabungan categories_v3 root + category_nodes turunannya) tapi menulis
  * langsung ke tabel yang benar lewat override create()/update()/delete() di
- * model — test ini mengunci hirarki 3 level (root/child/grandchild) & aturan
- * bisnis (tipe sama dengan parent, maksimal 10 aktif per tipe) tetap jalan
- * persis seperti versi lama (flat `categories`), hanya tabel sumbernya beda.
+ * model — test ini mengunci hirarki 3 level (root/child/grandchild) tetap
+ * jalan persis seperti versi lama (flat `categories`), hanya tabel
+ * sumbernya beda.
+ *
+ * Sejak 2026-10-06, kategori tidak lagi punya `type`/`is_active`/`icon`/
+ * `color`/`gambar`/`is_marker` sendiri (lihat migration
+ * drop_display_and_type_columns_from_categories_v3_and_category_nodes) —
+ * aturan bisnis yang dulu bergantung padanya (tipe sama dengan parent,
+ * maksimal 10 aktif per tipe) ikut dibuang bersama kolomnya.
  *
  * Hanya method yang benar2 diroutekan yang diuji (index/store/update/destroy/
  * getOptions) — lihat routes/backend.php & docblock CategoryController.
@@ -56,24 +62,19 @@ class CategoryControllerTest extends TestCase
         $admin = $this->admin();
 
         $response = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'tematik',
             'nama' => 'Fasilitas Kesehatan',
-            'warna' => '#ff0000',
-            'icon' => 'hospital',
-            'is_active' => true,
         ], $this->ajaxHeaders());
 
         $response->assertOk()->assertJsonPath('success', true);
-        $this->assertDatabaseHas('categories_v3', ['name' => 'Fasilitas Kesehatan', 'type' => 'tematik']);
+        $this->assertDatabaseHas('categories_v3', ['name' => 'Fasilitas Kesehatan']);
     }
 
     public function test_admin_can_create_a_child_category_under_a_root(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji', 'is_active' => true]);
+        $root = Category::create(['nama' => 'Root Uji']);
 
         $response = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'tematik',
             'nama' => 'Child Uji',
             'parent_id' => $root->id,
         ], $this->ajaxHeaders());
@@ -85,11 +86,10 @@ class CategoryControllerTest extends TestCase
     public function test_grandchild_category_is_allowed_but_great_grandchild_is_rejected(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
-        $child = Category::create(['type' => 'tematik', 'nama' => 'Child Uji', 'parent_id' => $root->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        $child = Category::create(['nama' => 'Child Uji', 'parent_id' => $root->id]);
 
         $grandchildResponse = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'tematik',
             'nama' => 'Grandchild Uji',
             'parent_id' => $child->id,
         ], $this->ajaxHeaders());
@@ -97,7 +97,6 @@ class CategoryControllerTest extends TestCase
         $grandchild = Category::where('nama', 'Grandchild Uji')->firstOrFail();
 
         $tooDeepResponse = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'tematik',
             'nama' => 'Terlalu Dalam',
             'parent_id' => $grandchild->id,
         ], $this->ajaxHeaders());
@@ -106,59 +105,26 @@ class CategoryControllerTest extends TestCase
         $tooDeepResponse->assertJsonValidationErrors('parent_id');
     }
 
-    public function test_parent_must_have_same_type(): void
-    {
-        $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Tematik']);
-
-        $response = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'psd',
-            'nama' => 'Anak Beda Tipe',
-            'parent_id' => $root->id,
-        ], $this->ajaxHeaders());
-
-        $response->assertStatus(422)->assertJsonValidationErrors('parent_id');
-    }
-
-    public function test_only_ten_active_categories_allowed_per_type(): void
-    {
-        $admin = $this->admin();
-        for ($i = 0; $i < 10; $i++) {
-            Category::create(['type' => 'tematik', 'nama' => "Aktif {$i}", 'is_active' => true]);
-        }
-
-        $response = $this->actingAs($admin)->postJson(route('categories.store'), [
-            'type' => 'tematik',
-            'nama' => 'Kelebihan Batas',
-            'is_active' => true,
-        ], $this->ajaxHeaders());
-
-        $response->assertStatus(422)->assertJsonValidationErrors('is_active');
-    }
-
     public function test_admin_can_update_a_category(): void
     {
         $admin = $this->admin();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Nama Lama', 'warna' => '#000000']);
+        $category = Category::create(['nama' => 'Nama Lama']);
 
         $response = $this->actingAs($admin)->putJson(route('categories.update', $category->id), [
-            'type' => 'tematik',
             'nama' => 'Nama Baru',
-            'warna' => '#ffffff',
         ], $this->ajaxHeaders());
 
         $response->assertOk()->assertJsonPath('success', true);
-        $this->assertDatabaseHas('categories_v3', ['id' => $category->id, 'name' => 'Nama Baru', 'color' => '#ffffff']);
+        $this->assertDatabaseHas('categories_v3', ['id' => $category->id, 'name' => 'Nama Baru']);
     }
 
     public function test_updating_a_child_node_preserves_its_depth_and_category(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
-        $child = Category::create(['type' => 'tematik', 'nama' => 'Child Uji', 'parent_id' => $root->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        $child = Category::create(['nama' => 'Child Uji', 'parent_id' => $root->id]);
 
         $response = $this->actingAs($admin)->putJson(route('categories.update', $child->id), [
-            'type' => 'tematik',
             'nama' => 'Child Diubah',
             'parent_id' => $root->id,
         ], $this->ajaxHeaders());
@@ -170,8 +136,8 @@ class CategoryControllerTest extends TestCase
     public function test_destroy_is_blocked_when_category_has_children(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
-        Category::create(['type' => 'tematik', 'nama' => 'Child Uji', 'parent_id' => $root->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        Category::create(['nama' => 'Child Uji', 'parent_id' => $root->id]);
 
         $response = $this->actingAs($admin)->delete(route('categories.destroy', $root->id));
 
@@ -182,22 +148,22 @@ class CategoryControllerTest extends TestCase
     public function test_destroy_removes_a_leaf_category(): void
     {
         $admin = $this->admin();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Hapus Uji']);
+        $category = Category::create(['nama' => 'Hapus Uji']);
 
         $response = $this->actingAs($admin)->delete(route('categories.destroy', $category->id));
 
-        $response->assertRedirect(route('categories.index', ['type' => 'tematik']));
+        $response->assertRedirect(route('categories.index'));
         $this->assertDatabaseMissing('categories_v3', ['id' => $category->id]);
     }
 
     public function test_get_options_returns_three_level_hierarchy(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
-        $child = Category::create(['type' => 'tematik', 'nama' => 'Child Uji', 'parent_id' => $root->id]);
-        Category::create(['type' => 'tematik', 'nama' => 'Grandchild Uji', 'parent_id' => $child->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        $child = Category::create(['nama' => 'Child Uji', 'parent_id' => $root->id]);
+        Category::create(['nama' => 'Grandchild Uji', 'parent_id' => $child->id]);
 
-        $response = $this->actingAs($admin)->getJson(route('categories.api.options', 'tematik'));
+        $response = $this->actingAs($admin)->getJson(route('categories.api.options'));
 
         $response->assertOk();
         $data = $response->json('data');
@@ -210,10 +176,10 @@ class CategoryControllerTest extends TestCase
     public function test_index_page_renders_with_nested_categories(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji', 'is_active' => true]);
-        Category::create(['type' => 'tematik', 'nama' => 'Child Uji', 'parent_id' => $root->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        Category::create(['nama' => 'Child Uji', 'parent_id' => $root->id]);
 
-        $response = $this->actingAs($admin)->get(route('categories.index', ['type' => 'tematik']));
+        $response = $this->actingAs($admin)->get(route('categories.index'));
 
         $response->assertOk()->assertSee('Root Uji')->assertSee('Child Uji');
     }
@@ -235,13 +201,12 @@ class CategoryControllerTest extends TestCase
     public function test_moving_a_node_cascades_category_and_depth_to_descendants(): void
     {
         $admin = $this->admin();
-        $rootA = Category::create(['type' => 'tematik', 'nama' => 'Root A']);
-        $rootB = Category::create(['type' => 'tematik', 'nama' => 'Root B']);
-        $child = Category::create(['type' => 'tematik', 'nama' => 'Child', 'parent_id' => $rootA->id]);
-        $grandchild = Category::create(['type' => 'tematik', 'nama' => 'Grandchild', 'parent_id' => $child->id]);
+        $rootA = Category::create(['nama' => 'Root A']);
+        $rootB = Category::create(['nama' => 'Root B']);
+        $child = Category::create(['nama' => 'Child', 'parent_id' => $rootA->id]);
+        $grandchild = Category::create(['nama' => 'Grandchild', 'parent_id' => $child->id]);
 
         $this->actingAs($admin)->putJson(route('categories.update', $child->id), [
-            'type' => 'tematik',
             'nama' => 'Child',
             'parent_id' => $rootB->id,
         ], $this->ajaxHeaders())->assertOk();
@@ -259,11 +224,10 @@ class CategoryControllerTest extends TestCase
     public function test_sort_order_can_be_set_on_create_and_update(): void
     {
         $admin = $this->admin();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori', 'sort_order' => 0]);
+        $category = Category::create(['nama' => 'Kategori', 'sort_order' => 0]);
         $this->assertDatabaseHas('categories_v3', ['id' => $category->id, 'sort_order' => 0]);
 
         $this->actingAs($admin)->putJson(route('categories.update', $category->id), [
-            'type' => 'tematik',
             'nama' => 'Kategori',
             'sort_order' => 7,
         ], $this->ajaxHeaders())->assertOk();
@@ -274,10 +238,10 @@ class CategoryControllerTest extends TestCase
     public function test_sort_order_controls_display_order_over_alphabetical(): void
     {
         $admin = $this->admin();
-        Category::create(['type' => 'tematik', 'nama' => 'Zebra', 'sort_order' => 1, 'is_active' => true]);
-        Category::create(['type' => 'tematik', 'nama' => 'Apple', 'sort_order' => 2, 'is_active' => true]);
+        Category::create(['nama' => 'Zebra', 'sort_order' => 1]);
+        Category::create(['nama' => 'Apple', 'sort_order' => 2]);
 
-        $html = $this->actingAs($admin)->get(route('categories.index', ['type' => 'tematik']))->getContent();
+        $html = $this->actingAs($admin)->get(route('categories.index'))->getContent();
 
         $this->assertLessThan(strpos($html, 'Apple'), strpos($html, 'Zebra'));
     }
@@ -289,8 +253,8 @@ class CategoryControllerTest extends TestCase
     public function test_destroy_blocked_message_names_blocking_children(): void
     {
         $admin = $this->admin();
-        $root = Category::create(['type' => 'tematik', 'nama' => 'Root Uji']);
-        Category::create(['type' => 'tematik', 'nama' => 'Anak Satu', 'parent_id' => $root->id]);
+        $root = Category::create(['nama' => 'Root Uji']);
+        Category::create(['nama' => 'Anak Satu', 'parent_id' => $root->id]);
 
         $response = $this->actingAs($admin)->delete(route('categories.destroy', $root->id));
 
@@ -301,7 +265,7 @@ class CategoryControllerTest extends TestCase
     public function test_destroy_blocked_message_names_blocking_layers(): void
     {
         $admin = $this->admin();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Dipakai']);
+        $category = Category::create(['nama' => 'Kategori Dipakai']);
         DB::table('layers')->insert([
             'id' => (string) Str::uuid(),
             'category_id' => $category->id,
@@ -327,9 +291,9 @@ class CategoryControllerTest extends TestCase
     public function test_index_page_has_link_to_filtered_layer_list(): void
     {
         $admin = $this->admin();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori Uji', 'is_active' => true]);
+        $category = Category::create(['nama' => 'Kategori Uji']);
 
-        $response = $this->actingAs($admin)->get(route('categories.index', ['type' => 'tematik']));
+        $response = $this->actingAs($admin)->get(route('categories.index'));
 
         $response->assertOk()->assertSee(route('spatial-layers.index', ['category' => 'cat:'.$category->id]), false);
     }

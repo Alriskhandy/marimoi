@@ -97,7 +97,13 @@
                     @can('spatial-layers.view')
                         <a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
                             href="{{ route('spatial-layers.index') }}">
-                            <span class="nav-text">Daftar Layer & Data</span>
+                            <span class="nav-text">Layer & Data</span>
+                        </a>
+                    @endcan
+                    @can('categories.view')
+                        <a class="nav-link {{ request()->routeIs('categories.*', 'kategori-tematik.*') ? 'active' : '' }}"
+                            href="{{ route('categories.index') }}">
+                            <span class="nav-text">Kategori</span>
                         </a>
                     @endcan
                     @can('map-types.manage')
@@ -110,12 +116,6 @@
                         <a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
                             href="{{ route('spatial-feedbacks.index') }}">
                             <span class="nav-text">Feedback Pemetaan</span>
-                        </a>
-                    @endcan
-                    @can('categories.view')
-                        <a class="nav-link {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}"
-                            href="{{ route('categories.index', ['type' => 'tematik']) }}">
-                            <span class="nav-text">Kategori Peta Tematik</span>
                         </a>
                     @endcan
                     @can('project-feedbacks.view')

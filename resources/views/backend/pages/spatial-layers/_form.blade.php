@@ -60,8 +60,8 @@
 </div>
 
 @include('backend.pages.spatial-layers._category-picker', [
-    'selectedCategoryId' => $layer?->category_id,
-    'selectedCategoryNodeId' => $layer?->category_node_id,
+    'selectedCategoryId' => $layer?->category_id ?? request('category_id'),
+    'selectedCategoryNodeId' => $layer?->category_node_id ?? request('category_node_id'),
 ])
 
 <div class="mb-3">

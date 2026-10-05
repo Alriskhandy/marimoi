@@ -364,10 +364,8 @@ class MapTypeManagementTest extends TestCase
         $mapType = MapType::where('slug', 'tematik')->firstOrFail();
         $categoryId = DB::table('categories_v3')->insertGetId([
             'id' => (string) Str::uuid(),
-            'code' => 'cat-'.Str::random(8),
             'name' => 'Kategori Uji',
             'slug' => 'kategori-uji-'.Str::random(6),
-            'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ], 'id');

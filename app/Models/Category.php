@@ -31,6 +31,14 @@ use Illuminate\Support\Str;
  * `categories_legacy_v1` (bukan ke sini) — lihat DataSpatial::kategori(),
  * yang sengaja query langsung DB::table('categories_legacy_v1'), bukan
  * kelas ini.
+ *
+ * Sejak 2026-10-06, kategori HANYA punya nama/deskripsi/hirarki/urutan —
+ * `type`/`code`/`icon`/`color`/`is_active`/`gambar`/`is_marker` dibuang dari
+ * `categories_v3`/`category_nodes` (lihat migration
+ * drop_display_and_type_columns_from_categories_v3_and_category_nodes).
+ * Pengelompokan jenis sekarang murni lewat `layers.map_type_id` ->
+ * `map_types`; gaya tampil (ikon/warna/marker) murni milik `layer_styles`
+ * per-Layer.
  */
 class Category extends Model
 {
@@ -43,13 +51,10 @@ class Category extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'type', 'nama', 'warna', 'icon', 'is_marker', 'user_id',
-        'deskripsi', 'parent_id', 'is_active', 'gambar', 'sort_order',
+        'nama', 'user_id', 'deskripsi', 'parent_id', 'sort_order',
     ];
 
     protected $casts = [
-        'is_marker' => 'boolean',
-        'is_active' => 'boolean',
         'depth' => 'integer',
         'sort_order' => 'integer',
     ];
@@ -63,16 +68,9 @@ class Category extends Model
         if (empty($attributes['parent_id'])) {
             DB::table('categories_v3')->insert([
                 'id' => $id,
-                'code' => 'cat-'.Str::lower(Str::random(10)),
                 'name' => $attributes['nama'],
                 'slug' => $slug,
-                'type' => $attributes['type'] ?? null,
                 'description' => $attributes['deskripsi'] ?? null,
-                'icon' => $attributes['icon'] ?? null,
-                'color' => $attributes['warna'] ?? null,
-                'is_marker' => $attributes['is_marker'] ?? false,
-                'is_active' => $attributes['is_active'] ?? false,
-                'gambar' => $attributes['gambar'] ?? null,
                 'sort_order' => $attributes['sort_order'] ?? 0,
                 'created_by' => $attributes['user_id'] ?? null,
                 'created_at' => $now,
@@ -93,12 +91,7 @@ class Category extends Model
                 'name' => $attributes['nama'],
                 'slug' => $slug,
                 'description' => $attributes['deskripsi'] ?? null,
-                'icon' => $attributes['icon'] ?? null,
-                'color' => $attributes['warna'] ?? null,
                 'depth' => $depth,
-                'is_active' => $attributes['is_active'] ?? false,
-                'gambar' => $attributes['gambar'] ?? null,
-                'is_marker' => $attributes['is_marker'] ?? false,
                 'sort_order' => $attributes['sort_order'] ?? 0,
                 'created_by' => $attributes['user_id'] ?? null,
                 'path' => DB::raw("'{$path}'::ltree"),
@@ -118,14 +111,8 @@ class Category extends Model
 
         if ($this->source_table === 'categories_v3') {
             DB::table('categories_v3')->where('id', $this->id)->update([
-                'type' => $attributes['type'] ?? $this->type,
                 'name' => $attributes['nama'] ?? $this->nama,
                 'description' => array_key_exists('deskripsi', $attributes) ? $attributes['deskripsi'] : $this->deskripsi,
-                'icon' => array_key_exists('icon', $attributes) ? $attributes['icon'] : $this->icon,
-                'color' => array_key_exists('warna', $attributes) ? $attributes['warna'] : $this->warna,
-                'is_marker' => $attributes['is_marker'] ?? $this->is_marker,
-                'is_active' => $attributes['is_active'] ?? $this->is_active,
-                'gambar' => array_key_exists('gambar', $attributes) ? $attributes['gambar'] : $this->gambar,
                 'sort_order' => $attributes['sort_order'] ?? $this->sort_order,
                 'updated_at' => $now,
             ]);
@@ -140,11 +127,6 @@ class Category extends Model
             $update = [
                 'name' => $attributes['nama'] ?? $this->nama,
                 'description' => array_key_exists('deskripsi', $attributes) ? $attributes['deskripsi'] : $this->deskripsi,
-                'icon' => array_key_exists('icon', $attributes) ? $attributes['icon'] : $this->icon,
-                'color' => array_key_exists('warna', $attributes) ? $attributes['warna'] : $this->warna,
-                'is_marker' => $attributes['is_marker'] ?? $this->is_marker,
-                'is_active' => $attributes['is_active'] ?? $this->is_active,
-                'gambar' => array_key_exists('gambar', $attributes) ? $attributes['gambar'] : $this->gambar,
                 'sort_order' => $attributes['sort_order'] ?? $this->sort_order,
                 'updated_at' => $now,
             ];
@@ -288,36 +270,6 @@ class Category extends Model
             ->where('category_id', $this->id)
             ->orWhere('category_node_id', $this->id)
             ->exists();
-    }
-
-    public function scopeLayers($query)
-    {
-        return $query->where('type', 'tematik');
-    }
-
-    public function scopeMusenbangs($query)
-    {
-        return $query->where('type', 'usulan_musrenbang');
-    }
-
-    public function scopePokirDprds($query)
-    {
-        return $query->where('type', 'pokir_dprd');
-    }
-
-    public function scopePsd($query)
-    {
-        return $query->where('type', 'psd');
-    }
-
-    public function scopePsn($query)
-    {
-        return $query->where('type', 'psn');
-    }
-
-    public function scopeMarkers($query)
-    {
-        return $query->where('is_marker', true);
     }
 
     public function scopeRoots($query)

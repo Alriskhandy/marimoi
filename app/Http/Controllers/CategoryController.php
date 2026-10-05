@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\MapType;
+use App\Models\SpatialLayer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -19,56 +18,92 @@ use Illuminate\Support\Facades\Validator;
  * tidak diroutekan atau tidak dipanggil JS mana pun, jadi dibuang saat rewrite
  * ke skema v3 (plan mellow-weaving-eclipse, Fase 3 lanjutan) alih-alih ditulis
  * ulang untuk struktur dua-tabel (categories_v3/category_nodes) tanpa manfaat.
+ *
+ * Sejak 2026-10-06, kategori tidak lagi punya `type`/`is_active`/`icon`/
+ * `color`/`gambar`/`is_marker` sendiri (lihat migration
+ * drop_display_and_type_columns_from_categories_v3_and_category_nodes) —
+ * pengelompokan jenis sudah tersedia lewat `layers.map_type_id` ->
+ * `map_types`, dan gaya tampil (ikon/warna/marker) sudah sepenuhnya milik
+ * `layer_styles` per-Layer. Kategori sekarang murni struktur hirarki
+ * (nama/deskripsi/parent/urutan).
  */
 class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $type = $request->get('type');
-
-        // Daftar tipe yang diperbolehkan — sumber kebenaran sekarang map_types (bisa
-        // bertambah lewat CRUD admin tanpa deploy kode), bukan array literal.
-        $validTypes = MapType::active()->pluck('slug')->all();
-
-        if ($type && ! in_array($type, $validTypes)) {
-            return redirect()->back();
-        }
-
         // "data_spatial_count" di sini bukan relasi ke tabel data_spatial
         // lama (kategori baru tidak pernah py FK ke sana) — melainkan jumlah
         // fitur v3 (layers.feature_count) milik Layer yang terhubung ke
         // kategori ini, lewat category_id (root) atau category_node_id (turunan).
-        $query = Category::query()
+        // "layers_count" adalah jumlah baris Layer itu sendiri (dipakai badge
+        // "X layer" di panel pohon taksonomi), bukan jumlah fitur/data di
+        // dalamnya.
+        $categories = Category::query()
             ->selectRaw(<<<'SQL'
                 categories_tree_v3.*,
                 (
                     SELECT COALESCE(SUM(feature_count), 0) FROM layers
                     WHERE layers.category_id = categories_tree_v3.id
                        OR layers.category_node_id = categories_tree_v3.id
-                ) AS data_spatial_count
+                ) AS data_spatial_count,
+                (
+                    SELECT COUNT(*) FROM layers
+                    WHERE layers.category_id = categories_tree_v3.id
+                       OR layers.category_node_id = categories_tree_v3.id
+                ) AS layers_count
             SQL)
-            ->with(['children.children']); // Load up to 3 levels
-
-        if ($type) {
-            $query->where('type', $type);
-        }
-
-        $categories = $query->orderBy('parent_id', 'asc')
+            ->with(['children.children']) // Load up to 3 levels
+            ->orderBy('parent_id', 'asc')
             ->orderBy('sort_order', 'asc')
             ->orderBy('nama', 'asc')
             ->get();
 
-        $typeLabels = [
-            'tematik' => 'Peta Tematik',
-        ];
+        // Layer yang ditempel LANGSUNG ke tiap kategori/subkategori (bukan
+        // agregat turunan seperti data_spatial_count/layers_count di atas) —
+        // dipakai panel detail kanan untuk menampilkan daftar Layer milik
+        // kategori yang sedang dipilih. Key "cat:{id}"/"node:{id}" mengikuti
+        // konvensi $categoryKey yang sudah dipakai halaman ini (lihat tombol
+        // "Lihat Layer di kategori ini") & filter spatial-layers/index.
+        $categoryIds = $categories->pluck('id');
+        $layersByCategory = SpatialLayer::query()
+            ->with(['opd', 'metadata'])
+            ->where(function ($q) use ($categoryIds) {
+                $q->whereIn('category_id', $categoryIds)
+                    ->orWhereIn('category_node_id', $categoryIds);
+            })
+            ->orderBy('name')
+            ->get()
+            ->groupBy(fn (SpatialLayer $layer) => $layer->category_node_id
+                ? 'node:'.$layer->category_node_id
+                : 'cat:'.$layer->category_id);
 
-        $typeLabel = $type ? ($typeLabels[$type] ?? '') : '';
+        $categories->each(function (Category $category) use ($layersByCategory) {
+            $key = ($category->parent_id === null ? 'cat:' : 'node:').$category->id;
+            $category->setAttribute('direct_layers', $layersByCategory->get($key, collect()));
+        });
 
-        return view('backend.pages.categories.index', compact(
-            'categories',
-            'type',
-            'typeLabel'
-        ));
+        // Leluhur kategori utama (root) tiap baris — dipakai panel detail
+        // kanan untuk mengisi category_id saat prefill link "Tambah Layer"
+        // (layers_v3.category_id selalu root, lihat catatan di SpatialLayer).
+        $byId = $categories->keyBy('id');
+        $categories->each(function (Category $category) use ($byId) {
+            $rootId = $category->id;
+            $current = $category;
+            $guard = 0;
+
+            while ($current->parent_id !== null && $guard < 20) {
+                $current = $byId->get($current->parent_id);
+                if (! $current) {
+                    break;
+                }
+                $rootId = $current->id;
+                $guard++;
+            }
+
+            $category->setAttribute('root_id', $rootId);
+        });
+
+        return view('backend.pages.categories.index', compact('categories'));
     }
 
     /**
@@ -98,38 +133,16 @@ class CategoryController extends Controller
         return true;
     }
 
-    private function validateMaxActiveCategories(string $type, ?string $excludeId = null): bool
-    {
-        $query = Category::where('type', $type)->where('is_active', true);
-
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        return $query->count() < 10;
-    }
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|exists:map_types,slug',
             'nama' => 'required|string|max:255',
-            'warna' => 'nullable|string|max:25',
-            'icon' => 'nullable|string|max:255',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'is_marker' => 'boolean',
-            'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories_tree_v3,id',
             'sort_order' => 'nullable|integer|min:0',
         ], [
-            'type.required' => 'Tipe kategori harus dipilih',
-            'type.exists' => 'Tipe kategori tidak valid',
             'nama.required' => 'Nama kategori harus diisi',
             'nama.max' => 'Nama kategori maksimal 255 karakter',
-            'gambar.image' => 'File harus berupa gambar',
-            'gambar.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif, svg, webp',
-            'gambar.max' => 'Ukuran gambar maksimal 2MB',
             'parent_id.exists' => 'Kategori induk tidak ditemukan',
         ]);
 
@@ -137,38 +150,14 @@ class CategoryController extends Controller
             return $this->failed($request, $validator->errors()->toArray());
         }
 
-        if ($request->boolean('is_active') && ! $this->validateMaxActiveCategories($request->type)) {
-            return $this->failed($request, ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']]);
+        if ($request->parent_id && ! $this->validateParentHierarchy($request->parent_id)) {
+            return $this->failed($request, ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']]);
         }
-
-        if ($request->parent_id) {
-            $parent = Category::find($request->parent_id);
-
-            if ($parent->type !== $request->type) {
-                return $this->failed($request, ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']]);
-            }
-
-            if (! $this->validateParentHierarchy($request->parent_id)) {
-                return $this->failed($request, ['parent_id' => ['Kategori ini tidak dapat dijadikan parent. Maksimal 3 level hirarki (Parent → Child → Grandchild).']]);
-            }
-        }
-
-        $gambarPath = null;
 
         try {
-            if ($request->hasFile('gambar')) {
-                $gambarPath = $request->file('gambar')->store('categories', 'public');
-            }
-
             $category = Category::create([
-                'type' => $request->type,
                 'user_id' => Auth::id(),
                 'nama' => $request->nama,
-                'warna' => $request->warna,
-                'icon' => $request->icon,
-                'gambar' => $gambarPath,
-                'is_marker' => $request->boolean('is_marker'),
-                'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
                 'parent_id' => $request->parent_id,
                 'sort_order' => $request->input('sort_order', 0),
@@ -176,7 +165,6 @@ class CategoryController extends Controller
 
             Log::info('Category created successfully', [
                 'id' => $category->id,
-                'type' => $category->type,
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
             ]);
@@ -185,12 +173,9 @@ class CategoryController extends Controller
                 return response()->json(['success' => true, 'message' => 'Kategori berhasil dibuat', 'data' => $category]);
             }
 
-            return redirect()->route('categories.index', ['type' => $category->type])
+            return redirect()->route('categories.index')
                 ->with('success', 'Kategori berhasil dibuat');
         } catch (\Exception $e) {
-            if ($gambarPath) {
-                Storage::disk('public')->delete($gambarPath);
-            }
             Log::error('Error creating category: '.$e->getMessage());
 
             if ($request->ajax()) {
@@ -214,24 +199,13 @@ class CategoryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'type' => 'required|exists:map_types,slug',
             'nama' => 'required|string|max:255',
-            'warna' => 'nullable|string|max:25',
-            'icon' => 'nullable|string|max:255',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'is_marker' => 'boolean',
-            'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories_tree_v3,id',
             'sort_order' => 'nullable|integer|min:0',
         ], [
-            'type.required' => 'Tipe kategori harus dipilih',
-            'type.exists' => 'Tipe kategori tidak valid',
             'nama.required' => 'Nama kategori harus diisi',
             'nama.max' => 'Nama kategori maksimal 255 karakter',
-            'gambar.image' => 'File harus berupa gambar',
-            'gambar.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif, svg, webp',
-            'gambar.max' => 'Ukuran gambar maksimal 2MB',
             'parent_id.exists' => 'Kategori induk tidak ditemukan',
         ]);
 
@@ -239,17 +213,7 @@ class CategoryController extends Controller
             return $this->failed($request, $validator->errors()->toArray());
         }
 
-        if ($request->boolean('is_active') && ! $this->validateMaxActiveCategories($request->type, $category->id)) {
-            return $this->failed($request, ['is_active' => ['Maksimal hanya 10 kategori yang dapat diaktifkan per tipe']]);
-        }
-
         if ($request->parent_id) {
-            $parent = Category::find($request->parent_id);
-
-            if ($parent->type !== $request->type) {
-                return $this->failed($request, ['parent_id' => ['Kategori induk harus memiliki tipe yang sama']]);
-            }
-
             if ($request->parent_id == $category->id) {
                 return $this->failed($request, ['parent_id' => ['Kategori tidak boleh menjadi induk dari dirinya sendiri']]);
             }
@@ -271,35 +235,15 @@ class CategoryController extends Controller
         }
 
         try {
-            $updateData = [
-                'type' => $request->type,
+            $category->update([
                 'nama' => $request->nama,
-                'warna' => $request->warna,
-                'icon' => $request->icon,
-                'is_marker' => $request->boolean('is_marker'),
-                'is_active' => $request->boolean('is_active'),
                 'deskripsi' => $request->deskripsi,
                 'parent_id' => $request->parent_id,
                 'sort_order' => $request->filled('sort_order') ? $request->input('sort_order') : $category->sort_order,
-            ];
-
-            if ($request->hasFile('gambar')) {
-                if ($category->gambar) {
-                    Storage::disk('public')->delete($category->gambar);
-                }
-                $updateData['gambar'] = $request->file('gambar')->store('categories', 'public');
-            } elseif ($request->boolean('remove_gambar')) {
-                if ($category->gambar) {
-                    Storage::disk('public')->delete($category->gambar);
-                }
-                $updateData['gambar'] = null;
-            }
-
-            $category->update($updateData);
+            ]);
 
             Log::info('Category updated successfully', [
                 'id' => $category->id,
-                'type' => $category->type,
                 'nama' => $category->nama,
                 'parent_id' => $category->parent_id,
             ]);
@@ -308,7 +252,7 @@ class CategoryController extends Controller
                 return response()->json(['success' => true, 'message' => 'Kategori berhasil diperbarui', 'data' => $category]);
             }
 
-            return redirect()->route('categories.index', ['type' => $category->type])
+            return redirect()->route('categories.index')
                 ->with('success', 'Kategori berhasil diperbarui');
         } catch (\Exception $e) {
             Log::error('Error updating category: '.$e->getMessage());
@@ -386,17 +330,11 @@ class CategoryController extends Controller
         }
 
         try {
-            $categoryType = $category->type;
-
-            if ($category->gambar) {
-                Storage::disk('public')->delete($category->gambar);
-            }
-
             $category->delete();
 
-            Log::info('Category deleted successfully', ['id' => $id, 'type' => $categoryType]);
+            Log::info('Category deleted successfully', ['id' => $id]);
 
-            return redirect()->route('categories.index', ['type' => $categoryType])
+            return redirect()->route('categories.index')
                 ->with('success', 'Kategori berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Error deleting category: '.$e->getMessage());
@@ -408,10 +346,12 @@ class CategoryController extends Controller
     /**
      * API method untuk opsi select kaskade (3 level) — satu-satunya endpoint
      * Category API yang benar-benar dikonsumsi JS (lihat categories/index.blade.php).
+     * Sejak kategori tidak lagi punya `type`, opsinya mencakup SELURUH pohon
+     * kategori (tidak difilter lagi).
      */
-    public function getOptions(string $type)
+    public function getOptions()
     {
-        $categories = Category::where('type', $type)
+        $categories = Category::query()
             ->with(['children.children'])
             ->orderBy('sort_order')
             ->orderBy('nama')

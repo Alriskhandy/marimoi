@@ -453,7 +453,6 @@ class FrontendController extends Controller
                     'sf.gambar',
                     'l.legacy_category_id as kategori_id',
                     'sf.properties',
-                    'cat_root.type as kategori_type',
                     DB::raw('COALESCE(node_leaf.name, cat_root.name) as kategori'),
                     DB::raw('ds.deskripsi as deskripsi'),
                     DB::raw("COALESCE(ds.sumber_data, sf.properties->>'sumber_data') as sumber_data"),
@@ -467,9 +466,16 @@ class FrontendController extends Controller
                 );
 
             // Apply filters with validation
-            if ($dataType && is_string($dataType)) {
-                $query->where('cat_root.type', $this->getCategoryTypeByDataType($dataType, $subType));
-            }
+            //
+            // `categories_v3.type` (dan `cat_root.type` di query di atas)
+            // DIHAPUS 2026-10-06 (kolom type/icon/color/is_active/gambar/
+            // is_marker dibuang dari categories_v3/category_nodes — gaya
+            // tampil sudah sepenuhnya milik layer_styles, dan pengelompokan
+            // jenis sudah tersedia lewat layers.map_type_id -> map_types).
+            // Filter `?type=` endpoint publik ini SENGAJA dibiarkan no-op
+            // untuk sementara (atas keputusan user) — perlu diganti supaya
+            // baca `map_types.slug` lewat `l.map_type_id`, bukan bagian dari
+            // migration ini.
 
             if ($year && is_numeric($year)) {
                 $query->whereRaw("COALESCE(ds.tahun, NULLIF(sf.properties->>'tahun', '')::int) = ?", [intval($year)]);
@@ -585,9 +591,12 @@ class FrontendController extends Controller
                         }
                     }
 
+                    // `kategori_type` tidak lagi tersedia sejak categories_v3.type
+                    // dihapus (lihat catatan di atas) — tanpa `type` di query
+                    // string, data_type/sub_type sekarang selalu null.
                     [$featureDataType, $featureSubType] = $dataType
                         ? [$dataType, $subType]
-                        : $this->dataTypeFromCategoryType($lokasi->kategori_type);
+                        : $this->dataTypeFromCategoryType(null);
 
                     $feature = [
                         'type' => 'Feature',

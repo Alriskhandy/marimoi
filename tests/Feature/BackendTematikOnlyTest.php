@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -16,33 +14,23 @@ use Tests\TestCase;
  * yang sudah di-retire (rute `data-spatial.*` sekarang murni redirect ke
  * `spatial-layers.*`, lihat routes/backend.php) — termasuk "Export Gambar
  * Peta" yang sengaja TIDAK diport ke modul baru (disetujui eksplisit, tidak
- * ada penggantinya). Dua test yang tersisa di bawah TIDAK terkait modul itu
- * sama sekali (satu soal rute lama non-tematik, satu soal CategoryController),
- * jadi tetap relevan dan dipertahankan.
+ * ada penggantinya).
+ *
+ * `test_category_index_rejects_legacy_types()` ikut dihapus 2026-10-06:
+ * kolom `categories_v3.type`/`category_nodes` terkait dibuang (lihat migration
+ * drop_display_and_type_columns_from_categories_v3_and_category_nodes) —
+ * `CategoryController::index()` tidak lagi membaca/memvalidasi query string
+ * `type` sama sekali, jadi perilaku "redirect untuk tipe legacy" yang diuji
+ * di sini bukan lagi bug kalau hilang, memang sudah tidak ada.
  */
 class BackendTematikOnlyTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function superAdmin(): User
-    {
-        $role = Role::create(['name' => 'Super Admin', 'slug' => 'super-admin', 'description' => null]);
-
-        return User::factory()->create(['role_id' => $role->id]);
-    }
 
     public function test_legacy_backend_routes_are_removed(): void
     {
         foreach (['psd.index', 'psn.index', 'pokir-dprd.index', 'usulan-musrenbang.index'] as $routeName) {
             $this->assertFalse(Route::has($routeName), $routeName);
         }
-    }
-
-    public function test_category_index_rejects_legacy_types(): void
-    {
-        $this->actingAs($this->superAdmin())
-            ->from(route('dashboard'))
-            ->get(route('categories.index', ['type' => 'psd']))
-            ->assertRedirect(route('dashboard'));
     }
 }
