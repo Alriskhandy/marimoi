@@ -72,7 +72,8 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <p class="stat-label">Total Data Spasial</p>
-                                <h3 class="stat-value">{{ $categories->whereNull('parent_id')->sum('data_spatial_count') }}</h3>
+                                <h3 class="stat-value">{{ $categories->whereNull('parent_id')->sum('data_spatial_count') }}
+                                </h3>
                             </div>
                             <i class="mdi mdi-map-marker-multiple stat-icon"></i>
                         </div>
@@ -95,7 +96,7 @@
                             </button>
                             <button type="button" class="btn btn-gradient-primary" id="btnAddSubCategory"
                                 data-bs-toggle="modal" data-bs-target="#addModal" disabled
-                                title="Pilih kategori di pohon taksonomi terlebih dahulu">
+                                title="Pilih kategori di struktur kategori terlebih dahulu">
                                 <i class="mdi mdi-plus"></i> Subkategori
                             </button>
                         </div>
@@ -109,7 +110,7 @@
         <div class="col-lg-4 grid-margin stretch-card">
             <div class="card taxonomy-tree-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0"><i class="mdi mdi-file-tree-outline me-1"></i>Pohon Taksonomi Laye</h4>
+                    <h4 class="card-title mb-0"><i class="mdi mdi-file-tree-outline me-1"></i>Struktur Kategori</h4>
                 </div>
                 <div class="card-body">
                     <div class="input-group mb-3">
@@ -167,7 +168,7 @@
                     <div class="card" id="noCategorySelectedCard" style="display: none;">
                         <div class="card-body text-center py-5 text-muted">
                             <i class="mdi mdi-cursor-default-click-outline mdi-48px"></i>
-                            <p class="mt-2 mb-0">Pilih kategori di pohon taksonomi untuk melihat detail & daftar
+                            <p class="mt-2 mb-0">Pilih kategori di struktur kategori untuk melihat detail & daftar
                                 layer.</p>
                         </div>
                     </div>
@@ -212,8 +213,8 @@
 
                         <div class="form-group mb-0">
                             <label for="add_sort_order" class="form-label">Urutan Tampil</label>
-                            <input type="number" class="form-control" id="add_sort_order" name="sort_order" min="0"
-                                value="0">
+                            <input type="number" class="form-control" id="add_sort_order" name="sort_order"
+                                min="0" value="0">
                             <div class="form-text">Angka lebih kecil ditampilkan lebih dulu.</div>
                             <div class="invalid-feedback"></div>
                         </div>
@@ -270,7 +271,8 @@
 
                         <div class="form-group mb-0">
                             <label for="edit_sort_order" class="form-label">Urutan Tampil</label>
-                            <input type="number" class="form-control" id="edit_sort_order" name="sort_order" min="0">
+                            <input type="number" class="form-control" id="edit_sort_order" name="sort_order"
+                                min="0">
                             <div class="form-text">Angka lebih kecil ditampilkan lebih dulu.</div>
                             <div class="invalid-feedback"></div>
                         </div>
@@ -290,8 +292,8 @@
 @push('styles')
     <style>
         /* ===========================================
-                                                                                                                                                                                   TAXONOMY TREE (PANEL KIRI)
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       TAXONOMY TREE (PANEL KIRI)
+                                                                                                                                                                                                    =========================================== */
         .taxonomy-tree-card .card-body {
             max-height: 70vh;
             overflow-y: auto;
@@ -375,8 +377,16 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   CATEGORY DETAIL PANEL (PANEL KANAN)
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       CATEGORY DETAIL PANEL (PANEL KANAN)
+                                                                                                                                                                                                    =========================================== */
+        .category-thumb {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
         .category-detail-meta .text-muted.small {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -399,8 +409,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   BADGE STYLING
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       BADGE STYLING
+                                                                                                                                                                                                    =========================================== */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -425,8 +435,22 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   BUTTON GROUP STYLING
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       COLOR PREVIEW STYLING
+                                                                                                                                                                                                    =========================================== */
+        .color-preview {
+            display: flex;
+            align-items: center;
+        }
+
+        .color-box {
+            display: inline-block;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ===========================================
+                                                                                                                                                                                                       BUTTON GROUP STYLING
+                                                                                                                                                                                                    =========================================== */
         .btn-group .btn {
             border-radius: 6px !important;
             margin: 0 2px;
@@ -438,8 +462,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   MODAL STYLING
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       MODAL STYLING
+                                                                                                                                                                                                    =========================================== */
         .modal-lg {
             max-width: 800px;
         }
@@ -457,9 +481,300 @@
             border-top: 1px solid #dee2e6;
         }
 
+        .image-preview-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+            padding: 12px;
+            text-align: center;
+            border: 1px dashed #ced4da;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .image-preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: #adb5bd;
+        }
+
+        .image-preview-placeholder i {
+            font-size: 2.2rem;
+        }
+
+        .image-preview-placeholder span {
+            font-size: 0.8rem;
+        }
+
+        .image-preview-content {
+            width: 100%;
+        }
+
+        .image-preview-content img {
+            max-width: 100%;
+            max-height: 160px;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+
         /* ===========================================
-                                                                                                                                                                                   STATISTICS CARDS (COMPACT)
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       ICON PICKER
+                                                                                                                                                                                                    =========================================== */
+        .icon-picker-grid {
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+
+        .icon-picker-group-title {
+            margin: 12px 0 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9aa4af;
+        }
+
+        .icon-picker-group-title:first-child {
+            margin-top: 0;
+        }
+
+        .icon-picker-items {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        @media (max-width: 576px) {
+            .icon-picker-items {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .icon-picker-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 4px;
+            padding: 10px 4px;
+            border: 1px solid #eef2f7;
+            border-radius: 6px;
+            background: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .icon-picker-item:hover {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.06);
+        }
+
+        .icon-picker-item.active {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.12);
+            box-shadow: 0 0 0 1px #007bff inset;
+        }
+
+        .icon-picker-glyph {
+            font-size: 1.9rem;
+            line-height: 1;
+            color: #495057;
+        }
+
+        .icon-picker-item.active .icon-picker-glyph {
+            color: #007bff;
+        }
+
+        .icon-picker-name {
+            display: -webkit-box;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #343a40;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .icon-picker-class {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+            font-size: 0.58rem;
+            color: #868e96;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .icon-picker-empty {
+            padding: 20px 0;
+            color: #adb5bd;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* ===========================================
+                                                                                                                                                                                                       COLOR PICKER WIDGET
+                                                                                                                                                                                                    =========================================== */
+        .color-picker-widget {
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .color-swatch-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 0.65rem;
+        }
+
+        .color-swatch {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px #dee2e6;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.12);
+        }
+
+        .color-swatch.active {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+        }
+
+        .color-picker-widget .input-group .form-control-color {
+            max-width: 50px;
+        }
+
+        .settings-switch-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            padding: 0.65rem 0.85rem;
+            background-color: #f8f9fa;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+        }
+
+        .settings-switch-group .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 0;
+            margin: 0;
+            min-height: auto;
+        }
+
+        .settings-switch-group .form-check-input {
+            flex-shrink: 0;
+            float: none;
+            margin: 0;
+        }
+
+        .settings-switch-group .form-check-label {
+            margin: 0;
+        }
+
+        /* ===========================================
+                                                                                                                                                                                                       ICON PREVIEW STYLING
+                                                                                                                                                                                                    =========================================== */
+        .icon-preview-container {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .icon-preview-container.has-icon {
+            background-color: #fff;
+            border-color: #007bff;
+            border-style: solid;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        }
+
+        .icon-preview-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .icon-preview-icon {
+            font-size: 2.5em;
+            margin-right: 15px;
+            color: #007bff;
+        }
+
+        .icon-preview-details h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .icon-preview-details small {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+
+        .icon-preview-code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            color: #d63384;
+        }
+
+        /* Compact variant used when the preview sits beside the icon search box */
+        .icon-preview-inline {
+            min-height: 31px;
+            padding: 4px 10px;
+        }
+
+        .icon-preview-inline span.text-muted {
+            font-size: 0.72rem;
+        }
+
+        .icon-preview-inline .icon-preview-icon {
+            font-size: 1.4em;
+            margin-right: 8px;
+        }
+
+        .icon-preview-inline .icon-preview-details h6 {
+            display: none;
+        }
+
+        .icon-preview-inline .icon-preview-details small {
+            font-size: 0.72em;
+        }
+
+        .icon-preview-inline .icon-preview-code {
+            font-size: 0.68em;
+            padding: 1px 4px;
+        }
+
+        /* ===========================================
+                                                                                                                                                                                                       STATISTICS CARDS (COMPACT)
+                                                                                                                                                                                                    =========================================== */
         .stats-row-compact {
             margin-bottom: 1rem;
         }
@@ -508,8 +823,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   UTILITY CLASSES
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       UTILITY CLASSES
+                                                                                                                                                                                                    =========================================== */
         .text-center i.mdi-48px {
             font-size: 3rem;
         }
@@ -519,8 +834,8 @@
         }
 
         /* ===========================================
-                                                                                                                                                                                   RESPONSIVE IMPROVEMENTS
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       RESPONSIVE IMPROVEMENTS
+                                                                                                                                                                                                    =========================================== */
         @media (max-width: 768px) {
             .btn-sm {
                 padding: 4px 8px;
@@ -532,10 +847,25 @@
                 padding: 4px 8px;
             }
 
+            .icon-preview-container {
+                min-height: 50px;
+                padding: 10px;
+            }
+
+            .icon-preview-icon {
+                font-size: 2em;
+                margin-right: 10px;
+            }
+
+            .category-thumb {
+                width: 35px !important;
+                height: 35px !important;
+            }
         }
+
         /* ===========================================
-                                                                                                                                                                                   FOCUS AND ACCESSIBILITY
-                                                                                                                                                                                =========================================== */
+                                                                                                                                                                                                       FOCUS AND ACCESSIBILITY
+                                                                                                                                                                                                    =========================================== */
         .btn:focus,
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
@@ -553,13 +883,54 @@
             white-space: nowrap !important;
             border: 0 !important;
         }
+
+        /* ===========================================
+                                                                                                                                                                                                       ACTIVE COUNT WARNING STYLES
+                                                                                                                                                                                                    =========================================== */
+        .form-text.text-warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-check.text-muted {
+            opacity: 0.6;
+        }
+
+        .form-check.text-muted .form-check-label {
+            color: #6c757d !important;
+        }
+
+        .form-check-input:disabled {
+            opacity: 0.5;
+        }
+
+        /* Active count badge styling */
+        .active-count-badge {
+            background: linear-gradient(135deg, #ffc107, #ff8f00);
+            color: #212529;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .active-count-badge.warning {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
     </style>
 @endpush
 
 @push('scripts')
     <script>
         $(document).ready(function() {
-            // Pohon Taksonomi: pilih kategori -> tampilkan panel detailnya,
+            // Struktur Kategori: pilih kategori -> tampilkan panel detailnya,
             // expand/collapse manual, dan filter pencarian nama kategori.
             const $tree = $('#taxonomyTree');
 
