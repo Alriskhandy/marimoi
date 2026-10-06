@@ -90,9 +90,10 @@ class LayerStyleController extends Controller
     }
 
     /**
-     * `is_default` dijaga lewat auto-demote (sama seperti `LayerSource::
-     * is_primary`), DAN menyinkronkan `layers.default_style_id` yang jadi FK
-     * komposit nyata ke baris ini — bukan cuma kolom boolean dekoratif.
+     * `is_default` dijaga lewat auto-demote (hanya satu style default per
+     * Layer, partial unique index `uq_layer_styles_default`), DAN
+     * menyinkronkan `layers.default_style_id` yang jadi FK komposit nyata ke
+     * baris ini — bukan cuma kolom boolean dekoratif.
      */
     private function applyDefault(SpatialLayer $layer, LayerStyle $style, bool $isDefault): void
     {

@@ -6,8 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LayerImportController;
-use App\Http\Controllers\LayerSourceController;
 use App\Http\Controllers\LayerStyleController;
+use App\Http\Controllers\LayerWizardController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MapTypeController;
 use App\Http\Controllers\MetadataDefinitionController;
@@ -198,12 +198,21 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('spatial-layers')->name('spatial-layers.')->group(function () {
         Route::get('/', [SpatialLayerController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
-        Route::get('/create', [SpatialLayerController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
-        Route::post('/', [SpatialLayerController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+        Route::get('/create', [LayerWizardController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
+        Route::post('/', [LayerWizardController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
         Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
         Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
         Route::patch('/{spatialLayer}/status', [SpatialLayerController::class, 'updateStatus'])->name('update-status')->middleware('permission:spatial-layers.publish');
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+
+        // Wizard "Tambah Layer" 4 tahap (plan rippling-frolicking-ladybug) —
+        // /create dan POST / di atas SENGAJA tetap dipakai ulang (bukan rute
+        // baru) supaya nama rute lama & test yang sudah ada tidak mati.
+        Route::get('/{spatialLayer}/wizard', [LayerWizardController::class, 'wizard'])->name('wizard')->middleware('permission:spatial-layers.create');
+        Route::put('/{spatialLayer}/wizard/info', [LayerWizardController::class, 'saveInfo'])->name('wizard.info')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/import', [LayerWizardController::class, 'saveImport'])->name('wizard.import')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/mapping', [LayerWizardController::class, 'saveMapping'])->name('wizard.mapping')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/finish', [LayerWizardController::class, 'finish'])->name('wizard.finish')->middleware('permission:spatial-layers.create');
 
         Route::get('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:spatial-layers.edit');
         Route::put('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:spatial-layers.edit');
@@ -213,14 +222,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
             Route::post('/', [LayerStyleController::class, 'store'])->name('store')->middleware('permission:spatial-layers.edit');
             Route::put('/{style}', [LayerStyleController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
             Route::delete('/{style}', [LayerStyleController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.edit');
-        });
-
-        Route::prefix('{spatialLayer}/sources')->name('sources.')->group(function () {
-            Route::get('/', [LayerSourceController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
-            Route::post('/', [LayerSourceController::class, 'store'])->name('store')->middleware('permission:spatial-layers.edit');
-            Route::put('/{source}', [LayerSourceController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
-            Route::delete('/{source}', [LayerSourceController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.edit');
-            Route::post('/{source}/test-connection', [LayerSourceController::class, 'testConnection'])->name('test-connection')->middleware('permission:spatial-layers.edit');
         });
 
         Route::prefix('{spatialLayer}/imports')->name('imports.')->group(function () {

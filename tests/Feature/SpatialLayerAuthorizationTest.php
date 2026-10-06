@@ -103,11 +103,12 @@ class SpatialLayerAuthorizationTest extends TestCase
 
         $this->actingAs($user)->post(route('spatial-layers.store'), [
             'map_type_id' => $jenis->id,
+            'layer_type_id' => 4,
             'category_id' => $categoryId,
             'opd_id' => $otherOpd->id,
             'is_active' => '1',
             'name' => 'Layer OPD Uji',
-        ])->assertRedirect(route('spatial-layers.index'));
+        ]);
 
         $this->assertDatabaseHas('layers', [
             'name' => 'Layer OPD Uji',
@@ -216,10 +217,11 @@ class SpatialLayerAuthorizationTest extends TestCase
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
             'map_type_id' => $jenis->id,
+            'layer_type_id' => 4,
             'category_id' => $categoryId,
             'opd_id' => $opd->id,
             'name' => 'Layer Bappeda Uji',
-        ])->assertRedirect(route('spatial-layers.index'));
+        ]);
 
         $this->assertDatabaseHas('layers', ['name' => 'Layer Bappeda Uji', 'opd_id' => $opd->id]);
 

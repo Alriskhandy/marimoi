@@ -65,12 +65,16 @@ class SpatialLayerControllerTest extends TestCase
         $admin = $this->admin();
         $categoryId = $this->categoryId();
 
-        $this->actingAs($admin)->post(route('spatial-layers.store'), [
+        $response = $this->actingAs($admin)->post(route('spatial-layers.store'), [
             'category_id' => $categoryId,
+            'layer_type_id' => 4,
             'name' => 'Jalan Provinsi',
-        ])->assertRedirect(route('spatial-layers.index'));
+        ]);
 
-        $this->assertDatabaseHas('layers', ['name' => 'Jalan Provinsi', 'category_id' => $categoryId]);
+        $this->assertDatabaseHas('layers', ['name' => 'Jalan Provinsi', 'category_id' => $categoryId, 'wizard_step' => 2]);
+
+        $layer = SpatialLayer::where('name', 'Jalan Provinsi')->first();
+        $response->assertRedirect(route('spatial-layers.wizard', $layer));
     }
 
     public function test_store_requires_category(): void
@@ -101,6 +105,7 @@ class SpatialLayerControllerTest extends TestCase
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
             'category_id' => $categoryA,
             'category_node_id' => $nodeOfB,
+            'layer_type_id' => 4,
             'name' => 'Salah Subkategori',
         ])->assertSessionHasErrors('category_node_id');
     }
@@ -132,7 +137,10 @@ class SpatialLayerControllerTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin)->get(route('spatial-layers.create'))->assertOk();
+        $this->actingAs($admin)->get(route('spatial-layers.create'))
+            ->assertOk()
+            ->assertSee('step-indicator', false)
+            ->assertSee('Informasi Layer', false);
     }
 
     /**
@@ -189,44 +197,22 @@ class SpatialLayerControllerTest extends TestCase
     }
 
     /**
-     * Regresi: "Tambah Layer" di index sekarang modal (pola sama dengan modal
-     * Tambah Kategori di categories/index.blade.php), bukan lagi link ke halaman
-     * penuh /spatial-layers/create — tombolnya membuka #addLayerModal, dan form
-     * di dalam modal itu POST langsung ke spatial-layers.store.
+     * Regresi (2026-10-06, plan rippling-frolicking-ladybug): "Tambah Layer" di
+     * index TIDAK LAGI modal — sekarang link ke wizard 4 tahap di halaman
+     * /spatial-layers/create (lihat LayerWizardController). Test ini
+     * membalik makna dari versi sebelumnya (`test_index_page_has_add_layer_modal_
+     * instead_of_create_page_link`), yang justru menegaskan modal ADA.
      */
-    public function test_index_page_has_add_layer_modal_instead_of_create_page_link(): void
+    public function test_index_page_links_to_create_wizard_instead_of_modal(): void
     {
         $admin = $this->admin();
 
         $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
 
         $response->assertOk()
-            ->assertSee('id="addLayerModal"', false)
-            ->assertSee('data-bs-target="#addLayerModal"', false)
-            ->assertSee('id="addLayerForm"', false)
-            ->assertSee('action="'.route('spatial-layers.store').'"', false)
-            ->assertDontSee('href="'.route('spatial-layers.create').'"', false);
-    }
-
-    /**
-     * Regresi: kalau submit modal Tambah Layer gagal validasi, halaman index
-     * harus otomatis membuka ulang modalnya (bukan diam-diam gagal tanpa ada
-     * indikasi ke user) — pola sama dengan modal edit Layer di show.blade.php.
-     */
-    public function test_index_page_reopens_add_layer_modal_after_validation_error(): void
-    {
-        $admin = $this->admin();
-
-        $response = $this->actingAs($admin)
-            ->from(route('spatial-layers.index'))
-            ->post(route('spatial-layers.store'), ['name' => 'Tanpa Jenis']);
-
-        $response->assertRedirect(route('spatial-layers.index'))->assertSessionHasErrors('category_id');
-
-        $followUp = $this->actingAs($admin)->get(route('spatial-layers.index'));
-        $followUp->assertOk()
-            ->assertSee("document.getElementById('addLayerModal')", false)
-            ->assertSee('value="Tanpa Jenis"', false);
+            ->assertSee('href="'.route('spatial-layers.create').'"', false)
+            ->assertDontSee('id="addLayerModal"', false)
+            ->assertDontSee('id="addLayerForm"', false);
     }
 
     /**
@@ -517,7 +503,7 @@ class SpatialLayerControllerTest extends TestCase
             'layer_type_id' => $layerType->id,
             'name' => 'Layer Properti Uji',
             'sort_order' => 3,
-        ])->assertRedirect(route('spatial-layers.index'));
+        ]);
 
         $this->assertDatabaseHas('layers', [
             'name' => 'Layer Properti Uji',

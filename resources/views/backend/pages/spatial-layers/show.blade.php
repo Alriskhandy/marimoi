@@ -122,9 +122,6 @@
                             <a href="{{ route('spatial-layers.imports.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Riwayat Impor">
                                 <i class="mdi mdi-history"></i> Riwayat Impor
                             </a>
-                            <a href="{{ route('spatial-layers.sources.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Sumber Data">
-                                <i class="mdi mdi-cloud-outline"></i> Sumber Data
-                            </a>
                             <a href="{{ route('spatial-layers.styles.index', $layer) }}" class="btn btn-sm btn-outline-secondary" title="Style">
                                 <i class="mdi mdi-palette-outline"></i> Style
                             </a>

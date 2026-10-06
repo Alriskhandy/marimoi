@@ -38,16 +38,17 @@ class SpatialLayerController extends Controller
         $categoryPaths = $this->categoryPaths();
         [$categoryOptions, $categoryNodeOptions] = $this->categoryPickerOptions();
 
-        return view('backend.pages.spatial-layers.index', compact('layers', 'layerTypes', 'opds', 'categoryPaths', 'categoryOptions', 'categoryNodeOptions'));
-    }
+        // Draft wizard "Tambah Layer" yang belum tuntas (plan
+        // rippling-frolicking-ladybug) — ditampilkan sebagai banner terpisah
+        // di atas daftar supaya mudah ditemukan, selain badge+tombol
+        // "Lanjutkan" per baris di tabel utama (keduanya, bukan salah satu).
+        $wizardDraftsQuery = SpatialLayer::whereNotNull('wizard_step');
+        if ($this->isAdminOpd()) {
+            $wizardDraftsQuery->where('opd_id', $this->currentOpdId());
+        }
+        $wizardDrafts = $wizardDraftsQuery->orderByDesc('updated_at')->get();
 
-    public function create()
-    {
-        $layerTypes = LayerType::orderBy('name')->get();
-        $opds = $this->canAssignOpd() ? Opd::orderBy('name')->get(['id', 'name', 'singkatan']) : collect();
-        [$categoryOptions, $categoryNodeOptions] = $this->categoryPickerOptions();
-
-        return view('backend.pages.spatial-layers.create', compact('layerTypes', 'opds', 'categoryOptions', 'categoryNodeOptions'));
+        return view('backend.pages.spatial-layers.index', compact('layers', 'layerTypes', 'opds', 'categoryPaths', 'categoryOptions', 'categoryNodeOptions', 'wizardDrafts'));
     }
 
     /**
@@ -82,19 +83,13 @@ class SpatialLayerController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
-        [$layerData, $styleData] = $this->validated($request);
-
-        DB::transaction(function () use ($layerData, $styleData) {
-            $layer = SpatialLayer::create($layerData);
-            $style = $layer->styles()->create($styleData + ['name' => 'Default', 'style_type' => 'simple', 'is_default' => true]);
-            $layer->update(['default_style_id' => $style->id]);
-        });
-
-        return redirect()->route('spatial-layers.index')->with('success', 'Layer berhasil dibuat.');
-    }
-
+    /**
+     * Pembuatan Layer baru pindah ke LayerWizardController::store() (wizard
+     * "Tambah Layer" 4 tahap, plan rippling-frolicking-ladybug) — method ini
+     * sengaja dihapus, bukan dipertahankan sebagai jalur mati, supaya tidak
+     * ada dua cara berbeda membuat Layer yang bisa diam-diam saling
+     * menyimpang. `update()` di bawah masih memakai validated() yang sama.
+     */
     public function update(Request $request, SpatialLayer $spatialLayer)
     {
         $this->authorizeOpdAccess($spatialLayer);
@@ -129,30 +124,21 @@ class SpatialLayerController extends Controller
             'status' => ['required', 'in:draft,published,archived'],
         ]);
 
+        // Fitur "Sumber Layer" (layanan eksternal WMS/WMTS/XYZ/ArcGIS/COG)
+        // dihapus (2026-10-06, migration drop_layer_sources_table) — data
+        // spasial sekarang HANYA lewat impor file, jadi syarat publish sama
+        // untuk semua jenis Layer (tidak ada lagi percabangan stores_features).
         if ($validated['status'] === 'published') {
-            $storesFeatures = $spatialLayer->layerType?->stores_features ?? true;
+            if (! $spatialLayer->features()->exists()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Layer belum punya Data Spasial, tidak dapat dipublikasikan.',
+                ]);
+            }
 
-            if ($storesFeatures) {
-                if (! $spatialLayer->features()->exists()) {
-                    throw ValidationException::withMessages([
-                        'status' => 'Layer belum punya Data Spasial, tidak dapat dipublikasikan.',
-                    ]);
-                }
-
-                if (! $spatialLayer->default_style_id) {
-                    throw ValidationException::withMessages([
-                        'status' => 'Layer belum punya style default, tidak dapat dipublikasikan.',
-                    ]);
-                }
-            } else {
-                // R9: Layer raster/service (stores_features = false) tidak
-                // punya spatial_features sama sekali — syaratnya justru
-                // punya satu Source primary (bukan fitur/style).
-                if (! $spatialLayer->sources()->where('is_primary', true)->exists()) {
-                    throw ValidationException::withMessages([
-                        'status' => 'Layer jenis ini wajib punya Source primary sebelum dapat dipublikasikan.',
-                    ]);
-                }
+            if (! $spatialLayer->default_style_id) {
+                throw ValidationException::withMessages([
+                    'status' => 'Layer belum punya style default, tidak dapat dipublikasikan.',
+                ]);
             }
         }
 

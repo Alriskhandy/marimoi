@@ -22,7 +22,6 @@ class LayerImport extends Model
 
     protected $fillable = [
         'layer_id',
-        'layer_source_id',
         'original_filename',
         'storage_path',
         'file_format',
@@ -69,11 +68,6 @@ class LayerImport extends Model
     public function layer(): BelongsTo
     {
         return $this->belongsTo(SpatialLayer::class, 'layer_id');
-    }
-
-    public function source(): BelongsTo
-    {
-        return $this->belongsTo(LayerSource::class, 'layer_source_id');
     }
 
     public function attributeMappings(): HasMany

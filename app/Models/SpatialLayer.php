@@ -33,6 +33,11 @@ use Illuminate\Support\Str;
  * sudah null-safe lewat `if (! $layer->map_type_id)`, jadi tidak error, cuma
  * tidak pernah menampilkan apa pun lagi). `visibility` juga dihapus — field
  * itu memang tidak pernah ditegakkan untuk kontrol akses di mana pun.
+ *
+ * Fitur "Sumber Layer" (relasi `sources()` ke `LayerSource`, layanan
+ * eksternal WMS/WMTS/XYZ/ArcGIS/COG) dihapus seluruhnya (2026-10-06) — data
+ * spasial sekarang hanya lewat impor file, lihat migration
+ * drop_layer_sources_table.
  */
 class SpatialLayer extends Model
 {
@@ -59,6 +64,7 @@ class SpatialLayer extends Model
         'status',
         'default_opacity',
         'sort_order',
+        'wizard_step',
         'published_at',
         'created_by',
         'updated_by',
@@ -119,11 +125,6 @@ class SpatialLayer extends Model
     public function defaultStyle(): BelongsTo
     {
         return $this->belongsTo(LayerStyle::class, 'default_style_id');
-    }
-
-    public function sources(): HasMany
-    {
-        return $this->hasMany(LayerSource::class, 'layer_id');
     }
 
     public function imports(): HasMany
