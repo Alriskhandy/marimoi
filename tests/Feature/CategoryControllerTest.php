@@ -284,6 +284,59 @@ class CategoryControllerTest extends TestCase
     }
 
     /**
+     * Regresi: `layers` pakai SoftDeletes (SpatialLayer) — menghapus Layer
+     * tidak membuang barisnya, cuma mengisi `deleted_at`. hasLinkedLayers()/
+     * blockedByLayersMessage() query lewat DB::table('layers') langsung
+     * (bukan Eloquent), yang TIDAK otomatis menyaring baris soft-deleted,
+     * jadi Kategori/Subkategori yang Layer-nya sudah dihapus tetap dianggap
+     * "masih dipakai" selamanya kalau tidak disaring manual.
+     */
+    public function test_destroy_is_allowed_when_only_linked_layer_is_soft_deleted(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['nama' => 'Kategori Layer Terhapus']);
+        DB::table('layers')->insert([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'name' => 'Layer Sudah Dihapus',
+            'slug' => 'layer-sudah-dihapus-'.Str::random(6),
+            'deleted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('categories.destroy', $category->id));
+
+        $response->assertRedirect(route('categories.index'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('categories_v3', ['id' => $category->id]);
+    }
+
+    public function test_destroy_is_still_blocked_by_a_layer_that_is_not_soft_deleted(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['nama' => 'Kategori Layer Aktif']);
+        DB::table('layers')->insert([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'name' => 'Layer Aktif',
+            'slug' => 'layer-aktif-'.Str::random(6),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('categories.destroy', $category->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', fn ($message) => str_contains($message, 'Layer Aktif'));
+        $this->assertDatabaseHas('categories_v3', ['id' => $category->id]);
+    }
+
+    /**
      * Fase H butir 3 (spec-admin-manajemen-peta.md §5.1 butir 4) — "panel isi
      * katalog": link dari halaman Kategori langsung ke Daftar Layer yang
      * sudah terfilter ke kategori ini.

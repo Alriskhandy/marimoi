@@ -301,9 +301,14 @@ class CategoryController extends Controller
 
     private function blockedByLayersMessage(Category $category): string
     {
+        // whereNull('deleted_at') — lihat catatan di Category::hasLinkedLayers(),
+        // query mentah ini tidak otomatis menyaring Layer yang sudah di-soft-delete.
         $names = DB::table('layers')
-            ->where('category_id', $category->id)
-            ->orWhere('category_node_id', $category->id)
+            ->whereNull('deleted_at')
+            ->where(function ($query) use ($category) {
+                $query->where('category_id', $category->id)
+                    ->orWhere('category_node_id', $category->id);
+            })
             ->pluck('name');
         $shown = $names->take(5)->implode(', ');
         $suffix = $names->count() > 5 ? ', dst.' : '';
@@ -328,6 +333,22 @@ class CategoryController extends Controller
         if ($category->hasLinkedLayers()) {
             return redirect()->back()->with('error', $this->blockedByLayersMessage($category));
         }
+
+        // hasLinkedLayers() di atas mengabaikan Layer yang sudah di-soft-delete
+        // (lihat docblock-nya) — tapi baris Layer itu SENDIRI masih ada di DB
+        // dengan category_id/category_node_id masih menunjuk ke sini, dan FK
+        // `layers_v3_category_id_foreign` ON DELETE NO ACTION, jadi DELETE
+        // Kategori/Subkategori akan tetap gagal kena constraint kalau baris
+        // "sampah" itu tidak dibuang permanen dulu. Aman di-forceDelete(): semua
+        // tabel anak (spatial_features/layer_styles/layer_imports/layer_metadata)
+        // ON DELETE CASCADE, dan Layer yang masih ada Data Spasial-nya tidak
+        // pernah bisa disoft-delete sejak awal (SpatialLayerController::destroy()).
+        SpatialLayer::onlyTrashed()
+            ->where(function ($query) use ($category) {
+                $query->where('category_id', $category->id)
+                    ->orWhere('category_node_id', $category->id);
+            })
+            ->forceDelete();
 
         try {
             $category->delete();

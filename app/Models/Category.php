@@ -6,6 +6,7 @@ use App\Support\MapDataVersion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -266,9 +267,17 @@ class Category extends Model
      */
     public function hasLinkedLayers(): bool
     {
+        // whereNull('deleted_at') wajib — `layers` pakai SoftDeletes
+        // (SpatialLayer), dan DB::table() di sini TIDAK otomatis menyaring
+        // baris soft-deleted seperti query Eloquent biasa. Tanpa ini,
+        // Kategori/Subkategori tidak pernah bisa dihapus setelah Layer-nya
+        // dihapus (baris Layer masih ada, cuma deleted_at terisi).
         return DB::table('layers')
-            ->where('category_id', $this->id)
-            ->orWhere('category_node_id', $this->id)
+            ->whereNull('deleted_at')
+            ->where(function (Builder $query) {
+                $query->where('category_id', $this->id)
+                    ->orWhere('category_node_id', $this->id);
+            })
             ->exists();
     }
 

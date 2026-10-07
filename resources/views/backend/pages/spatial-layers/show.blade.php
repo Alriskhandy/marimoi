@@ -534,7 +534,7 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="form-group mb-2">
-                                        <label for="layer_edit_layer_type_id" class="form-label">Jenis Layer</label>
+                                        <label for="layer_edit_layer_type_id" class="form-label">Tipe Geometri Layer</label>
                                         <select class="form-control" id="layer_edit_layer_type_id" name="layer_type_id">
                                             @foreach ($layerTypes as $layerType)
                                                 <option value="{{ $layerType->id }}" @selected(old('layer_type_id', $layer->layer_type_id) == $layerType->id)>
