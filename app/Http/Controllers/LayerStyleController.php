@@ -42,6 +42,11 @@ class LayerStyleController extends Controller
             'styles' => $spatialLayer->styles()->orderByDesc('is_default')->orderBy('name')->get(),
             'styleTypes' => self::STYLE_TYPES,
             'classificationFields' => $this->classificationFieldsFor($spatialLayer),
+            // Custom style per Data Spasial (style_override) dikelola di
+            // halaman INI juga, bersama style default — sebelumnya tersebar
+            // ke halaman "Kelola Data Spasial" terpisah, lihat
+            // SpatialLayerFeatureController::updateStyle().
+            'features' => $spatialLayer->features()->orderBy('label')->get(),
         ]);
     }
 
@@ -56,7 +61,7 @@ class LayerStyleController extends Controller
             $this->applyDefault($spatialLayer, $style, $data['is_default']);
         });
 
-        return redirect()->route('spatial-layers.styles.index', $spatialLayer)->with('success', 'Style berhasil ditambahkan.');
+        return $this->redirectAfterSave($request, $spatialLayer)->with('success', 'Style berhasil ditambahkan.');
     }
 
     public function update(Request $request, SpatialLayer $spatialLayer, LayerStyle $style)
@@ -71,7 +76,23 @@ class LayerStyleController extends Controller
             $this->applyDefault($spatialLayer, $style, $data['is_default']);
         });
 
-        return redirect()->route('spatial-layers.styles.index', $spatialLayer)->with('success', 'Style berhasil diperbarui.');
+        return $this->redirectAfterSave($request, $spatialLayer)->with('success', 'Style berhasil diperbarui.');
+    }
+
+    /**
+     * Modal "Style" cepat di spatial-layers/show.blade.php (edit style
+     * default langsung di halaman detail Layer, tanpa pindah ke halaman
+     * manajemen style penuh) mengirim `return_to_show=1` supaya redirect
+     * kembali ke situ, bukan ke `spatial-layers.styles.index` seperti
+     * biasanya dari halaman manajemen style sendiri.
+     */
+    private function redirectAfterSave(Request $request, SpatialLayer $spatialLayer)
+    {
+        if ($request->boolean('return_to_show')) {
+            return redirect()->route('spatial-layers.show', $spatialLayer);
+        }
+
+        return redirect()->route('spatial-layers.styles.index', $spatialLayer);
     }
 
     public function destroy(SpatialLayer $spatialLayer, LayerStyle $style)
@@ -126,6 +147,7 @@ class LayerStyleController extends Controller
             'icon' => 'nullable|string|max:255',
             'is_marker' => 'boolean',
             'opacity' => 'nullable|numeric|min:0|max:1',
+            'size' => 'nullable|numeric|min:1|max:100',
             'classes' => 'nullable|array',
             'classes.*.value' => 'nullable|string|max:255',
             'classes.*.min' => 'nullable|numeric',
@@ -146,6 +168,7 @@ class LayerStyleController extends Controller
                 'icon' => $validated['icon'] ?? null,
                 'is_marker' => (bool) ($validated['is_marker'] ?? false),
                 'opacity' => $validated['opacity'] ?? 1,
+                'size' => $validated['size'] ?? 6,
             ];
 
         $legend = $isClassified

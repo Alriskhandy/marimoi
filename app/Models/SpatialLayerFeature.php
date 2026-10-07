@@ -26,6 +26,7 @@ class SpatialLayerFeature extends Model
         'source_fid',
         'geom',
         'properties',
+        'style_override',
         'label',
         'region_id',
         'gambar',
@@ -38,6 +39,7 @@ class SpatialLayerFeature extends Model
     {
         return [
             'properties' => 'array',
+            'style_override' => 'array',
         ];
     }
 

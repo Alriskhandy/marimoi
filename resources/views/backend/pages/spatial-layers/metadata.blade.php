@@ -76,6 +76,12 @@
                             </div>
                         </div>
                         <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sumber Data</label>
+                                <input type="text" name="sumber_data" class="form-control" value="{{ old('sumber_data', $metadata->sumber_data) }}">
+                            </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Nama Kontak</label>
                                 <input type="text" name="contact_name" class="form-control" value="{{ old('contact_name', $metadata->contact_name) }}">

@@ -111,6 +111,7 @@ class SpatialLayerMetadataController extends Controller
             'purpose' => 'nullable|string',
             'topic_category' => 'nullable|string|max:60',
             'producer_organization' => 'nullable|string|max:255',
+            'sumber_data' => 'nullable|string|max:255',
             'contact_name' => 'nullable|string|max:150',
             'contact_email' => 'nullable|email|max:150',
             'contact_phone' => 'nullable|string|max:40',
@@ -135,7 +136,7 @@ class SpatialLayerMetadataController extends Controller
         $metadata = SpatialLayerMetadata::firstOrNew(['layer_id' => $layer->id]);
 
         foreach ([
-            'title', 'abstract', 'purpose', 'topic_category', 'producer_organization',
+            'title', 'abstract', 'purpose', 'topic_category', 'producer_organization', 'sumber_data',
             'contact_name', 'contact_email', 'contact_phone', 'license', 'update_frequency',
             'data_year', 'reference_date', 'date_type', 'scale_denominator', 'positional_accuracy',
             'administrative_area', 'lineage', 'use_constraints',

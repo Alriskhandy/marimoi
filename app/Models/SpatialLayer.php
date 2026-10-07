@@ -183,6 +183,15 @@ class SpatialLayer extends Model
         return (float) ($this->default_opacity ?? 1);
     }
 
+    /**
+     * Ukuran simbol (radius dot/ikon dalam px) — field baru di `definition`
+     * style default (2026-10-07), sebelumnya hardcode di renderer peta.
+     */
+    public function getSizeAttribute(): float
+    {
+        return (float) ($this->defaultStyle?->definition['size'] ?? 6);
+    }
+
     public function getIsActiveAttribute(): bool
     {
         return $this->status === 'published';

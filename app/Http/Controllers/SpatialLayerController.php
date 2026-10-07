@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LayerType;
 use App\Models\Opd;
 use App\Models\SpatialLayer;
+use App\Models\SpatialLayerMetadata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -60,7 +61,7 @@ class SpatialLayerController extends Controller
     {
         $this->authorizeOpdAccess($spatialLayer);
 
-        $spatialLayer->load(['layerType', 'categoryNode', 'defaultStyle', 'opd', 'features.region']);
+        $spatialLayer->load(['layerType', 'categoryNode', 'defaultStyle', 'opd', 'metadata', 'features.region']);
         $layerTypes = LayerType::orderBy('name')->get();
         $opds = $this->canAssignOpd() ? Opd::orderBy('name')->get(['id', 'name', 'singkatan']) : collect();
         $categoryPaths = $this->categoryPaths();
@@ -72,6 +73,16 @@ class SpatialLayerController extends Controller
         // bisa diresolusi.
         $dynamicAttributes = collect();
 
+        // Pilihan Layer tujuan untuk "Pindah ke Layer Lain" (bulk Data
+        // Spasial terpilih, SpatialLayerFeatureController::bulkMoveToLayer())
+        // — admin-opd hanya boleh memindahkan ke Layer OPD-nya sendiri, sama
+        // seperti authorizeOpdAccess() yang akan dicek ulang di server.
+        $moveTargetLayersQuery = SpatialLayer::where('id', '!=', $spatialLayer->id);
+        if ($this->isAdminOpd()) {
+            $moveTargetLayersQuery->where('opd_id', $this->currentOpdId());
+        }
+        $moveTargetLayers = $moveTargetLayersQuery->orderBy('name')->get(['id', 'name']);
+
         return view('backend.pages.spatial-layers.show', [
             'layer' => $spatialLayer,
             'layerTypes' => $layerTypes,
@@ -80,6 +91,7 @@ class SpatialLayerController extends Controller
             'categoryNodeOptions' => $categoryNodeOptions,
             'categoryPaths' => $categoryPaths,
             'dynamicAttributes' => $dynamicAttributes,
+            'moveTargetLayers' => $moveTargetLayers,
         ]);
     }
 
@@ -94,19 +106,14 @@ class SpatialLayerController extends Controller
     {
         $this->authorizeOpdAccess($spatialLayer);
 
-        [$layerData, $styleData] = $this->validated($request, $spatialLayer);
+        [$layerData, $metadataData] = $this->validated($request, $spatialLayer);
 
-        DB::transaction(function () use ($spatialLayer, $layerData, $styleData) {
+        DB::transaction(function () use ($spatialLayer, $layerData, $metadataData) {
             $spatialLayer->update($layerData);
 
-            $style = $spatialLayer->styles()->where('is_default', true)->first();
-
-            if ($style) {
-                $style->update($styleData);
-            } else {
-                $style = $spatialLayer->styles()->create($styleData + ['name' => 'Default', 'style_type' => 'simple', 'is_default' => true]);
-                $spatialLayer->update(['default_style_id' => $style->id]);
-            }
+            $metadata = SpatialLayerMetadata::firstOrNew(['layer_id' => $spatialLayer->id]);
+            $metadata->fill($metadataData);
+            $metadata->save();
         });
 
         return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Layer berhasil diperbarui.');
@@ -164,6 +171,93 @@ class SpatialLayerController extends Controller
     }
 
     /**
+     * Hapus massal dari bulk-selection di index — admin-opd hanya bisa
+     * menghapus Layer OPD-nya sendiri (id Layer OPD lain di `ids[]` diabaikan
+     * diam-diam, bukan 403 total, karena ini aksi massal atas banyak baris
+     * yang mungkin dipilih sekaligus). Layer yang masih punya Data Spasial
+     * dilewati (aturan sama seperti destroy() tunggal), bukan menggagalkan
+     * seluruh batch.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'string',
+        ]);
+
+        $query = SpatialLayer::whereIn('id', $validated['ids'])->withCount('features');
+
+        if ($this->isAdminOpd()) {
+            $query->where('opd_id', $this->currentOpdId());
+        }
+
+        $layers = $query->get();
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach ($layers as $layer) {
+            if ($layer->features_count > 0) {
+                $skipped++;
+
+                continue;
+            }
+
+            $layer->delete();
+            $deleted++;
+        }
+
+        $message = "{$deleted} Layer berhasil dihapus.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} Layer dilewati karena masih punya Data Spasial.";
+        }
+
+        return redirect()->route('spatial-layers.index')
+            ->with($deleted > 0 ? 'success' : 'error', $message);
+    }
+
+    /**
+     * Pindah Kategori/Sub Kategori massal dari bulk-selection di index — sama
+     * seperti bulkDestroy(), id Layer OPD lain (untuk admin-opd) diabaikan
+     * diam-diam dari scope update, bukan 403 total.
+     */
+    public function bulkUpdateCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'string',
+            'category_id' => ['required', 'uuid', 'exists:categories_v3,id'],
+            'category_node_id' => ['nullable', 'uuid', 'exists:category_nodes,id'],
+        ]);
+
+        if (! empty($validated['category_node_id'])) {
+            $belongsToCategory = DB::table('category_nodes')
+                ->where('id', $validated['category_node_id'])
+                ->where('category_id', $validated['category_id'])
+                ->exists();
+
+            if (! $belongsToCategory) {
+                throw ValidationException::withMessages([
+                    'category_node_id' => 'Subkategori tidak sesuai dengan Kategori yang dipilih.',
+                ]);
+            }
+        }
+
+        $query = SpatialLayer::whereIn('id', $validated['ids']);
+
+        if ($this->isAdminOpd()) {
+            $query->where('opd_id', $this->currentOpdId());
+        }
+
+        $count = $query->update([
+            'category_id' => $validated['category_id'],
+            'category_node_id' => $validated['category_node_id'] ?? null,
+        ]);
+
+        return redirect()->route('spatial-layers.index')
+            ->with($count > 0 ? 'success' : 'error', "{$count} Layer berhasil dipindahkan ke kategori baru.");
+    }
+
+    /**
      * Tolak akses admin-opd ke Layer milik OPD lain atau tanpa OPD (R19).
      * Peran lain (super-admin/admin-bappeda) selalu lolos.
      */
@@ -194,7 +288,7 @@ class SpatialLayerController extends Controller
     }
 
     /**
-     * @return array{0: array<string, mixed>, 1: array<string, mixed>} [$layerData, $styleData]
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>} [$layerData, $metadataData]
      */
     private function validated(Request $request, ?SpatialLayer $spatialLayer = null): array
     {
@@ -205,12 +299,8 @@ class SpatialLayerController extends Controller
             'category_node_id' => ['nullable', 'uuid', 'exists:category_nodes,id'],
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string',
-            'color' => 'nullable|string|max:25',
-            'icon' => 'nullable|string|max:255',
-            'default_opacity' => 'nullable|numeric|min:0|max:1',
-            'is_marker' => 'boolean',
-            'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
+            'data_year' => 'nullable|integer|min:1900|max:2100',
+            'sumber_data' => 'nullable|string|max:255',
         ]);
 
         if (! empty($validated['category_node_id'])) {
@@ -230,25 +320,17 @@ class SpatialLayerController extends Controller
         // sendiri. super-admin/admin-bappeda boleh pilih/pindahkan bebas.
         $opdId = $this->canAssignOpd() ? ($validated['opd_id'] ?? $spatialLayer?->opd_id) : $this->currentOpdId();
 
-        // R17: hanya pemegang permission `spatial-layers.publish` yang boleh
-        // mengubah status lewat form ini. Layer baru selalu DRAFT (R20);
-        // layer existing yang statusnya diubah lewat form oleh user tanpa
-        // permission publish, statusnya dipertahankan apa adanya.
-        $canPublish = (bool) Auth::user()?->can('spatial-layers.publish');
-        $isActive = (bool) ($validated['is_active'] ?? false);
-        $opacity = $validated['default_opacity'] ?? 1;
-
-        if ($spatialLayer === null) {
-            $status = ($canPublish && $isActive) ? 'published' : 'draft';
-            $publishedAt = $status === 'published' ? now() : null;
-        } elseif ($canPublish) {
-            $status = $isActive ? 'published' : 'draft';
-            $publishedAt = $status === 'published' ? ($spatialLayer->published_at ?? now()) : null;
-        } else {
-            $status = $spatialLayer->status;
-            $publishedAt = $spatialLayer->published_at;
-        }
-
+        // R17: status (draft/published/archived) TIDAK disentuh di sini sama
+        // sekali — satu-satunya jalur ubah status adalah updateStatus()
+        // (permission `spatial-layers.publish` sendiri, lihat route
+        // spatial-layers.update-status), supaya edit info dasar Layer tidak
+        // bisa diam-diam mengubah status lewat checkbox yang mudah terlewat.
+        //
+        // Warna/opacity/marker/urutan tampil juga TIDAK disentuh di sini —
+        // style (warna/ikon/marker/opacity) sudah punya halaman tersendiri
+        // (/styles, lihat LayerStyleController), jadi form ini murni info
+        // dasar Layer supaya tidak ada dua form berbeda yang bisa saling
+        // menimpa style yang sama.
         $layerData = [
             'category_id' => $validated['category_id'],
             'category_node_id' => $validated['category_node_id'] ?? null,
@@ -258,22 +340,14 @@ class SpatialLayerController extends Controller
             'name' => $validated['name'],
             'slug' => $spatialLayer?->slug ?? $this->uniqueSlug($validated['name']),
             'short_description' => $validated['short_description'] ?? null,
-            'status' => $status,
-            'published_at' => $publishedAt,
-            'default_opacity' => $opacity,
-            'sort_order' => $validated['sort_order'] ?? $spatialLayer?->sort_order ?? 0,
         ];
 
-        $styleData = [
-            'definition' => [
-                'color' => $validated['color'] ?? '#2563eb',
-                'icon' => $validated['icon'] ?? null,
-                'is_marker' => (bool) ($validated['is_marker'] ?? false),
-                'opacity' => $opacity,
-            ],
+        $metadataData = [
+            'data_year' => $validated['data_year'] ?? null,
+            'sumber_data' => $validated['sumber_data'] ?? null,
         ];
 
-        return [$layerData, $styleData];
+        return [$layerData, $metadataData];
     }
 
     private function uniqueSlug(string $name): string
@@ -319,7 +393,7 @@ class SpatialLayerController extends Controller
         $categoryNodeOptions = DB::table('category_nodes')
             ->orderBy('depth')
             ->orderBy('name')
-            ->get(['id', 'name', 'category_id', 'depth']);
+            ->get(['id', 'name', 'category_id', 'depth', 'parent_id']);
 
         return [$categoryOptions, $categoryNodeOptions];
     }

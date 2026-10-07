@@ -143,6 +143,55 @@ class SpatialLayerFeatureController extends Controller
         return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Data Spasial berhasil diperbarui.');
     }
 
+    /**
+     * Style satu Layer (layer_styles.definition) berlaku untuk SEMUA Data
+     * Spasial miliknya secara default — action ini satu-satunya tempat yang
+     * boleh mengubah `style_override` (warna/ukuran/opacity/marker SATU Data
+     * Spasial berbeda dari Layer-nya), disatukan di halaman "Style Layer"
+     * (LayerStyleController::index()) bersama style default, bukan tersebar
+     * ke halaman "Kelola Data Spasial" seperti sebelumnya — supaya admin
+     * tidak bolak-balik dua tempat untuk satu urusan (style).
+     */
+    /**
+     * Dipanggil dari dua tempat: form biasa di halaman "Style Layer"
+     * (LayerStyleController::index()) DAN fetch() AJAX dari popup edit
+     * langsung di peta (spatial-layers/show.blade.php, `onEachFeature`) —
+     * yang kedua mengirim `Accept: application/json` supaya redirect+flash
+     * normal diganti respons JSON (dan ValidationException otomatis jadi 422
+     * JSON juga, bukan redirect, lewat exception handler bawaan Laravel).
+     */
+    public function updateStyle(Request $request, SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
+    {
+        abort_unless($feature->layer_id === $spatialLayer->id, 404);
+        $this->authorizeOpdAccess($spatialLayer);
+
+        $validated = $request->validate([
+            'custom_style' => 'nullable|boolean',
+            'style_color' => 'required_if:custom_style,1|nullable|string|max:20',
+            'style_size' => 'required_if:custom_style,1|nullable|numeric|min:1|max:100',
+            'style_opacity' => 'required_if:custom_style,1|nullable|numeric|min:0|max:1',
+            'style_is_marker' => 'nullable|boolean',
+            'style_icon' => 'nullable|string|max:100',
+        ]);
+
+        $styleOverride = ($validated['custom_style'] ?? false) ? [
+            'color' => $validated['style_color'],
+            'size' => (float) $validated['style_size'],
+            'opacity' => (float) $validated['style_opacity'],
+            'is_marker' => (bool) ($validated['style_is_marker'] ?? false),
+            'icon' => $validated['style_icon'] ?? null,
+        ] : null;
+
+        $feature->update(['style_override' => $styleOverride]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['style_override' => $styleOverride]);
+        }
+
+        return redirect()->route('spatial-layers.styles.index', $spatialLayer)
+            ->with('success', 'Style Data Spasial berhasil diperbarui.');
+    }
+
     public function destroy(SpatialLayer $spatialLayer, SpatialLayerFeature $feature)
     {
         abort_unless($feature->layer_id === $spatialLayer->id, 404);
@@ -219,6 +268,72 @@ class SpatialLayerFeatureController extends Controller
 
         return redirect()->route('spatial-layers.show', $spatialLayer)
             ->with('success', "Berhasil menghapus {$count} Data Spasial.");
+    }
+
+    /**
+     * Pindahkan Data Spasial TERPILIH (checkbox tabel di spatial-layers/show.blade.php)
+     * ke Layer lain — berguna kalau sebagian data ternyata salah Layer atau
+     * mau dipecah ke Layer baru. `style_override` per Data Spasial (kalau
+     * ada) ikut terbawa apa adanya, tidak direset — warnanya masih
+     * konsisten bagi admin yang sudah mengaturnya secara khusus.
+     */
+    public function bulkMoveToLayer(Request $request, SpatialLayer $spatialLayer)
+    {
+        $this->authorizeOpdAccess($spatialLayer);
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => ['required', 'integer'],
+            'target_layer_id' => ['required', 'uuid', Rule::notIn([$spatialLayer->id]), 'exists:layers,id'],
+        ], [
+            'ids.required' => 'Tidak ada Data Spasial yang dipilih.',
+            'target_layer_id.not_in' => 'Pilih Layer tujuan yang berbeda dari Layer ini.',
+        ]);
+
+        $targetLayer = SpatialLayer::findOrFail($validated['target_layer_id']);
+        $this->authorizeOpdAccess($targetLayer);
+
+        $count = SpatialLayerFeature::where('layer_id', $spatialLayer->id)
+            ->whereIn('id', $validated['ids'])
+            ->update(['layer_id' => $targetLayer->id]);
+
+        $spatialLayer->refreshFeatureCache();
+        $targetLayer->refreshFeatureCache();
+
+        return redirect()->route('spatial-layers.show', $spatialLayer)
+            ->with('success', "{$count} Data Spasial berhasil dipindahkan ke Layer \"{$targetLayer->name}\".");
+    }
+
+    /**
+     * Pindahkan SEMUA Data Spasial satu Layer ke Layer lain sekaligus —
+     * dipicu dari Daftar Layer (index.blade.php), berguna untuk
+     * menggabungkan dua Layer yang ternyata sama/duplikat. Layer asal jadi
+     * kosong (feature_count 0) setelah ini, bukan ikut terhapus — admin
+     * tetap bisa menghapusnya sendiri lewat aksi Hapus kalau memang sudah
+     * tidak dipakai.
+     */
+    public function moveAllFeatures(Request $request, SpatialLayer $spatialLayer)
+    {
+        $this->authorizeOpdAccess($spatialLayer);
+
+        $validated = $request->validate([
+            'target_layer_id' => ['required', 'uuid', Rule::notIn([$spatialLayer->id]), 'exists:layers,id'],
+        ], [
+            'target_layer_id.not_in' => 'Pilih Layer tujuan yang berbeda dari Layer ini.',
+        ]);
+
+        $targetLayer = SpatialLayer::findOrFail($validated['target_layer_id']);
+        $this->authorizeOpdAccess($targetLayer);
+
+        $count = SpatialLayerFeature::where('layer_id', $spatialLayer->id)->update(['layer_id' => $targetLayer->id]);
+
+        $spatialLayer->refreshFeatureCache();
+        $targetLayer->refreshFeatureCache();
+
+        return redirect()->route('spatial-layers.index')
+            ->with($count > 0 ? 'success' : 'error', $count > 0
+                ? "{$count} Data Spasial dari \"{$spatialLayer->name}\" berhasil dipindahkan ke \"{$targetLayer->name}\"."
+                : "Layer \"{$spatialLayer->name}\" tidak memiliki Data Spasial untuk dipindahkan.");
     }
 
     private function authorizeOpdAccess(SpatialLayer $layer): void

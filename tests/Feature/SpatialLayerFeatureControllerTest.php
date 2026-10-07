@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdministrativeRegion;
+use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -359,6 +360,83 @@ class SpatialLayerFeatureControllerTest extends TestCase
     }
 
     /**
+     * Tombol "Pindah ke Layer Lain" (bulk) hanya masuk akal kalau ADA Layer
+     * lain untuk dijadikan tujuan — kalau Layer ini satu-satunya, tombolnya
+     * disembunyikan (SpatialLayerController::show()'s $moveTargetLayers).
+     */
+    public function test_show_page_renders_bulk_move_button_only_when_other_layers_exist(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $other = $this->layer(['name' => 'Layer Lain']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee('id="bulkMoveFeatureModal"', false)
+            ->assertSee($other->name)
+            ->assertSee(route('spatial-layers.features.bulk-move', $layer), false);
+    }
+
+    public function test_show_page_hides_bulk_move_button_when_no_other_layers_exist(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertDontSee('id="bulkMoveFeatureModal"', false);
+    }
+
+    /**
+     * Edit style langsung dari popup di peta (bukan cuma lewat halaman Style
+     * Layer terpisah) — halaman ini butuh meta csrf-token untuk fetch() PUT
+     * AJAX ke SpatialLayerFeatureController::updateStyle(), dan URL template
+     * endpoint-nya harus ter-render di script.
+     */
+    public function test_show_page_wires_inline_map_style_editing(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        // @json() di Blade meng-escape slash ("/" -> "\/") — bandingkan
+        // dengan bentuk json_encode yang sama, bukan string route() mentah.
+        $expectedUrlJson = trim(json_encode(route('spatial-layers.features.update-style', [$layer, '__FEATURE_ID__'])), '"');
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee('name="csrf-token"', false)
+            ->assertSee('data-map-style-save', false)
+            ->assertSee($expectedUrlJson, false);
+    }
+
+    /**
+     * Regresi: komentar HTML biasa (`<!-- ... -->`) yang isinya mengandung
+     * literal `@push(...)` membuat Blade mengenali `@push` di DALAM
+     * komentar sebagai directive sungguhan — komentarnya jadi tidak pernah
+     * ditutup di output HTML (teks `-->` ikut "termakan" oleh compiler),
+     * sehingga browser menganggap SISA SELURUH HALAMAN (termasuk semua
+     * `<link rel="stylesheet">` di `<head>`) sebagai komentar yang belum
+     * selesai — akibatnya halaman tampil TANPA style sama sekali walau
+     * kontennya tetap ada. Baris dengan "@" harus pakai komentar Blade
+     * ({{-- --}}, yang di-strip saat kompilasi) bukan komentar HTML biasa.
+     */
+    public function test_show_page_head_closes_properly_and_is_not_swallowed_by_a_broken_html_comment(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $html = $this->actingAs($admin)->get(route('spatial-layers.show', $layer))->assertOk()->getContent();
+
+        $this->assertStringContainsString('</head>', $html);
+        $this->assertStringContainsString('backend_baru/assets/css/bootstrap.min.css', $html);
+        $this->assertLessThan(
+            strpos($html, '</head>'),
+            strpos($html, 'backend_baru/assets/css/bootstrap.min.css'),
+            'Link stylesheet Bootstrap harus muncul SEBELUM </head> ditutup — kalau tidak, berarti ada komentar yang belum ditutup menelan seluruh <head>.'
+        );
+    }
+
+    /**
      * §5.7 butir 4 — `region_id` sudah dipakai peta publik (peta-v2) tapi
      * sebelum ini belum bisa diisi dari UI admin sama sekali.
      */
@@ -415,5 +493,136 @@ class SpatialLayerFeatureControllerTest extends TestCase
 
         $this->actingAs($admin)->get(route('spatial-layers.features.edit', [$layer, $feature]))
             ->assertOk()->assertSee('Kota Ternate');
+    }
+
+    /**
+     * Style satu Layer (layer_styles.definition) berlaku untuk SEMUA Data
+     * Spasial miliknya secara default — `style_override` memungkinkan SATU
+     * Data Spasial dikustom sendiri (mis. tiap polygon Kab/Kota diberi warna
+     * berbeda di Layer "Peta Administrasi Kab/Kota" yang sama). Diatur di
+     * halaman "Style Layer" (LayerStyleController::index(), lewat
+     * updateStyle() di bawah) bersama style default, BUKAN di halaman
+     * "Kelola Data Spasial" ini — supaya tidak ada dua tempat berbeda untuk
+     * satu urusan (style). Halaman ini hanya menautkan ke sana.
+     */
+    public function test_edit_page_links_to_style_management_instead_of_having_its_own_style_fields(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->get(route('spatial-layers.features.edit', [$layer, $feature]))
+            ->assertOk()
+            ->assertSee(route('spatial-layers.styles.index', $layer), false)
+            ->assertDontSee('name="style_color"', false);
+    }
+
+    public function test_geojson_endpoint_includes_feature_style_override(): void
+    {
+        $layer = $this->layer();
+        SpatialLayerFeature::create([
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'style_override' => ['color' => '#ff0000', 'size' => 10, 'opacity' => 0.5, 'is_marker' => false, 'icon' => null],
+        ]);
+
+        $response = $this->get(route('peta-v2.geojson', $layer));
+
+        $response->assertOk();
+        $this->assertSame('#ff0000', $response->json('features.0.properties.style_override.color'));
+    }
+
+    /**
+     * Pindahkan Data Spasial dari satu Layer ke Layer lain — dua bentuk:
+     * baris terpilih saja (bulkMoveToLayer, tombol bulk di show.blade.php)
+     * atau SEMUA Data Spasial satu Layer sekaligus (moveAllFeatures, tombol
+     * per baris di index.blade.php, untuk menggabungkan Layer duplikat).
+     */
+    public function test_bulk_move_to_layer_moves_only_selected_features(): void
+    {
+        $admin = $this->admin();
+        $source = $this->layer(['name' => 'Layer Asal']);
+        $target = $this->layer(['name' => 'Layer Tujuan']);
+        $moved = SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+        $stays = SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)')]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-move', $source), [
+            'ids' => [$moved->id],
+            'target_layer_id' => $target->id,
+        ])->assertRedirect(route('spatial-layers.show', $source));
+
+        $this->assertSame($target->id, $moved->refresh()->layer_id);
+        $this->assertSame($source->id, $stays->refresh()->layer_id);
+    }
+
+    public function test_bulk_move_to_layer_refreshes_feature_count_cache_on_both_layers(): void
+    {
+        $admin = $this->admin();
+        $source = $this->layer();
+        $target = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-move', $source), [
+            'ids' => [$feature->id],
+            'target_layer_id' => $target->id,
+        ]);
+
+        $this->assertSame(0, $source->refresh()->feature_count);
+        $this->assertSame(1, $target->refresh()->feature_count);
+    }
+
+    public function test_bulk_move_to_layer_rejects_same_layer_as_target(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+        $feature = SpatialLayerFeature::create(['layer_id' => $layer->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.bulk-move', $layer), [
+            'ids' => [$feature->id],
+            'target_layer_id' => $layer->id,
+        ])->assertSessionHasErrors('target_layer_id');
+    }
+
+    public function test_admin_opd_cannot_bulk_move_features_into_another_opds_layer(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas Uji', 'singkatan' => Str::upper(Str::random(5))]);
+        $otherOpd = Opd::create(['name' => 'Dinas Lain', 'singkatan' => Str::upper(Str::random(5))]);
+        $role = Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.edit', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+        $source = $this->layer(['opd_id' => $opd->id]);
+        $target = $this->layer(['opd_id' => $otherOpd->id]);
+        $feature = SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+
+        $this->actingAs($user)->post(route('spatial-layers.features.bulk-move', $source), [
+            'ids' => [$feature->id],
+            'target_layer_id' => $target->id,
+        ])->assertForbidden();
+    }
+
+    public function test_move_all_features_moves_every_feature_of_the_layer(): void
+    {
+        $admin = $this->admin();
+        $source = $this->layer();
+        $target = $this->layer();
+        SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+        SpatialLayerFeature::create(['layer_id' => $source->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.6, 0.9), 4326)')]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.move-all', $source), [
+            'target_layer_id' => $target->id,
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertSame(0, SpatialLayerFeature::where('layer_id', $source->id)->count());
+        $this->assertSame(2, SpatialLayerFeature::where('layer_id', $target->id)->count());
+    }
+
+    public function test_move_all_features_rejects_same_layer_as_target(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->layer();
+
+        $this->actingAs($admin)->post(route('spatial-layers.features.move-all', $layer), [
+            'target_layer_id' => $layer->id,
+        ])->assertSessionHasErrors('target_layer_id');
     }
 }

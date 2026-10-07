@@ -97,6 +97,55 @@ class LayerImportPipeline
     }
 
     /**
+     * Jalur koordinat manual (dipakai wizard Tambah Layer DAN
+     * SpatialLayerFeatureController::store() pada Layer yang sudah jadi) —
+     * BEDA dari ingest()/process() karena tidak ada kolom yang perlu
+     * dipetakan (nama kolom hasil parsing koordinat sudah tetap: NAMA/
+     * LATITUDE/LONGITUDE/INPUT_TYPE), jadi fitur langsung tersimpan dalam
+     * satu langkah tanpa baris `LayerImport`/tahap mapping terpisah.
+     * Mengembalikan jumlah fitur yang disimpan.
+     */
+    public function ingestCoordinates(Request $request, SpatialLayer $layer): int
+    {
+        $validated = $request->validate([
+            'coordinates' => 'required|array|min:1',
+            'coordinates.*.latitude' => 'nullable|numeric|between:-90,90',
+            'coordinates.*.longitude' => 'nullable|numeric|between:-180,180',
+            'coordinates.*.name' => 'nullable|string|max:255',
+            'import_mode' => ['nullable', Rule::in(['replace', 'append'])],
+        ]);
+
+        try {
+            $results = $this->importer->fromCoordinates($validated['coordinates']);
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages(['input_type' => $e->getMessage()]);
+        }
+
+        $importMode = $validated['import_mode'] ?? 'append';
+
+        DB::transaction(function () use ($results, $layer, $importMode) {
+            if ($importMode === 'replace') {
+                SpatialLayerFeature::where('layer_id', $layer->id)->delete();
+            }
+
+            foreach ($results as $result) {
+                $quotedWkt = DB::connection()->getPdo()->quote($result['wkt']);
+
+                SpatialLayerFeature::create([
+                    'layer_id' => $layer->id,
+                    'geom' => DB::raw("ST_GeomFromText({$quotedWkt}, 4326)"),
+                    'properties' => $result['attributes'],
+                    'created_by' => auth()->id(),
+                ]);
+            }
+        });
+
+        $layer->refreshFeatureCache();
+
+        return count($results);
+    }
+
+    /**
      * Tahap 2: terapkan pemetaan, bangun `properties` final, simpan fitur
      * (mode replace/append, R12), catat `layer_attribute_mappings`, dan
      * selesaikan status impor. Mengembalikan jumlah fitur yang disimpan.

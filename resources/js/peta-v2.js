@@ -23,6 +23,11 @@ function opacityOrDefault(opacity) {
     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 1;
 }
 
+function sizeOrDefault(size) {
+    const value = Number(size);
+    return Number.isFinite(value) && value > 0 ? value : 6;
+}
+
 async function loadFeatureDetail(featureId) {
     try {
         const response = await fetch(`/peta-v2/feature/${featureId}`);
@@ -156,29 +161,52 @@ async function toggleLayer(layerMeta, checked) {
         const geojson = await response.json();
         const color = colorOrDefault(layerMeta.color);
         const opacity = opacityOrDefault(layerMeta.opacity);
+        const size = sizeOrDefault(layerMeta.size);
+
+        // style_override per Data Spasial (diatur di halaman admin "Kelola
+        // Data Spasial") menang atas style default Layer kalau diisi — NULL
+        // berarti Data Spasial ini ikut Layer seperti sebelumnya.
+        function resolveFeatureStyle(feature) {
+            const o = feature.properties?.style_override;
+            if (!o) {
+                return { color, icon: layerMeta.icon, opacity, size };
+            }
+
+            return {
+                color: colorOrDefault(o.color ?? color),
+                icon: o.is_marker ? (o.icon || null) : null,
+                opacity: opacityOrDefault(o.opacity ?? opacity),
+                size: sizeOrDefault(o.size ?? size),
+            };
+        }
 
         const leafletLayer = L.geoJSON(geojson, {
             pointToLayer: (feature, latlng) => {
-                if (layerMeta.icon) {
+                const s = resolveFeatureStyle(feature);
+
+                if (s.icon) {
                     return L.marker(latlng, {
                         icon: L.divIcon({
-                            html: `<i class="${layerMeta.icon}" style="color:${color};font-size:1.5rem;"></i>`,
+                            html: `<i class="${s.icon}" style="color:${s.color};font-size:${s.size * 4}px;"></i>`,
                             className: 'peta-v2-marker-icon',
-                            iconSize: [24, 24],
+                            iconSize: [s.size * 4, s.size * 4],
                         }),
                     });
                 }
 
                 return L.circleMarker(latlng, {
-                    radius: 6,
-                    fillColor: color,
-                    color,
+                    radius: s.size,
+                    fillColor: s.color,
+                    color: s.color,
                     weight: 1,
-                    fillOpacity: opacity,
+                    fillOpacity: s.opacity,
                 });
             },
-            style: () => ({ color, weight: 2, opacity, fillOpacity: opacity * 0.4 }),
-            onEachFeature: (feature, layer) => attachPopup(layer, feature, color),
+            style: (feature) => {
+                const s = resolveFeatureStyle(feature);
+                return { color: s.color, weight: 2, opacity: s.opacity, fillOpacity: s.opacity * 0.4 };
+            },
+            onEachFeature: (feature, layer) => attachPopup(layer, feature, resolveFeatureStyle(feature).color),
         }).addTo(map);
 
         activeLayers.set(layerMeta.slug, leafletLayer);

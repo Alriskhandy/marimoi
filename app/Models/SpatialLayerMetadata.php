@@ -38,6 +38,7 @@ class SpatialLayerMetadata extends Model
         'purpose',
         'topic_category',
         'producer_organization',
+        'sumber_data',
         'contact_name',
         'contact_email',
         'contact_phone',
@@ -75,7 +76,7 @@ class SpatialLayerMetadata extends Model
      * di sini karena tidak di-cast lewat Eloquent (lihat docblock kelas).
      */
     private const COMPLETENESS_FIELDS = [
-        'title', 'abstract', 'purpose', 'topic_category', 'producer_organization',
+        'title', 'abstract', 'purpose', 'topic_category', 'producer_organization', 'sumber_data',
         'contact_name', 'contact_email', 'contact_phone', 'data_year', 'reference_date',
         'date_type', 'update_frequency', 'scale_denominator', 'positional_accuracy',
         'administrative_area', 'lineage', 'license', 'use_constraints',

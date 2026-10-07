@@ -48,7 +48,7 @@
         .step-indicator {
             display: flex;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             align-items: center;
         }
 
@@ -309,11 +309,14 @@
                 <div class="card-body">
                     <!-- Step Indicator -->
                     <div class="step-indicator">
-                        <div class="step active" id="step-1">1</div>
+                        <div class="step active" id="step-1" title="Metode Input">1</div>
                         <div class="step-connector"></div>
-                        <div class="step" id="step-2">2</div>
+                        <div class="step" id="step-2" title="Metadata">2</div>
                         <div class="step-connector"></div>
-                        <div class="step" id="step-3">3</div>
+                        <div class="step" id="step-3" title="Preview & Konfirmasi">3</div>
+                    </div>
+                    <div class="text-center text-muted small mb-4" id="wizardStepCaption">
+                        Tahap 1/3: Metode Input
                     </div>
 
                     @if ($errors->any())
@@ -717,6 +720,15 @@
             });
         }
 
+        const stepLabels = { 1: 'Metode Input', 2: 'Metadata', 3: 'Preview & Konfirmasi' };
+
+        function updateStepCaption() {
+            const caption = document.getElementById('wizardStepCaption');
+            if (caption) {
+                caption.textContent = `Tahap ${currentStep}/3: ${stepLabels[currentStep] || ''}`;
+            }
+        }
+
         function nextStep(step) {
             if (!validateStep(step)) {
                 return;
@@ -734,6 +746,7 @@
             currentStep = step + 1;
             document.getElementById(`section-${currentStep}`).classList.add('active');
             document.getElementById(`step-${currentStep}`).classList.add('active');
+            updateStepCaption();
 
             if (currentStep === 3) {
                 updateSummary();
@@ -750,6 +763,7 @@
             document.getElementById(`section-${currentStep}`).classList.add('active');
             document.getElementById(`step-${currentStep}`).classList.add('active');
             document.getElementById(`step-${currentStep}`).classList.remove('completed');
+            updateStepCaption();
 
             const connectors = document.querySelectorAll('.step-connector');
             if (connectors[step - 1]) {
@@ -962,6 +976,7 @@
             document.getElementById('section-2').classList.add('active');
             document.getElementById('step-2').classList.add('active');
             currentStep = 2;
+            updateStepCaption();
         @endif
     </script>
 @endpush

@@ -43,7 +43,10 @@
                     terfilter ke kategori/node ini, bukan harus pindah halaman
                     lalu memfilter manual.
                 --}}
-                <a href="{{ route('spatial-layers.index', ['category' => ($isRoot ? 'cat:' : 'node:').$category->id]) }}"
+                <a href="{{ route('spatial-layers.index', array_filter([
+                    'category_id' => $isRoot ? $category->id : ($category->root_id ?? null),
+                    'category_node_id' => $isRoot ? null : $category->id,
+                ])) }}"
                     class="btn btn-sm btn-outline-primary" title="Lihat Layer di kategori ini">
                     <i class="mdi mdi-layers-outline"></i> Lihat Semua Layer
                 </a>

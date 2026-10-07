@@ -295,6 +295,6 @@ class CategoryControllerTest extends TestCase
 
         $response = $this->actingAs($admin)->get(route('categories.index'));
 
-        $response->assertOk()->assertSee(route('spatial-layers.index', ['category' => 'cat:'.$category->id]), false);
+        $response->assertOk()->assertSee(route('spatial-layers.index', ['category_id' => $category->id]), false);
     }
 }

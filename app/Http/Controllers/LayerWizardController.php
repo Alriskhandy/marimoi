@@ -7,6 +7,7 @@ use App\Models\LayerImport;
 use App\Models\LayerType;
 use App\Models\Opd;
 use App\Models\SpatialLayer;
+use App\Models\SpatialLayerMetadata;
 use App\Support\LayerImportPipeline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -62,6 +63,8 @@ class LayerWizardController extends Controller
             ]);
 
             $layer->update(['default_style_id' => $style->id]);
+
+            $this->saveMetadataFields($layer, $validated['metadata']);
 
             return $layer;
         });
@@ -132,6 +135,8 @@ class LayerWizardController extends Controller
                 ]);
                 $spatialLayer->update(['default_style_id' => $style->id]);
             }
+
+            $this->saveMetadataFields($spatialLayer, $validated['metadata']);
         });
 
         return redirect()->route('spatial-layers.wizard', $spatialLayer)
@@ -148,6 +153,22 @@ class LayerWizardController extends Controller
     {
         $this->authorizeOpdAccess($spatialLayer);
         abort_if($spatialLayer->wizard_step === null, 404);
+
+        // Koordinat manual tidak punya kolom untuk dipetakan (nama kolom
+        // hasil parsing sudah tetap) — tahap 3 (Mapping Atribut) DILEWATI
+        // sepenuhnya, langsung ke tahap 4. ValidationException dari
+        // ingestCoordinates() (termasuk "tidak ada koordinat valid")
+        // otomatis redirect balik ke tahap 2 dengan error, wizard_step tetap.
+        if ($request->input('input_type') === 'coordinates') {
+            $count = $pipeline->ingestCoordinates($request, $spatialLayer);
+
+            if ($spatialLayer->wizard_step < 4) {
+                $spatialLayer->update(['wizard_step' => 4]);
+            }
+
+            return redirect()->route('spatial-layers.wizard', $spatialLayer)
+                ->with('success', 'Berhasil menyimpan '.$count.' Data Spasial dari koordinat.');
+        }
 
         $import = $pipeline->ingest($request, $spatialLayer);
 
@@ -199,7 +220,7 @@ class LayerWizardController extends Controller
 
         $validated = $request->validate([
             'publish' => 'nullable|boolean',
-            'thumbnail' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:10240',
         ]);
         $wantsPublish = (bool) ($validated['publish'] ?? false);
         $canPublish = $wantsPublish && (bool) Auth::user()?->can('spatial-layers.publish');
@@ -368,6 +389,8 @@ class LayerWizardController extends Controller
             'default_opacity' => 'nullable|numeric|min:0|max:1',
             'is_marker' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
+            'data_year' => 'nullable|integer|min:1900|max:2100',
+            'sumber_data' => 'nullable|string|max:255',
         ]);
 
         $this->assertCategoryNodeBelongsToCategory($validated['category_node_id'] ?? null, $validated['category_id']);
@@ -396,7 +419,24 @@ class LayerWizardController extends Controller
                     'opacity' => $opacity,
                 ],
             ],
+            'metadata' => [
+                'data_year' => $validated['data_year'] ?? null,
+                'sumber_data' => $validated['sumber_data'] ?? null,
+            ],
         ];
+    }
+
+    /**
+     * Tahap 1 juga menulis `data_year`/`sumber_data` ke `layer_metadata`
+     * (1:1, dipakai halaman Metadata lengkap di tempat terpisah) supaya dua
+     * field paling sering ditanya Admin OPD sejak awal tidak menunggu
+     * sampai mereka sempat membuka halaman Metadata.
+     */
+    private function saveMetadataFields(SpatialLayer $layer, array $fields): void
+    {
+        $metadata = SpatialLayerMetadata::firstOrNew(['layer_id' => $layer->id]);
+        $metadata->fill($fields);
+        $metadata->save();
     }
 
     private function uniqueSlug(string $name): string

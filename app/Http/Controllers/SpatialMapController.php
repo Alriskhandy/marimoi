@@ -48,13 +48,14 @@ class SpatialMapController extends Controller
             'icon' => $layer->icon,
             'opacity' => $layer->opacity,
             'is_marker' => $layer->is_marker,
+            'size' => $layer->size,
         ]));
     }
 
     public function geojson(SpatialLayer $layer): JsonResponse
     {
         $features = SpatialLayerFeature::where('layer_id', $layer->id)
-            ->selectRaw('id, label, region_id, properties, ST_AsGeoJSON(geom) as geojson')
+            ->selectRaw('id, label, region_id, properties, style_override, ST_AsGeoJSON(geom) as geojson')
             ->get();
 
         return response()->json([
@@ -67,6 +68,10 @@ class SpatialMapController extends Controller
                     'external_id' => $feature->label,
                     'attributes' => $feature->properties,
                     'region_id' => $feature->region_id,
+                    // NULL = ikut style default Layer (perilaku lama) — isi
+                    // kalau Data Spasial ini dikustom sendiri, lihat
+                    // SpatialLayerFeatureController::validated().
+                    'style_override' => $feature->style_override,
                 ],
             ]),
         ]);

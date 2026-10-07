@@ -38,6 +38,16 @@
     @endif
 </div>
 
+@if ($feature)
+    <div class="alert alert-light border d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="mdi mdi-palette-outline me-1"></i> Warna/ukuran/marker Data Spasial ini diatur di halaman
+            Style Layer, bersama Data Spasial lain — supaya semua style terkumpul di satu tempat.</span>
+        <a href="{{ route('spatial-layers.styles.index', $layer) }}" class="btn btn-sm btn-outline-primary">
+            <i class="mdi mdi-arrow-right"></i> Kelola Style
+        </a>
+    </div>
+@endif
+
 @php
     // `properties` v3 menggabungkan atribut mentah hasil impor DAN metadata
     // dinamis (dulu 2 kolom terpisah, lihat SpatialLayerFeatureController) —

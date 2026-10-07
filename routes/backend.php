@@ -204,6 +204,8 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
         Route::patch('/{spatialLayer}/status', [SpatialLayerController::class, 'updateStatus'])->name('update-status')->middleware('permission:spatial-layers.publish');
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+        Route::post('/bulk-destroy', [SpatialLayerController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
+        Route::post('/bulk-update-category', [SpatialLayerController::class, 'bulkUpdateCategory'])->name('bulk-update-category')->middleware('permission:spatial-layers.edit');
 
         // Wizard "Tambah Layer" 4 tahap (plan rippling-frolicking-ladybug) —
         // /create dan POST / di atas SENGAJA tetap dipakai ulang (bukan rute
@@ -237,8 +239,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
             Route::post('/', [SpatialLayerFeatureController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
             Route::post('/bulk-update-attribute', [SpatialLayerFeatureController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute')->middleware('permission:spatial-layers.edit');
             Route::post('/bulk-destroy', [SpatialLayerFeatureController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
+            Route::post('/bulk-move', [SpatialLayerFeatureController::class, 'bulkMoveToLayer'])->name('bulk-move')->middleware('permission:spatial-layers.edit');
+            Route::post('/move-all', [SpatialLayerFeatureController::class, 'moveAllFeatures'])->name('move-all')->middleware('permission:spatial-layers.edit');
             Route::get('/{feature}/edit', [SpatialLayerFeatureController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
             Route::put('/{feature}', [SpatialLayerFeatureController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::put('/{feature}/style', [SpatialLayerFeatureController::class, 'updateStyle'])->name('update-style')->middleware('permission:spatial-layers.edit');
             Route::delete('/{feature}', [SpatialLayerFeatureController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
         });
     });

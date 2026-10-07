@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SpatialLayer;
@@ -161,17 +162,100 @@ class SpatialLayerControllerTest extends TestCase
             ->assertDontSee('>Kelola</a>', false);
     }
 
+    public function test_show_page_displays_archived_status_distinctly_from_draft(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Arsip', 'status' => 'archived']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee('Archived');
+    }
+
+    public function test_show_page_lets_publisher_change_status_inline(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Status Inline']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee(route('spatial-layers.update-status', $layer), false)
+            ->assertSee('name="status"', false);
+    }
+
+    public function test_show_page_hides_status_select_for_user_without_publish_permission(): void
+    {
+        $role = Role::create(['name' => 'Editor Layer Status', 'slug' => 'editor-layer-status', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.view', 'guard_name' => 'web']));
+        $editor = User::factory()->create(['role_id' => $role->id]);
+        $layer = $this->createLayer(['name' => 'Layer Tanpa Akses Status']);
+
+        $this->actingAs($editor)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertDontSee(route('spatial-layers.update-status', $layer), false);
+    }
+
+    public function test_update_no_longer_accepts_is_active_to_change_status(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Tanpa Toggle Status', 'status' => 'published', 'published_at' => now()]);
+
+        $this->actingAs($admin)->put(route('spatial-layers.update', $layer), [
+            'category_id' => $layer->category_id,
+            'name' => 'Layer Tanpa Toggle Status',
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $layer->refresh();
+        $this->assertSame('published', $layer->status);
+    }
+
+    /**
+     * "Style" sekarang modal di halaman ini sendiri (2026-10-07), bukan lagi
+     * tautan ke halaman /styles terpisah — editor simbol tunggal (warna/
+     * ukuran/opacity/marker dot-vs-icon), mirip referensi editor simbol QGIS.
+     */
+    public function test_show_page_has_style_modal_instead_of_link_to_styles_page(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Style Modal Uji', 'layer_type_id' => 1]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('id="editLayerStyleModal"', false)
+            ->assertSee('data-bs-target="#editLayerStyleModal"', false)
+            ->assertSee('name="color"', false)
+            ->assertSee('name="size"', false)
+            ->assertSee('name="opacity"', false)
+            ->assertSee('id="layer_style_marker_dot"', false)
+            ->assertSee('id="layer_style_marker_icon"', false);
+    }
+
+    public function test_show_page_hides_marker_type_toggle_for_non_point_layer(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Poligon Uji', 'layer_type_id' => 3]);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertDontSee('id="layer_style_marker_dot"', false);
+    }
+
     public function test_spatial_layers_edit_route_no_longer_exists(): void
     {
         $this->assertFalse(Route::has('spatial-layers.edit'));
     }
 
     /**
-     * Regresi: modal edit Layer disamakan (copy-paste + modifikasi field) dengan
-     * modal edit Kategori di categories/index.blade.php — widget icon-picker &
-     * color-picker (class CSS + struktur DOM yang sama), bukan form polos.
+     * Edit modal murni info dasar Layer — warna/opacity/marker/urutan tampil
+     * (dan widget icon-picker/color-picker-nya) sengaja dihapus dari SINI
+     * (2026-10-07) karena sekarang punya modal tersendiri ("Style", lihat
+     * test_show_page_has_style_modal_instead_of_link_to_styles_page) — jadi
+     * `name="color"`/`name="is_marker"` memang masih ada di halaman ini
+     * (milik modal Style), hanya field berprefix `layer_edit_*` khusus modal
+     * Edit Layer lama yang dicek sudah tidak ada.
      */
-    public function test_edit_modal_matches_categories_edit_modal_widgets(): void
+    public function test_edit_modal_no_longer_has_style_widgets(): void
     {
         $admin = $this->admin();
         $layer = $this->createLayer(['name' => 'Layer Modal Uji']);
@@ -179,13 +263,18 @@ class SpatialLayerControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
 
         $response->assertOk()
-            ->assertSee('class="color-picker-widget"', false)
-            ->assertSee('id="layer_edit_colorSwatches"', false)
-            ->assertSee('class="icon-picker-grid" id="layer_edit_iconGrid"', false)
-            ->assertSee('id="layer_edit_iconSearch"', false)
-            ->assertSee('class="settings-switch-group"', false)
             ->assertSee('name="category_id"', false)
-            ->assertSee('btn-gradient-warning', false);
+            ->assertSee('btn-gradient-warning', false)
+            ->assertDontSee('class="color-picker-widget"', false)
+            ->assertDontSee('id="layer_edit_colorSwatches"', false)
+            ->assertDontSee('id="layer_edit_iconGrid"', false)
+            ->assertDontSee('id="layer_edit_iconSearch"', false)
+            ->assertDontSee('class="settings-switch-group"', false)
+            ->assertDontSee('id="layer_edit_warna"', false)
+            ->assertDontSee('id="layer_edit_opacity"', false)
+            ->assertDontSee('id="layer_edit_is_marker"', false)
+            ->assertDontSee('name="default_opacity"', false)
+            ->assertDontSee('name="sort_order"', false);
     }
 
     public function test_index_page_renders_tree(): void
@@ -524,16 +613,290 @@ class SpatialLayerControllerTest extends TestCase
         $this->actingAs($editor)->put(route('spatial-layers.update', $layer), [
             'category_id' => $layer->category_id,
             'name' => 'Layer Update Properti',
-            'sort_order' => 9,
+            'short_description' => 'Deskripsi diperbarui',
         ])->assertRedirect(route('spatial-layers.show', $layer));
 
         $layer->refresh();
-        $this->assertSame(9, $layer->sort_order);
+        $this->assertSame('Deskripsi diperbarui', $layer->short_description);
         // Role ini tidak punya permission spatial-layers.publish — status
         // layer published yang sudah ada harus tetap dipertahankan (R17),
         // bukan ikut jatuh ke draft hanya karena form ini tidak mengirim
         // is_active=1 (lihat SpatialLayerController::validated()).
         $this->assertSame('published', $layer->status);
+    }
+
+    public function test_update_persists_data_year_and_sumber_data_to_layer_metadata(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Update Metadata']);
+
+        $this->actingAs($admin)->put(route('spatial-layers.update', $layer), [
+            'category_id' => $layer->category_id,
+            'name' => 'Layer Update Metadata',
+            'data_year' => 2025,
+            'sumber_data' => 'Dinas PUPR Provinsi Maluku Utara',
+        ])->assertRedirect(route('spatial-layers.show', $layer));
+
+        $layer->refresh();
+        $this->assertSame(2025, $layer->metadata->data_year);
+        $this->assertSame('Dinas PUPR Provinsi Maluku Utara', $layer->metadata->sumber_data);
+    }
+
+    public function test_show_page_displays_data_year_and_sumber_data(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Dengan Metadata Tampil']);
+        $layer->metadata()->create(['data_year' => 2024, 'sumber_data' => 'Dinas Kominfo']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.show', $layer))
+            ->assertOk()
+            ->assertSee('2024')
+            ->assertSee('Dinas Kominfo');
+    }
+
+    private function categoryNodeId(string $categoryId, string $name = 'Subkategori Uji', ?string $parentId = null, int $depth = 1): string
+    {
+        return DB::table('category_nodes')->insertGetId([
+            'id' => (string) Str::uuid(),
+            'category_id' => $categoryId,
+            'parent_id' => $parentId,
+            'name' => $name,
+            'slug' => Str::slug($name.'-'.Str::random(6)),
+            'depth' => $depth,
+            'path' => DB::raw("'c1'::ltree"),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id');
+    }
+
+    public function test_index_page_has_separate_category_and_subcategory_filters(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('spatial-layers.index'))
+            ->assertOk()
+            ->assertSee('id="categoryFilter"', false)
+            ->assertSee('id="categoryNodeFilter"', false);
+    }
+
+    public function test_index_page_row_carries_root_category_id_and_node_id_separately(): void
+    {
+        $admin = $this->admin();
+        $categoryId = $this->categoryId();
+        $nodeId = $this->categoryNodeId($categoryId);
+        $layer = $this->createLayer(['category_id' => $categoryId, 'category_node_id' => $nodeId, 'name' => 'Layer Dalam Subkategori']);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk()
+            ->assertSee('data-category-id="'.$categoryId.'"', false)
+            ->assertSee('data-category-node-id="'.$nodeId.'"', false);
+    }
+
+    /**
+     * Bug: "layer filter sub kategori tidak tampil" — category_nodes adalah
+     * POHON (parent_id self-referencing, lihat _category-picker.blade.php
+     * yang memperbolehkan Layer ditempatkan di node mana pun, bukan cuma
+     * daun). Memilih Sub Kategori induk harus tetap menampilkan Layer yang
+     * ditempatkan di node ANAKnya — filtering JS butuh parent_id tiap node
+     * untuk menyusuri pohon itu, jadi payload categoryNodeOptions wajib
+     * membawanya.
+     */
+    public function test_index_page_category_node_options_payload_includes_parent_id_for_tree_filtering(): void
+    {
+        $admin = $this->admin();
+        $categoryId = $this->categoryId();
+        $parentNodeId = $this->categoryNodeId($categoryId, 'Sub Kategori Induk', null, 1);
+        $childNodeId = $this->categoryNodeId($categoryId, 'Sub Kategori Anak', $parentNodeId, 2);
+        $this->createLayer([
+            'category_id' => $categoryId,
+            'category_node_id' => $childNodeId,
+            'name' => 'Layer Di Sub Kategori Anak',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk();
+        $html = $response->getContent();
+
+        preg_match('/const categoryNodeOptions = (\[.*?\]);/s', $html, $matches);
+        $this->assertNotEmpty($matches, 'categoryNodeOptions payload tidak ditemukan di halaman.');
+
+        $options = json_decode($matches[1], true);
+        $child = collect($options)->firstWhere('id', $childNodeId);
+
+        $this->assertNotNull($child, 'Node anak tidak ada di payload categoryNodeOptions.');
+        $this->assertSame($parentNodeId, $child['parent_id']);
+    }
+
+    /**
+     * "Pindahkan Semua Data Spasial" (SpatialLayerFeatureController::moveAllFeatures())
+     * berguna untuk menggabungkan Layer duplikat — tombolnya hanya masuk
+     * akal kalau Layer itu punya Data Spasial untuk dipindahkan.
+     */
+    public function test_index_page_shows_move_all_features_button_only_for_layers_with_features(): void
+    {
+        $admin = $this->admin();
+        $withFeatures = $this->createLayer(['name' => 'Layer Dengan Data']);
+        SpatialLayerFeature::create(['layer_id' => $withFeatures->id, 'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)')]);
+        $withFeatures->refreshFeatureCache();
+        $empty = $this->createLayer(['name' => 'Layer Kosong']);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.index'));
+
+        $response->assertOk()
+            ->assertSee('data-layer-id="'.$withFeatures->id.'"', false)
+            ->assertSee('data-layer-name="Layer Dengan Data"', false)
+            ->assertDontSee('data-layer-name="Layer Kosong"', false);
+    }
+
+    public function test_index_page_has_bulk_selection_checkboxes_and_hidden_bulk_destroy_form(): void
+    {
+        $admin = $this->admin();
+        $this->createLayer(['name' => 'Layer Bulk Uji']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.index'))
+            ->assertOk()
+            ->assertSee('id="layerSelectAll"', false)
+            ->assertSee('layer-row-checkbox', false)
+            ->assertSee('id="layerBulkDestroyForm"', false)
+            ->assertSee(route('spatial-layers.bulk-destroy'), false);
+    }
+
+    public function test_bulk_destroy_removes_layers_without_features(): void
+    {
+        $admin = $this->admin();
+        $layerA = $this->createLayer(['name' => 'Bulk Hapus A']);
+        $layerB = $this->createLayer(['name' => 'Bulk Hapus B']);
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-destroy'), [
+            'ids' => [$layerA->id, $layerB->id],
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertSoftDeleted('layers', ['id' => $layerA->id]);
+        $this->assertSoftDeleted('layers', ['id' => $layerB->id]);
+    }
+
+    public function test_bulk_destroy_skips_layers_that_still_have_features(): void
+    {
+        $admin = $this->admin();
+        $layerWithFeature = $this->createLayer(['name' => 'Bulk Punya Data']);
+        SpatialLayerFeature::create([
+            'layer_id' => $layerWithFeature->id,
+            'geom' => DB::raw("ST_GeomFromText('POINT(127.5 0.8)', 4326)"),
+        ]);
+        $layerEmpty = $this->createLayer(['name' => 'Bulk Kosong']);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.bulk-destroy'), [
+            'ids' => [$layerWithFeature->id, $layerEmpty->id],
+        ]);
+
+        $response->assertRedirect(route('spatial-layers.index'));
+        $this->assertDatabaseHas('layers', ['id' => $layerWithFeature->id, 'deleted_at' => null]);
+        $this->assertSoftDeleted('layers', ['id' => $layerEmpty->id]);
+    }
+
+    public function test_admin_opd_bulk_destroy_ignores_ids_of_other_opd_layers(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas Uji', 'singkatan' => Str::upper(Str::random(5))]);
+        $otherOpd = Opd::create(['name' => 'Dinas Lain', 'singkatan' => Str::upper(Str::random(5))]);
+        $role = Role::create(['name' => 'Admin OPD', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.delete', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+
+        $ownLayer = $this->createLayer(['name' => 'Layer OPD Sendiri', 'opd_id' => $opd->id]);
+        $otherLayer = $this->createLayer(['name' => 'Layer OPD Lain', 'opd_id' => $otherOpd->id]);
+
+        $this->actingAs($user)->post(route('spatial-layers.bulk-destroy'), [
+            'ids' => [$ownLayer->id, $otherLayer->id],
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertSoftDeleted('layers', ['id' => $ownLayer->id]);
+        $this->assertDatabaseHas('layers', ['id' => $otherLayer->id, 'deleted_at' => null]);
+    }
+
+    public function test_index_page_has_bulk_category_move_button_and_modal(): void
+    {
+        $admin = $this->admin();
+        $this->createLayer(['name' => 'Layer Pindah Kategori Uji']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.index'))
+            ->assertOk()
+            ->assertSee('id="bulkCategoryModal"', false)
+            ->assertSee('openBulkCategoryModal()', false)
+            ->assertSee(route('spatial-layers.bulk-update-category'), false);
+    }
+
+    public function test_bulk_update_category_moves_selected_layers(): void
+    {
+        $admin = $this->admin();
+        $oldCategoryId = $this->categoryId('Kategori Lama');
+        $newCategoryId = $this->categoryId('Kategori Baru');
+        $layerA = $this->createLayer(['name' => 'Pindah A', 'category_id' => $oldCategoryId]);
+        $layerB = $this->createLayer(['name' => 'Pindah B', 'category_id' => $oldCategoryId]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-update-category'), [
+            'ids' => [$layerA->id, $layerB->id],
+            'category_id' => $newCategoryId,
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertDatabaseHas('layers', ['id' => $layerA->id, 'category_id' => $newCategoryId, 'category_node_id' => null]);
+        $this->assertDatabaseHas('layers', ['id' => $layerB->id, 'category_id' => $newCategoryId, 'category_node_id' => null]);
+    }
+
+    public function test_bulk_update_category_moves_selected_layers_into_a_subcategory(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Pindah Ke Subkategori']);
+        $newCategoryId = $this->categoryId('Kategori Tujuan');
+        $newNodeId = $this->categoryNodeId($newCategoryId, 'Subkategori Tujuan');
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-update-category'), [
+            'ids' => [$layer->id],
+            'category_id' => $newCategoryId,
+            'category_node_id' => $newNodeId,
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertDatabaseHas('layers', ['id' => $layer->id, 'category_id' => $newCategoryId, 'category_node_id' => $newNodeId]);
+    }
+
+    public function test_bulk_update_category_rejects_subcategory_that_does_not_belong_to_category(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Pindah Salah Subkategori']);
+        $categoryA = $this->categoryId('Kategori A Bulk');
+        $categoryB = $this->categoryId('Kategori B Bulk');
+        $nodeOfB = $this->categoryNodeId($categoryB, 'Node B Bulk');
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-update-category'), [
+            'ids' => [$layer->id],
+            'category_id' => $categoryA,
+            'category_node_id' => $nodeOfB,
+        ])->assertSessionHasErrors('category_node_id');
+
+        $this->assertDatabaseHas('layers', ['id' => $layer->id, 'category_id' => $layer->category_id]);
+    }
+
+    public function test_admin_opd_bulk_update_category_ignores_ids_of_other_opd_layers(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas Uji Kategori', 'singkatan' => Str::upper(Str::random(5))]);
+        $otherOpd = Opd::create(['name' => 'Dinas Lain Kategori', 'singkatan' => Str::upper(Str::random(5))]);
+        $role = Role::create(['name' => 'Admin OPD Kategori', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.edit', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+
+        $newCategoryId = $this->categoryId('Kategori Baru OPD');
+        $ownLayer = $this->createLayer(['name' => 'Layer OPD Sendiri Kategori', 'opd_id' => $opd->id]);
+        $otherLayer = $this->createLayer(['name' => 'Layer OPD Lain Kategori', 'opd_id' => $otherOpd->id]);
+        $otherLayerOriginalCategoryId = $otherLayer->category_id;
+
+        $this->actingAs($user)->post(route('spatial-layers.bulk-update-category'), [
+            'ids' => [$ownLayer->id, $otherLayer->id],
+            'category_id' => $newCategoryId,
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertDatabaseHas('layers', ['id' => $ownLayer->id, 'category_id' => $newCategoryId]);
+        $this->assertDatabaseHas('layers', ['id' => $otherLayer->id, 'category_id' => $otherLayerOriginalCategoryId]);
     }
 
     public function test_index_page_shows_status_and_opd_filter_dropdowns(): void

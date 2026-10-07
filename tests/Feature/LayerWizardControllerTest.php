@@ -119,6 +119,44 @@ KML;
         ]);
     }
 
+    public function test_store_saves_data_year_and_sumber_data_to_layer_metadata(): void
+    {
+        $admin = $this->admin();
+        $categoryId = $this->categoryId();
+
+        $this->actingAs($admin)->post(route('spatial-layers.store'), [
+            'category_id' => $categoryId,
+            'layer_type_id' => 4,
+            'name' => 'Layer Dengan Metadata',
+            'data_year' => 2025,
+            'sumber_data' => 'Dinas PUPR Provinsi Maluku Utara',
+        ]);
+
+        $layer = SpatialLayer::where('name', 'Layer Dengan Metadata')->firstOrFail();
+
+        $this->assertSame(2025, $layer->metadata->data_year);
+        $this->assertSame('Dinas PUPR Provinsi Maluku Utara', $layer->metadata->sumber_data);
+    }
+
+    public function test_save_info_updates_data_year_and_sumber_data_without_losing_existing_metadata(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin, ['data_year' => 2020, 'sumber_data' => 'Sumber Lama']);
+
+        $this->actingAs($admin)->put(route('spatial-layers.wizard.info', $layer), [
+            'category_id' => $layer->category_id,
+            'layer_type_id' => $layer->layer_type_id,
+            'name' => $layer->name,
+            'data_year' => 2026,
+            'sumber_data' => 'Sumber Baru',
+        ]);
+
+        $layer->refresh();
+
+        $this->assertSame(2026, $layer->metadata->data_year);
+        $this->assertSame('Sumber Baru', $layer->metadata->sumber_data);
+    }
+
     public function test_store_never_publishes_even_with_publish_permission(): void
     {
         $publisher = $this->publisher();
@@ -143,6 +181,18 @@ KML;
             ->assertOk()
             ->assertDontSee('Layanan WMS')
             ->assertSee('Vektor Titik');
+    }
+
+    public function test_import_step_offers_coordinate_input_option(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin);
+
+        $this->actingAs($admin)->get(route('spatial-layers.wizard', $layer))
+            ->assertOk()
+            ->assertSee('data-type="coordinates"', false)
+            ->assertSee('id="coordinates-content"', false)
+            ->assertSee('name="coordinates[0][latitude]"', false);
     }
 
     public function test_failed_import_keeps_wizard_step_and_draft_layer_intact(): void
@@ -174,6 +224,47 @@ KML;
 
         $retry->assertRedirect(route('spatial-layers.wizard', $layer));
         $this->assertSame(3, $layer->wizard_step);
+        $this->assertSame(1, SpatialLayer::where('name', $layer->name)->count());
+    }
+
+    public function test_coordinate_import_skips_mapping_and_saves_features_directly(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.wizard.import', $layer), [
+            'input_type' => 'coordinates',
+            'coordinates' => [
+                ['name' => 'Titik A', 'latitude' => '1.5', 'longitude' => '127.8'],
+                ['name' => 'Titik B', 'latitude' => '1.6', 'longitude' => '127.9'],
+            ],
+        ]);
+
+        $layer->refresh();
+
+        $response->assertRedirect(route('spatial-layers.wizard', $layer));
+        $this->assertSame(4, $layer->wizard_step);
+        $this->assertSame(2, $layer->features()->count());
+        $this->assertDatabaseMissing('layer_imports', ['layer_id' => $layer->id]);
+    }
+
+    public function test_coordinate_import_without_valid_coordinates_keeps_wizard_step_and_draft_layer_intact(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.wizard.import', $layer), [
+            'input_type' => 'coordinates',
+            'coordinates' => [
+                ['name' => 'Kosong', 'latitude' => '', 'longitude' => ''],
+            ],
+        ]);
+
+        $layer->refresh();
+
+        $response->assertSessionHasErrors('input_type');
+        $this->assertSame(2, $layer->wizard_step);
+        $this->assertSame(0, $layer->features()->count());
         $this->assertSame(1, SpatialLayer::where('name', $layer->name)->count());
     }
 
@@ -271,6 +362,39 @@ KML;
         $this->assertNull($layer->wizard_step);
         $this->assertSame('published', $layer->status);
         $this->assertNotNull($layer->published_at);
+    }
+
+    public function test_finish_accepts_thumbnail_up_to_10mb(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin);
+        $layer->update(['wizard_step' => 4]);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.wizard.finish', $layer), [
+            'publish' => '0',
+            'thumbnail' => UploadedFile::fake()->image('layer.jpg')->size(10240),
+        ]);
+
+        $response->assertRedirect(route('spatial-layers.show', $layer));
+        $response->assertSessionDoesntHaveErrors('thumbnail');
+    }
+
+    public function test_finish_rejects_thumbnail_over_10mb(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->admin();
+        $layer = $this->createDraftLayer($admin);
+        $layer->update(['wizard_step' => 4]);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.wizard.finish', $layer), [
+            'publish' => '0',
+            'thumbnail' => UploadedFile::fake()->image('layer.jpg')->size(10241),
+        ]);
+
+        $response->assertSessionHasErrors('thumbnail');
     }
 
     public function test_finish_with_publish_by_unauthorized_user_stays_draft(): void

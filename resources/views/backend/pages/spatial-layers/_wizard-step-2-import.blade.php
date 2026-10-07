@@ -35,6 +35,11 @@
                 <div class="option-title">File KMZ/KML</div>
                 <div class="option-description">Upload file dari Google Earth atau aplikasi GIS lainnya</div>
             </div>
+            <div class="input-option" data-type="coordinates" onclick="selectInputType('coordinates')">
+                <div class="option-icon"><i class="mdi mdi-map-marker"></i></div>
+                <div class="option-title">Koordinat</div>
+                <div class="option-description">Input manual latitude dan longitude, bisa lebih dari satu titik</div>
+            </div>
         </div>
         <input type="hidden" name="input_type" id="input_type" value="{{ old('input_type', 'shapefile') }}">
     </div>
@@ -156,6 +161,61 @@
         </div>
     </div>
 
+    <!-- Koordinat -->
+    <div class="input-content" id="coordinates-content">
+        <div class="coord-input-group">
+            <h6 class="mb-3"><i class="mdi mdi-map-marker me-2"></i>Input Koordinat Lokasi</h6>
+            <div id="coordinate-inputs">
+                @php $oldCoordinates = old('coordinates', [['name' => '', 'latitude' => '', 'longitude' => '']]); @endphp
+                @foreach ($oldCoordinates as $i => $coord)
+                    <div class="coord-input-row">
+                        <div class="coord-field">
+                            <label class="form-label">Nama Lokasi</label>
+                            <input type="text" class="form-control coord-name" name="coordinates[{{ $i }}][name]"
+                                placeholder="Nama lokasi (opsional)" value="{{ $coord['name'] ?? '' }}">
+                        </div>
+                        <div class="coord-field">
+                            <label class="form-label">Latitude <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control coord-lat" name="coordinates[{{ $i }}][latitude]"
+                                step="any" placeholder="-6.123456" value="{{ $coord['latitude'] ?? '' }}">
+                            @error('coordinates.'.$i.'.latitude')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="coord-field">
+                            <label class="form-label">Longitude <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control coord-lng" name="coordinates[{{ $i }}][longitude]"
+                                step="any" placeholder="106.123456" value="{{ $coord['longitude'] ?? '' }}">
+                            @error('coordinates.'.$i.'.longitude')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="coord-actions">
+                            @if ($loop->last)
+                                <button type="button" class="btn btn-add-coord" onclick="addCoordinateInput()">
+                                    <i class="mdi mdi-plus"></i>
+                                </button>
+                            @endif
+                            @if (count($oldCoordinates) > 1)
+                                <button type="button" class="btn btn-remove-coord" onclick="removeCoordinateInput(this)">
+                                    <i class="mdi mdi-minus"></i>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            @error('coordinates')
+                <div class="text-danger small">{{ $message }}</div>
+            @enderror
+            <small class="text-muted d-block mt-2">
+                <i class="mdi mdi-information me-1"></i>
+                Format: Latitude (-90 sampai 90), Longitude (-180 sampai 180). Setiap baris akan menjadi satu
+                Data Spasial terpisah (titik), langsung tersimpan tanpa tahap pemetaan kolom.
+            </small>
+        </div>
+    </div>
+
     <div class="mode-import-group mt-2">
         <label class="form-label fw-semibold mb-2">Mode Impor</label>
         <div class="d-flex flex-column flex-md-row gap-2">
@@ -182,7 +242,7 @@
         <a href="{{ route('spatial-layers.wizard', [$layer, 'step' => 1]) }}" class="btn btn-outline-secondary">
             <i class="mdi mdi-arrow-left"></i> Kembali
         </a>
-        <button type="submit" class="btn btn-gradient-primary">
+        <button type="submit" class="btn btn-gradient-primary" id="wizardImportSubmitBtn">
             Unggah & Lanjut <i class="mdi mdi-arrow-right"></i>
         </button>
     </div>
@@ -373,12 +433,82 @@
         .mode-import-option input[type="radio"] {
             margin-top: 0.3rem;
         }
+
+        .coord-input-group {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .coord-input-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .coord-input-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .coord-field {
+            flex: 1;
+        }
+
+        .coord-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-add-coord {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add-coord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-remove-coord {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-remove-coord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
     </style>
 @endpush
 
 @push('scripts')
     <script>
         $(function() {
+            const submitBtnLabels = {
+                shapefile: 'Unggah & Lanjut Pemetaan <i class="mdi mdi-arrow-right"></i>',
+                kmz: 'Unggah & Lanjut Pemetaan <i class="mdi mdi-arrow-right"></i>',
+                coordinates: 'Simpan & Lanjut ke Review <i class="mdi mdi-arrow-right"></i>',
+            };
+
             function selectInputType(type) {
                 document.getElementById('input_type').value = type;
 
@@ -387,11 +517,88 @@
 
                 document.querySelectorAll('.input-content').forEach((content) => content.classList.remove('active'));
                 document.getElementById(`${type}-content`).classList.add('active');
+
+                const submitBtn = document.getElementById('wizardImportSubmitBtn');
+                if (submitBtn && submitBtnLabels[type]) {
+                    submitBtn.innerHTML = submitBtnLabels[type];
+                }
             }
 
             window.selectInputType = selectInputType;
 
             selectInputType(document.getElementById('input_type').value || 'shapefile');
+
+            // Input Koordinat — tambah/hapus baris, pola sama dengan
+            // features/create.blade.php (input koordinat Layer yang sudah jadi).
+            let coordinateCount = document.querySelectorAll('.coord-input-row').length || 1;
+
+            window.addCoordinateInput = function() {
+                const container = document.getElementById('coordinate-inputs');
+                const newRow = document.createElement('div');
+                newRow.className = 'coord-input-row';
+                newRow.innerHTML = `
+                    <div class="coord-field">
+                        <label class="form-label">Nama Lokasi</label>
+                        <input type="text" class="form-control coord-name" name="coordinates[${coordinateCount}][name]"
+                               placeholder="Nama lokasi (opsional)">
+                    </div>
+                    <div class="coord-field">
+                        <label class="form-label">Latitude <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control coord-lat" name="coordinates[${coordinateCount}][latitude]"
+                               step="any" placeholder="-6.123456">
+                    </div>
+                    <div class="coord-field">
+                        <label class="form-label">Longitude <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control coord-lng" name="coordinates[${coordinateCount}][longitude]"
+                               step="any" placeholder="106.123456">
+                    </div>
+                    <div class="coord-actions">
+                        <button type="button" class="btn btn-remove-coord" onclick="removeCoordinateInput(this)">
+                            <i class="mdi mdi-minus"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(newRow);
+                coordinateCount++;
+                refreshCoordinateAddButton();
+            };
+
+            window.removeCoordinateInput = function(button) {
+                if (document.querySelectorAll('.coord-input-row').length <= 1) {
+                    return;
+                }
+                button.closest('.coord-input-row').remove();
+                updateCoordinateNames();
+                refreshCoordinateAddButton();
+            };
+
+            function updateCoordinateNames() {
+                document.querySelectorAll('.coord-input-row').forEach((row, index) => {
+                    row.querySelector('.coord-name').name = `coordinates[${index}][name]`;
+                    row.querySelector('.coord-lat').name = `coordinates[${index}][latitude]`;
+                    row.querySelector('.coord-lng').name = `coordinates[${index}][longitude]`;
+                });
+                coordinateCount = document.querySelectorAll('.coord-input-row').length;
+            }
+
+            // Tombol "+" cuma ada satu, selalu di baris terakhir — dipindah
+            // ke sana setiap tambah/hapus baris, bukan dirender ulang per baris.
+            function refreshCoordinateAddButton() {
+                document.querySelectorAll('.btn-add-coord').forEach((btn) => btn.closest('.coord-actions')?.removeChild(btn));
+
+                const rows = document.querySelectorAll('.coord-input-row');
+                const lastActions = rows[rows.length - 1]?.querySelector('.coord-actions');
+                if (!lastActions) {
+                    return;
+                }
+
+                const addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'btn btn-add-coord';
+                addBtn.innerHTML = '<i class="mdi mdi-plus"></i>';
+                addBtn.addEventListener('click', addCoordinateInput);
+                lastActions.insertBefore(addBtn, lastActions.firstChild);
+            }
 
             window.handleDragOver = function(e) {
                 e.preventDefault();

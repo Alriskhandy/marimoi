@@ -1,5 +1,23 @@
 @extends('backend.partials.main', ['title' => 'Style Layer'])
 
+@push('styles')
+    @include('backend.partials._style-picker-styles')
+    <style>
+        .feature-style-swatch {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+    </style>
+@endpush
+
+@php
+    $isPointLayer = in_array($layer->layerType?->geometry_type, ['MULTIPOINT', 'GEOMETRY']);
+@endphp
+
 @section('main')
     <div class="page-header">
         <h3 class="page-title">
@@ -142,6 +160,158 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-title mb-1">Custom Style per Data Spasial ({{ $features->count() }})</p>
+                    <p class="text-muted small mb-3">
+                        Semua Data Spasial ikut style default di atas, kecuali diberi style sendiri di sini — mis.
+                        tiap Kab/Kota di Layer "Peta Administrasi Kab/Kota" diberi warna polygon berbeda.
+                    </p>
+
+                    @if ($features->isEmpty())
+                        <p class="text-muted text-center py-3">Belum ada Data Spasial di Layer ini.</p>
+                    @else
+                        <div class="list-group" style="max-height: 480px; overflow-y: auto;">
+                            @foreach ($features as $feature)
+                                @php
+                                    $override = $feature->style_override;
+                                    $effectiveColor = $override['color'] ?? $layer->color ?? '#2563eb';
+                                    $panelId = 'featureStylePanel'.$feature->id;
+                                @endphp
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="feature-style-swatch" style="background:{{ $effectiveColor }};"></span>
+                                            <span>{{ $feature->label ?? '#'.$feature->id }}</span>
+                                            @if ($override)
+                                                <span class="badge bg-info text-white">Custom</span>
+                                            @else
+                                                <span class="text-muted small">Ikut style default</span>
+                                            @endif
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse"
+                                                data-bs-target="#{{ $panelId }}">
+                                                <i class="mdi mdi-palette-outline"></i> {{ $override ? 'Edit Custom' : 'Atur Custom' }}
+                                            </button>
+                                            @if ($override)
+                                                <form action="{{ route('spatial-layers.features.update-style', [$layer, $feature]) }}"
+                                                    method="POST" style="display:inline-block;">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="custom_style" value="0">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                        title="Kembali ke style default Layer">
+                                                        <i class="mdi mdi-backup-restore"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="collapse mt-3 feature-style-panel" id="{{ $panelId }}"
+                                        data-feature-id="{{ $feature->id }}">
+                                        <form action="{{ route('spatial-layers.features.update-style', [$layer, $feature]) }}"
+                                            method="POST">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="custom_style" value="1">
+
+                                            <div class="text-center mb-3">
+                                                <div id="featureStylePreviewCircle{{ $feature->id }}"
+                                                    class="layer-style-preview-circle"
+                                                    style="background-color: {{ $effectiveColor }}; opacity: {{ $override['opacity'] ?? $layer->opacity ?? 1 }}; width: {{ ($override['size'] ?? $layer->size ?? 6) * 4 }}px; height: {{ ($override['size'] ?? $layer->size ?? 6) * 4 }}px;">
+                                                    <i id="featureStylePreviewIcon{{ $feature->id }}"
+                                                        class="{{ ($override['is_marker'] ?? false) ? ($override['icon'] ?? '') : '' }}"
+                                                        style="{{ ($override['is_marker'] ?? false) && ($override['icon'] ?? null) ? '' : 'display:none' }}; color: {{ $effectiveColor }};"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="feature_style_color{{ $feature->id }}" class="form-label">Warna</label>
+                                                <input type="color" class="form-control form-control-color w-100"
+                                                    id="feature_style_color{{ $feature->id }}" name="style_color"
+                                                    value="{{ $effectiveColor }}">
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="feature_style_opacity{{ $feature->id }}" class="form-label">
+                                                        Opacity — <span id="featureStyleOpacityValue{{ $feature->id }}">{{ $override['opacity'] ?? $layer->opacity ?? 1 }}</span>
+                                                    </label>
+                                                    <input type="range" class="form-range"
+                                                        id="feature_style_opacity{{ $feature->id }}" name="style_opacity"
+                                                        min="0" max="1" step="0.05"
+                                                        value="{{ $override['opacity'] ?? $layer->opacity ?? 1 }}">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="feature_style_size{{ $feature->id }}" class="form-label">Ukuran (px)</label>
+                                                    <input type="number" class="form-control"
+                                                        id="feature_style_size{{ $feature->id }}" name="style_size"
+                                                        min="1" max="100" step="1"
+                                                        value="{{ $override['size'] ?? $layer->size ?? 6 }}">
+                                                </div>
+                                            </div>
+
+                                            @if ($isPointLayer)
+                                                <div class="mb-3">
+                                                    <label class="form-label d-block">Jenis Marker</label>
+                                                    <div class="btn-group w-100" role="group">
+                                                        <input type="radio" class="btn-check" name="style_is_marker" value="0"
+                                                            id="feature_style_marker_dot{{ $feature->id }}" autocomplete="off"
+                                                            @checked(! ($override['is_marker'] ?? false))>
+                                                        <label class="btn btn-outline-secondary"
+                                                            for="feature_style_marker_dot{{ $feature->id }}">
+                                                            <i class="mdi mdi-circle"></i> Dot
+                                                        </label>
+
+                                                        <input type="radio" class="btn-check" name="style_is_marker" value="1"
+                                                            id="feature_style_marker_icon{{ $feature->id }}" autocomplete="off"
+                                                            @checked($override['is_marker'] ?? false)>
+                                                        <label class="btn btn-outline-secondary"
+                                                            for="feature_style_marker_icon{{ $feature->id }}">
+                                                            <i class="mdi mdi-map-marker"></i> Icon
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3" id="feature_style_icon_wrapper{{ $feature->id }}"
+                                                    style="{{ ($override['is_marker'] ?? false) ? '' : 'display:none' }}">
+                                                    <label class="form-label">Pilih Icon</label>
+
+                                                    <select id="feature_style_icon{{ $feature->id }}" name="style_icon"
+                                                        class="d-none">
+                                                        <option value="">-- Pilih Icon --</option>
+                                                        @include('backend.partials.icon-options')
+                                                    </select>
+
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+                                                        <input type="text" class="form-control"
+                                                            id="feature_style_icon_search{{ $feature->id }}"
+                                                            placeholder="Cari ikon berdasarkan nama atau class...">
+                                                    </div>
+
+                                                    <div class="icon-card-grid" id="feature_style_icon_grid{{ $feature->id }}"></div>
+                                                </div>
+                                            @endif
+
+                                            <button type="submit" class="btn btn-sm btn-gradient-primary">
+                                                <i class="mdi mdi-content-save"></i> Simpan Style
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tambah Style Modal -->
     <div class="modal fade" id="addStyleModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -191,7 +361,38 @@
 @endsection
 
 @push('scripts')
+    @include('backend.partials._style-picker-script')
     <script>
+        // Grid ikon tiap panel custom style Data Spasial BARU dibangun saat
+        // panelnya pertama kali dibuka (bukan semua sekaligus saat halaman
+        // dimuat) — Layer dengan banyak Data Spasial bisa punya banyak panel,
+        // membangun semuanya di depan percuma kalau yang dibuka cuma 1-2.
+        document.querySelectorAll('.feature-style-panel').forEach((panel) => {
+            panel.addEventListener('show.bs.collapse', function onShow() {
+                if (panel.dataset.initialized) {
+                    return;
+                }
+                panel.dataset.initialized = '1';
+
+                const featureId = panel.dataset.featureId;
+                initStylePicker({
+                    colorId: `feature_style_color${featureId}`,
+                    opacityId: `feature_style_opacity${featureId}`,
+                    opacityValueId: `featureStyleOpacityValue${featureId}`,
+                    sizeId: `feature_style_size${featureId}`,
+                    previewCircleId: `featureStylePreviewCircle${featureId}`,
+                    previewIconId: `featureStylePreviewIcon${featureId}`,
+                    iconSelectId: `feature_style_icon${featureId}`,
+                    iconWrapperId: `feature_style_icon_wrapper${featureId}`,
+                    iconGridId: `feature_style_icon_grid${featureId}`,
+                    iconSearchId: `feature_style_icon_search${featureId}`,
+                    markerRadioName: 'style_is_marker',
+                    initialIconValue: document.getElementById(`feature_style_icon${featureId}`)?.value ?? '',
+                    scope: panel,
+                });
+            });
+        });
+
         /**
          * Builder kelas categorized/graduated — baris {value|min/max, warna,
          * label} ditambah/dihapus secara dinamis per instance form (dibedakan

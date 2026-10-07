@@ -10,7 +10,6 @@
 @endphp
 
 <h5 class="mb-1"><i class="mdi mdi-check-decagram-outline me-2"></i>Review & Publish</h5>
-<p class="text-muted small mb-4">Periksa kembali Layer sebelum menyelesaikan wizard.</p>
 
 <div class="row">
     <div class="col-md-4 mb-3">
@@ -42,6 +41,7 @@
         <div id="thumbnailUploadField" class="mt-2" style="display: none;">
             <input type="file" class="form-control form-control-sm" name="thumbnail" id="thumbnailFileInput"
                 accept="image/*" form="wizardFinishForm">
+            <div class="form-text">Format JPG/PNG/GIF, maksimal 10 MB.</div>
             @error('thumbnail')
                 <div class="text-danger small">{{ $message }}</div>
             @enderror
@@ -79,6 +79,8 @@
                             <span class="badge bg-{{ $latestImport->status === 'completed' ? 'success' : 'secondary' }}">
                                 {{ $latestImport->status }}
                             </span>
+                        @elseif ($featureCount > 0)
+                            <span class="text-muted">Input koordinat manual</span>
                         @else
                             <span class="text-muted">Belum ada data diimpor</span>
                         @endif
