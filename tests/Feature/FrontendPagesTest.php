@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\DataSpatial;
 use App\Models\LegacyCategory as Category;
 use App\Models\Opd;
+use App\Models\Role;
 use App\Models\User;
 use App\Support\MapDataVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +23,6 @@ class FrontendPagesTest extends TestCase
     public static function publicPages(): array
     {
         return [
-            'peta tematik' => ['tampil.tematik', false],
             'prioritas daerah' => ['tampil.prioritas', true],
             'publikasi' => ['tampil.publikasi', true],
             'aspirasi' => ['tampil.aspirasi', true],
@@ -100,6 +100,46 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="filter-kabupaten"', false)
             ->assertSee('id="filter-tahun"', false)
             ->assertSee('id="filter-opd"', false);
+    }
+
+    public function test_thematic_map_page_replaces_navbar_with_home_search_and_account_controls(): void
+    {
+        $this->get(route('tampil.tematik'))
+            ->assertOk()
+            ->assertDontSee('id="nav"', false)
+            ->assertDontSee('id="mobileMenu"', false)
+            ->assertDontSee('Developed by', false)
+            ->assertSee('id="app-control-buttons"', false)
+            ->assertSee('id="btn-home-page" class="map-pill" href="'.route('beranda').'"', false)
+            ->assertSee('id="map-search-bar"', false)
+            ->assertSee('id="map-feature-search"', false)
+            ->assertSee('id="btn-login" class="map-pill" href="'.route('login').'"', false)
+            ->assertDontSee('id="logout-form"', false);
+    }
+
+    public function test_thematic_map_controls_show_logout_without_dashboard_for_public_user(): void
+    {
+        $role = Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->actingAs($user)->get(route('tampil.tematik'))
+            ->assertOk()
+            ->assertSee('id="logout-form"', false)
+            ->assertSee('id="btn-logout"', false)
+            ->assertSee(route('logout'), false)
+            ->assertDontSee('id="btn-login"', false)
+            ->assertDontSee(route('dashboard'), false);
+    }
+
+    public function test_thematic_map_controls_show_dashboard_and_logout_for_admin(): void
+    {
+        $role = Role::create(['name' => 'Super Admin', 'slug' => 'super-admin', 'description' => null]);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->actingAs($user)->get(route('tampil.tematik'))
+            ->assertOk()
+            ->assertSee('id="btn-dashboard" class="map-pill" href="'.route('dashboard').'"', false)
+            ->assertSee('id="btn-logout"', false);
     }
 
     public function test_detail_map_reprojects_legacy_web_mercator_geometry_to_lon_lat(): void

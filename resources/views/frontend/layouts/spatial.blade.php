@@ -35,7 +35,10 @@
 </head>
 
 <body class="overflow-x-hidden bg-mist font-manrope text-base leading-relaxed text-slate-900 antialiased">
-    @include('frontend.partials.spatial-nav')
+    @hasSection('no-nav')
+    @else
+        @include('frontend.partials.spatial-nav')
+    @endif
 
     <main>
         @unless ($isHome)

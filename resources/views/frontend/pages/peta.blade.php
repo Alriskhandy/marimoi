@@ -105,14 +105,15 @@
 
 @section('no-hero', '1')
 @section('no-footer', '1')
+@section('no-nav', '1')
 
 @section('main')
-    <div class="p-0 h-[calc(100vh-70px)]">
+    <div class="p-0 h-screen">
         <!-- Map Section -->
-        <section id="map-section" class="relative p-0 mt-[70px] h-[calc(100vh-70px)] w-full overflow-hidden">
+        <section id="map-section" class="relative p-0 h-screen w-full overflow-hidden">
             <div class="p-0 relative h-full">
                 <!-- Container Toast -->
-                <div id="toast-container" class="fixed top-20 right-3 space-y-2"></div>
+                <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[1200] space-y-2"></div>
 
                 <!-- Modal Panduan Awal -->
                 <div id="guideModal"
@@ -239,7 +240,7 @@
 
                 <!-- Sidebar Layer -->
                 <div id="sidebar-layer"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
+                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
                     <!-- Header with gradient background -->
                     <div
                         class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
@@ -325,7 +326,7 @@
 
                 <!-- Sidebar Basemap -->
                 <div id="sidebar-basemap"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
                     <!-- Header with gradient background -->
                     <div
@@ -345,7 +346,7 @@
 
                 <!-- Sidebar Legend -->
                 <div id="sidebar-legend"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-[calc(100vh-70px)] bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
                     <!-- Header with gradient background -->
                     <div
@@ -385,34 +386,78 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Control Buttons -->
-                <div id="sidebar-control-buttons"
-                    class="absolute top-2.5 right-2.5 z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
-                    role="group" aria-label="Sidebar Control Buttons">
+                <!-- Kiri atas: kembali ke Beranda -->
+                <a id="btn-home-page" class="map-pill" href="{{ route('beranda') }}" aria-label="Beranda">
+                    <i class="bi bi-house-fill"></i>
+                    <span>Beranda</span>
+                </a>
 
-                    <button id="btn-toggle-sidebar-help" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Bantuan" data-tooltip="Bantuan">
-                        <i class="bi bi-info-circle-fill"></i>
-                    </button>
+                <!-- Tengah atas: bar pencarian -->
+                <div id="map-search-bar" role="search">
+                    <label for="map-feature-search" class="sr-only">Cari data pada peta</label>
+                    <div class="map-search-field">
+                        <i class="bi bi-search"></i>
+                        <input type="search" id="map-feature-search" autocomplete="off"
+                            placeholder="Cari data pada layer aktif...">
+                    </div>
+                    <ul id="map-feature-search-results" role="listbox" class="hidden"></ul>
+                </div>
 
-                    <button id="btn-toggle-sidebar-legend" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Legenda Peta" data-tooltip="Legenda Peta">
-                        <i class="bi bi-list-ul"></i>
-                    </button>
+                <div id="right-control-stack">
+                    <!-- Kanan atas: Masuk / Dashboard & Keluar -->
+                    <div id="app-control-buttons" class="map-pill-group" role="group" aria-label="Akun">
+                        @auth
+                            @if (auth()->user()->isAdmin())
+                                <a id="btn-dashboard" class="map-pill" href="{{ route('dashboard') }}"
+                                    aria-label="Dashboard">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            @endif
+                            <form method="POST" action="{{ route('logout') }}" id="logout-form">
+                                @csrf
+                                <button id="btn-logout" class="map-pill" type="submit" aria-label="Keluar">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>Keluar</span>
+                                </button>
+                            </form>
+                        @else
+                            <a id="btn-login" class="map-pill" href="{{ route('login') }}" aria-label="Masuk">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                <span>Masuk</span>
+                            </a>
+                        @endauth
+                    </div>
 
-                    <button id="btn-toggle-sidebar-basemap" type="button"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Basemap Peta" data-tooltip="Basemap Peta">
-                        <i class="bi bi-grid-fill"></i>
-                    </button>
+                    <!-- Sidebar Control Buttons -->
+                    <div id="sidebar-control-buttons"
+                        class="z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
+                        role="group" aria-label="Sidebar Control Buttons">
 
-                    <button id="btn-toggle-sidebar-layer" type="button"
-                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                        title="Layer Peta" data-tooltip="Layer Peta">
-                        <i class="bi bi-layers-fill"></i>
-                    </button>
+                        <button id="btn-toggle-sidebar-help" type="button"
+                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                            title="Bantuan" data-tooltip="Bantuan">
+                            <i class="bi bi-info-circle-fill"></i>
+                        </button>
+
+                        <button id="btn-toggle-sidebar-legend" type="button"
+                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                            title="Legenda Peta" data-tooltip="Legenda Peta">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+
+                        <button id="btn-toggle-sidebar-basemap" type="button"
+                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                            title="Basemap Peta" data-tooltip="Basemap Peta">
+                            <i class="bi bi-grid-fill"></i>
+                        </button>
+
+                        <button id="btn-toggle-sidebar-layer" type="button"
+                            class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                            title="Layer Peta" data-tooltip="Layer Peta">
+                            <i class="bi bi-layers-fill"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Navigation Control Buttons -->
@@ -491,7 +536,7 @@
             }).addTo(map);
 
             function showZoom() {
-                zoom.textContent = map.getZoom();
+                zoom.textContent = Number(map.getZoom().toFixed(2));
             }
 
             function showCenter() {
@@ -514,6 +559,192 @@
             map.on('moveend', showCenter);
             showZoom();
             showCenter();
+        })();
+    </script>
+
+    {{-- Bar pencarian: mencari fitur pada layer yang sedang tampil. `layerGroups` dibuat map.js. --}}
+    <script>
+        (function() {
+            var input = document.getElementById('map-feature-search');
+            var list = document.getElementById('map-feature-search-results');
+            if (!input || !list || typeof map === 'undefined' || typeof layerGroups === 'undefined') {
+                return;
+            }
+            var maxResults = 10;
+            var debounce = null;
+            var matches = [];
+
+            function escapeHtml(text) {
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function collectActiveGroups(node, groups) {
+                if (!node) {
+                    return groups;
+                }
+                if (node instanceof L.Layer) {
+                    if (map.hasLayer(node)) {
+                        groups.push(node);
+                    }
+                    return groups;
+                }
+                Object.keys(node).forEach(function(key) {
+                    collectActiveGroups(node[key], groups);
+                });
+                return groups;
+            }
+
+            function collectFeatureLayers(layer, result) {
+                if (layer.feature) {
+                    result.push(layer);
+                } else if (typeof layer.getLayers === 'function') {
+                    layer.getLayers().forEach(function(child) {
+                        collectFeatureLayers(child, result);
+                    });
+                }
+                return result;
+            }
+
+            function featureTitle(props) {
+                var preferred = props.KEGIATAN || props.kegiatan || props.nama || props.NAMA || props.name;
+                if (preferred) {
+                    return String(preferred);
+                }
+                var firstText = Object.keys(props).map(function(key) {
+                    return props[key];
+                }).find(function(value) {
+                    return typeof value === 'string' && value.trim() !== '' && !/^https?:\/\//.test(value);
+                });
+                return firstText || 'Tanpa nama';
+            }
+
+            function search(term) {
+                var needle = term.toLowerCase();
+                var found = [];
+                var groups = collectActiveGroups(layerGroups, []);
+                for (var g = 0; g < groups.length && found.length < maxResults; g++) {
+                    var cluster = typeof groups[g].zoomToShowLayer === 'function' ? groups[g] : null;
+                    var layers = collectFeatureLayers(groups[g], []);
+                    for (var i = 0; i < layers.length && found.length < maxResults; i++) {
+                        var props = layers[i].feature.properties || {};
+                        var isMatch = Object.keys(props).some(function(key) {
+                            var value = props[key];
+                            return (typeof value === 'string' || typeof value === 'number') &&
+                                String(value).toLowerCase().indexOf(needle) !== -1;
+                        });
+                        if (isMatch) {
+                            found.push({
+                                layer: layers[i],
+                                cluster: cluster,
+                                title: featureTitle(props),
+                                subtitle: props.kategori || ''
+                            });
+                        }
+                    }
+                }
+                return {
+                    results: found,
+                    hasActiveLayer: groups.length > 0
+                };
+            }
+
+            function hideResults() {
+                list.classList.add('hidden');
+                list.innerHTML = '';
+                matches = [];
+            }
+
+            function renderMessage(message) {
+                list.innerHTML = '<li class="search-result-message">' + escapeHtml(message) + '</li>';
+                list.classList.remove('hidden');
+            }
+
+            function render(term) {
+                var outcome = search(term);
+                matches = outcome.results;
+                if (!outcome.hasActiveLayer) {
+                    renderMessage('Aktifkan layer terlebih dahulu melalui menu Layer Peta.');
+                    return;
+                }
+                if (matches.length === 0) {
+                    renderMessage('Tidak ada data yang cocok dengan "' + term + '".');
+                    return;
+                }
+                list.innerHTML = matches.map(function(match, index) {
+                    return '<li role="option"><button type="button" data-index="' + index + '">' +
+                        '<span class="search-result-title">' + escapeHtml(match.title) + '</span>' +
+                        (match.subtitle ? '<span class="search-result-subtitle">' + escapeHtml(match.subtitle) + '</span>' : '') +
+                        '</button></li>';
+                }).join('');
+                list.classList.remove('hidden');
+            }
+
+            function focusMatch(match) {
+                var layer = match.layer;
+                var open = function() {
+                    if (typeof layer.openPopup === 'function') {
+                        layer.openPopup();
+                    }
+                };
+                if (match.cluster) {
+                    match.cluster.zoomToShowLayer(layer, open);
+                    return;
+                }
+                if (typeof layer.getBounds === 'function') {
+                    map.fitBounds(layer.getBounds(), {
+                        maxZoom: 17
+                    });
+                } else if (typeof layer.getLatLng === 'function') {
+                    map.setView(layer.getLatLng(), Math.max(map.getZoom(), 16));
+                }
+                open();
+            }
+
+            input.addEventListener('focus', function() {
+                if (input.value.trim().length >= 2) {
+                    render(input.value.trim());
+                }
+            });
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounce);
+                var term = input.value.trim();
+                if (term.length < 2) {
+                    hideResults();
+                    return;
+                }
+                debounce = setTimeout(function() {
+                    render(term);
+                }, 200);
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideResults();
+                    input.blur();
+                } else if (e.key === 'Enter' && matches.length > 0) {
+                    e.preventDefault();
+                    focusMatch(matches[0]);
+                    hideResults();
+                    input.blur();
+                }
+            });
+
+            list.addEventListener('click', function(e) {
+                var button = e.target.closest('button[data-index]');
+                if (button && matches[button.dataset.index]) {
+                    focusMatch(matches[button.dataset.index]);
+                    hideResults();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#map-search-bar')) {
+                    hideResults();
+                }
+            });
         })();
     </script>
 @endpush

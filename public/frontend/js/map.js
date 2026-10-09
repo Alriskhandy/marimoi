@@ -96,9 +96,123 @@ const mapConfig = {
 /**
  * Inisialisasi objek Leaflet map dengan konfigurasi awal.
  */
+/**
+ * Pengganti scrollWheelZoom bawaan Leaflet (yang men-debounce wheel lalu melompat
+ * dengan animasi per kelompok). Setiap event wheel hanya menggeser target zoom; tiap
+ * frame zoom peta dikejar ke target di sekitar posisi kursor, sehingga scroll mouse
+ * dan pinch/scroll trackpad (wheel + ctrlKey) mengalir kontinu.
+ *
+ * Anti-goyang: (1) titik acuan dihitung dari center/zoom eksak milik handler ini dan
+ * hanya diperbarui saat kursor benar-benar berpindah, supaya galat pembulatan tidak
+ * menumpuk; (2) Leaflet membulatkan pixel origin ke piksel bulat di setiap _move —
+ * sisa pecahannya dikompensasi dengan translate sub-piksel pada map pane.
+ */
+const SmoothWheelZoom = L.Handler.extend({
+    addHooks: function () {
+        L.DomEvent.on(this._map.getContainer(), "wheel", this._onWheel, this);
+    },
+
+    removeHooks: function () {
+        L.DomEvent.off(this._map.getContainer(), "wheel", this._onWheel, this);
+        this._stop();
+    },
+
+    _onWheel: function (e) {
+        L.DomEvent.preventDefault(e);
+        const map = this._map;
+        const sensitivity = e.ctrlKey ? 0.03 : 0.015;
+        const mousePoint = map.mouseEventToContainerPoint(e);
+
+        if (!this._isWheeling) {
+            this._start();
+        }
+
+        if (!this._mousePoint || this._mousePoint.distanceTo(mousePoint) > 2) {
+            this._mousePoint = mousePoint;
+            this._anchorLatLng = this._containerPointToExactLatLng(mousePoint);
+        }
+
+        this._goalZoom = Math.min(
+            map.getMaxZoom(),
+            Math.max(map.getMinZoom(), this._goalZoom + L.DomEvent.getWheelDelta(e) * sensitivity)
+        );
+
+        clearTimeout(this._endTimer);
+        this._endTimer = setTimeout(() => this._finish(), 220);
+    },
+
+    _start: function () {
+        const map = this._map;
+        map.stop();
+        this._isWheeling = true;
+        this._zoom = map.getZoom();
+        this._center = map.getCenter();
+        this._goalZoom = this._zoom;
+        this._mousePoint = null;
+        map._moveStart(true, false);
+        this._frame = requestAnimationFrame(() => this._step());
+    },
+
+    _containerPointToExactLatLng: function (point) {
+        const map = this._map;
+        const offset = point.subtract(map.getSize().divideBy(2));
+        return map.unproject(map.project(this._center, this._zoom).add(offset), this._zoom);
+    },
+
+    _step: function () {
+        const map = this._map;
+        const diff = this._goalZoom - this._zoom;
+
+        if (Math.abs(diff) > 0.0005) {
+            this._zoom = Math.abs(diff) < 0.005 ? this._goalZoom : this._zoom + diff * 0.2;
+            const offset = this._mousePoint.subtract(map.getSize().divideBy(2));
+            this._center = map.unproject(map.project(this._anchorLatLng, this._zoom).subtract(offset), this._zoom);
+            map._move(this._center, this._zoom);
+            this._compensateRounding();
+        }
+
+        this._frame = requestAnimationFrame(() => this._step());
+    },
+
+    _compensateRounding: function () {
+        const map = this._map;
+        const panePos = map._getMapPanePos();
+        const exactOrigin = map
+            .project(this._center, this._zoom)
+            .subtract(map.getSize().divideBy(2))
+            .add(panePos);
+        const error = exactOrigin.subtract(map.getPixelOrigin());
+        map.getPane("mapPane").style.transform =
+            `translate3d(${panePos.x - error.x}px, ${panePos.y - error.y}px, 0)`;
+    },
+
+    _finish: function () {
+        if (Math.abs(this._goalZoom - this._zoom) > 0.0005) {
+            this._endTimer = setTimeout(() => this._finish(), 50);
+            return;
+        }
+        this._stop();
+        L.DomUtil.setPosition(this._map.getPane("mapPane"), this._map._getMapPanePos());
+        this._map._moveEnd(true);
+    },
+
+    _stop: function () {
+        this._isWheeling = false;
+        cancelAnimationFrame(this._frame);
+        clearTimeout(this._endTimer);
+    },
+});
+L.Map.addInitHook("addHandler", "smoothWheelZoom", SmoothWheelZoom);
+
+// Zoom pecahan supaya pinch layar sentuh & hasil smoothWheelZoom tidak dipaksa ke level bulat.
+// Tombol +/- tetap 1 level.
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
+    zoomSnap: 0,
+    zoomDelta: 1,
+    scrollWheelZoom: false,
+    smoothWheelZoom: true,
 }).setView(mapConfig.center, mapConfig.zoom);
 
 /**

@@ -1,16 +1,16 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-CBkk9Ukm.css",
+    "file": "assets/app-DQpl2jgH.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/peta.css": {
-    "file": "assets/peta-BPYX9mfm.css",
+    "file": "assets/peta-DnF7KN6e.css",
     "src": "resources/css/peta.css",
     "isEntry": true
   },
   "resources/css/spatial.css": {
-    "file": "assets/spatial-CRZp8x1c.css",
+    "file": "assets/spatial-Cd2nxTQ1.css",
     "src": "resources/css/spatial.css",
     "isEntry": true
   },
@@ -18,12 +18,6 @@
     "file": "assets/app-DaBYqt0m.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
-  },
-  "resources/js/peta-v2.js": {
-    "file": "assets/peta-v2-QRj0l8f8.js",
-    "name": "peta-v2",
-    "src": "resources/js/peta-v2.js",
     "isEntry": true
   },
   "resources/js/spatial.js": {

@@ -54,8 +54,9 @@
     background: transparent;
 }
 
+/* Baris atas (Beranda, pencarian, akun) setinggi 44px di top 14px — kontrol Leaflet kiri turun di bawahnya. */
 #map-section .leaflet-top.leaflet-left {
-    top: 8px;
+    top: 58px;
     left: 8px;
 }
 
@@ -64,7 +65,91 @@
     margin-left: 4px;
 }
 
-/* ---------- Tombol samping kanan ---------- */
+/* ---------- Baris atas: tombol pil (Beranda & akun) ---------- */
+#map-section .map-pill,
+#map-section .map-pill-group,
+#map-section #map-search-bar,
+#map-section #map-feature-search-results {
+    border: 1px solid var(--peta-glass-line);
+    background: var(--peta-glass);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .6);
+    color: #fff;
+}
+
+#map-section .map-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color .25s, color .25s;
+}
+
+#map-section .map-pill i { font-size: 16px; }
+
+#map-section .map-pill:hover {
+    background: rgba(6, 21, 34, .9);
+    color: var(--peta-aqua);
+}
+
+#map-section #btn-home-page {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 102;
+}
+
+#map-section .map-pill-group {
+    display: flex;
+    align-self: flex-end;
+    border-radius: 16px;
+}
+
+#map-section .map-pill-group form { margin: 0; }
+
+#map-section .map-pill-group .map-pill {
+    border: 0;
+    border-right: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+#map-section .map-pill-group > :first-child,
+#map-section .map-pill-group > :first-child .map-pill { border-radius: 16px 0 0 16px; }
+#map-section .map-pill-group > :last-child,
+#map-section .map-pill-group > :last-child .map-pill { border-right: 0; border-radius: 0 16px 16px 0; }
+#map-section .map-pill-group > :only-child,
+#map-section .map-pill-group > :only-child .map-pill { border-radius: 16px; }
+
+#map-section .map-pill-group .map-pill:hover { background: rgba(32, 217, 255, .16); }
+
+/* ---------- Tombol samping kanan (akun di atas, kontrol panel di bawahnya) ---------- */
+#map-section #right-control-stack {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 102;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    /* Lebar stack ikut grup akun (bisa ~240px); area kosongnya tidak boleh menutupi tombol tutup panel. */
+    pointer-events: none;
+}
+
+#map-section #right-control-stack > * { pointer-events: auto; }
+
 #map-section #sidebar-control-buttons,
 #map-section #nav-control-buttons {
     right: 14px;
@@ -77,8 +162,98 @@
     box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .6);
 }
 
-#map-section #sidebar-control-buttons { top: 14px; z-index: 102; }
 #map-section #nav-control-buttons { bottom: 36px; z-index: 102; }
+
+/* ---------- Tengah atas: bar pencarian ---------- */
+#map-section #map-search-bar {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    z-index: 103;
+    width: min(420px, calc(100vw - 420px));
+    height: 44px;
+    border-radius: 16px;
+    transform: translateX(-50%);
+}
+
+#map-section #map-search-bar:focus-within { border-color: var(--peta-aqua); }
+
+#map-section #map-search-bar .map-search-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 100%;
+    padding: 0 16px;
+    color: rgba(255, 255, 255, .6);
+}
+
+#map-section #map-search-bar input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    color: #fff;
+    font-size: 13px;
+}
+
+#map-section #map-search-bar input::placeholder { color: rgba(255, 255, 255, .5); }
+
+
+#map-section #map-feature-search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    max-height: 320px;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    border-radius: 16px;
+    list-style: none;
+    font-size: 13px;
+}
+
+#map-section #map-feature-search-results button {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    text-align: left;
+}
+
+#map-section #map-feature-search-results button:hover,
+#map-section #map-feature-search-results button:focus {
+    outline: none;
+    background: rgba(32, 217, 255, .16);
+}
+
+#map-section #map-feature-search-results .search-result-title {
+    display: block;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#map-section #map-feature-search-results .search-result-subtitle {
+    display: block;
+    overflow: hidden;
+    color: rgba(255, 255, 255, .6);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#map-section #map-feature-search-results .search-result-message {
+    padding: 8px 10px;
+    color: rgba(255, 255, 255, .7);
+}
 
 #map-section #sidebar-control-buttons button,
 #map-section #nav-control-buttons button {
@@ -130,7 +305,7 @@
 #map-section #sidebar-basemap,
 #map-section #sidebar-legend,
 #map-section #sidebar-download {
-    top: 14px;
+    top: 70px;
     right: 76px;
     bottom: 36px;
     height: auto;
@@ -284,6 +459,26 @@
     box-shadow: 0 0 14px rgba(32, 217, 255, .7);
 }
 
+/* ---------- Layar sempit: tombol pil cukup ikon, pencarian mengisi ruang tengah ---------- */
+@media (max-width: 1023px) {
+    #map-section .map-pill {
+        width: 44px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    #map-section .map-pill span {
+        display: none;
+    }
+
+    #map-section #map-search-bar {
+        left: 70px;
+        right: 116px;
+        width: auto;
+        transform: none;
+    }
+}
+
 /* ---------- Ponsel ---------- */
 @media (max-width: 767px) {
     #map-section #sidebar-layer,
@@ -302,7 +497,7 @@
 }
 
 @media (hover: none) {
-    #map-section #sidebar-control-buttons button[data-tooltip]:hover::after,
+        #map-section #sidebar-control-buttons button[data-tooltip]:hover::after,
     #map-section #nav-control-buttons button[data-tooltip]:hover::after {
         display: none;
     }
