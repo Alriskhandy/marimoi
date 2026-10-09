@@ -50,7 +50,6 @@ class PermissionSeeder extends Seeder
             'dashboard.view',
             'categories.*',
             'project-feedbacks.*',
-            'project-progress.*',
             'aspirasi.*',
             'kategori-aspirasi.*',
             'opd.*',
@@ -61,7 +60,6 @@ class PermissionSeeder extends Seeder
             'categories.view',
             'project-feedbacks.view',
             'project-feedbacks.respond',
-            'project-progress.view',
             'aspirasi.view',
             'aspirasi.edit',
             'aspirasi.export',
@@ -73,13 +71,16 @@ class PermissionSeeder extends Seeder
 
     /**
      * Permission yang sudah dihapus dari katalog tapi mungkin masih
-     * tersimpan di DB (role lama yang sudah pernah di-seed) — Fase I/D13:
-     * modul "Data Spasial" lama di-retire, permission ini dicabut permanen
+     * tersimpan di DB (role lama yang sudah pernah di-seed) — dicabut permanen
      * dari role yang memegangnya lalu baris-nya sendiri dihapus.
+     *
+     * - data-spatial.   : Fase I/D13, modul "Data Spasial" lama di-retire.
+     * - map-types.      : 2026-10-10, modul "Jenis Peta" dihapus utuh.
+     * - project-progress.: 2026-10-10, halaman "Dashboard Pembangunan" dihapus.
      *
      * @var array<int, string>
      */
-    private const RETIRED_PREFIXES = ['data-spatial.'];
+    private const RETIRED_PREFIXES = ['data-spatial.', 'map-types.', 'project-progress.'];
 
     public function run(): void
     {

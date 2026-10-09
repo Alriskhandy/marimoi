@@ -58,12 +58,11 @@ class Permission extends SpatiePermission
                 'delete' => 'Hapus feedback',
             ],
         ],
-        'project-progress' => [
-            'label' => 'Dashboard Pembangunan',
-            'actions' => [
-                'view' => 'Lihat dashboard progres pembangunan',
-            ],
-        ],
+        // 'project-progress' dihapus 2026-10-10 — halaman "Dashboard
+        // Pembangunan" (dashboard.pembangunan) di-retire; permission ini satu-
+        // satunya penjaga route + submenu sidebar-nya. Tabel
+        // `project_progress_reports` sendiri TETAP ADA (dipakai dashboard
+        // eksekutif), cuma halaman ini yang hilang.
         'aspirasi' => [
             'label' => 'Aspirasi',
             'actions' => [

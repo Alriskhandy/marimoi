@@ -49,33 +49,10 @@
 
     <nav class="sidebar-nav">
         @can('dashboard.view')
-            @if ($user?->can('project-progress.view'))
-                @php($isDashboardGroupActive = request()->routeIs('dashboard') || request()->routeIs('dashboard.pembangunan'))
-                <a class="nav-link {{ $isDashboardGroupActive ? 'active' : '' }}" data-bs-toggle="collapse"
-                    href="#dashboardMenu" role="button" aria-expanded="{{ $isDashboardGroupActive ? 'true' : 'false' }}"
-                    aria-controls="dashboardMenu">
-                    <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-                    <span class="nav-text">Dashboard</span>
-                    <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
-                </a>
-                <div class="collapse {{ $isDashboardGroupActive ? 'show' : '' }}" id="dashboardMenu">
-                    <div class="sidebar-submenu">
-                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                            href="{{ route('dashboard') }}">
-                            <span class="nav-text">Ringkasan</span>
-                        </a>
-                        <a class="nav-link {{ request()->routeIs('dashboard.pembangunan') ? 'active' : '' }}"
-                            href="{{ route('dashboard.pembangunan') }}">
-                            <span class="nav-text">Pembangunan</span>
-                        </a>
-                    </div>
-                </div>
-            @else
-                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                    <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-                    <span class="nav-text">Dashboard</span>
-                </a>
-            @endif
+            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                <span class="nav-text">Dashboard</span>
+            </a>
         @endcan
 
         @if ($canPetaTematik || $canAspirasi)

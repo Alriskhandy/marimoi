@@ -15,3 +15,8 @@ Konsekuensi yang harus diingat: "Metadata Dinamis" SELALU kosong. Empat method i
 - `SpatialMapController::labeledMetadataDinamis()`
 
 Yang TETAP hidup: katalog `metadata_definitions` (target `layer_attribute_mappings.attribute_definition_id` + command `marimoi:migrate-metadata-definitions`), dan kolom inert `spatial_layers_legacy_v2.map_type_id` (FK-nya dilepas, nilai historis dibiarkan; tak ada kode yang membacanya).
+
+## Halaman "Dashboard Pembangunan" sudah dihapus — data progres tetap ada
+Route `dashboard.pembangunan`, `PembangunanDashboardController`, view `backend/pages/dashboard-pembangunan`, dan permission `project-progress.view` dihapus 2026-10-10 (migration `drop_project_progress_view_permission`, plus prefix `project-progress.` di `PermissionSeeder::RETIRED_PREFIXES`). Sidebar "Dashboard" kembali jadi satu link tunggal — grup collapse Ringkasan/Pembangunan hilang bersamanya.
+
+Yang TETAP hidup dan jangan ikut dihapus: tabel `project_progress_reports`, model `ProjectProgressReport` + factory-nya, `ProjectProgressReportRevision`, dan `DataSpatial::proyekStrategis()`. Semuanya masih dipakai `ExecutiveDashboardController` (endpoint `dashboard/api/eksekutif/*`) dan `DevelopmentProject`, teruji lewat ExecutiveDashboardTest + DevelopmentProjectTest.

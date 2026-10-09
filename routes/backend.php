@@ -10,7 +10,6 @@ use App\Http\Controllers\LayerStyleController;
 use App\Http\Controllers\LayerWizardController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\OpdController;
-use App\Http\Controllers\PembangunanDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\PublicationController;
@@ -60,7 +59,8 @@ Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
 Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics')->middleware('permission:dashboard.view');
 
 // Dashboard eksekutif berbasis development_projects (Prioritas 6 database V2) — endpoint
-// data JSON, terpisah dari dashboard/pembangunan (masih berbasis data_spatial) yang sudah ada.
+// data JSON. Dulu hidup berdampingan dengan halaman dashboard/pembangunan (berbasis
+// data_spatial); halaman itu dihapus 2026-10-10, endpoint ini tidak terpengaruh.
 Route::prefix('dashboard/api/eksekutif')->name('dashboard.api.eksekutif.')->middleware('permission:dashboard.view')->group(function () {
     Route::get('/summary', [ExecutiveDashboardController::class, 'summary'])->name('summary');
     Route::get('/sektor', [ExecutiveDashboardController::class, 'bySector'])->name('sektor');
@@ -287,13 +287,15 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Dashboard Pembangunan
+    | Halaman "Dashboard Pembangunan" (dashboard.pembangunan) DIHAPUS 2026-10-10
+    |--------------------------------------------------------------------------
+    |
+    | Controller, view, dan permission `project-progress.view` ikut dihapus.
+    | Tabel `project_progress_reports` beserta ProjectProgressReport TETAP ADA
+    | — masih dipakai ExecutiveDashboardController (endpoint /dashboard/api/*)
+    | dan DevelopmentProject, jadi jangan ikut di-drop.
     |--------------------------------------------------------------------------
     */
-
-    Route::get('/pembangunan', [PembangunanDashboardController::class, 'index'])
-        ->name('dashboard.pembangunan')
-        ->middleware('permission:project-progress.view');
 
     /*
     |--------------------------------------------------------------------------
