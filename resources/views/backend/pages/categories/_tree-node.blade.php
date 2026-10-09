@@ -17,6 +17,10 @@
         @else
             <span class="taxonomy-tree-toggle-spacer"></span>
         @endif
+        @can('categories.delete')
+            <input type="checkbox" class="form-check-input category-row-checkbox" value="{{ $category->id }}"
+                data-nama="{{ $category->nama }}" aria-label="Pilih {{ $category->nama }} untuk dihapus">
+        @endcan
         <i class="mdi {{ $category->depth === 0 ? 'mdi-folder-outline' : 'mdi-subdirectory-arrow-right' }} taxonomy-tree-icon"></i>
         <span class="taxonomy-tree-label">{{ $category->nama }}</span>
         @if ($badge > 0)

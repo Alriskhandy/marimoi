@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\SpatialLayer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -288,11 +289,15 @@ class CategoryController extends Controller
 
     /**
      * §5.1 butir 5 — pesan hapus-aman menyebut jumlah & nama penghalang,
-     * bukan sekadar "masih memiliki sub-kategori"/"masih digunakan".
+     * bukan sekadar "masih memiliki sub-kategori"/"masih digunakan". Query
+     * sub-kategori SELALU fresh (bukan `$category->children` yang bisa jadi
+     * relasi ter-cache basi), supaya bulkDestroy() yang menghapus beberapa
+     * Kategori dalam satu loop melihat state terkini tiap iterasi (anak yang
+     * sudah dihapus di iterasi sebelumnya harus langsung dianggap tidak ada).
      */
     private function blockedByChildrenMessage(Category $category): string
     {
-        $names = $category->children->pluck('nama');
+        $names = Category::where('parent_id', $category->id)->pluck('nama');
         $shown = $names->take(5)->implode(', ');
         $suffix = $names->count() > 5 ? ', dst.' : '';
 
@@ -316,52 +321,125 @@ class CategoryController extends Controller
         return "Kategori tidak dapat dihapus karena masih dipakai {$names->count()} Layer: {$shown}{$suffix}";
     }
 
-    public function destroy(string $id)
+    /**
+     * hasLinkedLayers() mengabaikan Layer yang sudah di-soft-delete (lihat
+     * docblock-nya) — tapi baris Layer itu SENDIRI masih ada di DB dengan
+     * category_id/category_node_id masih menunjuk ke sini, dan FK
+     * `layers_v3_category_id_foreign` ON DELETE NO ACTION, jadi DELETE
+     * Kategori/Subkategori akan tetap gagal kena constraint kalau baris
+     * "sampah" itu tidak dibuang permanen dulu. Aman di-forceDelete(): semua
+     * tabel anak (spatial_features/layer_styles/layer_imports/layer_metadata)
+     * ON DELETE CASCADE, dan Layer yang masih ada Data Spasial-nya tidak
+     * pernah bisa disoft-delete sejak awal (SpatialLayerController::destroy()).
+     */
+    private function purgeSoftDeletedLayers(Category $category): void
     {
-        $category = Category::with('children')->findOrFail($id);
-        $user = Auth::user();
-        $userRole = $user->role->slug ?? null;
-
-        if (! in_array($userRole, ['super-admin', 'admin-bappeda']) && $category->user_id !== $user->id) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus kategori ini.');
-        }
-
-        if ($category->children->count() > 0) {
-            return redirect()->back()->with('error', $this->blockedByChildrenMessage($category));
-        }
-
-        if ($category->hasLinkedLayers()) {
-            return redirect()->back()->with('error', $this->blockedByLayersMessage($category));
-        }
-
-        // hasLinkedLayers() di atas mengabaikan Layer yang sudah di-soft-delete
-        // (lihat docblock-nya) — tapi baris Layer itu SENDIRI masih ada di DB
-        // dengan category_id/category_node_id masih menunjuk ke sini, dan FK
-        // `layers_v3_category_id_foreign` ON DELETE NO ACTION, jadi DELETE
-        // Kategori/Subkategori akan tetap gagal kena constraint kalau baris
-        // "sampah" itu tidak dibuang permanen dulu. Aman di-forceDelete(): semua
-        // tabel anak (spatial_features/layer_styles/layer_imports/layer_metadata)
-        // ON DELETE CASCADE, dan Layer yang masih ada Data Spasial-nya tidak
-        // pernah bisa disoft-delete sejak awal (SpatialLayerController::destroy()).
         SpatialLayer::onlyTrashed()
             ->where(function ($query) use ($category) {
                 $query->where('category_id', $category->id)
                     ->orWhere('category_node_id', $category->id);
             })
             ->forceDelete();
+    }
+
+    /**
+     * Satu titik logika hapus-aman, dipakai oleh destroy() (satu Kategori)
+     * DAN bulkDestroy() (banyak sekaligus, lihat docblock di sana) — supaya
+     * aturannya (izin, masih punya sub-kategori, masih dipakai Layer) selalu
+     * konsisten di kedua jalur.
+     *
+     * @return string|null null kalau berhasil dihapus, pesan alasan kalau diblokir/gagal
+     */
+    private function attemptDeleteCategory(Category $category, User $user, bool $canManageAny): ?string
+    {
+        if (! $canManageAny && $category->user_id !== $user->id) {
+            return 'Anda tidak memiliki izin untuk menghapus kategori ini.';
+        }
+
+        if (Category::where('parent_id', $category->id)->exists()) {
+            return $this->blockedByChildrenMessage($category);
+        }
+
+        if ($category->hasLinkedLayers()) {
+            return $this->blockedByLayersMessage($category);
+        }
+
+        $this->purgeSoftDeletedLayers($category);
 
         try {
             $category->delete();
+            Log::info('Category deleted successfully', ['id' => $category->id]);
 
-            Log::info('Category deleted successfully', ['id' => $id]);
-
-            return redirect()->route('categories.index')
-                ->with('success', 'Kategori berhasil dihapus');
+            return null;
         } catch (\Exception $e) {
             Log::error('Error deleting category: '.$e->getMessage());
 
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus kategori: '.$e->getMessage());
+            return 'Terjadi kesalahan saat menghapus kategori: '.$e->getMessage();
         }
+    }
+
+    public function destroy(string $id)
+    {
+        $category = Category::findOrFail($id);
+        $user = Auth::user();
+        $canManageAny = in_array($user->role->slug ?? null, ['super-admin', 'admin-bappeda']);
+
+        $reason = $this->attemptDeleteCategory($category, $user, $canManageAny);
+
+        if ($reason !== null) {
+            return redirect()->back()->with('error', $reason);
+        }
+
+        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus');
+    }
+
+    /**
+     * Hapus beberapa Kategori/Subkategori sekaligus dari checkbox struktur
+     * pohon (categories/index.blade.php) — diurutkan dari depth TERDALAM ke
+     * TERDANGKAL sebelum diproses, supaya kalau user mencentang induk
+     * SEKALIGUS anaknya dalam satu aksi, anak sudah hilang duluan dan induk
+     * tidak lagi diblokir "masih punya sub-kategori" oleh anaknya sendiri.
+     * Baris yang diblokir (izin/masih punya anak/masih dipakai Layer) DILEWATI
+     * (bukan membatalkan seluruh aksi) — hasil akhirnya dilaporkan sebagai
+     * satu pesan ringkas jumlah berhasil + alasan yang dilewati.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'string',
+        ], [
+            'ids.required' => 'Tidak ada Kategori/Subkategori yang dipilih.',
+        ]);
+
+        $user = Auth::user();
+        $canManageAny = in_array($user->role->slug ?? null, ['super-admin', 'admin-bappeda']);
+
+        $categories = Category::whereIn('id', $validated['ids'])->get()->sortByDesc('depth');
+
+        $deletedCount = 0;
+        $blocked = [];
+
+        foreach ($categories as $category) {
+            $reason = $this->attemptDeleteCategory($category, $user, $canManageAny);
+
+            if ($reason === null) {
+                $deletedCount++;
+            } else {
+                $blocked[] = "{$category->nama} ({$reason})";
+            }
+        }
+
+        $message = "{$deletedCount} Kategori/Subkategori berhasil dihapus.";
+
+        if ($blocked !== []) {
+            $shown = collect($blocked)->take(3)->implode(' | ');
+            $suffix = count($blocked) > 3 ? ' dan lainnya' : '';
+            $message .= " Dilewati: {$shown}{$suffix}.";
+        }
+
+        return redirect()->route('categories.index')
+            ->with($deletedCount > 0 ? 'success' : 'error', $message);
     }
 
     /**

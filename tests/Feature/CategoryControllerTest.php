@@ -350,4 +350,103 @@ class CategoryControllerTest extends TestCase
 
         $response->assertOk()->assertSee(route('spatial-layers.index', ['category_id' => $category->id]), false);
     }
+
+    /**
+     * Hapus massal — checkbox di struktur pohon (categories/index.blade.php).
+     * Beberapa Kategori/Subkategori bisa dihapus sekaligus; baris yang
+     * diblokir (masih punya sub-kategori/masih dipakai Layer) dilewati tanpa
+     * membatalkan baris lain yang aman dihapus.
+     */
+    public function test_bulk_destroy_removes_multiple_categories(): void
+    {
+        $admin = $this->admin();
+        $a = Category::create(['nama' => 'Bulk A']);
+        $b = Category::create(['nama' => 'Bulk B']);
+
+        $response = $this->actingAs($admin)->post(route('categories.bulk-destroy'), [
+            'ids' => [$a->id, $b->id],
+        ]);
+
+        $response->assertRedirect(route('categories.index'));
+        $response->assertSessionHas('success', fn ($message) => str_contains($message, '2 Kategori/Subkategori berhasil dihapus'));
+        $this->assertDatabaseMissing('categories_v3', ['id' => $a->id]);
+        $this->assertDatabaseMissing('categories_v3', ['id' => $b->id]);
+    }
+
+    /**
+     * Memilih induk SEKALIGUS anaknya dalam satu bulk harus tetap berhasil
+     * keduanya — diproses dari depth terdalam dulu, jadi anak sudah hilang
+     * sebelum induknya dicek "masih punya sub-kategori".
+     */
+    public function test_bulk_destroy_removes_a_parent_and_its_child_selected_together(): void
+    {
+        $admin = $this->admin();
+        $root = Category::create(['nama' => 'Induk Bulk']);
+        $child = Category::create(['nama' => 'Anak Bulk', 'parent_id' => $root->id]);
+
+        $response = $this->actingAs($admin)->post(route('categories.bulk-destroy'), [
+            'ids' => [$root->id, $child->id],
+        ]);
+
+        $response->assertSessionHas('success', fn ($message) => str_contains($message, '2 Kategori/Subkategori berhasil dihapus'));
+        $this->assertDatabaseMissing('categories_v3', ['id' => $root->id]);
+    }
+
+    public function test_bulk_destroy_skips_blocked_categories_but_deletes_the_rest(): void
+    {
+        $admin = $this->admin();
+        $safe = Category::create(['nama' => 'Bulk Aman']);
+        $blocked = Category::create(['nama' => 'Bulk Diblokir']);
+        DB::table('layers')->insert([
+            'id' => (string) Str::uuid(),
+            'category_id' => $blocked->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'name' => 'Layer Pemblokir',
+            'slug' => 'layer-pemblokir-'.Str::random(6),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('categories.bulk-destroy'), [
+            'ids' => [$safe->id, $blocked->id],
+        ]);
+
+        $response->assertSessionHas('success', fn ($message) => str_contains($message, '1 Kategori/Subkategori berhasil dihapus')
+            && str_contains($message, 'Bulk Diblokir'));
+        $this->assertDatabaseMissing('categories_v3', ['id' => $safe->id]);
+        $this->assertDatabaseHas('categories_v3', ['id' => $blocked->id]);
+    }
+
+    public function test_bulk_destroy_also_purges_only_soft_deleted_linked_layers(): void
+    {
+        $admin = $this->admin();
+        $category = Category::create(['nama' => 'Bulk Layer Terhapus']);
+        DB::table('layers')->insert([
+            'id' => (string) Str::uuid(),
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'name' => 'Layer Terhapus Bulk',
+            'slug' => 'layer-terhapus-bulk-'.Str::random(6),
+            'deleted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('categories.bulk-destroy'), [
+            'ids' => [$category->id],
+        ]);
+
+        $response->assertSessionHas('success', fn ($message) => str_contains($message, '1 Kategori/Subkategori berhasil dihapus'));
+        $this->assertDatabaseMissing('categories_v3', ['id' => $category->id]);
+    }
+
+    public function test_bulk_destroy_requires_at_least_one_id(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('categories.bulk-destroy'), [])
+            ->assertSessionHasErrors('ids');
+    }
 }

@@ -157,6 +157,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index')->middleware('permission:categories.view');
         Route::post('/store', [CategoryController::class, 'store'])->name('store')->middleware('permission:categories.create');
+        Route::post('/bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:categories.delete');
         Route::put('/{id}', [CategoryController::class, 'update'])->name('update')->middleware('permission:categories.edit');
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy')->middleware('permission:categories.delete');
 

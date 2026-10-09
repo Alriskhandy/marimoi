@@ -482,6 +482,25 @@ class SpatialLayerControllerTest extends TestCase
             ->assertSee('&quot;kode&quot;:&quot;KODE-001&quot;', false);
     }
 
+    public function test_show_page_feature_detail_payload_includes_raw_imported_attributes(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Layer Atribut Impor Uji']);
+        SpatialLayerFeature::create([
+            'layer_id' => $layer->id,
+            'label' => 'KODE-002',
+            'geom' => DB::raw("ST_GeomFromText('POINT(127.8 1.5)', 4326)"),
+            'properties' => ['luas_ha' => '12.5', 'kecamatan' => 'Tobelo'],
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('spatial-layers.show', $layer));
+
+        $response->assertOk()
+            ->assertSee('id="featureDetailAttributeTable"', false)
+            ->assertSee('&quot;key&quot;:&quot;luas_ha&quot;,&quot;value&quot;:&quot;12.5&quot;', false)
+            ->assertSee('&quot;key&quot;:&quot;kecamatan&quot;,&quot;value&quot;:&quot;Tobelo&quot;', false);
+    }
+
     /**
      * Regresi: baris "Belum ada Data Spasial" dulu dirender sebagai <tr> statis
      * di tbody, yang ikut dihitung DataTables sebagai 1 data sungguhan — info

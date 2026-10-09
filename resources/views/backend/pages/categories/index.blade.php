@@ -119,6 +119,26 @@
                             placeholder="Saring kategori berdasarkan nama...">
                     </div>
 
+                    @can('categories.delete')
+                        <div id="categoryBulkActionsBar" class="alert alert-info d-none py-2 px-3 mb-3"
+                            role="alert">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <small><i class="mdi mdi-checkbox-multiple-marked me-1"></i>
+                                    <span id="categorySelectedCount">0</span> dipilih</small>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="bulkDeleteCategories()">
+                                        <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        onclick="clearCategorySelection()">
+                                        <i class="mdi mdi-close me-1"></i> Batal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endcan
+
                     @php
                         $user = Auth::user();
                         $role = $user->role->slug ?? null;
@@ -287,6 +307,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Hapus Form (Hidden) -->
+    <form id="categoryBulkDestroyForm" method="POST" action="{{ route('categories.bulk-destroy') }}"
+        style="display: none;" data-confirm="delete" data-name="Kategori/Subkategori terpilih">
+        @csrf
+        <div id="categoryBulkDestroyIds"></div>
+    </form>
 @endsection
 
 @push('styles')
@@ -970,6 +997,12 @@
                 $(this).closest('.taxonomy-tree-node').toggleClass('expanded');
             });
 
+            // Checkbox hapus massal tidak boleh ikut memicu selectCategory()
+            // (klik checkbox bukan maksud "lihat detail kategori ini").
+            $tree.on('click', '.category-row-checkbox', function(e) {
+                e.stopPropagation();
+            });
+
             $tree.on('click', '.taxonomy-tree-row', function() {
                 selectCategory($(this).data('category-id'));
             });
@@ -1231,6 +1264,62 @@
                     window.location.href = `{{ route('categories.index') }}`;
                 }
             });
+
+            // Hapus massal Kategori/Subkategori — checkbox di struktur pohon
+            // (lihat _tree-node.blade.php), pola sama dengan bulk-selection
+            // Layer/Data Spasial di spatial-layers/index.blade.php & show.blade.php.
+            let selectedCategoryIds = [];
+
+            function updateCategoryBulkActionsBar() {
+                const bar = document.getElementById('categoryBulkActionsBar');
+                if (!bar) {
+                    return;
+                }
+                document.getElementById('categorySelectedCount').textContent = selectedCategoryIds.length;
+                bar.classList.toggle('d-none', selectedCategoryIds.length === 0);
+            }
+
+            $tree.on('change', '.category-row-checkbox', function() {
+                const id = this.value;
+
+                if (this.checked) {
+                    if (!selectedCategoryIds.includes(id)) {
+                        selectedCategoryIds.push(id);
+                    }
+                } else {
+                    selectedCategoryIds = selectedCategoryIds.filter((existing) => existing !== id);
+                }
+
+                updateCategoryBulkActionsBar();
+            });
+
+            window.clearCategorySelection = function() {
+                selectedCategoryIds = [];
+                $tree.find('.category-row-checkbox').prop('checked', false);
+                updateCategoryBulkActionsBar();
+            };
+
+            window.bulkDeleteCategories = function() {
+                if (selectedCategoryIds.length === 0) {
+                    return;
+                }
+
+                const idsContainer = document.getElementById('categoryBulkDestroyIds');
+                idsContainer.innerHTML = '';
+                selectedCategoryIds.forEach((id) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    idsContainer.appendChild(input);
+                });
+
+                // requestSubmit() (bukan submit()) supaya event 'submit' tetap
+                // terpicu — handler data-confirm="delete" di bawah menunggu
+                // event ini untuk menampilkan konfirmasi sebelum benar-benar
+                // mengirim form.
+                document.getElementById('categoryBulkDestroyForm').requestSubmit();
+            };
 
             // Enhanced delete confirmation
             $('form[data-confirm="delete"]').on('submit', function(e) {

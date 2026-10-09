@@ -417,6 +417,14 @@
                                                     })
                                                     ->values();
 
+                                                $featureDynamicCodes = $dynamicAttributes
+                                                    ->pluck('metadataDefinition.kode')
+                                                    ->all();
+                                                $featureRawAttributes = \Illuminate\Support\Arr::except(
+                                                    $feature->properties ?? [],
+                                                    $featureDynamicCodes,
+                                                );
+
                                                 $featureDetailPayload = [
                                                     'kode' => $feature->label ?? '#' . $feature->id,
                                                     'wilayah' => $feature->region->name ?? null,
@@ -425,6 +433,12 @@
                                                         : null,
                                                     'tanggal_input' => $feature->created_at?->format('d M Y H:i'),
                                                     'metadata' => $featureMetadataRows,
+                                                    'atribut' => collect($featureRawAttributes)
+                                                        ->map(fn ($value, $key) => [
+                                                            'key' => $key,
+                                                            'value' => is_scalar($value) ? $value : json_encode($value),
+                                                        ])
+                                                        ->values(),
                                                     'edit_url' => route('spatial-layers.features.edit', [
                                                         $layer,
                                                         $feature,
@@ -787,6 +801,11 @@
                                 <th>Tanggal Input</th>
                                 <td id="featureDetailTanggal">-</td>
                             </tr>
+                        </table>
+                        <p class="card-title mb-2" id="featureDetailAttributeTitle" style="font-size:0.95rem;display:none;">
+                            Atribut Impor</p>
+                        <table class="table table-sm" id="featureDetailAttributeTable" style="display:none;">
+                            <tbody id="featureDetailAttribute"></tbody>
                         </table>
                         <p class="card-title mb-2" style="font-size:0.95rem;">Metadata Dinamis</p>
                         <table class="table table-sm" id="featureDetailMetadataTable">
@@ -1535,6 +1554,18 @@
                     $('#featureDetailKode').text(feature.kode || '-');
                     $('#featureDetailWilayah').text(feature.wilayah || '-');
                     $('#featureDetailTanggal').text(feature.tanggal_input || '-');
+
+                    const $attribute = $('#featureDetailAttribute').empty();
+                    if (feature.atribut && feature.atribut.length) {
+                        feature.atribut.forEach((row) => {
+                            $attribute.append(
+                                `<tr><th style="width:200px;">${escapeHtml(row.key)}</th><td>${escapeHtml(row.value)}</td></tr>`
+                            );
+                        });
+                        $('#featureDetailAttributeTitle, #featureDetailAttributeTable').show();
+                    } else {
+                        $('#featureDetailAttributeTitle, #featureDetailAttributeTable').hide();
+                    }
 
                     const $metadata = $('#featureDetailMetadata').empty();
                     if (feature.metadata && feature.metadata.length) {
