@@ -240,6 +240,11 @@
                                         <i class="mdi mdi-folder-move-outline me-1"></i> Pindah Kategori
                                     </button>
                                 @endcan
+                                @can('spatial-layers.publish')
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="openBulkStatusModal()">
+                                        <i class="mdi mdi-publish me-1"></i> Ubah Status
+                                    </button>
+                                @endcan
                                 @can('spatial-layers.delete')
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDeleteLayers()">
                                         <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
@@ -438,6 +443,50 @@
             </div>
         </div>
     </div>
+
+    @can('spatial-layers.publish')
+        <!-- Bulk Ubah Status Modal -->
+        <div class="modal fade" id="bulkStatusModal" tabindex="-1" aria-labelledby="bulkStatusModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bulkStatusModalLabel">
+                            <i class="mdi mdi-publish"></i> Ubah Status Layer
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="bulkStatusForm" method="POST" action="{{ route('spatial-layers.bulk-update-status') }}">
+                        @csrf
+                        <div class="modal-body">
+                            <p class="text-muted small">
+                                Ubah status <strong id="bulkStatusCount">0</strong> Layer terpilih.
+                            </p>
+
+                            <label for="bulkStatusSelect" class="form-label fw-semibold">Status baru</label>
+                            <select id="bulkStatusSelect" name="status" class="form-select" required>
+                                <option value="">-- Pilih Status --</option>
+                                <option value="published">Published (tampil di peta publik)</option>
+                                <option value="draft">Draft</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                            <div class="form-text">
+                                Layer tanpa Data Spasial atau tanpa style default dilewati saat dipublikasikan.
+                            </div>
+
+                            <div id="bulkStatusIds"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="mdi mdi-check"></i> Simpan Status
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endcan
 
     <!-- Bulk Pindah Kategori Modal -->
     <div class="modal fade" id="bulkCategoryModal" tabindex="-1" aria-labelledby="bulkCategoryModalLabel"
@@ -911,6 +960,27 @@
             // backend.partials.main menunggu event ini untuk menampilkan
             // konfirmasi SweetAlert sebelum benar-benar mengirim form.
             document.getElementById('layerBulkDestroyForm').requestSubmit();
+        }
+
+        function openBulkStatusModal() {
+            if (selectedLayerItems.length === 0) {
+                return;
+            }
+
+            document.getElementById('bulkStatusCount').textContent = selectedLayerItems.length;
+            document.getElementById('bulkStatusSelect').value = '';
+
+            const idsContainer = document.getElementById('bulkStatusIds');
+            idsContainer.innerHTML = '';
+            selectedLayerItems.forEach((id) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = id;
+                idsContainer.appendChild(input);
+            });
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkStatusModal')).show();
         }
 
         function openBulkCategoryModal() {

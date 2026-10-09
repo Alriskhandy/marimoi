@@ -131,30 +131,84 @@ class SpatialLayerController extends Controller
             'status' => ['required', 'in:draft,published,archived'],
         ]);
 
-        // Fitur "Sumber Layer" (layanan eksternal WMS/WMTS/XYZ/ArcGIS/COG)
-        // dihapus (2026-10-06, migration drop_layer_sources_table) — data
-        // spasial sekarang HANYA lewat impor file, jadi syarat publish sama
-        // untuk semua jenis Layer (tidak ada lagi percabangan stores_features).
-        if ($validated['status'] === 'published') {
-            if (! $spatialLayer->features()->exists()) {
-                throw ValidationException::withMessages([
-                    'status' => 'Layer belum punya Data Spasial, tidak dapat dipublikasikan.',
-                ]);
-            }
-
-            if (! $spatialLayer->default_style_id) {
-                throw ValidationException::withMessages([
-                    'status' => 'Layer belum punya style default, tidak dapat dipublikasikan.',
-                ]);
-            }
+        if ($validated['status'] === 'published' && ($blocker = $this->publishBlocker($spatialLayer))) {
+            throw ValidationException::withMessages(['status' => $blocker]);
         }
 
-        $spatialLayer->update([
-            'status' => $validated['status'],
-            'published_at' => $validated['status'] === 'published' ? ($spatialLayer->published_at ?? now()) : null,
-        ]);
+        $this->applyStatus($spatialLayer, $validated['status']);
 
         return redirect()->route('spatial-layers.show', $spatialLayer)->with('success', 'Status Layer berhasil diubah.');
+    }
+
+    /**
+     * Ubah status banyak Layer sekaligus. Syarat publish sama dengan updateStatus();
+     * Layer yang belum memenuhinya dilewati (bukan menggagalkan seluruh aksi), dan
+     * admin-opd hanya bisa mengubah Layer milik OPD-nya sendiri.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'string',
+            'status' => ['required', 'in:draft,published,archived'],
+        ]);
+
+        $query = SpatialLayer::whereIn('id', $validated['ids']);
+
+        if ($this->isAdminOpd()) {
+            $query->where('opd_id', $this->currentOpdId());
+        }
+
+        $updated = 0;
+        $skipped = [];
+
+        foreach ($query->get() as $layer) {
+            if ($validated['status'] === 'published' && ($blocker = $this->publishBlocker($layer))) {
+                $skipped[$blocker] = ($skipped[$blocker] ?? 0) + 1;
+
+                continue;
+            }
+
+            $this->applyStatus($layer, $validated['status']);
+            $updated++;
+        }
+
+        $label = self::STATUS_LABELS[$validated['status']];
+        $message = "{$updated} Layer berhasil diubah menjadi {$label}.";
+        foreach ($skipped as $reason => $count) {
+            $message .= " {$count} Layer dilewati: {$reason}";
+        }
+
+        return redirect()->route('spatial-layers.index')
+            ->with($updated > 0 ? 'success' : 'error', $message);
+    }
+
+    private const STATUS_LABELS = ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'];
+
+    /**
+     * Alasan Layer belum boleh dipublikasikan, atau null bila sudah memenuhi syarat.
+     */
+    private function publishBlocker(SpatialLayer $layer): ?string
+    {
+        // Fitur "Sumber Layer" (layanan eksternal) sudah dihapus — data spasial hanya
+        // lewat impor file, jadi syarat publish sama untuk semua jenis Layer.
+        if (! $layer->features()->exists()) {
+            return 'Layer belum punya Data Spasial, tidak dapat dipublikasikan.';
+        }
+
+        if (! $layer->default_style_id) {
+            return 'Layer belum punya style default, tidak dapat dipublikasikan.';
+        }
+
+        return null;
+    }
+
+    private function applyStatus(SpatialLayer $layer, string $status): void
+    {
+        $layer->update([
+            'status' => $status,
+            'published_at' => $status === 'published' ? ($layer->published_at ?? now()) : null,
+        ]);
     }
 
     public function destroy(SpatialLayer $spatialLayer)

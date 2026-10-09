@@ -210,6 +210,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
         Route::post('/bulk-destroy', [SpatialLayerController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
         Route::post('/bulk-update-category', [SpatialLayerController::class, 'bulkUpdateCategory'])->name('bulk-update-category')->middleware('permission:spatial-layers.edit');
+        Route::post('/bulk-update-status', [SpatialLayerController::class, 'bulkUpdateStatus'])->name('bulk-update-status')->middleware('permission:spatial-layers.publish');
 
         // Wizard "Tambah Layer" 4 tahap (plan rippling-frolicking-ladybug) —
         // /create dan POST / di atas SENGAJA tetap dipakai ulang (bukan rute

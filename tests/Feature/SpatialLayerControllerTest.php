@@ -918,6 +918,124 @@ class SpatialLayerControllerTest extends TestCase
         $this->assertDatabaseHas('layers', ['id' => $otherLayer->id, 'category_id' => $otherLayerOriginalCategoryId]);
     }
 
+    private function publishableLayer(array $attributes = []): SpatialLayer
+    {
+        $layer = $this->createLayer($attributes);
+        SpatialLayerFeature::create([
+            'layer_id' => $layer->id,
+            'geom' => DB::raw("ST_GeomFromText('POINT(127.5 0.8)', 4326)"),
+        ]);
+        $style = $layer->styles()->create([
+            'name' => 'Default',
+            'style_type' => 'simple',
+            'is_default' => true,
+            'definition' => ['color' => '#0a84ff'],
+        ]);
+        $layer->update(['default_style_id' => $style->id]);
+
+        return $layer;
+    }
+
+    public function test_index_page_has_bulk_status_button_and_modal_for_publisher(): void
+    {
+        $admin = $this->admin();
+        $this->createLayer(['name' => 'Layer Bulk Status Uji']);
+
+        $this->actingAs($admin)->get(route('spatial-layers.index'))
+            ->assertOk()
+            ->assertSee('id="bulkStatusModal"', false)
+            ->assertSee('onclick="openBulkStatusModal()"', false)
+            ->assertSee(route('spatial-layers.bulk-update-status'), false);
+    }
+
+    public function test_index_page_hides_bulk_status_for_user_without_publish_permission(): void
+    {
+        $role = Role::create(['name' => 'Editor Layer', 'slug' => 'editor-layer', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.view', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id]);
+        $this->createLayer(['name' => 'Layer Tanpa Izin Publish']);
+
+        $this->actingAs($user)->get(route('spatial-layers.index'))
+            ->assertOk()
+            ->assertDontSee('id="bulkStatusModal"', false)
+            ->assertDontSee('onclick="openBulkStatusModal()"', false);
+
+        $this->actingAs($user)->post(route('spatial-layers.bulk-update-status'), [
+            'ids' => [SpatialLayer::first()->id],
+            'status' => 'published',
+        ])->assertForbidden();
+    }
+
+    public function test_bulk_update_status_publishes_eligible_layers_and_skips_the_rest(): void
+    {
+        $admin = $this->admin();
+        $ready = $this->publishableLayer(['name' => 'Siap Publish']);
+        $empty = $this->createLayer(['name' => 'Belum Ada Data']);
+
+        $response = $this->actingAs($admin)->post(route('spatial-layers.bulk-update-status'), [
+            'ids' => [$ready->id, $empty->id],
+            'status' => 'published',
+        ]);
+
+        $response->assertRedirect(route('spatial-layers.index'));
+        $response->assertSessionHas('success', fn (string $message) => str_contains($message, '1 Layer berhasil diubah menjadi Published')
+            && str_contains($message, '1 Layer dilewati: Layer belum punya Data Spasial'));
+
+        $this->assertSame('published', $ready->fresh()->status);
+        $this->assertNotNull($ready->fresh()->published_at);
+        $this->assertSame('draft', $empty->fresh()->status);
+    }
+
+    public function test_bulk_update_status_back_to_draft_clears_published_at(): void
+    {
+        $admin = $this->admin();
+        $layerA = $this->publishableLayer(['name' => 'Publik A', 'status' => 'published', 'published_at' => now()]);
+        $layerB = $this->createLayer(['name' => 'Publik B', 'status' => 'published', 'published_at' => now()]);
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-update-status'), [
+            'ids' => [$layerA->id, $layerB->id],
+            'status' => 'archived',
+        ])->assertRedirect(route('spatial-layers.index'))->assertSessionHas('success');
+
+        foreach ([$layerA, $layerB] as $layer) {
+            $this->assertSame('archived', $layer->fresh()->status);
+            $this->assertNull($layer->fresh()->published_at);
+        }
+    }
+
+    public function test_bulk_update_status_rejects_unknown_status(): void
+    {
+        $admin = $this->admin();
+        $layer = $this->createLayer(['name' => 'Status Aneh']);
+
+        $this->actingAs($admin)->post(route('spatial-layers.bulk-update-status'), [
+            'ids' => [$layer->id],
+            'status' => 'hidden',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame('draft', $layer->fresh()->status);
+    }
+
+    public function test_admin_opd_bulk_update_status_ignores_ids_of_other_opd_layers(): void
+    {
+        $opd = Opd::create(['name' => 'Dinas Uji Status', 'singkatan' => Str::upper(Str::random(5))]);
+        $otherOpd = Opd::create(['name' => 'Dinas Lain Status', 'singkatan' => Str::upper(Str::random(5))]);
+        $role = Role::create(['name' => 'Admin OPD Status', 'slug' => 'admin-opd', 'description' => null]);
+        $role->givePermissionTo(Permission::firstOrCreate(['name' => 'spatial-layers.publish', 'guard_name' => 'web']));
+        $user = User::factory()->create(['role_id' => $role->id, 'opd_id' => $opd->id]);
+
+        $ownLayer = $this->publishableLayer(['name' => 'Layer OPD Sendiri Status', 'opd_id' => $opd->id]);
+        $otherLayer = $this->publishableLayer(['name' => 'Layer OPD Lain Status', 'opd_id' => $otherOpd->id]);
+
+        $this->actingAs($user)->post(route('spatial-layers.bulk-update-status'), [
+            'ids' => [$ownLayer->id, $otherLayer->id],
+            'status' => 'published',
+        ])->assertRedirect(route('spatial-layers.index'));
+
+        $this->assertSame('published', $ownLayer->fresh()->status);
+        $this->assertSame('draft', $otherLayer->fresh()->status);
+    }
+
     public function test_index_page_shows_status_and_opd_filter_dropdowns(): void
     {
         $admin = $this->admin();
