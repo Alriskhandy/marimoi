@@ -115,8 +115,10 @@
                 <div id="toast-container" class="fixed top-20 right-3 space-y-2"></div>
 
                 <!-- Modal Panduan Awal -->
-                <div id="guideModal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
-                    <div class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
+                <div id="guideModal"
+                    class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+                    <div
+                        class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
                         <!-- Header -->
                         <div class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white">
                             <h5 class="text-lg font-bold tracking-tight">Panduan Penggunaan</h5>
@@ -189,10 +191,13 @@
                 <div class="hidden hover:bg-green-600"></div>
 
                 <!-- Modal Share Peta -->
-                <div id="shareMapModal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
-                    <div class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
+                <div id="shareMapModal"
+                    class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+                    <div
+                        class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
                         <!-- Header -->
-                        <div class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white flex justify-between items-center">
+                        <div
+                            class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white flex justify-between items-center">
                             <h5 class="text-lg font-bold tracking-tight">Bagikan Peta</h5>
                             <button id="btn-close-share-modal" class="text-white/70 hover:text-white">
                                 <i class="bi bi-x-lg"></i>
@@ -256,13 +261,14 @@
                                     class="flex-1 min-w-0 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 py-2 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
                                     placeholder="Cari layer atau kategori...">
                                 <button type="button" id="layer-search-clear"
-                                    class="hidden shrink-0 text-gray-400 hover:text-gray-600" aria-label="Hapus pencarian">
+                                    class="hidden shrink-0 text-gray-400 hover:text-gray-600"
+                                    aria-label="Hapus pencarian">
                                     <i class="bi bi-x-circle-fill text-sm"></i>
                                 </button>
                             </div>
 
                             <!-- Toggle panel Filter Data, di samping kolom pencarian agar sidebar
-                                 Layer tetap ringkas (panel filter default tersembunyi). -->
+                                     Layer tetap ringkas (panel filter default tersembunyi). -->
                             <button type="button" id="btn-toggle-filter-panel"
                                 class="relative shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-500 hover:bg-slate-100 transition-colors"
                                 title="Filter Data" data-tooltip="Filter Data" aria-expanded="false"
@@ -278,12 +284,12 @@
                     </div>
 
                     <!-- Panel Filter Data: tersembunyi secara default, dibuka lewat tombol corong
-                         di samping pencarian. Filter bisa diatur lebih dulu tanpa mengaktifkan
-                         layer apa pun, baru layer yang sesuai hasil filter dicentang. -->
-                    <div id="filter-panel"
-                        class="hidden shrink-0 border border-gray-200 rounded-lg bg-white p-3 mb-2">
+                             di samping pencarian. Filter bisa diatur lebih dulu tanpa mengaktifkan
+                             layer apa pun, baru layer yang sesuai hasil filter dicentang. -->
+                    <div id="filter-panel" class="hidden shrink-0 border border-gray-200 rounded-lg bg-white p-3 mb-2">
                         <div class="mb-2">
-                            <label for="filter-kabupaten" class="block text-xs font-medium text-gray-700 mb-1">Kabupaten/Kota</label>
+                            <label for="filter-kabupaten"
+                                class="block text-xs font-medium text-gray-700 mb-1">Kabupaten/Kota</label>
                             <select id="filter-kabupaten" class="w-full text-sm rounded-lg border-gray-300">
                                 <option value="">Semua Kabupaten/Kota</option>
                             </select>
@@ -297,7 +303,8 @@
                         </div>
 
                         <div class="mb-2">
-                            <label for="filter-opd" class="block text-xs font-medium text-gray-700 mb-1">OPD Pengelola</label>
+                            <label for="filter-opd" class="block text-xs font-medium text-gray-700 mb-1">OPD
+                                Pengelola</label>
                             <select id="filter-opd" class="w-full text-sm rounded-lg border-gray-300">
                                 <option value="">Semua OPD</option>
                             </select>
@@ -357,7 +364,7 @@
                 </div>
 
                 <!-- Panel Layer Tools (slider transparansi per layer aktif, posisi diatur oleh JS
-                                 agar selalu menyambung tepat di bawah kolom tombol Leaflet sisi kiri) -->
+                                     agar selalu menyambung tepat di bawah kolom tombol Leaflet sisi kiri) -->
                 <div id="sidebar-layer-tools"
                     class="absolute w-[280px] md:w-[300px] bg-slate-50 border border-gray-300 rounded-lg shadow-lg z-[101] text-gray-900 hidden">
                     <!-- Header with gradient background -->
@@ -421,10 +428,11 @@
                 </div>
 
                 <!-- Tombol Fullscreen & Home dirender oleh Leaflet sebagai control 'topleft',
-                                 langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
+                                     langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
 
                 <!-- HUD koordinat & zoom (diisi oleh skrip di bawah) -->
-                <div id="map-hud" aria-hidden="true"><span>Lat <b id="hud-lat">-</b></span><i></i><span>Lng <b id="hud-lng">-</b></span><i></i><span>Zoom <b id="hud-zoom">-</b></span></div>
+                <div id="map-hud" aria-hidden="true"><span>Lat <b id="hud-lat">-</b></span><i></i><span>Lng <b
+                            id="hud-lng">-</b></span><i></i><span>Zoom <b id="hud-zoom">-</b></span></div>
 
                 <!-- Map -->
                 <div id="map" class="relative z-10 h-full w-full bg-gray-200 flex items-center justify-center">
@@ -469,23 +477,32 @@
 
     {{-- HUD koordinat/zoom + skala. `map` adalah konstanta global yang dibuat map.js. --}}
     <script>
-        (function () {
-            if (typeof map === 'undefined' || typeof L === 'undefined') { return; }
+        (function() {
+            if (typeof map === 'undefined' || typeof L === 'undefined') {
+                return;
+            }
             var lat = document.getElementById('hud-lat');
             var lng = document.getElementById('hud-lng');
             var zoom = document.getElementById('hud-zoom');
             var pending = null;
-            L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
-            function showZoom() { zoom.textContent = map.getZoom(); }
+            L.control.scale({
+                imperial: false,
+                position: 'bottomleft'
+            }).addTo(map);
+
+            function showZoom() {
+                zoom.textContent = map.getZoom();
+            }
+
             function showCenter() {
                 var c = map.getCenter();
                 lat.textContent = c.lat.toFixed(4);
                 lng.textContent = c.lng.toFixed(4);
             }
-            map.on('mousemove', function (e) {
+            map.on('mousemove', function(e) {
                 pending = e.latlng;
                 if (pending && !map._hudRaf) {
-                    map._hudRaf = requestAnimationFrame(function () {
+                    map._hudRaf = requestAnimationFrame(function() {
                         lat.textContent = pending.lat.toFixed(4);
                         lng.textContent = pending.lng.toFixed(4);
                         map._hudRaf = 0;
