@@ -15,7 +15,7 @@
 <header id="nav" data-scrolled="false" data-solid="{{ $navSolid ? 'true' : 'false' }}"
     class="group/nav fixed inset-x-0 top-0 z-[1000] border-b border-transparent text-white transition-[background-color,border-color] duration-500 data-[scrolled=true]:border-white/10 data-[scrolled=true]:bg-slate-950/85 data-[scrolled=true]:backdrop-blur-md data-[solid=true]:border-white/10 data-[solid=true]:bg-slate-950/90 data-[solid=true]:backdrop-blur-md">
     <div
-        class="mx-auto flex h-20 w-full max-w-[1180px] items-center justify-between gap-4 px-6 transition-[height] duration-500 group-data-[scrolled=true]/nav:h-16 group-data-[solid=true]/nav:h-[76px]">
+        class="mx-auto flex h-20 w-full max-w-[73.75rem] items-center justify-between gap-4 px-6 transition-[height] duration-500 group-data-[scrolled=true]/nav:h-16 group-data-[solid=true]/nav:h-[4.75rem]">
         <a href="{{ route('beranda') }}" class="flex items-center gap-3 text-lg font-extrabold tracking-wider"
             aria-label="MARIMOI">
             <img src="{{ asset('frontend/img/logo/logo-white.png') }}" alt="" class="h-8 w-auto">
@@ -25,7 +25,7 @@
         <nav class="hidden items-center gap-6 xl:flex" aria-label="Menu utama">
             @foreach ($navItems as [$label, $href, $isActive])
                 <a href="{{ $href }}" @if ($isActive) aria-current="page" @endif
-                    class="{{ $navUnderline }} whitespace-nowrap text-[13px] font-semibold transition-colors duration-300 hover:text-white {{ $isActive ? 'text-white after:scale-x-100' : 'text-white/70' }}">{{ $label }}</a>
+                    class="{{ $navUnderline }} whitespace-nowrap text-[0.8125rem] font-semibold transition-colors duration-300 hover:text-white {{ $isActive ? 'text-white after:scale-x-100' : 'text-white/70' }}">{{ $label }}</a>
             @endforeach
         </nav>
 

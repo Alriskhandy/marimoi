@@ -9,7 +9,7 @@
 
 {{-- Footer --}}
 <footer class="bg-[#04101a] pb-8 pt-20 text-sm text-white/60">
-    <div class="mx-auto w-full max-w-[1180px] px-6">
+    <div class="mx-auto w-full max-w-[73.75rem] px-6">
         <div class="mb-12 grid gap-12 md:grid-cols-[2fr_1fr_1.3fr]">
             <div>
                 <div class="mb-4 flex items-center gap-3 text-lg font-extrabold tracking-wider text-white">
@@ -49,7 +49,7 @@
                 </div>
             </div>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6 text-[13px]">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6 text-[0.8125rem]">
             <span>&copy; {{ date('Y') }} BAPPEDA Provinsi Maluku Utara
                 <span class="mx-2 text-white/25">|</span>
                 <a href="{{ route('kebijakan_privasi') }}" class="{{ $footUnderline }} hover:text-white">Kebijakan Privasi</a>

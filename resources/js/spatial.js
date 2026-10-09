@@ -337,144 +337,28 @@ const heroNodes = $('#heroNodes');
 if (heroParticles) { new Scene(heroParticles, { only: 'particles' }); }
 if (heroNodes) { new Scene(heroNodes, { anchor: 'right', mouse: true, scale: 0.95 }); }
 
-/* ---------- 01 pinned scroll scene ---------- */
-const pin = $('#perspektif');
-const pinCanvas = $('#pinCanvas');
-const captions = $$('[data-caption]');
-const meter = $('#pinMeter');
-if (pin && pinCanvas) {
-    const pinScene = new Scene(pinCanvas, { anchor: 'right', scale: 1, reveal: reduceMotion ? 1 : 0, mouse: true, smooth: !reduceMotion });
-    if (captions[0]) { captions[0].dataset.on = 'true'; }
-    if (reduceMotion && meter) { meter.textContent = fmt(nodes.length); }
-    scrollHandlers.push(() => {
-        if (reduceMotion) { return; }
-        const box = pin.getBoundingClientRect();
-        const p = clamp(-box.top / (box.height - vh), 0, 1);
-        pinScene.revealTarget = ease(clamp(p * 1.15, 0, 1));
-        const idx = p < 0.34 ? 0 : (p < 0.7 ? 1 : 2);
-        captions.forEach((c, i) => { c.dataset.on = String(i === idx); });
-        if (meter) { meter.textContent = fmt(pinScene.revealTarget * nodes.length); }
-    });
-}
-
-/* ---------- 03 alur data: jalur kanvas + langkah aktif berdasarkan scroll ---------- */
-const flowSection = $('#alur');
+/* ---------- 02 alur data: garis menurun terisi mengikuti scroll, langkah menyala saat dilewati ---------- */
 const flow = $('#flow');
-const flowCanvas = $('#flowCanvas');
-if (flowSection && flow && flowCanvas) {
+const flowLine = $('#flowLine');
+if (flow && flowLine) {
     const stepEls = $$('[data-step]', flow);
-    const panels = $$('[data-panel]', flowSection);
-    const fctx = flowCanvas.getContext('2d');
-    const state = { t: reduceMotion ? 5 : 0, target: reduceMotion ? 5 : 0, active: -1 };
-    let centers = [];
-    let fw = 0, fh = 0;
-    let running = false;
-    let visible = false;
-    const flowDots = [];
-    for (let i = 0; i < 16; i++) { flowDots.push({ u: Math.random(), s: 0.0006 + Math.random() * 0.0012, o: (Math.random() - 0.5) * 2 }); }
-
-    function layoutFlow() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const box = flow.getBoundingClientRect();
-        fw = box.width; fh = box.height;
-        flowCanvas.width = fw * dpr; flowCanvas.height = fh * dpr;
-        fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        centers = stepEls.map((el) => {
-            const r = $('[data-dot]', el).getBoundingClientRect();
-            return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 };
-        });
-        drawFlow(performance.now());
-    }
-
-    function drawFlow(time) {
-        if (!centers.length) { return; }
-        state.t += (state.target - state.t) * (reduceMotion ? 1 : 0.08);
-        fctx.clearRect(0, 0, fw, fh);
-        const x0 = centers[0].x, x1 = centers[centers.length - 1].x, y = centers[0].y;
-        const headX = x0 + ((x1 - x0) * state.t) / 5;
-        const wave = (x, amp) => (reduceMotion ? 0 : Math.sin(x * 0.035 + time / 500) * amp);
-
-        // jalur dasar
-        fctx.lineWidth = 2;
-        fctx.strokeStyle = 'rgba(255,255,255,.12)';
-        fctx.beginPath(); fctx.moveTo(x0, y); fctx.lineTo(x1, y); fctx.stroke();
-
-        // jalur terisi + cahaya
-        if (headX > x0) {
-            const grad = fctx.createLinearGradient(x0, 0, headX, 0);
-            grad.addColorStop(0, 'rgba(10,132,255,.9)');
-            grad.addColorStop(1, 'rgba(32,217,255,1)');
-            fctx.lineWidth = 3;
-            fctx.strokeStyle = grad;
-            fctx.shadowColor = 'rgba(32,217,255,.8)';
-            fctx.shadowBlur = 14;
-            fctx.beginPath();
-            for (let x = x0; x <= headX; x += 4) { const yy = y + wave(x, 2.2); if (x === x0) { fctx.moveTo(x, yy); } else { fctx.lineTo(x, yy); } }
-            fctx.stroke();
-            fctx.shadowBlur = 0;
-        }
-
-        // partikel data mengalir sepanjang jalur
-        flowDots.forEach((d) => {
-            if (!reduceMotion) { d.u += d.s; if (d.u > 1) { d.u = 0; } }
-            const x = x0 + (x1 - x0) * d.u;
-            const lit = x <= headX;
-            const yy = y + wave(x, 2.2) + d.o * 6;
-            fctx.fillStyle = lit ? 'rgba(190,245,255,.95)' : 'rgba(255,255,255,.22)';
-            fctx.beginPath(); fctx.arc(x, yy, lit ? 2 : 1.5, 0, 6.283); fctx.fill();
-        });
-
-        // komet di ujung jalur
-        if (state.t > 0.02 && state.t < 4.98) {
-            const g = fctx.createRadialGradient(headX, y, 0, headX, y, 26);
-            g.addColorStop(0, 'rgba(255,255,255,.95)');
-            g.addColorStop(0.25, 'rgba(32,217,255,.6)');
-            g.addColorStop(1, 'rgba(32,217,255,0)');
-            fctx.fillStyle = g;
-            fctx.beginPath(); fctx.arc(headX, y, 26, 0, 6.283); fctx.fill();
-        }
-    }
-
-    function loopFlow(t) {
-        if (!running) { return; }
-        drawFlow(t);
-        requestAnimationFrame(loopFlow);
-    }
-    function toggleFlow() {
-        const should = visible && !document.hidden && !reduceMotion;
-        if (should && !running) { running = true; requestAnimationFrame(loopFlow); }
-        if (!should) { running = false; }
-    }
-    if ('IntersectionObserver' in window) {
-        new IntersectionObserver((en) => { visible = en[0].isIntersecting; toggleFlow(); }).observe(flowSection);
-    }
-    document.addEventListener('visibilitychange', toggleFlow);
-
-    function setActive(idx) {
-        if (idx === state.active) { return; }
-        state.active = idx;
-        stepEls.forEach((el, i) => { el.dataset.on = String(i <= idx); el.dataset.active = String(i === idx); });
-        panels.forEach((el, i) => { el.dataset.on = String(i === idx); el.setAttribute('aria-hidden', String(i !== idx)); });
-    }
-
+    const track = flowLine.parentElement;
     function updateFlow() {
-        if (reduceMotion) { setActive(5); stepEls.forEach((el) => { el.dataset.on = 'true'; }); panels.forEach((el) => { el.dataset.on = 'true'; el.setAttribute('aria-hidden', 'false'); }); return; }
-        const box = flowSection.getBoundingClientRect();
-        const p = clamp(-box.top / (box.height - vh), 0, 1);
-        state.target = clamp(p * 1.12, 0, 1) * 5;
-        setActive(clamp(Math.round(state.target), 0, 5));
+        if (reduceMotion) {
+            flowLine.style.height = '100%';
+            stepEls.forEach((el) => { el.dataset.on = 'true'; });
+            return;
+        }
+        // Batas menyala: 60% tinggi layar dari atas.
+        const mark = vh * 0.6;
+        const box = track.getBoundingClientRect();
+        flowLine.style.height = `${clamp((mark - box.top) / box.height, 0, 1) * 100}%`;
+        stepEls.forEach((el) => {
+            const dot = el.firstElementChild.getBoundingClientRect();
+            el.dataset.on = String(dot.top + dot.height / 2 <= mark);
+        });
     }
     scrollHandlers.push(updateFlow);
-
-    stepEls.forEach((el, i) => $('[data-dot]', el).addEventListener('click', () => {
-        const top = flowSection.getBoundingClientRect().top + window.scrollY;
-        const p = i / 5.6 + 0.001;
-        window.scrollTo({ top: top + p * (flowSection.offsetHeight - vh), behavior: 'smooth' });
-    }));
-
-    window.addEventListener('resize', layoutFlow);
-    window.addEventListener('load', layoutFlow);
-    layoutFlow();
     updateFlow();
 }
 
@@ -592,7 +476,7 @@ window.addEventListener('scroll', onScroll, { passive: true });
 window.addEventListener('resize', () => { vh = window.innerHeight; onScroll(); });
 onScroll();
 
-/* ---------- 04 integrated map (Leaflet loaded lazily) ---------- */
+/* ---------- 03 integrated map (Leaflet loaded lazily) ---------- */
 const mapEl = $('#homeMap');
 
 function loadLeaflet(done) {
@@ -619,7 +503,9 @@ function initMap() {
     let query = '';
     (DATA.layers || []).forEach((l) => { layers[l.id] = l; active[l.id] = true; });
 
-    const map = L.map(mapEl, { zoomControl: false, attributionControl: false, preferCanvas: true, minZoom: 5, maxZoom: 16, scrollWheelZoom: false });
+    // Perangkat sentuh: geser satu jari tidak dipakai peta sampai peta diketuk, supaya halaman tetap bisa di-scroll.
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const map = L.map(mapEl, { zoomControl: false, attributionControl: false, preferCanvas: true, minZoom: 5, maxZoom: 16, scrollWheelZoom: false, dragging: !coarsePointer });
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors', maxNativeZoom: 16, maxZoom: 16,
     }).addTo(map);
@@ -728,7 +614,13 @@ function initMap() {
     const tools = $('#mapTools');
     $('#toolsToggle').addEventListener('click', () => { tools.dataset.collapsed = String(tools.dataset.collapsed !== 'true'); });
     if (isMobile) { tools.dataset.collapsed = 'true'; }
-    map.on('click focus', () => map.scrollWheelZoom.enable());
+    const hint = $('#mapHint');
+    if (coarsePointer && hint) { hint.classList.remove('hidden'); }
+    map.on('click focus', () => {
+        map.scrollWheelZoom.enable();
+        map.dragging.enable();
+        hint?.remove();
+    });
     $('#mapLoading')?.remove();
     apply();
     setTimeout(() => map.invalidateSize(), 200);

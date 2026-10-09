@@ -59,6 +59,7 @@ class FrontendPagesTest extends TestCase
     {
         $this->get(route('tampil.tentang'))
             ->assertOk()
+            ->assertDontSee('home-scale', false)
             ->assertSee('>Peta Interaktif</a>', false)
             ->assertDontSee('>Peta Tematik</a>', false);
     }

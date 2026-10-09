@@ -1,11 +1,11 @@
 @extends('frontend.layouts.spatial')
 
-@section('title', 'MARIMOI - Spatial Intelligence Platform Maluku Utara')
+@section('title', 'MARIMOI - Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah')
 
 @php
-    $wrap = 'mx-auto w-full max-w-[1180px] px-6';
-    $btnPrimary = 'inline-flex items-center gap-2 rounded-full bg-ocean px-7 py-3.5 text-[15px] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_14px_38px_-10px_rgba(32,217,255,.75)]';
-    $btnGhost = 'inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-7 py-3.5 text-[15px] font-bold text-white backdrop-blur-xl transition duration-300 ease-out hover:-translate-y-1 hover:border-white/40';
+    $wrap = 'mx-auto w-full max-w-[73.75rem] px-6';
+    $btnPrimary = 'inline-flex items-center gap-2 rounded-full bg-ocean px-7 py-3.5 text-[0.9375rem] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_14px_38px_-10px_rgba(32,217,255,.75)]';
+    $btnGhost = 'inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-7 py-3.5 text-[0.9375rem] font-bold text-white backdrop-blur-xl transition duration-300 ease-out hover:-translate-y-1 hover:border-white/40';
     $kickerDark = 'mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-aqua before:h-px before:w-7 before:bg-current';
     $kickerLight = 'mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-ocean before:h-px before:w-7 before:bg-current';
     $h2 = 'mb-5 max-w-[16ch] text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl';
@@ -13,12 +13,12 @@
     $gridBg = "[background-image:linear-gradient(rgba(32,217,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(32,217,255,.07)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:radial-gradient(ellipse_at_65%_45%,#000_20%,transparent_72%)]";
     $topMax = max(1, (int) ($spatial['top'][0]->total ?? 1));
     $alur = [
-        ['Data', 'Data spasial dan tematik dari perangkat daerah dihimpun dalam satu basis data.'],
-        ['Spasial', 'Setiap data ditempatkan pada koordinat dan kategorinya di atas peta.'],
-        ['Program', 'Peta dikaitkan dengan program dan prioritas pembangunan daerah.'],
-        ['Pembangunan', 'Sebaran kegiatan dan proyek pembangunan dapat dilihat per lokasi.'],
-        ['Monitoring', 'Perkembangan dipantau, dan masyarakat dapat memberi tanggapan.'],
-        ['Keputusan', 'Informasi yang terpadu menjadi dasar perencanaan dan keputusan.'],
+        ['Data', 'Data spasial dan tematik dari perangkat daerah provinsi dan kabupaten/kota dihimpun dalam satu basis data yang seragam.'],
+        ['Spasial', 'Setiap data ditempatkan pada lokasinya di peta, sehingga sebaran pembangunan antarpulau terlihat jelas.'],
+        ['Perencanaan', 'Peta dikaitkan dengan prioritas pembangunan daerah, usulan Musrenbang, dan Pokok Pikiran DPRD.'],
+        ['Pelaksanaan', 'Kegiatan dan proyek infrastruktur dapat dilihat per lokasi, per tahun, dan per perangkat daerah.'],
+        ['Pemantauan', 'Perkembangan pembangunan dipantau, dan masyarakat dapat menyampaikan kondisi infrastruktur di sekitarnya.'],
+        ['Keputusan', 'Data yang terpadu menjadi dasar keputusan berbasis bukti serta evaluasi pembangunan.'],
     ];
     $homeData = ['points' => $spatial['points'], 'layers' => $spatial['layers'], 'shapes' => $spatial['shapes']];
     $arrow = '<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -27,7 +27,7 @@
 @section('main')
     {{-- HERO --}}
     <section id="beranda"
-        class="relative isolate min-h-screen overflow-hidden bg-deep bg-[radial-gradient(1200px_700px_at_70%_40%,#0b2a45_0%,#061522_62%)] text-white">
+        class="relative isolate min-h-svh overflow-hidden bg-deep bg-[radial-gradient(1200px_700px_at_70%_40%,#0b2a45_0%,#061522_62%)] text-white">
         {{-- Layer 1: topographic map --}}
         <div data-hero-speed="0.10" class="pointer-events-none absolute inset-x-0 -inset-y-[6%] will-change-transform" aria-hidden="true">
             <svg class="contours {{ $contour }}"></svg>
@@ -39,73 +39,47 @@
         {{-- Layer 4: data nodes --}}
         <canvas id="heroNodes" data-hero-speed="0.35" class="pointer-events-none absolute inset-0 block h-full w-full will-change-transform" aria-hidden="true"></canvas>
         {{-- Layer 5: gradient overlay --}}
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-deep/80 via-deep/25 to-transparent" aria-hidden="true"></div>
+        {{-- Di layar sempit teks menumpuk di atas peta titik, jadi lapisan penggelapnya dibuat merata --}}
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-deep/80 via-deep/25 to-transparent max-md:bg-gradient-to-b max-md:from-deep/50 max-md:via-deep/75 max-md:to-deep/40" aria-hidden="true"></div>
 
         {{-- Layer 6: content --}}
-        <div data-hero-speed="0.5" data-hero-fade class="relative z-10 flex min-h-screen items-center will-change-transform">
-            <div class="{{ $wrap }} pb-24 pt-32">
-                <p class="reveal mb-6 font-grotesk text-xs uppercase tracking-widest text-aqua" data-reveal>Spatial Intelligence Platform</p>
-                <h1 class="reveal delay-100 max-w-[18ch] text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl" data-reveal>
+        <div data-hero-speed="0.5" data-hero-fade class="relative z-10 flex min-h-svh items-center will-change-transform">
+            <div class="{{ $wrap }} pb-24 pt-32 [@media(max-height:520px)]:pb-10 [@media(max-height:520px)]:pt-24">
+                <p class="reveal mb-6 font-grotesk text-xs uppercase tracking-widest text-aqua" data-reveal>Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah</p>
+                <h1 class="reveal delay-100 max-w-[18ch] text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl [@media(max-height:520px)]:text-5xl" data-reveal>
                     Memetakan Masa Depan <span class="text-aqua">Maluku Utara.</span>
                 </h1>
-                <p class="reveal mt-7 max-w-xl text-base text-white/75 delay-200 md:text-lg" data-reveal>
-                    Platform digital berbasis spasial untuk mengintegrasikan data, memantau pembangunan, dan mendukung
-                    pengambilan keputusan di Maluku Utara.
+                <p class="reveal mt-7 max-w-xl text-base text-white/75 delay-200 md:text-lg [@media(max-height:520px)]:mt-4" data-reveal>
+                    Sistem digital terpadu Bappeda Provinsi Maluku Utara untuk merencanakan, memantau, dan mengintegrasikan
+                    pembangunan infrastruktur daerah, dari pulau ke pulau.
                 </p>
-                <div class="reveal mt-9 flex flex-wrap gap-3 delay-300" data-reveal>
+                <div class="reveal mt-9 flex flex-wrap gap-3 delay-300 [@media(max-height:520px)]:mt-6 max-sm:flex-col max-sm:[&>a]:justify-center" data-reveal>
                     <a href="{{ route('tampil.interaktif') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
                     <a href="{{ route('tampil.tentang') }}" class="{{ $btnGhost }}">Tentang MARIMOI</a>
                 </div>
             </div>
         </div>
 
-        <div class="pointer-events-none absolute bottom-8 left-6 z-10 hidden items-center gap-3 font-grotesk text-[11px] uppercase tracking-widest text-white/50 md:flex lg:left-[max(1.5rem,calc((100vw-1180px)/2))]" aria-hidden="true">
+        <div class="pointer-events-none absolute bottom-8 left-6 z-10 hidden items-center gap-3 font-grotesk text-[0.6875rem] uppercase tracking-widest text-white/50 md:flex lg:left-[max(1.5rem,calc((100vw-73.75rem)/2))]" aria-hidden="true">
             <i class="block h-11 w-px animate-cue bg-gradient-to-b from-aqua to-transparent motion-reduce:animate-none"></i>Gulir untuk menjelajah
         </div>
-        <div class="pointer-events-none absolute bottom-8 right-6 z-10 hidden text-right font-grotesk text-[11px] uppercase tracking-widest text-white/50 md:block lg:right-[max(1.5rem,calc((100vw-1180px)/2))]" aria-hidden="true">
+        <div class="pointer-events-none absolute bottom-8 right-6 z-10 hidden text-right font-grotesk text-[0.6875rem] uppercase tracking-widest text-white/50 md:block lg:right-[max(1.5rem,calc((100vw-73.75rem)/2))]" aria-hidden="true">
             Maluku Utara · <span class="text-aqua">01°34′ N · 127°48′ E</span><br>
             <span class="text-aqua">{{ number_format($spatial['total'], 0, ',', '.') }}</span> objek spasial terpetakan
         </div>
     </section>
 
-    {{-- 01 MALUKU UTARA DALAM SATU PERSPEKTIF --}}
-    <section id="perspektif" class="relative h-[260vh] bg-deep text-white max-md:h-[220vh] motion-reduce:h-auto">
-        <div class="sticky top-0 h-screen overflow-hidden">
-            <div data-parallax="0.08" class="pointer-events-none absolute inset-x-0 -inset-y-[6%] opacity-60 will-change-transform {{ $gridBg }}" aria-hidden="true"></div>
-            <canvas id="pinCanvas" class="pointer-events-none absolute inset-0 block h-full w-full" aria-hidden="true"></canvas>
-            <div class="{{ $wrap }} relative z-10 h-full">
-                <div class="flex h-full max-w-[520px] flex-col justify-center max-md:justify-start max-md:pt-28">
-                    <p class="mb-4 font-grotesk text-xs uppercase tracking-widest text-aqua">01 · Perspektif</p>
-                    <h2 class="mb-6 text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl">Maluku Utara dalam satu perspektif.</h2>
-                    <div class="relative min-h-[120px]">
-                        @foreach ([
-                            'Setiap titik adalah lokasi nyata dalam basis data MARIMOI, tersebar dari Morotai hingga Kepulauan Sula dan Taliabu.',
-                            'Lokasi saling terhubung menjadi jaringan: fasilitas kesehatan, pendidikan, dan kawasan pembangunan dalam satu gambaran.',
-                            'Dari pesisir hingga pulau terluar, semuanya dapat dilihat, dibandingkan, dan dipantau dalam satu peta.',
-                        ] as $caption)
-                            <p data-caption data-on="false" class="absolute left-0 top-0 translate-y-3 text-white/70 opacity-0 transition duration-700 ease-out data-[on=true]:translate-y-0 data-[on=true]:opacity-100 motion-reduce:first:translate-y-0 motion-reduce:first:opacity-100">{{ $caption }}</p>
-                        @endforeach
-                    </div>
-                    <div class="mt-6 flex items-baseline gap-3 font-grotesk">
-                        <b id="pinMeter" class="min-w-[3ch] text-5xl font-medium tracking-tight text-aqua">0</b>
-                        <span class="text-xs uppercase tracking-widest text-white/55">titik lokasi terhubung</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- 02 SATU WILAYAH. BERAGAM INFORMASI. --}}
-    <section id="lapisan" class="relative overflow-hidden bg-mist py-24 md:py-32">
+    {{-- 01 SATU WILAYAH. BERAGAM INFORMASI. --}}
+    <section id="lapisan" class="relative flex min-h-svh items-center overflow-hidden bg-mist py-24 md:py-32">
         <div data-parallax="0.08" class="pointer-events-none absolute inset-x-0 -inset-y-[5%] will-change-transform" aria-hidden="true">
             <svg class="contours h-full w-full [&_path]:fill-none [&_path]:stroke-ocean/10 [&_path]:[vector-effect:non-scaling-stroke]"></svg>
         </div>
         <div class="{{ $wrap }} relative grid items-center gap-12 lg:grid-cols-[5fr_7fr] lg:gap-20">
             <div>
-                <p class="reveal {{ $kickerLight }}" data-reveal>02 · Lapisan data</p>
+                <p class="reveal {{ $kickerLight }}" data-reveal>01 · Lapisan data</p>
                 <h2 class="reveal delay-100 {{ $h2 }} text-navy" data-reveal>Satu wilayah. Beragam informasi.</h2>
-                <p class="reveal max-w-[54ch] text-lg text-slate-600 delay-200" data-reveal>Kawasan permukiman, pertanian, mangrove, hingga
-                    transportasi ditata dalam lapisan yang bisa dibuka bersamaan.</p>
+                <p class="reveal max-w-[54ch] text-lg text-slate-600 delay-200" data-reveal>Infrastruktur, permukiman, pertanian, hingga
+                    kawasan lindung ditata per tema dalam lapisan yang bisa dibuka bersamaan, dari provinsi hingga kabupaten/kota.</p>
             </div>
             <div class="lg:self-center">
                 {{-- Mockup tablet: masuk 3D, melayang, miring mengikuti kursor, garis pindai, dan titik wilayah berdenyut --}}
@@ -147,66 +121,60 @@
         </div>
     </section>
 
-    {{-- 03 DATA YANG TERHUBUNG --}}
-    <section id="alur" class="relative h-[320vh] bg-deep text-white max-md:h-[300vh] motion-reduce:h-auto">
-        <div class="sticky top-0 flex h-screen flex-col justify-center overflow-hidden motion-reduce:relative motion-reduce:h-auto motion-reduce:py-24">
-            <div data-parallax="0.06" class="pointer-events-none absolute inset-x-0 -inset-y-[5%] opacity-50 will-change-transform" aria-hidden="true">
-                <svg class="contours {{ $contour }}"></svg>
+    {{-- 02 DATA YANG TERHUBUNG --}}
+    <section id="alur" class="relative overflow-hidden bg-deep py-24 text-white md:py-32">
+        <div data-parallax="0.06" class="pointer-events-none absolute inset-x-0 -inset-y-[5%] opacity-50 will-change-transform" aria-hidden="true">
+            <svg class="contours {{ $contour }}"></svg>
+        </div>
+
+        <div class="{{ $wrap }} relative">
+            <div class="mx-auto max-w-2xl md:text-center">
+                <p class="reveal {{ $kickerDark }} md:justify-center" data-reveal>02 · Alur data</p>
+                <h2 class="reveal delay-100 mb-5 text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl" data-reveal>Data yang terhubung.</h2>
+                <p class="reveal text-lg text-white/70 delay-200" data-reveal>Dari data mentah hingga keputusan, setiap tahap perencanaan, pelaksanaan,
+                    pemantauan, dan evaluasi saling menyambung dalam satu alur.</p>
             </div>
-            <div class="pointer-events-none absolute left-1/2 top-1/2 h-[620px] w-[920px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(10,132,255,.16),transparent)]" aria-hidden="true"></div>
 
-            <div class="{{ $wrap }} relative">
-                <p class="{{ $kickerDark }}">03 · Alur data</p>
-                <h2 class="mb-3 max-w-[16ch] text-3xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl">Data yang terhubung.</h2>
-                <p class="hidden max-w-[54ch] text-lg text-white/70 md:block">Dari data mentah hingga keputusan, setiap tahap saling menyambung dalam satu alur yang dapat ditelusuri.</p>
-
-                {{-- Jalur data: kanvas menggambar garis, komet, dan partikel di belakang simpul --}}
-                <div id="flow" class="relative mt-8 md:mt-12">
-                    <canvas id="flowCanvas" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
-                    <ol class="relative grid grid-cols-6">
-                        @foreach ($alur as $i => [$judul, $isi])
-                            <li data-step data-on="false" data-active="false" class="group/n relative flex flex-col items-center text-center">
-                                <button type="button" data-dot aria-label="Langkah {{ $i + 1 }}: {{ $judul }}"
-                                    class="relative z-10 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-deep font-grotesk text-xs text-white/45 transition duration-500 hover:border-aqua/60 group-data-[on=true]/n:border-aqua group-data-[on=true]/n:text-aqua group-data-[active=true]/n:scale-125 group-data-[active=true]/n:bg-ocean group-data-[active=true]/n:text-white group-data-[active=true]/n:shadow-[0_0_0_8px_rgba(32,217,255,.12),0_0_32px_rgba(32,217,255,.6)] md:h-12 md:w-12">
-                                    {{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}
-                                    <i class="pointer-events-none absolute inset-0 hidden rounded-full border border-aqua group-data-[active=true]/n:block motion-safe:animate-ring"></i>
-                                </button>
-                                <span class="mt-4 hidden text-sm font-semibold text-white/40 transition-colors duration-500 group-data-[on=true]/n:text-white md:block">{{ $judul }}</span>
-                            </li>
-                        @endforeach
-                    </ol>
+            {{-- Alur menurun: nomor di garis tengah, penjelasan & ilustrasi bergantian kiri-kanan.
+                 Garis terisi mengikuti scroll dan langkah menyala (data-on) saat dilewati. --}}
+            <div id="flow" class="relative mt-16 md:mt-24">
+                <div class="pointer-events-none absolute bottom-6 left-6 top-6 w-px -translate-x-1/2 bg-white/10 md:left-1/2" aria-hidden="true">
+                    <span id="flowLine" class="block h-0 w-full bg-gradient-to-b from-ocean to-aqua shadow-[0_0_12px_rgba(32,217,255,.7)]"></span>
                 </div>
-
-                {{-- Panel langkah aktif --}}
-                <div id="flowPanels" class="mt-8 grid md:mt-12 motion-reduce:flex motion-reduce:flex-col motion-reduce:gap-8 [&>*]:col-start-1 [&>*]:row-start-1">
-                    @foreach ($alur as $i => [$judul, $isi])
-                        <article data-panel data-on="false" aria-hidden="true"
-                            class="group invisible grid translate-y-6 items-center gap-6 rounded-3xl border border-white/10 bg-white/[0.07] p-6 opacity-0 backdrop-blur-md transition-[opacity,transform,visibility] duration-700 ease-out pointer-events-none data-[on=true]:pointer-events-auto data-[on=true]:visible data-[on=true]:translate-y-0 data-[on=true]:opacity-100 md:grid-cols-[1fr_220px] md:gap-10 md:p-10 motion-reduce:!pointer-events-auto motion-reduce:!visible motion-reduce:!translate-y-0 motion-reduce:!opacity-100">
-                            <div class="relative">
-                                <span class="block select-none font-grotesk text-[5.5rem] font-medium leading-none tracking-tighter text-transparent [-webkit-text-stroke:1px_rgba(32,217,255,.4)] md:text-[8rem]" aria-hidden="true">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
-                                <h3 class="-mt-4 text-2xl font-bold tracking-tight md:-mt-6 md:text-4xl">{{ $judul }}</h3>
-                                <p class="mt-3 max-w-md text-[15px] leading-relaxed text-white/65 md:text-lg">{{ $isi }}</p>
-                            </div>
-                            <div class="mx-auto hidden h-40 w-full max-w-[220px] sm:block md:h-44">
-                                @include('frontend.partials.flow-illustration', ['i' => $i])
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
+                <ol class="relative">
+                @foreach ($alur as $i => [$judul, $isi])
+                    @php $kanan = $i % 2 === 1; @endphp
+                    <li data-step data-on="false" class="group relative min-h-12 pb-16 pl-20 last:pb-0 md:grid md:grid-cols-2 md:items-center md:gap-24 md:pl-0">
+                        <span class="absolute left-0 top-0 z-10 grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-deep font-grotesk text-sm text-white/45 transition duration-500 group-data-[on=true]:border-aqua group-data-[on=true]:bg-ocean group-data-[on=true]:text-white group-data-[on=true]:shadow-[0_0_0_8px_rgba(32,217,255,.12),0_0_28px_rgba(32,217,255,.5)] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2" aria-hidden="true">
+                            {{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}
+                        </span>
+                        <div class="reveal md:row-start-1 {{ $kanan ? 'md:col-start-2' : 'md:col-start-1 md:text-right' }}" data-reveal>
+                            <p class="font-grotesk text-xs uppercase tracking-widest text-aqua">Langkah {{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</p>
+                            <h3 class="mt-2 text-2xl font-bold tracking-tight md:text-3xl">{{ $judul }}</h3>
+                            <p class="mt-3 text-[0.9375rem] leading-relaxed text-white/65 md:text-lg {{ $kanan ? '' : 'md:ml-auto' }} max-w-md">{{ $isi }}</p>
+                        </div>
+                        <div class="hidden h-40 w-full max-w-[13.75rem] md:row-start-1 md:block {{ $kanan ? 'md:col-start-1 md:justify-self-end' : 'md:col-start-2 md:justify-self-start' }}">
+                            @include('frontend.partials.flow-illustration', ['i' => $i])
+                        </div>
+                    </li>
+                @endforeach
+                </ol>
             </div>
         </div>
     </section>
 
-    {{-- 04 PETA PEMBANGUNAN TERPADU --}}
-    <section id="peta" class="relative bg-gradient-to-b from-deep via-[#08243b] to-deep pb-24 pt-10 text-white md:pb-32">
+    {{-- 03 PETA PEMBANGUNAN TERPADU --}}
+    <section id="peta" class="relative bg-gradient-to-b from-deep via-[#08243b] to-deep pb-24 pt-16 text-white md:pb-32 md:pt-20">
         <div class="{{ $wrap }}">
-            <p class="reveal {{ $kickerDark }}" data-reveal>04 · Peta interaktif</p>
+            <p class="reveal {{ $kickerDark }}" data-reveal>03 · Peta interaktif</p>
             <h2 class="reveal delay-100 {{ $h2 }} max-w-[20ch]" data-reveal>Peta Pembangunan Terpadu</h2>
             <p class="reveal max-w-[54ch] text-lg text-white/70 delay-200" data-reveal>Melihat pembangunan Maluku Utara dalam satu perspektif
                 spasial. Cari lokasi, nyalakan atau matikan lapisan, lalu pilih titik untuk melihat rinciannya.</p>
 
-            <div class="reveal relative mt-12 h-[640px] min-h-[520px] overflow-hidden rounded-[28px] border border-white/10 bg-[#0a2236] shadow-[0_40px_90px_-40px_rgba(0,0,0,.8)] md:h-[min(78vh,720px)]" data-reveal>
+            <div class="reveal relative mt-12 h-[min(75svh,40rem)] min-h-[26rem] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a2236] shadow-[0_40px_90px_-40px_rgba(0,0,0,.8)] md:h-[min(78vh,45rem)] md:min-h-[32.5rem]" data-reveal>
                 <div id="homeMap" class="absolute inset-0" role="application" aria-label="Peta titik lokasi pembangunan Maluku Utara"></div>
+                {{-- Perangkat sentuh: peta baru bisa digeser setelah diketuk, agar tidak menahan scroll halaman --}}
+                <div id="mapHint" class="pointer-events-none absolute inset-x-0 top-1/2 z-[790] -translate-y-1/2 mx-auto hidden w-max max-w-[calc(100%-2rem)] rounded-full border border-white/10 bg-slate-950/75 px-4 py-2 text-center text-xs text-white/85 backdrop-blur-md">Ketuk peta untuk menggeser &amp; memperbesar</div>
                 <div id="mapLoading" class="absolute inset-0 z-[700] grid place-items-center font-grotesk text-xs uppercase tracking-widest text-white/50">Memuat peta…</div>
 
                 {{-- Search + layer control --}}
@@ -220,8 +188,8 @@
                         </button>
                     </div>
                     <div class="flex items-center justify-between px-4 pb-1 pt-3 group-data-[collapsed=true]/tools:hidden">
-                        <span class="font-grotesk text-[11px] uppercase tracking-widest text-white/55">Lapisan</span>
-                        <button id="layerAll" type="button" class="text-[11px] text-aqua">Semua / kosongkan</button>
+                        <span class="font-grotesk text-[0.6875rem] uppercase tracking-widest text-white/55">Lapisan</span>
+                        <button id="layerAll" type="button" class="text-[0.6875rem] text-aqua">Semua / kosongkan</button>
                     </div>
                     <div id="layerList" class="overflow-auto px-2 pb-3 group-data-[collapsed=true]/tools:hidden"></div>
                     <div class="border-t border-white/10 px-4 py-3 space-y-2 group-data-[collapsed=true]/tools:hidden">
@@ -241,25 +209,25 @@
                 </div>
 
                 {{-- Jumlah titik --}}
-                <div class="absolute bottom-4 right-4 z-[800] hidden rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 font-grotesk text-[11px] uppercase tracking-widest text-white backdrop-blur-xl md:block">
+                <div class="absolute bottom-4 right-4 z-[800] hidden rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 font-grotesk text-[0.6875rem] uppercase tracking-widest text-white backdrop-blur-xl md:block">
                     <b id="mapCount" class="font-medium text-aqua">0</b> titik ditampilkan
                 </div>
 
                 {{-- Information panel --}}
                 <aside id="mapInfo" data-open="false" aria-live="polite"
-                    class="pointer-events-none absolute z-[800] translate-y-4 rounded-2xl border border-white/10 bg-white/10 p-5 text-white opacity-0 backdrop-blur-xl transition duration-500 ease-out data-[open=true]:pointer-events-auto data-[open=true]:translate-x-0 data-[open=true]:translate-y-0 data-[open=true]:opacity-100 max-md:inset-x-4 max-md:bottom-4 md:right-4 md:top-20 md:w-[300px] md:translate-x-6 md:translate-y-0">
+                    class="pointer-events-none absolute z-[800] translate-y-4 rounded-2xl border border-white/10 bg-white/10 p-5 text-white opacity-0 backdrop-blur-xl transition duration-500 ease-out data-[open=true]:pointer-events-auto data-[open=true]:translate-x-0 data-[open=true]:translate-y-0 data-[open=true]:opacity-100 max-md:inset-x-4 max-md:bottom-4 md:right-4 md:top-20 md:w-[18.75rem] md:translate-x-6 md:translate-y-0">
                     <button id="infoClose" type="button" aria-label="Tutup" class="absolute right-3 top-2 text-2xl leading-none text-white/60 transition-colors hover:text-white">×</button>
-                    <div class="mb-3 flex items-center gap-2 font-grotesk text-[11px] uppercase tracking-widest">
+                    <div class="mb-3 flex items-center gap-2 font-grotesk text-[0.6875rem] uppercase tracking-widest">
                         <i id="infoDot" class="h-2 w-2 rounded-full bg-aqua"></i><span id="infoLayer"></span>
                     </div>
                     <h3 id="infoTitle" class="mb-3 pr-4 text-lg font-bold leading-snug"></h3>
-                    <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px] text-white/70">
+                    <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[0.8125rem] text-white/70">
                         <dt class="text-white/45">Tahun</dt><dd id="infoYear"></dd>
                         <dt class="text-white/45">Koordinat</dt><dd id="infoCoord"></dd>
                         <dt id="infoSourceLabel" class="text-white/45">Sumber</dt><dd id="infoSource"></dd>
                         <dt id="infoOpdLabel" class="text-white/45">Instansi</dt><dd id="infoOpd"></dd>
                     </dl>
-                    <a href="{{ route('tampil.interaktif') }}" class="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2 text-[13px] font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">Buka peta lengkap {!! $arrow !!}</a>
+                    <a href="{{ route('tampil.interaktif') }}" class="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2 text-[0.8125rem] font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">Buka peta lengkap {!! $arrow !!}</a>
                 </aside>
             </div>
 
@@ -269,10 +237,10 @@
         </div>
     </section>
 
-    {{-- 05 DATA MENJADI INSIGHT --}}
+    {{-- 04 DATA MENJADI INSIGHT --}}
     <section id="insight" class="bg-mist py-24 md:py-32">
         <div class="{{ $wrap }}">
-            <p class="reveal {{ $kickerLight }}" data-reveal>05 · Insight</p>
+            <p class="reveal {{ $kickerLight }}" data-reveal>04 · Insight</p>
             <h2 class="reveal delay-100 {{ $h2 }} text-navy" data-reveal>Data menjadi insight.</h2>
             <div class="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-slate-900/10 pt-10 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0">
                 @foreach ([
@@ -295,15 +263,15 @@
         </div>
     </section>
 
-    {{-- CTA --}}
-    <section class="relative overflow-hidden bg-deep py-24 text-center text-white md:py-32">
+    {{-- CTA: gradasi menurun dari biru laut gelap ke warna footer --}}
+    <section id="cta" class="relative overflow-hidden bg-gradient-to-b from-[#0b2a45] via-deep to-[#04101a] py-24 text-center text-white md:py-32">
         <div data-parallax="0.08" class="pointer-events-none absolute inset-x-0 -inset-y-[5%] opacity-55 will-change-transform" aria-hidden="true">
             <svg class="contours {{ $contour }}"></svg>
         </div>
         <div class="{{ $wrap }} relative">
             <h2 class="reveal mx-auto mb-5 max-w-[18ch] text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl" data-reveal>Bangun Maluku Utara bersama.</h2>
-            <p class="reveal mx-auto mb-10 max-w-[54ch] text-lg text-white/70 delay-100" data-reveal>Jelajahi peta pembangunan atau sampaikan aspirasi untuk wilayah Anda.</p>
-            <div class="reveal flex flex-wrap justify-center gap-3 delay-200" data-reveal>
+            <p class="reveal mx-auto mb-10 max-w-[54ch] text-lg text-white/70 delay-100" data-reveal><em>Marimoi</em>, bersatu kita teguh. Jelajahi peta pembangunan atau sampaikan kondisi infrastruktur di wilayah Anda.</p>
+            <div class="reveal flex flex-wrap justify-center gap-3 delay-200 max-sm:flex-col max-sm:[&>a]:justify-center" data-reveal>
                 <a href="{{ route('tampil.interaktif') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
                 <a href="{{ route('tampil.aspirasi') }}" class="{{ $btnGhost }}">Sampaikan Aspirasi</a>
             </div>
@@ -312,14 +280,14 @@
 
     {{-- Templates used by the map script (kept in Blade so Tailwind can see the classes) --}}
     <template id="tplLayerItem">
-        <button type="button" data-off="false" class="group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-[13px] text-white/85 transition hover:bg-white/5 data-[off=true]:opacity-40">
+        <button type="button" data-off="false" class="group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-[0.8125rem] text-white/85 transition hover:bg-white/5 data-[off=true]:opacity-40">
             <i class="js-dot h-2.5 w-2.5 shrink-0 rounded-full group-data-[off=true]:!shadow-none"></i>
             <span class="js-name"></span>
-            <em class="js-count ml-auto font-grotesk text-[11px] not-italic text-white/50"></em>
+            <em class="js-count ml-auto font-grotesk text-[0.6875rem] not-italic text-white/50"></em>
         </button>
     </template>
     <template id="tplPulse">
-        <div class="relative h-[22px] w-[22px]">
+        <div class="relative h-[1.375rem] w-[1.375rem]">
             <i class="absolute inset-0 animate-ring rounded-full border-2 border-aqua"></i>
             <i class="absolute inset-0 animate-ring rounded-full border-2 border-aqua [animation-delay:.9s]"></i>
         </div>

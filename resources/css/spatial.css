@@ -12,6 +12,34 @@
             scroll-behavior: auto;
         }
     }
+
+    /* Penanda fokus keyboard yang jelas di atas latar gelap maupun terang. */
+    a:focus-visible,
+    button:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 2px solid #20d9ff;
+        outline-offset: 3px;
+    }
+
+    /* Beranda di monitor besar & TV: ukuran dasar rem ikut membesar sehingga lebar konten,
+       teks, dan jarak tetap proporsional (ukuran di beranda ditulis dalam rem, bukan px). */
+    @media (min-width: 1800px) {
+        html.home-scale {
+            font-size: 18px;
+        }
+    }
+
+    @media (min-width: 2400px) {
+        html.home-scale {
+            font-size: 22px;
+        }
+    }
+
+    @media (min-width: 3200px) {
+        html.home-scale {
+            font-size: 28px;
+        }
+    }
 }
 
 @layer components {

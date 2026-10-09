@@ -2,7 +2,7 @@
     $isHome = request()->routeIs('beranda');
 @endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" @class(['home-scale' => $isHome])>
 
 <head>
     <meta charset="UTF-8">

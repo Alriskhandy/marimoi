@@ -23,8 +23,16 @@ class HomepageTest extends TestCase
         $response->assertSee('id="heroNodes"', false);
         $response->assertSee('id="homeMap"', false);
         $response->assertSee('data-parallax', false);
-        $response->assertSee('id="flowCanvas"', false);
-        $this->assertSame(6, substr_count($response->getContent(), 'data-panel data-on'));
+        $response->assertDontSee('id="perspektif"', false);
+        $response->assertDontSee('id="pinCanvas"', false);
+        $response->assertSee('id="flowLine"', false);
+        $response->assertSee('<html lang="id" class="home-scale">', false);
+        $response->assertSee('id="mapHint"', false);
+        $response->assertSee('id="lapisan" class="relative flex min-h-svh', false);
+        $response->assertSee('id="cta" class="relative overflow-hidden bg-gradient-to-b', false);
+        $this->assertSame(6, substr_count($response->getContent(), 'data-step data-on'));
+        $response->assertSeeInOrder(['01 · Lapisan data', '02 · Alur data', '03 · Peta interaktif', '04 · Insight'], false);
+        $response->assertSee('Manajemen Akselerasi Infrastruktur untuk Monitoring dan Integrasi Wilayah', false);
         $response->assertSee('mockup/tab-mockup.webp', false);
         $response->assertSee('window.MARIMOI_HOME', false);
         $response->assertSee('Developed by', false);
