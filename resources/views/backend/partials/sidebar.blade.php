@@ -5,7 +5,6 @@
 
     $isPetaTematikActive =
         request()->routeIs('spatial-layers.*') ||
-        request()->routeIs('map-types.*') ||
         request()->routeIs('spatial-feedbacks.*') ||
         (request()->routeIs('categories.*') && request()->get('type') == 'tematik') ||
         request()->routeIs('kategori-tematik.*') ||
@@ -106,12 +105,7 @@
                             <span class="nav-text">Kategori</span>
                         </a>
                     @endcan
-                    @can('map-types.manage')
-                        <a class="nav-link {{ request()->routeIs('map-types.*') ? 'active' : '' }}"
-                            href="{{ route('map-types.index') }}">
-                            <span class="nav-text">Jenis Peta</span>
-                        </a>
-                    @endcan
+                    {{-- Menu "Jenis Peta" dihapus 2026-10-10 bersama modul map-types.* --}}
                     @can('spatial-feedbacks.view')
                         <a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
                             href="{{ route('spatial-feedbacks.index') }}">

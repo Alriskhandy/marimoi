@@ -69,6 +69,6 @@
 
 @if ($dynamicAttributes->isNotEmpty())
     <hr>
-    <h6>Metadata Dinamis (sesuai skema Jenis "{{ $layer->mapType?->nama }}")</h6>
+    <h6>Metadata Dinamis</h6>
 @endif
 @include('backend.pages.spatial-layers.features._metadata-dinamis', ['dynamicAttributes' => $dynamicAttributes, 'feature' => $feature])

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\MapType;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerMetadata;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,12 +15,13 @@ use Tests\TestCase;
  * parent()/children() antar-layer, dan atribut_schema/atributValidationRules()
  * DIHAPUS di sini — bukan sembarangan, melainkan karena kolom & mekanismenya
  * sudah tidak ada lagi secara sengaja di layers_v3 (hirarki pindah ke
- * categories_v3/category_nodes, atribut dinamis tetap di-scope per Jenis
- * Peta lewat MapTypeDynamicAttribute, bukan per-layer).
+ * categories_v3/category_nodes).
  *
- * `test_spatial_layer_belongs_to_map_type()` ikut dihapus 2026-10-06:
- * `layers.map_type_id` (dan relasi `mapType()`) dihapus dari skema — lihat
- * migration drop_map_type_id_and_visibility_from_layers_table.
+ * `test_spatial_layer_belongs_to_map_type()` dihapus 2026-10-06 bersama kolom
+ * `layers.map_type_id` (migration
+ * drop_map_type_id_and_visibility_from_layers_table), dan
+ * `test_map_types_are_seeded_from_migration()` dihapus 2026-10-10 bersama
+ * seluruh modul "Jenis Peta" (migration drop_map_types_tables).
  */
 class SpatialLayerTest extends TestCase
 {
@@ -36,13 +36,6 @@ class SpatialLayerTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ], 'id');
-    }
-
-    public function test_map_types_are_seeded_from_migration(): void
-    {
-        $this->assertSame(5, MapType::count());
-        $this->assertTrue(MapType::active()->pluck('slug')->contains('tematik'));
-        $this->assertTrue(MapType::where('slug', 'psn')->exists());
     }
 
     public function test_spatial_layer_metadata_is_one_to_one(): void

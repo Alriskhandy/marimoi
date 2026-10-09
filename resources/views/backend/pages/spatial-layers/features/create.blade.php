@@ -540,7 +540,7 @@
                         <div class="form-section" id="section-2">
                             <h5 class="mb-4">
                                 <i class="mdi mdi-clipboard-text-outline me-2"></i>
-                                Metadata{{ $layer->mapType ? ' (sesuai skema Jenis "'.$layer->mapType->nama.'")' : '' }}
+                                Metadata
                             </h5>
 
                             @include('backend.pages.spatial-layers.features._metadata-dinamis', ['dynamicAttributes' => $dynamicAttributes, 'feature' => null])
@@ -594,7 +594,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <p><strong>Layer:</strong> {{ $layer->name }}</p>
-                                        <p><strong>Jenis:</strong> {{ $layer->mapType?->nama ?? '-' }}</p>
+                                        <p><strong>Jenis Layer:</strong> {{ $layer->layerType?->name ?? '-' }}</p>
                                         <p><strong>Jenis Input:</strong> <span id="summary-input-type">-</span></p>
                                     </div>
                                     <div class="col-md-6" id="summary-files"></div>

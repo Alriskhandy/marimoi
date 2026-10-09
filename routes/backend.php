@@ -9,8 +9,6 @@ use App\Http\Controllers\LayerImportController;
 use App\Http\Controllers\LayerStyleController;
 use App\Http\Controllers\LayerWizardController;
 use App\Http\Controllers\LogController;
-use App\Http\Controllers\MapTypeController;
-use App\Http\Controllers\MetadataDefinitionController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\PembangunanDashboardController;
 use App\Http\Controllers\ProfileController;
@@ -178,17 +176,22 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Map Type Management (jenis peta, master data spatial_layers.map_type_id)
+    | Modul "Jenis Peta" (map-types.*) DIHAPUS 2026-10-10
+    |--------------------------------------------------------------------------
+    |
+    | Tabel `map_types`/`map_type_dynamic_attributes`, controller, model, view,
+    | dan permission `map-types.manage` dihapus — lihat migration
+    | drop_map_types_tables. Jenis Peta sudah tidak punya konsumen sejak kolom
+    | `layers.map_type_id` dilepas (migration
+    | drop_map_type_id_and_visibility_from_layers_table): tidak ada Layer yang
+    | bisa dikaitkan ke Jenis, jadi Metadata Dinamis selalu kosong.
+    |
+    | Endpoint `metadata-definitions.search` ikut dihapus karena satu-satunya
+    | konsumennya adalah form Jenis Peta. Katalog `metadata_definitions`
+    | SENDIRI tetap hidup — masih dipakai `layer_attribute_mappings` dan
+    | command marimoi:migrate-metadata-definitions.
     |--------------------------------------------------------------------------
     */
-
-    Route::resource('map-types', MapTypeController::class)
-        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->middleware('permission:map-types.manage');
-
-    Route::get('metadata-definitions/search', [MetadataDefinitionController::class, 'search'])
-        ->name('metadata-definitions.search')
-        ->middleware('permission:map-types.manage');
 
     /*
     |--------------------------------------------------------------------------

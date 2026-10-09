@@ -50,7 +50,7 @@
     @if ($classificationFields->isEmpty())
         <div class="alert alert-info">
             <i class="mdi mdi-information me-2"></i>
-            Layer ini belum punya atribut dinamis aktif (Jenis Peta: {{ $layer->mapType?->nama ?? '-' }}) — style
+            Layer ini belum punya atribut dinamis aktif — style
             <strong>categorized</strong>/<strong>graduated</strong> butuh minimal satu atribut untuk diklasifikasi.
             Style <strong>simple</strong> tetap bisa dibuat.
         </div>

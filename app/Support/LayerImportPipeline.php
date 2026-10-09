@@ -4,12 +4,12 @@ namespace App\Support;
 
 use App\Models\LayerAttributeMapping;
 use App\Models\LayerImport;
-use App\Models\MapTypeDynamicAttribute;
 use App\Models\MetadataDefinition;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -358,17 +358,19 @@ class LayerImportPipeline
         ]);
     }
 
-    private function activeDynamicAttributesFor(SpatialLayer $layer)
+    /**
+     * SELALU kosong. Atribut dinamis dulu di-scope per "Jenis Peta" lewat
+     * `map_type_dynamic_attributes`, tapi kolom `layers.map_type_id` dilepas
+     * 2026-10-06 (migration drop_map_type_id_and_visibility_from_layers_table)
+     * sehingga query ini sudah tidak pernah bisa menemukan baris, lalu modul
+     * Jenis Peta beserta tabelnya dihapus 2026-10-10 (migration
+     * drop_map_types_tables). Method dipertahankan sebagai titik sambung
+     * tunggal supaya pemanggilnya (metadataDinamisRules(), $dynamicAttributes
+     * di view) tidak perlu diubah bila mekanisme penggantinya nanti ada.
+     */
+    private function activeDynamicAttributesFor(SpatialLayer $layer): Collection
     {
-        if (! $layer->map_type_id) {
-            return collect();
-        }
-
-        return MapTypeDynamicAttribute::where('map_type_id', $layer->map_type_id)
-            ->where('is_active', true)
-            ->with('metadataDefinition')
-            ->orderBy('urutan')
-            ->get();
+        return collect();
     }
 
     /**

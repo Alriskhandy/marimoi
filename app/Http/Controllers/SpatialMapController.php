@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataSpatial;
-use App\Models\MapTypeDynamicAttribute;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
 use Illuminate\Http\JsonResponse;
@@ -95,39 +94,19 @@ class SpatialMapController extends Controller
     }
 
     /**
-     * Nilai atribut dinamis (Bagian 1.4/5 docs/marimoi v2/04_implementation/
-     * 12-implementasi-perbaikan-pemetaan.md) sekarang tergabung di `properties`
-     * (bersama atribut mentah hasil impor, lihat Fase 2 migrasi) — disaring di
-     * sini berdasarkan kode yang memang terdaftar sebagai atribut dinamis
-     * Jenis Peta layer-nya, supaya popup detail tidak menampilkan field mentah
-     * yang tidak relevan.
+     * SELALU kosong. Popup detail dulu menyaring `properties` berdasarkan kode
+     * yang terdaftar sebagai atribut dinamis "Jenis Peta" layer-nya, supaya
+     * field mentah hasil impor tidak ikut tampil. Penyaring itu mati sejak
+     * kolom `layers.map_type_id` dilepas 2026-10-06 (migration
+     * drop_map_type_id_and_visibility_from_layers_table) — tanpa Jenis, tidak
+     * ada kode yang lolos filter — dan modul Jenis Peta beserta tabelnya
+     * dihapus 2026-10-10 (migration drop_map_types_tables). Dipertahankan
+     * sebagai titik sambung tunggal untuk mekanisme penggantinya nanti.
      *
      * @return array<int, array{label: string, satuan: ?string, value: mixed}>
      */
     private function labeledMetadataDinamis(SpatialLayerFeature $feature): array
     {
-        $values = $feature->properties ?? [];
-
-        if (empty($values) || ! $feature->layer->map_type_id) {
-            return [];
-        }
-
-        $definitions = MapTypeDynamicAttribute::where('map_type_id', $feature->layer->map_type_id)
-            ->with('metadataDefinition')
-            ->get()
-            ->pluck('metadataDefinition')
-            ->filter(fn ($definition) => in_array($definition->kode, array_keys($values), true))
-            ->keyBy('kode');
-
-        $result = [];
-        foreach ($definitions as $kode => $definition) {
-            $result[] = [
-                'label' => $definition->label,
-                'satuan' => $definition->satuan,
-                'value' => $values[$kode],
-            ];
-        }
-
-        return $result;
+        return [];
     }
 }

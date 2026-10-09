@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\LayerStyle;
-use App\Models\MapTypeDynamicAttribute;
 use App\Models\SpatialLayer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -191,18 +190,20 @@ class LayerStyleController extends Controller
         ];
     }
 
+    /**
+     * SELALU kosong — konsekuensinya style categorized/graduated tidak punya
+     * kandidat field dan view menampilkan peringatannya (lihat
+     * styles/index.blade.php), sementara style simple tetap bisa dibuat.
+     *
+     * Field klasifikasi dulu diambil dari atribut dinamis "Jenis Peta", tapi
+     * kolom `layers.map_type_id` dilepas 2026-10-06 (migration
+     * drop_map_type_id_and_visibility_from_layers_table) sehingga query ini
+     * sudah tidak pernah menemukan baris, lalu modul Jenis Peta beserta
+     * tabelnya dihapus 2026-10-10 (migration drop_map_types_tables).
+     */
     private function classificationFieldsFor(SpatialLayer $layer): Collection
     {
-        if (! $layer->map_type_id) {
-            return collect();
-        }
-
-        return MapTypeDynamicAttribute::where('map_type_id', $layer->map_type_id)
-            ->where('is_active', true)
-            ->with('metadataDefinition')
-            ->orderBy('urutan')
-            ->get()
-            ->pluck('metadataDefinition');
+        return collect();
     }
 
     private function authorizeOpdAccess(SpatialLayer $layer): void

@@ -28,12 +28,10 @@ class Permission extends SpatiePermission
                 'delete' => 'Hapus kategori',
             ],
         ],
-        'map-types' => [
-            'label' => 'Jenis Peta',
-            'actions' => [
-                'manage' => 'Kelola jenis peta (master data)',
-            ],
-        ],
+        // 'map-types' dihapus 2026-10-10 — modul "Jenis Peta" di-retire utuh
+        // (controller/model/view/tabel), lihat migration drop_map_types_tables.
+        // Baris permission `map-types.manage` yang sudah ada di DB dibersihkan
+        // migration itu juga, termasuk pivot role_has_permissions-nya.
         'spatial-layers' => [
             'label' => 'Daftar Layer & Data',
             'actions' => [

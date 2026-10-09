@@ -164,7 +164,13 @@ class DataSpatialController extends Controller
         $wajibMetadata = $this->metadataWajib();
 
         $rules = [
-            'data_type' => 'required|exists:map_types,slug',
+            // Dulu `exists:map_types,slug`. Tabel itu di-drop 2026-10-10
+            // bersama modul "Jenis Peta" (migration drop_map_types_tables),
+            // jadi rule-nya diturunkan ke validasi string biasa. Controller
+            // ini sendiri sudah tidak diroutekan sejak modul Data Spasial
+            // lama di-retire (lihat routes/backend lama.txt) — diubah di sini
+            // semata agar tidak ada lagi acuan ke tabel yang sudah hilang.
+            'data_type' => 'required|string|max:50',
             'kategori_id' => 'required|exists:categories_legacy_v1,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Katalog global definisi metadata (docs/marimoi v2/03_plan/
- * 14-penyesuaian-database-jenis-peta.md Bagian 6, Opsi B) — reusable lintas Jenis
- * Peta, menggantikan PHP constant `MapTypeDynamicAttribute::PLACEHOLDER_ATTRIBUTES`
- * dan definisi yang sebelumnya menyatu di `map_type_dynamic_attributes`.
+ * 14-penyesuaian-database-jenis-peta.md Bagian 6, Opsi B). Awalnya dibuat agar
+ * definisi bisa dipakai ulang lintas "Jenis Peta"; modul itu dihapus
+ * 2026-10-10 (migration drop_map_types_tables), tapi katalognya tetap dipakai
+ * `layer_attribute_mappings.attribute_definition_id` sebagai target pemetaan
+ * kolom impor, dan di-seed command marimoi:migrate-metadata-definitions.
  */
 class MetadataDefinition extends Model
 {
@@ -70,10 +71,11 @@ class MetadataDefinition extends Model
         ];
     }
 
-    public function mapTypeDynamicAttributes(): HasMany
-    {
-        return $this->hasMany(MapTypeDynamicAttribute::class);
-    }
+    // Relasi mapTypeDynamicAttributes() dihapus 2026-10-10 bersama modul
+    // "Jenis Peta" (tabel map_type_dynamic_attributes ikut di-drop, lihat
+    // migration drop_map_types_tables). Katalog ini tetap hidup: dipakai
+    // layer_attribute_mappings.attribute_definition_id dan command
+    // marimoi:migrate-metadata-definitions.
 
     public function creator(): BelongsTo
     {

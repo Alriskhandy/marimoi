@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\MapType;
 use App\Models\Opd;
 use App\Models\Permission;
 use App\Models\Role;
@@ -65,11 +64,6 @@ class SpatialLayerAuthorizationTest extends TestCase
         return Opd::create(['name' => $name, 'singkatan' => Str::upper(Str::random(5))]);
     }
 
-    private function jenis(): MapType
-    {
-        return MapType::where('slug', 'tematik')->firstOrFail();
-    }
-
     private function categoryId(): string
     {
         return DB::table('categories_v3')->insertGetId([
@@ -98,11 +92,9 @@ class SpatialLayerAuthorizationTest extends TestCase
         $opd = $this->opd();
         $user = $this->adminOpd($opd);
         $otherOpd = $this->opd('Dinas Lain');
-        $jenis = $this->jenis();
         $categoryId = $this->categoryId();
 
         $this->actingAs($user)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'layer_type_id' => 4,
             'category_id' => $categoryId,
             'opd_id' => $otherOpd->id,
@@ -212,11 +204,9 @@ class SpatialLayerAuthorizationTest extends TestCase
     {
         $admin = $this->adminBappeda();
         $opd = $this->opd();
-        $jenis = $this->jenis();
         $categoryId = $this->categoryId();
 
         $this->actingAs($admin)->post(route('spatial-layers.store'), [
-            'map_type_id' => $jenis->id,
             'layer_type_id' => 4,
             'category_id' => $categoryId,
             'opd_id' => $opd->id,
@@ -229,7 +219,6 @@ class SpatialLayerAuthorizationTest extends TestCase
         $otherOpd = $this->opd('Dinas Lain');
 
         $this->actingAs($admin)->put(route('spatial-layers.update', $layer), [
-            'map_type_id' => $jenis->id,
             'category_id' => $layer->category_id,
             'opd_id' => $otherOpd->id,
             'name' => 'Layer Bappeda Uji',

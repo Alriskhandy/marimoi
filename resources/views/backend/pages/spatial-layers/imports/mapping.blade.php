@@ -60,7 +60,7 @@
 
                         <hr>
                         <h6 class="mb-3"><i class="mdi mdi-clipboard-text-outline me-2"></i>
-                            Metadata{{ $layer->mapType ? ' (sesuai skema Jenis "'.$layer->mapType->nama.'")' : '' }}
+                            Metadata
                         </h6>
                         @include('backend.pages.spatial-layers.features._metadata-dinamis', ['dynamicAttributes' => $dynamicAttributes, 'feature' => null])
 
