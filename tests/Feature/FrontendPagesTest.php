@@ -64,6 +64,20 @@ class FrontendPagesTest extends TestCase
             ->assertDontSee('>Peta Tematik</a>', false);
     }
 
+    public function test_aspirasi_form_matches_server_rules(): void
+    {
+        $this->get(route('tampil.aspirasi'))
+            ->assertOk()
+            ->assertSee('type="radio" name="jenis_aspirasi" value="usulan"', false)
+            ->assertSee('type="radio" name="jenis_aspirasi" value="kritik &amp; saran"', false)
+            ->assertSee('accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"', false)
+            ->assertSee('id="lampiranWajib"', false)
+            ->assertSee('minlength="5" maxlength="200"', false)
+            ->assertSee('href="'.route('kebijakan_privasi').'"', false)
+            ->assertSee('id="modalTicket"', false)
+            ->assertDontSee('.dwg', false);
+    }
+
     public function test_content_pages_show_the_page_hero_with_breadcrumb(): void
     {
         $this->get(route('tampil.publikasi'))

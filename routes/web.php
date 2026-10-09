@@ -57,7 +57,8 @@ Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedb
 Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi-masyarakat.store');
 
 // LACAK STATUS ASPIRASI //
-Route::get('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiLacak'])->name('aspirasi-masyarakat.lacak');
+// Halaman lacak sudah digabung ke halaman Aspirasi (bagian #lacak) //
+Route::get('/aspirasi-masyarakat/lacak', fn () => redirect()->to(route('tampil.aspirasi').'#lacak', 301));
 Route::post('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiLacakCari'])
     ->name('aspirasi-masyarakat.lacak.cari')
     ->middleware('throttle:6,1');

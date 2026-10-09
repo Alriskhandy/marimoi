@@ -1,618 +1,524 @@
-@extends('frontend.layouts.spatial', ['title' => 'Usulan Aspirasi', 'heroTitle' => 'Usulan Aspirasi Masyarakat'])
+@extends('frontend.layouts.spatial', ['title' => 'Aspirasi Masyarakat - MARIMOI', 'heroTitle' => 'Aspirasi Masyarakat'])
 
-@push('styles')
-    @vite(['resources/css/app.css'])
-    <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    <style>
-        /* Typography */
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            font-family: 'Poppins', sans-serif;
-        }
+@section('subtitle', 'Sampaikan usulan pembangunan atau kritik dan saran untuk Maluku Utara, lalu pantau tindak
+    lanjutnya dengan nomor tiket.')
 
-        p,
-        body,
-        ul,
-        li {
-            font-family: 'Inter', sans-serif;
-        }
+    @php
+        $kicker =
+            'mb-4 flex items-center gap-3 font-grotesk text-xs uppercase tracking-widest text-ocean before:h-px before:w-7 before:bg-current';
+        $input =
+            'block w-full rounded-xl border-slate-300 bg-white px-3.5 py-2.5 text-[0.9375rem] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-ocean focus:ring-2 focus:ring-ocean/20';
+        $label = 'mb-1 block text-sm font-semibold text-slate-700';
+        $feedback = 'invalid-feedback mt-1 hidden text-sm text-red-600';
+        $legend = 'mb-3 flex items-center gap-2.5 text-base font-bold text-navy';
+        $badge = 'grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ocean/10 font-grotesk text-xs text-ocean';
+        $btnPrimary =
+            'inline-flex items-center justify-center gap-2 rounded-full bg-ocean px-7 py-3.5 text-[0.9375rem] font-bold text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_38px_-10px_rgba(32,217,255,.75)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0';
+        $btnSoft =
+            'inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-ocean hover:text-ocean disabled:cursor-wait disabled:opacity-70';
+        $jenis = [
+            [
+                'usulan',
+                'Usulan Pembangunan',
+                'Usulkan pembangunan atau perbaikan infrastruktur di lokasi tertentu.',
+                'bi-geo-alt-fill',
+            ],
+            [
+                'kritik & saran',
+                'Kritik & Saran',
+                'Beri masukan umum untuk layanan dan pembangunan, tanpa menentukan lokasi.',
+                'bi-chat-square-text-fill',
+            ],
+        ];
+        $panduan = [
+            [
+                'bi-geo-alt',
+                'Menentukan lokasi usulan',
+                [
+                    'Tekan "Gunakan Lokasi Saat Ini" bila Anda berada di lokasi tersebut.',
+                    'Atau ketuk/klik langsung pada peta. Pin dapat digeser untuk merapikan posisi.',
+                ],
+            ],
+            [
+                'bi-paperclip',
+                'Lampiran',
+                [
+                    'Wajib untuk usulan pembangunan, opsional untuk kritik & saran.',
+                    'Format JPG, PNG, PDF, DOC, atau DOCX, maksimal 5 MB.',
+                    'Bisa berupa foto lokasi, sketsa, atau dokumen pendukung.',
+                ],
+            ],
+            [
+                'bi-ticket-perforated',
+                'Nomor tiket',
+                [
+                    'Setelah terkirim, Anda menerima nomor tiket di layar dan melalui email.',
+                    'Gunakan nomor tiket beserta email atau nomor WhatsApp untuk melacak status.',
+                ],
+            ],
+            [
+                'bi-shield-lock',
+                'Privasi data',
+                [
+                    'Data dipakai untuk memproses dan menindaklanjuti aspirasi Anda.',
+                    'Data tidak dibagikan kepada pihak ketiga tanpa persetujuan.',
+                ],
+            ],
+        ];
+        $statusLabel = [
+            'pending' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'ditolak' => 'Ditolak',
+        ];
+        $lacakErrors = $errors->getBag('lacak');
+    @endphp
 
-        /* Accordion Animations */
-        .answer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
-            padding-top: 0;
-        }
+    @push('styles')
+        <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+        <style>
+            /* Status validasi di-toggle oleh skrip formulir. */
+            #formUsulan .is-invalid {
+                border-color: #ef4444;
+                box-shadow: 0 0 0 3px rgba(239, 68, 68, .12);
+            }
 
-        .tab input[type="radio"]:checked~.answer {
-            padding-top: 1rem;
-        }
+            #formUsulan .is-valid {
+                border-color: #10b981;
+            }
 
-        #acc1:checked~.answer {
-            max-height: 400px;
-        }
-
-        #acc2:checked~.answer {
-            max-height: 500px;
-        }
-
-        #acc3:checked~.answer {
-            max-height: 400px;
-        }
-
-        #acc4:checked~.answer {
-            max-height: 300px;
-        }
-
-        #acc5:checked~.answer {
-            max-height: 400px;
-        }
-
-        .tab label::after {
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .tab input[type="radio"]:checked~label::after {
-            transform: rotate(45deg);
-        }
-
-        /* Accordion States */
-        .tab input[type="radio"]:checked~label {
-            background: linear-gradient(to bottom right, #2563eb, #1e40af) !important;
-            color: white !important;
-        }
-
-        .tab input[type="radio"]:checked~label h4,
-        .tab input[type="radio"]:checked~label::after,
-        .tab input[type="radio"]:checked~label i {
-            color: white !important;
-        }
-
-        .tab label {
-            color: #374151 !important;
-            background-color: transparent;
-        }
-
-        .tab label h4 {
-            color: #374151 !important;
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .tab label i {
-            color: #374151 !important;
-        }
-
-        .tab:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Map Styles */
-        #map {
-            height: 350px;
-            z-index: 99;
-            width: 100%;
-            border-radius: 8px;
-        }
-
-        .container {
-            max-width: 1200px;
-            color: #0a0f1e;
-        }
-
-        /* Form Validation */
-        .is-invalid {
-            border-color: #ef4444 !important;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
-        }
-
-        .is-valid {
-            border-color: #10b981 !important;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
-        }
-
-        .invalid-feedback:not(.hidden) {
-            display: block;
-        }
-    </style>
-@endpush
-
-@section('subtitle', 'Sampaikan usulan pembangunan atau kritik dan saran untuk Maluku Utara.')
+            /* Panel tab memakai class grid; pastikan atribut hidden tetap menyembunyikannya. */
+            [role="tabpanel"][hidden] {
+                display: none !important;
+            }
+        </style>
+    @endpush
 
 @section('main')
-    <!-- Modal Overlay -->
-    <div id="modalOverlay"
-        class="fixed inset-0 bg-black/60 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-300 ease-out backdrop-blur-sm">
-        <div
-            class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] scale-90 translate-y-5 transition-transform duration-300 ease-out">
-            <div id="modalIcon"
-                class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl bg-blue-100 text-blue-600">
-                <div class="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-            </div>
-            <h3 id="modalTitle" class="text-xl font-semibold text-gray-800 mb-2">Memproses...</h3>
-            <p id="modalMessage" class="text-gray-600 mb-4">Mohon tunggu sebentar</p>
-            <div id="modalActions" class="hidden">
-                <button id="modalCloseBtn"
-                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Tutup
-                </button>
+    @php
+        // Tab awal: Lacak bila baru saja mencari tiket (hasil, tidak ditemukan, atau error validasi).
+        $tabAwal = $hasilLacak || $lacakTidakDitemukan || $lacakErrors->any() ? 'lacak' : 'kirim';
+        $tabs = [['kirim', 'Kirim Aspirasi', 'bi-send'], ['lacak', 'Lacak Status', 'bi-search']];
+    @endphp
+    <section class="bg-mist pb-16 md:pb-20">
+        {{-- Tab menempel di bawah navbar supaya bisa berpindah tanpa scroll --}}
+        <div class="sticky top-[4.75rem] z-30 border-b border-slate-900/10 bg-mist/90 backdrop-blur-md">
+            <div class="mx-auto w-full max-w-[73.75rem] px-6 py-3">
+                <div role="tablist" aria-label="Pilih layanan aspirasi"
+                    class="inline-flex w-full rounded-full border border-slate-900/10 bg-white p-1 shadow-sm sm:w-auto">
+                    @foreach ($tabs as [$kunci, $nama, $ikon])
+                        <button type="button" role="tab" id="tab-{{ $kunci }}" data-tab="{{ $kunci }}"
+                            aria-controls="panel-{{ $kunci }}"
+                            aria-selected="{{ $tabAwal === $kunci ? 'true' : 'false' }}"
+                            tabindex="{{ $tabAwal === $kunci ? '0' : '-1' }}"
+                            class="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:text-navy aria-selected:bg-ocean aria-selected:text-white aria-selected:shadow-[0_8px_20px_-10px_rgba(10,132,255,.9)] sm:flex-none sm:px-6">
+                            <i class="bi {{ $ikon }}"></i> {{ $nama }}
+                        </button>
+                    @endforeach
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <section class="min-h-screen mt-0 pt-8 pb-8 bg-slate-50">
+        {{-- Tab: Kirim aspirasi --}}
+        <div id="panel-kirim" role="tabpanel" aria-labelledby="tab-kirim" @if ($tabAwal !== 'kirim') hidden @endif
+            class="mx-auto grid w-full max-w-[73.75rem] gap-6 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
+            <div
+                class="rounded-3xl border border-slate-900/10 bg-white p-5 shadow-[0_30px_60px_-40px_rgba(7,26,45,.35)] sm:p-7">
+                <p class="mb-6 text-sm text-slate-500">Kolom bertanda <span class="text-red-500">*</span> wajib diisi.</p>
+                <form action="{{ route('aspirasi-masyarakat.store') }}" method="post" enctype="multipart/form-data"
+                    id="formUsulan" novalidate class="space-y-7">
+                    @csrf
 
-        <div class="container mx-auto px-4" data-aos="fade-up" data-aos-delay="100">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Instruction Card -->
-                <div class="lg:col-span-5">
-                    <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 h-full">
-                        <h3 class="text-lg text-center font-semibold mb-4 text-slate-800">Petunjuk Pengisian</h3>
-                        <p class="text-justify mb-4 text-slate-600">
-                            Formulir ini digunakan untuk menyampaikan usulan pembangunan atau kritik & saran terkait layanan
-                            sistem.
-                        </p>
-
-                        <!-- Accordion -->
-                        <div class="wrapper w-full" id="instructionAccordion">
-                            @foreach ([
-            [
-                'id' => 'acc1',
-                'icon' => 'info-circle',
-                'title' => 'Jenis Aspirasi',
-                'content' => '
-                                            <p class="mb-2">Ada 2 jenis aspirasi yang dapat disampaikan:</p>
-                                            <ul class="list-disc list-inside space-y-1 pl-4">
-                                                <li><strong>Usulan Pembangunan</strong> - Untuk mengusulkan proyek pembangunan baru dengan lokasi spesifik</li>
-                                                <li><strong>Kritik & Saran</strong> - Untuk memberikan masukan umum tanpa perlu menentukan lokasi</li>
-                                            </ul>
-                                        ',
-            ],
-            [
-                'id' => 'acc2',
-                'icon' => 'list-ol',
-                'title' => 'Langkah Pengisian',
-                'content' => '
-                                            <ol class="list-decimal list-inside space-y-1 pl-4">
-                                                <li>Isi data diri Anda (nama, alamat, email, dan nomor WhatsApp)</li>
-                                                <li>Pilih jenis aspirasi (Usulan atau Kritik & Saran)</li>
-                                                <li>Untuk Usulan: pilih kategori dan tentukan lokasi pada peta</li>
-                                                <li>Isi judul dan pesan aspirasi secara jelas</li>
-                                                <li>Lampirkan file pendukung jika diperlukan</li>
-                                                <li>Centang persetujuan dan selesaikan captcha</li>
-                                                <li>Klik tombol "Kirim Aspirasi"</li>
-                                            </ol>
-                                        ',
-            ],
-            [
-                'id' => 'acc3',
-                'icon' => 'geo-alt',
-                'title' => 'Lokasi Usulan',
-                'content' => '
-                                            <p class="mb-2">Untuk jenis aspirasi "Usulan Pembangunan", Anda perlu menentukan lokasi:</p>
-                                            <ul class="list-disc list-inside space-y-1 pl-4">
-                                                <li>Klik tombol "Gunakan Lokasi Saat Ini" untuk menggunakan lokasi Anda sekarang</li>
-                                                <li>Atau klik langsung pada peta untuk memilih lokasi yang diinginkan</li>
-                                                <li>Lokasi yang dipilih akan ditandai dengan pin pada peta</li>
-                                            </ul>
-                                        ',
-            ],
-            [
-                'id' => 'acc4',
-                'icon' => 'paperclip',
-                'title' => 'Lampiran',
-                'content' => '
-                                            <p class="mb-2">Anda dapat melampirkan file pendukung:</p>
-                                            <ul class="list-disc list-inside space-y-1 pl-4">
-                                                <li>Format yang didukung: gambar (JPG, PNG, GIF), PDF, DWG, DXF</li>
-                                                <li>Ukuran maksimal file: 5MB</li>
-                                                <li>Lampiran dapat berupa foto lokasi, sketsa, atau dokumen pendukung lainnya</li>
-                                            </ul>
-                                        ',
-            ],
-            [
-                'id' => 'acc5',
-                'icon' => 'shield-lock',
-                'title' => 'Privasi Data',
-                'content' => '
-                                            <p class="mb-2">Data yang Anda berikan akan digunakan untuk:</p>
-                                            <ul class="list-disc list-inside space-y-1 pl-4">
-                                                <li>Memproses aspirasi yang Anda sampaikan</li>
-                                                <li>Menghubungi Anda terkait tindak lanjut aspirasi</li>
-                                                <li>Data Anda tidak akan dibagikan kepada pihak ketiga tanpa persetujuan</li>
-                                                <li>Aspirasi yang disampaikan akan ditinjau oleh tim terkait</li>
-                                            </ul>
-                                        ',
-            ],
-        ] as $accordion)
-                                <div
-                                    class="tab mb-4 px-3 py-3 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
-                                    <input type="radio" name="accordion" id="{{ $accordion['id'] }}" class="hidden peer">
-                                    <label for="{{ $accordion['id'] }}"
-                                        class="flex items-center text-sm md:text-base font-semibold cursor-pointer py-2 px-3 rounded-md
-                                       after:absolute after:content-['+'] after:right-6 after:text-2xl 
-                                       after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform 
-                                       peer-checked:after:rotate-45 after:transition-transform after:duration-300"
-                                        tabindex="0">
-                                        <h4><i class="bi bi-{{ $accordion['icon'] }} me-2"></i> {{ $accordion['title'] }}
-                                        </h4>
-                                    </label>
-                                    <div
-                                        class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
-                                        <div class="text-gray-700 text-sm leading-relaxed">
-                                            {!! $accordion['content'] !!}
-                                        </div>
-                                    </div>
-                                </div>
+                    {{-- 1. Jenis aspirasi --}}
+                    <fieldset data-field>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}">1</span> Jenis aspirasi <span
+                                class="text-red-500">*</span></legend>
+                        <div class="grid gap-2.5 sm:grid-cols-2">
+                            @foreach ($jenis as [$nilai, $nama, $keterangan, $ikon])
+                                <label class="relative block cursor-pointer">
+                                    <input type="radio" name="jenis_aspirasi" value="{{ $nilai }}"
+                                        class="peer sr-only" @if ($loop->first) required @endif>
+                                    <span
+                                        class="flex h-full gap-3 rounded-2xl border-2 border-slate-200 px-4 py-3 transition peer-checked:border-ocean peer-checked:bg-ocean/[0.04] peer-focus-visible:ring-2 peer-focus-visible:ring-ocean/40 hover:border-slate-300">
+                                        <i class="bi {{ $ikon }} text-lg text-ocean"></i>
+                                        <span>
+                                            <span class="block font-bold text-navy">{{ $nama }}</span>
+                                            <span
+                                                class="mt-0.5 block text-[0.8125rem] leading-snug text-slate-500">{{ $keterangan }}</span>
+                                        </span>
+                                    </span>
+                                    <i
+                                        class="bi bi-check-circle-fill absolute right-4 top-4 hidden text-ocean peer-checked:block"></i>
+                                </label>
                             @endforeach
                         </div>
-                    </div>
-                </div>
+                        <p class="{{ $feedback }}"></p>
+                    </fieldset>
 
-                <!-- Form Card -->
-                <div class="lg:col-span-7">
-                    <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 h-full">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-lg font-semibold text-slate-800">Formulir Usulan Aspirasi</h3>
-                            <a href="{{ route('aspirasi-masyarakat.lacak') }}" class="text-sm text-blue-600 hover:underline">
-                                Sudah pernah mengirim? Lacak status
-                            </a>
+                    {{-- 2. Data diri --}}
+                    <fieldset>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}">2</span> Data diri</legend>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div data-field>
+                                <label for="nama_pengirim" class="{{ $label }}">Nama lengkap <span
+                                        class="text-red-500">*</span></label>
+                                <input type="text" name="nama_pengirim" id="nama_pengirim" class="{{ $input }}"
+                                    placeholder="Nama sesuai identitas" autocomplete="name" required minlength="3"
+                                    maxlength="100">
+                                <p class="{{ $feedback }}"></p>
+                            </div>
+                            <div data-field>
+                                <label for="alamat" class="{{ $label }}">Alamat <span
+                                        class="text-red-500">*</span></label>
+                                <input type="text" name="alamat" id="alamat" class="{{ $input }}"
+                                    placeholder="Desa/kelurahan, kecamatan, kabupaten/kota" autocomplete="street-address"
+                                    required minlength="5" maxlength="200">
+                                <p class="{{ $feedback }}"></p>
+                            </div>
+                            <div data-field>
+                                <label for="email" class="{{ $label }}">Email aktif <span
+                                        class="text-red-500">*</span></label>
+                                <input type="email" name="email" id="email" class="{{ $input }}"
+                                    placeholder="nama@email.com" autocomplete="email" inputmode="email" required>
+                                <p class="{{ $feedback }}"></p>
+                            </div>
+                            <div data-field>
+                                <label for="phone" class="{{ $label }}">Nomor WhatsApp <span
+                                        class="text-red-500">*</span></label>
+                                <input type="tel" name="phone" id="phone" class="{{ $input }}"
+                                    placeholder="08xxxxxxxxxx" autocomplete="tel" inputmode="tel" required
+                                    pattern="^(\+?62|0)[0-9]{9,13}$" title="Format: 08xxxxxxxxxx atau +628xxxxxxxxxx">
+                                <p class="{{ $feedback }}"></p>
+                            </div>
                         </div>
+                        <p class="mt-2.5 flex items-start gap-2 text-xs text-slate-500"><i
+                                class="bi bi-info-circle mt-px"></i> Email dan nomor WhatsApp dipakai untuk mengirim nomor
+                            tiket dan memverifikasi saat Anda melacak status.</p>
+                    </fieldset>
 
-                        <form action="/aspirasi-masyarakat" method="post" enctype="multipart/form-data" id="formUsulan"
-                            novalidate>
-                            @csrf
-                            <div class="space-y-4">
-                                <!-- Personal Information -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ([['name' => 'nama_pengirim', 'label' => 'Nama Lengkap', 'type' => 'text', 'icon' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', 'placeholder' => 'Nama Lengkap Anda', 'required' => true, 'minlength' => '3', 'maxlength' => '100'], ['name' => 'alamat', 'label' => 'Alamat', 'type' => 'text', 'icon' => 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z', 'placeholder' => 'Masukkan Alamat Anda', 'required' => true, 'minlength' => '10', 'maxlength' => '200']] as $field)
-                                        <div class="space-y-2">
-                                            <label for="{{ $field['name'] }}"
-                                                class="block text-sm font-medium text-slate-700">
-                                                {{ $field['label'] }} <span class="text-red-500">*</span>
-                                            </label>
-                                            <div class="relative">
-                                                <div
-                                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                        stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="{{ $field['icon'] }}" />
-                                                    </svg>
-                                                </div>
-                                                <input type="{{ $field['type'] }}" name="{{ $field['name'] }}"
-                                                    id="{{ $field['name'] }}"
-                                                    class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                    placeholder="{{ $field['placeholder'] }}"
-                                                    {{ $field['required'] ? 'required' : '' }}
-                                                    {{ isset($field['minlength']) ? 'minlength="' . $field['minlength'] . '"' : '' }}
-                                                    {{ isset($field['maxlength']) ? 'maxlength="' . $field['maxlength'] . '"' : '' }}>
-                                            </div>
-                                            <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                        </div>
+                    {{-- 3. Isi aspirasi --}}
+                    <fieldset>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}">3</span> Isi aspirasi
+                        </legend>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div data-field id="kategoriUsulanContainer" class="hidden">
+                                <label for="kategori_aspirasi_id" class="{{ $label }}">Kategori usulan <span
+                                        class="text-red-500">*</span></label>
+                                <select name="kategori_aspirasi_id" id="kategori_aspirasi_id"
+                                    class="{{ $input }}">
+                                    <option value="" selected disabled>Pilih kategori usulan</option>
+                                    @foreach ($aspirasi as $item)
+                                        <option value="{{ $item->id }}">{{ $item->nama_kategori }}</option>
                                     @endforeach
-                                </div>
-
-                                <!-- Contact Information -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <label for="email" class="block text-sm font-medium text-slate-700">
-                                            Email Aktif <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                </svg>
-                                            </div>
-                                            <input type="email" name="email" id="email"
-                                                class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                placeholder="Email Anda" required>
-                                        </div>
-                                        <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label for="phone" class="block text-sm font-medium text-slate-700">
-                                            No WhatsApp <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                                </svg>
-                                            </div>
-                                            <input type="tel" name="phone" id="phone"
-                                                class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                placeholder="08xxxxxxxxxx" required pattern="^(\+?62|0)[0-9]{9,13}$"
-                                                title="Format: 08xxxxxxxxxx atau +628xxxxxxxxxx">
-                                        </div>
-                                        <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Aspirasi Type and Category -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <label for="jenis_aspirasi" class="block text-sm font-medium text-slate-700">
-                                            Jenis Aspirasi <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                </svg>
-                                            </div>
-                                            <select name="jenis_aspirasi" id="jenis_aspirasi"
-                                                class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                required>
-                                                <option value="" disabled selected>-- Pilih Jenis Aspirasi --
-                                                </option>
-                                                <option value="usulan">Usulan Pembangunan</option>
-                                                <option value="kritik & saran">Kritik & Saran</option>
-                                            </select>
-                                        </div>
-                                        <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                    </div>
-
-                                    <div class="space-y-2 hidden transition-all duration-300 ease-in-out"
-                                        id="kategoriUsulanContainer">
-                                        <label for="kategori_aspirasi_id"
-                                            class="block text-sm font-medium text-slate-700">
-                                            Kategori Usulan <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="relative">
-                                            <div
-                                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                    stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                </svg>
-                                            </div>
-                                            <select name="kategori_aspirasi_id" id="kategori_aspirasi_id"
-                                                class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                                                <option value="" disabled selected>-- Pilih Kategori Usulan --
-                                                </option>
-                                                @foreach ($aspirasi as $item)
-                                                    <option value="{{ $item->id }}">{{ $item->nama_kategori }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Title and Message -->
-                                <div class="space-y-2">
-                                    <label for="judul_aspirasi" class="block text-sm font-medium text-slate-700">
-                                        Judul <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <input type="text" name="judul_aspirasi" id="judul_aspirasi"
-                                            class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                            placeholder="Judul Aspirasi" required minlength="10" maxlength="150">
-                                    </div>
-                                    <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <label for="isi_aspirasi" class="block text-sm font-medium text-slate-700">
-                                        Pesan <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <div class="absolute top-3 left-0 pl-3 pointer-events-none">
-                                            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </div>
-                                        <textarea name="isi_aspirasi" id="isi_aspirasi"
-                                            class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                            rows="5" required minlength="20" maxlength="1000"
-                                            placeholder="Berikan usulan pengembangan wilayah atau kritik & saran untuk peningkatan layanan sistem."></textarea>
-                                    </div>
-                                    <div class="flex justify-between items-center mt-1">
-                                        <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                        <div class="text-xs text-slate-500">
-                                            <span id="charCount">0</span>/1000 karakter
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Map Container -->
-                                <div class="space-y-2 hidden transition-all duration-300 ease-in-out" id="mapContainer">
-                                    <label class="block text-sm font-medium text-slate-700">
-                                        Lokasi Usulan <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="flex flex-wrap gap-3 mb-4">
-                                        <button type="button"
-                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-colors text-sm font-medium"
-                                            id="getLocationBtn">
-                                            <svg class="h-4 w-4 inline mr-2" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            </svg>
-                                            Gunakan Lokasi Saat Ini
-                                        </button>
-                                        <button type="button"
-                                            class="px-4 py-2 bg-slate-100 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
-                                            id="clearLocationBtn">
-                                            <svg class="h-4 w-4 inline mr-2" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                            Hapus Lokasi
-                                        </button>
-                                    </div>
-
-                                    <!-- Location Status -->
-                                    <div id="locationStatus"
-                                        class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <div class="flex items-center text-sm text-blue-700">
-                                            <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10"
-                                                    stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor"
-                                                    d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                                </path>
-                                            </svg>
-                                            <span id="locationStatusText">Mencari lokasi dengan akurasi tinggi...</span>
-                                        </div>
-                                        <div class="mt-2">
-                                            <div class="w-full bg-blue-200 rounded-full h-2">
-                                                <div id="locationProgress"
-                                                    class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                                    style="width: 0%"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div id="map" class="w-full h-80 rounded-lg border border-slate-300 shadow-sm">
-                                    </div>
-                                    <p class="text-xs text-slate-500 flex items-center">
-                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Klik pada peta untuk memilih lokasi atau gunakan tombol lokasi saat ini
-                                    </p>
-                                    <div id="locationInfo"
-                                        class="hidden p-3 text-sm text-blue-700 bg-blue-50 rounded-lg border border-blue-200">
-                                        <svg class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span>Lokasi dipilih: <span id="coordText"></span></span>
-                                    </div>
-                                    <input type="hidden" name="latitude" id="latitude">
-                                    <input type="hidden" name="longitude" id="longitude">
-                                </div>
-
-                                <!-- File Upload -->
-                                <div class="space-y-2">
-                                    <label for="lampiran"
-                                        class="block text-sm font-medium text-slate-700">Lampiran</label>
-                                    <div class="relative">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                            </svg>
-                                        </div>
-                                        <input type="file" name="lampiran" id="lampiran"
-                                            class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                            accept="image/*,.pdf,.dwg,.dxf">
-                                    </div>
-                                    <p class="text-xs text-slate-500 flex items-center">
-                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Format: JPG, JPEG, PNG, PDF, DOC, DOCX (maks. 5MB)
-                                    </p>
-                                    <div id="fileInfo"
-                                        class="hidden p-2 text-sm bg-green-50 text-green-700 rounded-lg border border-green-200">
-                                        <svg class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span id="fileInfoText"></span>
-                                    </div>
-                                    <div class="invalid-feedback hidden text-red-500 text-sm"></div>
-                                </div>
-
-                                <!-- Agreement -->
-                                <div class="space-y-3">
-                                    <div class="flex items-start space-x-3">
-                                        <input
-                                            class="mt-1 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 focus:ring-2"
-                                            type="checkbox" id="agreement" name="agreement" required>
-                                        <label class="text-sm text-slate-700" for="agreement">
-                                            Saya menyetujui bahwa informasi yang saya berikan adalah benar dan dapat
-                                            dipertanggungjawabkan serta data saya digunakan sesuai kebijakan privasi yang
-                                            berlaku
-                                            <span class="text-red-500">*</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Captcha and Submit -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                                    <div class="flex justify-center md:justify-start">
-                                        <div class="h-captcha"
-                                            data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
-                                    </div>
-
-                                    <div class="flex justify-center md:justify-end">
-                                        <button type="submit"
-                                            class="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            id="submitBtn">
-                                            <svg class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                            </svg>
-                                            <span id="submitText">Kirim Aspirasi</span>
-                                        </button>
-                                    </div>
+                                </select>
+                                <p class="{{ $feedback }}"></p>
+                            </div>
+                            <div data-field id="judulContainer" class="md:col-span-2">
+                                <label for="judul_aspirasi" class="{{ $label }}">Judul <span
+                                        class="text-red-500">*</span></label>
+                                <input type="text" name="judul_aspirasi" id="judul_aspirasi"
+                                    class="{{ $input }}" placeholder="Contoh: Perbaikan jalan desa yang rusak"
+                                    required minlength="5" maxlength="150">
+                                <p class="{{ $feedback }}"></p>
+                            </div>
+                            <div data-field class="md:col-span-2">
+                                <label for="isi_aspirasi" class="{{ $label }}">Pesan <span
+                                        class="text-red-500">*</span></label>
+                                <textarea name="isi_aspirasi" id="isi_aspirasi" rows="4" class="{{ $input }}" required minlength="10"
+                                    maxlength="1000" placeholder="Jelaskan kondisi, kebutuhan, atau masukan Anda selengkap mungkin."></textarea>
+                                <div class="mt-1 flex items-start justify-between gap-4">
+                                    <p class="{{ $feedback }} !mt-0"></p>
+                                    <p class="ml-auto shrink-0 text-xs text-slate-500"><span id="charCount">0</span>/1000
+                                        karakter</p>
                                 </div>
                             </div>
-                        </form>
+                        </div>
+                    </fieldset>
+
+                    {{-- 4. Lokasi usulan (khusus usulan pembangunan) --}}
+                    <fieldset id="mapContainer" class="hidden" data-field>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}">4</span> Lokasi usulan
+                            <span class="text-red-500">*</span></legend>
+                        <div class="mb-3 flex flex-wrap gap-2">
+                            <button type="button" id="getLocationBtn" class="{{ $btnSoft }}"><i
+                                    class="bi bi-crosshair"></i> Gunakan Lokasi Saat Ini</button>
+                            <button type="button" id="clearLocationBtn" class="{{ $btnSoft }}"><i
+                                    class="bi bi-x-lg"></i> Hapus Lokasi</button>
+                        </div>
+                        <div id="locationStatus" class="mb-3 hidden rounded-xl border border-ocean/20 bg-ocean/5 p-3"
+                            aria-live="polite">
+                            <p class="flex items-center gap-2 text-sm text-ocean">
+                                <span
+                                    class="h-4 w-4 animate-spin rounded-full border-2 border-ocean/30 border-t-ocean"></span>
+                                <span id="locationStatusText">Mencari lokasi…</span>
+                            </p>
+                            <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-ocean/15">
+                                <div id="locationProgress"
+                                    class="h-full rounded-full bg-ocean transition-all duration-300" style="width: 0%">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="isolate overflow-hidden rounded-2xl border border-slate-300">
+                            <div id="map" class="h-64 w-full sm:h-72" role="application"
+                                aria-label="Peta pemilihan lokasi usulan"></div>
+                        </div>
+                        <p class="mt-2 flex items-start gap-2 text-xs text-slate-500"><i
+                                class="bi bi-hand-index mt-px"></i> Ketuk/klik peta untuk memilih lokasi. Pin dapat
+                            digeser.</p>
+                        <p id="locationInfo"
+                            class="mt-2 hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm text-emerald-700">
+                            <i class="bi bi-check-circle-fill"></i> Lokasi dipilih: <b id="coordText"
+                                class="font-grotesk font-medium"></b>
+                        </p>
+                        <p class="{{ $feedback }}"></p>
+                        <input type="hidden" name="latitude" id="latitude">
+                        <input type="hidden" name="longitude" id="longitude">
+                    </fieldset>
+
+                    {{-- 5. Lampiran --}}
+                    <fieldset data-field>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}" data-step-number>4</span>
+                            Lampiran
+                            <span id="lampiranWajib" class="hidden text-red-500">*</span>
+                            <span id="lampiranOpsional" class="text-sm font-medium text-slate-400">(opsional)</span>
+                        </legend>
+                        <label for="lampiran"
+                            class="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3.5 transition hover:border-ocean hover:bg-ocean/[0.03]">
+                            <i class="bi bi-cloud-arrow-up text-2xl text-ocean"></i>
+                            <span><span class="block text-sm font-semibold text-navy">Pilih file untuk diunggah</span>
+                                <span class="block text-xs text-slate-500">JPG, PNG, PDF, DOC, atau DOCX · maksimal 5
+                                    MB</span></span>
+                            <input type="file" name="lampiran" id="lampiran" class="sr-only"
+                                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                        </label>
+                        <p id="fileInfo"
+                            class="mt-2 hidden items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm text-emerald-700">
+                            <i class="bi bi-file-earmark-check-fill"></i> <span id="fileInfoText"></span>
+                        </p>
+                        <p class="{{ $feedback }}"></p>
+                    </fieldset>
+
+                    {{-- 6. Persetujuan & kirim --}}
+                    <fieldset>
+                        <legend class="{{ $legend }}"><span class="{{ $badge }}" data-step-number>5</span>
+                            Kirim</legend>
+                        <div data-field>
+                            <label class="flex items-start gap-3 text-sm leading-relaxed text-slate-700" for="agreement">
+                                <input type="checkbox" id="agreement" name="agreement" value="1" required
+                                    class="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-ocean focus:ring-ocean">
+                                <span>Saya menyatakan informasi yang saya berikan benar dan dapat dipertanggungjawabkan,
+                                    serta menyetujui penggunaan data sesuai
+                                    <a href="{{ route('kebijakan_privasi') }}" target="_blank"
+                                        class="font-semibold text-ocean underline-offset-2 hover:underline">kebijakan
+                                        privasi</a>. <span class="text-red-500">*</span></span>
+                            </label>
+                            <p class="{{ $feedback }}"></p>
+                        </div>
+                        <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                            <button type="submit" id="submitBtn" class="{{ $btnPrimary }} w-full sm:w-auto">
+                                <i class="bi bi-send-fill"></i> <span id="submitText">Kirim Aspirasi</span>
+                            </button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            {{-- Panduan singkat --}}
+            <aside class="lg:sticky lg:top-[10.5rem] lg:self-start">
+                <div class="rounded-3xl border border-slate-900/10 bg-white p-5">
+                    <h2 class="mb-1 text-base font-bold text-navy">Panduan singkat</h2>
+                    <p class="mb-4 text-sm text-slate-500">Hal yang perlu diketahui sebelum mengirim.</p>
+                    <div class="divide-y divide-slate-900/10 border-t border-slate-900/10">
+                        @foreach ($panduan as [$ikon, $judul, $poin])
+                            <details class="group py-1" @if ($loop->first) open @endif>
+                                <summary
+                                    class="flex cursor-pointer list-none items-center gap-3 py-3 text-[0.9375rem] font-semibold text-navy [&::-webkit-details-marker]:hidden">
+                                    <i class="bi {{ $ikon }} text-ocean"></i>
+                                    <span class="flex-1">{{ $judul }}</span>
+                                    <i
+                                        class="bi bi-plus-lg text-slate-400 transition-transform duration-300 group-open:rotate-45"></i>
+                                </summary>
+                                <ul class="mb-3 ml-7 list-disc space-y-1.5 pl-4 text-sm leading-relaxed text-slate-600">
+                                    @foreach ($poin as $teks)
+                                        <li>{{ $teks }}</li>
+                                    @endforeach
+                                </ul>
+                            </details>
+                        @endforeach
                     </div>
                 </div>
+            </aside>
+        </div>
+
+        {{-- Tab: Lacak status --}}
+        <div id="panel-lacak" role="tabpanel" aria-labelledby="tab-lacak" @if ($tabAwal !== 'lacak') hidden @endif
+            class="mx-auto grid w-full max-w-[73.75rem] gap-6 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
+            <div
+                class="rounded-3xl border border-slate-900/10 bg-white p-5 shadow-[0_30px_60px_-40px_rgba(7,26,45,.35)] sm:p-7 lg:self-start">
+                <h2 class="mb-1 text-xl font-bold text-navy">Lacak Status Aspirasi</h2>
+                <p class="mb-6 text-sm text-slate-500">Masukkan nomor tiket beserta email atau nomor WhatsApp yang Anda
+                    gunakan saat mengirim aspirasi.</p>
+                <form action="{{ route('aspirasi-masyarakat.lacak.cari') }}" method="post"
+                    class="grid gap-5 sm:grid-cols-2">
+                    @csrf
+                    <div>
+                        <label for="nomor_tiket" class="{{ $label }}">Nomor tiket</label>
+                        <input type="text" id="nomor_tiket" name="nomor_tiket" value="{{ old('nomor_tiket') }}"
+                            placeholder="MARIMOI-ASP-20260101-0001"
+                            class="{{ $input }} font-grotesk uppercase placeholder:normal-case {{ $lacakErrors->has('nomor_tiket') ? '!border-red-500' : '' }}"
+                            required autocapitalize="characters" spellcheck="false">
+                        @if ($lacakErrors->has('nomor_tiket'))
+                            <p class="mt-1.5 text-sm text-red-600">{{ $lacakErrors->first('nomor_tiket') }}</p>
+                        @endif
+                    </div>
+                    <div>
+                        <label for="kontak" class="{{ $label }}">Email atau nomor WhatsApp</label>
+                        <input type="text" id="kontak" name="kontak" value="{{ old('kontak') }}"
+                            placeholder="nama@email.com atau 08xxxxxxxxxx"
+                            class="{{ $input }} {{ $lacakErrors->has('kontak') ? '!border-red-500' : '' }}"
+                            required>
+                        @if ($lacakErrors->has('kontak'))
+                            <p class="mt-1.5 text-sm text-red-600">{{ $lacakErrors->first('kontak') }}</p>
+                        @endif
+                    </div>
+                    <button type="submit" class="{{ $btnPrimary }} sm:col-span-2"><i class="bi bi-search"></i> Cek
+                        Status</button>
+                </form>
+
+                @if ($lacakTidakDitemukan)
+                    <div class="mt-6 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                        role="alert">
+                        <i class="bi bi-exclamation-circle-fill mt-0.5"></i>
+                        <p>Nomor tiket tidak ditemukan, atau email/nomor WhatsApp tidak cocok dengan data pengajuan.
+                            Periksa kembali nomor tiket pada email konfirmasi Anda.</p>
+                    </div>
+                @endif
+
+                @if ($hasilLacak)
+                    @php
+                        $langkahAktif = ['pending' => 0, 'diproses' => 1, 'selesai' => 2][$hasilLacak->status] ?? 0;
+                        $ditolak = $hasilLacak->status === 'ditolak';
+                    @endphp
+                    <div class="mt-8 border-t border-slate-200 pt-6" role="status">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <h3 class="text-xl font-bold leading-snug text-navy">{{ $hasilLacak->judul_aspirasi }}</h3>
+                            <span
+                                @class([
+                                    'rounded-full px-3 py-1 text-xs font-bold',
+                                    'bg-amber-100 text-amber-700' => $hasilLacak->status === 'pending',
+                                    'bg-blue-100 text-blue-700' => $hasilLacak->status === 'diproses',
+                                    'bg-emerald-100 text-emerald-700' => $hasilLacak->status === 'selesai',
+                                    'bg-red-100 text-red-700' => $ditolak,
+                                ])>{{ $statusLabel[$hasilLacak->status] ?? ucfirst($hasilLacak->status) }}</span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500"><span
+                                class="font-grotesk">{{ $hasilLacak->nomor_tiket }}</span> · Diajukan
+                            {{ $hasilLacak->created_at->translatedFormat('d F Y') }}</p>
+
+                        @if ($ditolak)
+                            <div class="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                                Aspirasi ini tidak dapat kami tindak lanjuti.
+                            </div>
+                        @else
+                            <ol class="mt-6 grid grid-cols-3">
+                                @foreach (['Diterima', 'Diproses', 'Selesai'] as $i => $tahap)
+                                    <li class="relative flex flex-col items-center text-center">
+                                        @unless ($loop->first)
+                                            <span
+                                                class="absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 {{ $i <= $langkahAktif ? 'bg-ocean' : 'bg-slate-200' }}"
+                                                aria-hidden="true"></span>
+                                        @endunless
+                                        <span
+                                            class="relative grid h-8 w-8 place-items-center rounded-full text-sm font-bold {{ $i <= $langkahAktif ? 'bg-ocean text-white' : 'bg-slate-200 text-slate-500' }}">
+                                            @if ($i < $langkahAktif || ($i === $langkahAktif && $langkahAktif === 2))
+                                                <i class="bi bi-check-lg"></i>@else{{ $i + 1 }}
+                                            @endif
+                                        </span>
+                                        <span
+                                            class="mt-2 text-sm {{ $i <= $langkahAktif ? 'font-semibold text-navy' : 'text-slate-400' }}">{{ $tahap }}</span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                            <p class="mt-4 text-center text-xs text-slate-400">Menampilkan status terkini, bukan riwayat
+                                lengkap perubahan.</p>
+                        @endif
+
+                        <div class="mt-6 rounded-2xl bg-mist p-5">
+                            <p class="text-sm font-semibold text-slate-500">
+                                Tanggapan{{ $hasilLacak->tanggal_respon ? ' · ' . $hasilLacak->tanggal_respon->translatedFormat('d F Y') : '' }}
+                            </p>
+                            <p class="mt-2 whitespace-pre-line text-slate-700">
+                                {{ $hasilLacak->tanggapan_admin ?: 'Belum ada tanggapan. Mohon tunggu, tim kami akan segera memproses.' }}
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </div>
+
+            <aside class="rounded-3xl border border-slate-900/10 bg-white p-6 lg:self-start">
+                <h2 class="mb-4 text-lg font-bold text-navy">Arti status</h2>
+                <dl class="space-y-3 text-sm">
+                    @foreach ([['Menunggu', 'Aspirasi sudah diterima dan menunggu peninjauan.', 'bg-amber-400'], ['Diproses', 'Aspirasi sedang ditinjau atau ditindaklanjuti.', 'bg-blue-500'], ['Selesai', 'Tindak lanjut selesai, lihat tanggapan tim.', 'bg-emerald-500'], ['Ditolak', 'Aspirasi tidak dapat ditindaklanjuti.', 'bg-red-500']] as [$nama, $arti, $warna])
+                        <div class="flex gap-3">
+                            <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {{ $warna }}"
+                                aria-hidden="true"></span>
+                            <div>
+                                <dt class="font-semibold text-navy">{{ $nama }}</dt>
+                                <dd class="text-slate-500">{{ $arti }}</dd>
+                            </div>
+                        </div>
+                    @endforeach
+                </dl>
+                <p class="mt-5 border-t border-slate-900/10 pt-4 text-sm text-slate-500">Nomor tiket dikirim ke email Anda
+                    saat aspirasi berhasil terkirim.</p>
+            </aside>
         </div>
     </section>
 
+    {{-- Modal status proses (loading, berhasil, gagal) --}}
+    <div id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle"
+        aria-describedby="modalMessage"
+        class="invisible fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 opacity-0 backdrop-blur-sm transition-all duration-300">
+        <div id="modalCard"
+            class="w-full max-w-md translate-y-5 scale-95 rounded-3xl bg-white p-8 text-center shadow-2xl transition-transform duration-300">
+            <div id="modalIcon" class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl">
+            </div>
+            <h3 id="modalTitle" class="mb-2 text-xl font-bold text-navy">Memproses…</h3>
+            <p id="modalMessage" class="text-slate-600">Mohon tunggu sebentar</p>
+            <div id="modalTicket" class="mt-5 hidden rounded-2xl border border-ocean/20 bg-ocean/5 p-4">
+                <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Nomor tiket Anda</p>
+                <p id="modalTicketCode" class="mt-1 break-all font-grotesk text-lg font-medium text-navy"></p>
+                <button type="button" id="copyTicketBtn"
+                    class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-ocean hover:underline"><i
+                        class="bi bi-copy"></i> <span>Salin nomor tiket</span></button>
+            </div>
+            <div id="modalActions" class="mt-6 hidden flex-col gap-3 sm:flex-row sm:justify-center">
+                <a href="#lacak" id="modalTrackBtn" class="{{ $btnSoft }} hidden">Lacak status</a>
+                <button type="button" id="modalCloseBtn" class="{{ $btnPrimary }} !py-2.5">Tutup</button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
-    @vite(['resources/js/app.js'])
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
+        /**
+         * Formulir aspirasi: jenis aspirasi menentukan kolom tambahan (kategori, lokasi, lampiran wajib),
+         * validasi langsung per kolom, pemilihan lokasi di peta, dan pengiriman via fetch dengan hCaptcha.
+         */
         class AspirasiForm {
             constructor() {
                 this.map = null;
                 this.currentLocationMarker = null;
                 this.accuracyCircle = null;
                 this.isSubmitting = false;
+                this.lastTicket = null;
 
                 this.initElements();
                 this.initEventListeners();
@@ -620,289 +526,246 @@
             }
 
             initElements() {
+                const byId = (id) => document.getElementById(id);
                 this.elements = {
-                    form: document.getElementById('formUsulan'),
-                    jenisAspirasi: document.getElementById('jenis_aspirasi'),
-                    kategoriContainer: document.getElementById('kategoriUsulanContainer'),
-                    kategoriSelect: document.getElementById('kategori_aspirasi_id'),
-                    mapContainer: document.getElementById('mapContainer'),
-                    getLocationBtn: document.getElementById('getLocationBtn'),
-                    clearLocationBtn: document.getElementById('clearLocationBtn'),
-                    submitBtn: document.getElementById('submitBtn'),
-                    submitText: document.getElementById('submitText'),
-                    modalOverlay: document.getElementById('modalOverlay'),
-                    modalIcon: document.getElementById('modalIcon'),
-                    modalTitle: document.getElementById('modalTitle'),
-                    modalMessage: document.getElementById('modalMessage'),
-                    modalActions: document.getElementById('modalActions'),
-                    modalCloseBtn: document.getElementById('modalCloseBtn'),
-                    lampiranInput: document.getElementById('lampiran'),
-                    isiAspirasi: document.getElementById('isi_aspirasi'),
-                    charCount: document.getElementById('charCount'),
-                    latitude: document.getElementById('latitude'),
-                    longitude: document.getElementById('longitude'),
-                    fileInfo: document.getElementById('fileInfo'),
-                    fileInfoText: document.getElementById('fileInfoText'),
-                    locationInfo: document.getElementById('locationInfo'),
-                    coordText: document.getElementById('coordText'),
-                    locationStatus: document.getElementById('locationStatus'),
-                    locationStatusText: document.getElementById('locationStatusText'),
-                    locationProgress: document.getElementById('locationProgress')
+                    form: byId('formUsulan'),
+                    jenisRadios: document.querySelectorAll('input[name="jenis_aspirasi"]'),
+                    kategoriContainer: byId('kategoriUsulanContainer'),
+                    kategoriSelect: byId('kategori_aspirasi_id'),
+                    judulContainer: byId('judulContainer'),
+                    mapContainer: byId('mapContainer'),
+                    getLocationBtn: byId('getLocationBtn'),
+                    clearLocationBtn: byId('clearLocationBtn'),
+                    submitBtn: byId('submitBtn'),
+                    submitText: byId('submitText'),
+                    modalOverlay: byId('modalOverlay'),
+                    modalCard: byId('modalCard'),
+                    modalIcon: byId('modalIcon'),
+                    modalTitle: byId('modalTitle'),
+                    modalMessage: byId('modalMessage'),
+                    modalActions: byId('modalActions'),
+                    modalCloseBtn: byId('modalCloseBtn'),
+                    modalTicket: byId('modalTicket'),
+                    modalTicketCode: byId('modalTicketCode'),
+                    modalTrackBtn: byId('modalTrackBtn'),
+                    copyTicketBtn: byId('copyTicketBtn'),
+                    lampiranInput: byId('lampiran'),
+                    lampiranWajib: byId('lampiranWajib'),
+                    lampiranOpsional: byId('lampiranOpsional'),
+                    isiAspirasi: byId('isi_aspirasi'),
+                    charCount: byId('charCount'),
+                    latitude: byId('latitude'),
+                    longitude: byId('longitude'),
+                    fileInfo: byId('fileInfo'),
+                    fileInfoText: byId('fileInfoText'),
+                    locationInfo: byId('locationInfo'),
+                    coordText: byId('coordText'),
+                    locationStatus: byId('locationStatus'),
+                    locationStatusText: byId('locationStatusText'),
+                    locationProgress: byId('locationProgress'),
+                    stepNumbers: document.querySelectorAll('[data-step-number]'),
                 };
             }
 
             initEventListeners() {
-                // Form submission
-                this.elements.form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-                // Aspirasi type change
-                this.elements.jenisAspirasi.addEventListener('change', (e) => this.handleJenisAspirasiChange(e));
-
-                // Location buttons
-                this.elements.getLocationBtn.addEventListener('click', () => this.getCurrentLocation());
-                this.elements.clearLocationBtn.addEventListener('click', () => this.clearMapSelection());
-
-                // Modal close
-                this.elements.modalCloseBtn.addEventListener('click', () => this.hideModal());
-                this.elements.modalOverlay.addEventListener('click', (e) => {
-                    if (e.target === this.elements.modalOverlay) this.hideModal();
+                const el = this.elements;
+                el.form.addEventListener('submit', (e) => this.handleSubmit(e));
+                el.jenisRadios.forEach((radio) => radio.addEventListener('change', () => this
+                .handleJenisAspirasiChange()));
+                el.getLocationBtn.addEventListener('click', () => this.getCurrentLocation());
+                el.clearLocationBtn.addEventListener('click', () => this.clearMapSelection());
+                el.modalCloseBtn.addEventListener('click', () => this.hideModal());
+                el.modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === el.modalOverlay) this.hideModal();
                 });
-
-                // File upload
-                this.elements.lampiranInput.addEventListener('change', (e) => this.handleFileChange(e));
-
-                // Character count
-                this.elements.isiAspirasi.addEventListener('input', (e) => this.updateCharCount(e));
-
-                // Accordion functionality
-                this.initAccordion();
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.isModalOpen() && !this.isSubmitting) this.hideModal();
+                });
+                el.lampiranInput.addEventListener('change', (e) => this.handleFileChange(e));
+                el.isiAspirasi.addEventListener('input', (e) => this.updateCharCount(e));
+                el.copyTicketBtn.addEventListener('click', () => this.copyTicket());
+                el.modalTrackBtn.addEventListener('click', (e) => this.prefillTracking(e));
             }
 
-            initAccordion() {
-                const labels = document.querySelectorAll('.tab label');
-                const radioButtons = document.querySelectorAll('input[name="accordion"]');
-
-                labels.forEach((label, index) => {
-                    const toggleAccordion = () => {
-                        const radio = radioButtons[index];
-                        if (radio.checked) {
-                            radio.checked = false;
-                        } else {
-                            radioButtons.forEach((otherRadio, otherIndex) => {
-                                if (otherIndex !== index) otherRadio.checked = false;
-                            });
-                            radio.checked = true;
-                        }
-                        radio.dispatchEvent(new Event('change'));
-                    };
-
-                    label.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        toggleAccordion();
-                    });
-
-                    label.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleAccordion();
-                        }
-                    });
-                });
+            get jenisAspirasi() {
+                return this.elements.form.elements.jenis_aspirasi.value;
             }
 
-            setupValidation() {
-                // Real-time validation for all form fields
-                const validationRules = {
+            // Aturan validasi tiap kolom (sama dengan aturan server di FrontendController::aspirasiStore).
+            get rules() {
+                return {
                     nama_pengirim: {
-                        validate: (value) => value.length >= 3 && value.length <= 100,
-                        message: 'Nama harus 3-100 karakter'
+                        validate: (v) => v.length >= 3 && v.length <= 100,
+                        message: 'Nama harus 3–100 karakter'
                     },
                     alamat: {
-                        validate: (value) => value.length >= 5 && value.length <= 200,
-                        message: 'Alamat harus 5-200 karakter'
+                        validate: (v) => v.length >= 5 && v.length <= 200,
+                        message: 'Alamat harus 5–200 karakter'
                     },
                     email: {
-                        validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+                        validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
                         message: 'Format email tidak valid'
                     },
                     phone: {
-                        validate: (value) => /^(\+?62|0)[0-9]{9,13}$/.test(value),
+                        validate: (v) => /^(\+?62|0)[0-9]{9,13}$/.test(v),
                         message: 'Format: 08xxxxxxxxxx atau +628xxxxxxxxxx'
                     },
                     judul_aspirasi: {
-                        validate: (value) => value.length >= 5 && value.length <= 150,
-                        message: 'Judul harus 5-150 karakter'
+                        validate: (v) => v.length >= 5 && v.length <= 150,
+                        message: 'Judul harus 5–150 karakter'
                     },
                     isi_aspirasi: {
-                        validate: (value) => value.trim().length >= 10 && value.length <= 1000,
-                        message: 'Pesan harus 10-1000 karakter'
-                    }
+                        validate: (v) => v.length >= 10 && v.length <= 1000,
+                        message: 'Pesan harus 10–1000 karakter'
+                    },
                 };
+            }
 
-                Object.keys(validationRules).forEach(fieldName => {
-                    const field = document.getElementById(fieldName);
-                    if (field) {
-                        field.addEventListener('input', () => {
-                            const rule = validationRules[fieldName];
-                            const isValid = rule.validate(field.value.trim());
-                            this.validateField(field, isValid, rule.message);
-                        });
-                    }
+            setupValidation() {
+                Object.entries(this.rules).forEach(([name, rule]) => {
+                    const field = document.getElementById(name);
+                    // Kolom baru divalidasi setelah ditinggalkan, lalu diperbarui saat diketik.
+                    field.addEventListener('blur', () => field.value && this.validateField(field, rule.validate(
+                        field.value.trim()), rule.message));
+                    field.addEventListener('input', () => {
+                        if (field.classList.contains('is-invalid') || field.classList.contains(
+                                'is-valid')) {
+                            this.validateField(field, rule.validate(field.value.trim()), rule.message);
+                        }
+                    });
                 });
-
-                // Category validation
                 this.elements.kategoriSelect.addEventListener('change', () => {
                     this.validateField(this.elements.kategoriSelect, !!this.elements.kategoriSelect.value,
                         'Pilih kategori usulan');
                 });
+                this.elements.form.elements.agreement.addEventListener('change', (e) => {
+                    this.validateField(e.target, e.target.checked, 'Centang persetujuan untuk melanjutkan');
+                });
             }
 
             validateField(field, isValid, message = '') {
-                const feedbackDiv = field.parentElement.querySelector('.invalid-feedback') ||
-                    field.closest('.space-y-2').querySelector('.invalid-feedback');
-
-                if (isValid) {
-                    field.classList.remove('is-invalid');
-                    field.classList.add('is-valid');
-                    if (feedbackDiv) {
-                        feedbackDiv.textContent = '';
-                        feedbackDiv.classList.add('hidden');
-                    }
-                } else {
-                    field.classList.remove('is-valid');
-                    field.classList.add('is-invalid');
-                    if (feedbackDiv) {
-                        feedbackDiv.textContent = message;
-                        feedbackDiv.classList.remove('hidden');
-                    }
+                const feedback = field.closest('[data-field]')?.querySelector('.invalid-feedback');
+                const isGroup = field.type === 'radio' || field.type === 'hidden';
+                if (!isGroup) {
+                    field.classList.toggle('is-invalid', !isValid);
+                    field.classList.toggle('is-valid', isValid && field.type !== 'checkbox');
+                    field.setAttribute('aria-invalid', String(!isValid));
+                }
+                if (feedback) {
+                    feedback.textContent = isValid ? '' : message;
+                    feedback.classList.toggle('hidden', isValid);
                 }
                 return isValid;
             }
 
-            handleJenisAspirasiChange(e) {
-                const selectedValue = e.target.value;
+            handleJenisAspirasiChange() {
+                const el = this.elements;
+                const isUsulan = this.jenisAspirasi === 'usulan';
 
-                if (selectedValue === 'usulan') {
-                    this.elements.kategoriContainer.classList.remove('hidden');
-                    this.elements.mapContainer.classList.remove('hidden');
-                    this.elements.kategoriSelect.setAttribute('required', 'required');
+                el.kategoriContainer.classList.toggle('hidden', !isUsulan);
+                // Kategori & judul berbagi satu baris saat usulan; judul selebar penuh bila tanpa kategori.
+                el.judulContainer.classList.toggle('md:col-span-2', !isUsulan);
+                el.mapContainer.classList.toggle('hidden', !isUsulan);
+                el.kategoriSelect.toggleAttribute('required', isUsulan);
+                el.lampiranInput.toggleAttribute('required', isUsulan);
+                el.lampiranWajib.classList.toggle('hidden', !isUsulan);
+                el.lampiranOpsional.classList.toggle('hidden', isUsulan);
+                // Penomoran langkah menyesuaikan: bagian Lokasi hanya ada untuk usulan.
+                el.stepNumbers.forEach((badge, i) => {
+                    badge.textContent = (isUsulan ? 5 : 4) + i;
+                });
 
-                    setTimeout(() => this.initMap(), 300);
+                if (isUsulan) {
+                    setTimeout(() => this.initMap(), 50);
                 } else {
-                    this.elements.kategoriContainer.classList.add('hidden');
-                    this.elements.mapContainer.classList.add('hidden');
-                    this.elements.kategoriSelect.removeAttribute('required');
-                    this.elements.kategoriSelect.value = '';
-                    this.elements.kategoriSelect.classList.remove('is-valid', 'is-invalid');
+                    el.kategoriSelect.value = '';
+                    el.kategoriSelect.classList.remove('is-valid', 'is-invalid');
                     this.clearMapSelection();
                 }
 
-                this.validateField(e.target, !!selectedValue, 'Pilih jenis aspirasi');
+                this.validateField(el.jenisRadios[0], true);
             }
 
             updateCharCount(e) {
                 const length = e.target.value.length;
                 this.elements.charCount.textContent = length;
-                this.elements.charCount.className = length > 900 ? 'text-orange-600 font-medium' :
-                    length === 1000 ? 'text-red-600 font-bold' : '';
+                this.elements.charCount.className = length >= 1000 ? 'font-bold text-red-600' : length > 900 ?
+                    'font-medium text-orange-600' : '';
             }
 
             handleFileChange(e) {
                 const file = e.target.files[0];
+                const el = this.elements;
 
                 if (!file) {
-                    this.elements.fileInfo.classList.add('hidden');
+                    el.fileInfo.classList.add('hidden');
                     return;
                 }
 
-                const maxSize = 5 * 1024 * 1024; // 5MB
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/doc',
-                    'application/docx'
-                ];
-                const fileName = file.name.toLowerCase();
-                const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-
-                const isValidType = allowedTypes.includes(file.type) || ['.jpg', '.jpeg', '.png', , '.pdf',
-                    '.doc', '.docx'
-                ].includes(fileExtension);
-                const isValidSize = file.size <= maxSize;
-
-                if (!isValidType) {
-                    this.validateField(e.target, false, 'Format file tidak didukung');
-                    this.elements.fileInfo.classList.add('hidden');
-                    this.resetCaptcha(); // Reset captcha when file format validation fails
+                const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+                if (!['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx'].includes(extension)) {
+                    e.target.value = '';
+                    el.fileInfo.classList.add('hidden');
+                    this.validateField(e.target, false,
+                        'Format file tidak didukung. Gunakan JPG, PNG, PDF, DOC, atau DOCX.');
                     return;
                 }
-
-                if (!isValidSize) {
-                    this.validateField(e.target, false, 'Ukuran file maksimal 5MB');
-                    this.elements.fileInfo.classList.add('hidden');
-                    this.resetCaptcha(); // Reset captcha when file size validation fails
+                if (file.size > 5 * 1024 * 1024) {
+                    e.target.value = '';
+                    el.fileInfo.classList.add('hidden');
+                    this.validateField(e.target, false, 'Ukuran file maksimal 5 MB.');
                     return;
                 }
 
                 this.validateField(e.target, true);
-                this.elements.fileInfoText.textContent =
-                    `File dipilih: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                this.elements.fileInfo.classList.remove('hidden');
+                el.fileInfoText.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                el.fileInfo.classList.remove('hidden');
+                el.fileInfo.classList.add('flex');
             }
 
             initMap() {
-                if (this.map) return;
-
-                const defaultCenter = [0.735485, 128.028201]; // Maluku Utara
+                if (this.map) {
+                    this.map.invalidateSize();
+                    return;
+                }
 
                 try {
                     this.map = L.map('map', {
-                        center: defaultCenter,
-                        zoom: 8,
-                        zoomControl: true,
-                        attributionControl: true
+                        center: [0.735485, 128.028201],
+                        zoom: 8
                     });
-
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19
+                        maxZoom: 19,
                     }).addTo(this.map);
-
                     this.map.on('click', (e) => this.setMarker(e.latlng));
-
                     setTimeout(() => this.map.invalidateSize(), 100);
                 } catch (error) {
-                    console.error('Map initialization error:', error);
-                    this.showModal('error', 'Gagal memuat peta', 'Refresh halaman dan coba lagi.');
+                    this.showModal('error', 'Gagal memuat peta', 'Muat ulang halaman lalu coba lagi.');
                 }
             }
 
             setMarker(latlng) {
                 if (!this.map) return;
 
-                try {
-                    if (this.currentLocationMarker) {
-                        this.map.removeLayer(this.currentLocationMarker);
-                    }
-
-                    this.currentLocationMarker = L.marker(latlng, {
-                        draggable: true,
-                        title: 'Lokasi Usulan'
-                    }).addTo(this.map);
-
-                    this.currentLocationMarker.on('dragend', (e) => {
-                        this.updateCoordinates(e.target.getLatLng());
-                    });
-
-                    this.updateCoordinates(latlng);
-                } catch (error) {
-                    console.error('Marker error:', error);
-                    this.showModal('error', 'Gagal menetapkan lokasi', 'Silakan coba lagi.');
+                if (this.currentLocationMarker) {
+                    this.map.removeLayer(this.currentLocationMarker);
                 }
+                this.currentLocationMarker = L.marker(latlng, {
+                    draggable: true,
+                    title: 'Lokasi usulan'
+                }).addTo(this.map);
+                this.currentLocationMarker.on('dragend', (e) => this.updateCoordinates(e.target.getLatLng()));
+                this.updateCoordinates(latlng);
             }
 
             updateCoordinates(latlng) {
-                this.elements.latitude.value = latlng.lat.toFixed(6);
-                this.elements.longitude.value = latlng.lng.toFixed(6);
-                this.elements.coordText.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
-                this.elements.locationInfo.classList.remove('hidden');
+                const el = this.elements;
+                el.latitude.value = latlng.lat.toFixed(6);
+                el.longitude.value = latlng.lng.toFixed(6);
+                el.coordText.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                el.locationInfo.classList.remove('hidden');
+                this.validateField(el.latitude, true);
             }
 
             clearMapSelection() {
@@ -922,7 +785,7 @@
 
             showLocationStatus(message, progress = 0) {
                 this.elements.locationStatusText.textContent = message;
-                this.elements.locationProgress.style.width = progress + '%';
+                this.elements.locationProgress.style.width = `${progress}%`;
                 this.elements.locationStatus.classList.remove('hidden');
             }
 
@@ -932,230 +795,114 @@
             }
 
             updateLocationProgress(progress, message = null) {
-                this.elements.locationProgress.style.width = progress + '%';
-                if (message) {
-                    this.elements.locationStatusText.textContent = message;
-                }
+                this.elements.locationProgress.style.width = `${progress}%`;
+                if (message) this.elements.locationStatusText.textContent = message;
             }
 
+            /**
+             * Ambil lokasi perangkat: coba akurasi tinggi dulu, lalu sekali lagi dengan pengaturan
+             * yang lebih longgar bila gagal atau akurasinya masih di atas 50 meter.
+             */
             getCurrentLocation() {
                 if (!navigator.geolocation) {
-                    this.showModal('error', 'Geolocation tidak didukung', 'Browser Anda tidak mendukung fitur lokasi.');
+                    this.showModal('error', 'Lokasi tidak didukung',
+                        'Browser Anda tidak mendukung fitur lokasi. Pilih lokasi langsung di peta.');
                     return;
                 }
 
-                this.elements.getLocationBtn.disabled = true;
-                this.elements.getLocationBtn.innerHTML =
-                    '<i class="bi bi-hourglass-split animate-spin mr-1"></i> Mencari Lokasi...';
+                const button = this.elements.getLocationBtn;
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-hourglass-split"></i> Mencari lokasi…';
+                this.showLocationStatus('Memulai pencarian lokasi…', 10);
 
-                // Show initial status
-                this.showLocationStatus('Memulai pencarian lokasi...', 10);
-
-                // First attempt with high accuracy
-                const highAccuracyOptions = {
+                const highAccuracy = {
                     enableHighAccuracy: true,
                     timeout: 20000,
-                    maximumAge: 30000 // Reduce cache age for more recent location
+                    maximumAge: 30000
                 };
-
-                // Fallback options if high accuracy fails
-                const fallbackOptions = {
+                const fallback = {
                     enableHighAccuracy: false,
                     timeout: 10000,
                     maximumAge: 120000
                 };
-
-                let attemptCount = 0;
                 const maxAttempts = 2;
+                let attempt = 0;
                 let bestPosition = null;
 
                 const tryGetLocation = (options, isRetry = false) => {
-                    attemptCount++;
+                    attempt++;
+                    this.updateLocationProgress(isRetry ? 40 : 25, isRetry ?
+                        'Mencoba dengan pengaturan alternatif…' : 'Mengakses GPS dengan akurasi tinggi…');
 
-                    if (isRetry) {
-                        this.elements.getLocationBtn.innerHTML =
-                            '<i class="bi bi-hourglass-split animate-spin mr-1"></i> Mencoba lagi...';
-                        this.updateLocationProgress(40, 'Mencoba dengan pengaturan alternatif...');
-                    } else {
-                        this.updateLocationProgress(25, 'Mengakses GPS dengan akurasi tinggi...');
-                    }
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const {
+                            accuracy
+                        } = position.coords;
+                        this.updateLocationProgress(80, 'Memproses data lokasi…');
 
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const {
-                                latitude,
-                                longitude,
-                                accuracy,
-                                altitude,
-                                altitudeAccuracy,
-                                heading,
-                                speed
-                            } = position.coords;
-
-                            this.updateLocationProgress(70, 'Memproses data lokasi...');
-
-                            // Validate coordinates
-                            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-                                console.error('Invalid coordinates received:', latitude, longitude);
-                                this.handleLocationError('Koordinat tidak valid',
-                                    'Koordinat yang diterima berada di luar rentang yang valid.');
-                                return;
-                            }
-
-                            // Check if this position is better than the previous one
-                            const isFirstPosition = !bestPosition;
-                            const isBetterAccuracy = bestPosition && accuracy < bestPosition.coords.accuracy;
-                            const isGoodEnoughAccuracy = accuracy <=
-                            50; // Consider 50 meters or less as good accuracy
-
-                            if (isFirstPosition || isBetterAccuracy || isGoodEnoughAccuracy) {
-                                bestPosition = position;
-                            }
-
-                            this.updateLocationProgress(90, 'Menyelesaikan pencarian lokasi...');
-
-                            // If accuracy is good enough or we've reached max attempts, use the best position
-                            if (isGoodEnoughAccuracy || attemptCount >= maxAttempts) {
-                                this.usePosition(bestPosition);
-                            } else if (attemptCount < maxAttempts && !isRetry) {
-                                // Try again with fallback options for better accuracy
-                                console.log('First attempt accuracy:', accuracy, 'meters. Trying fallback...');
-                                setTimeout(() => tryGetLocation(fallbackOptions, true), 1000);
-                            } else {
-                                // Use the best position we got
-                                this.usePosition(bestPosition);
-                            }
-                        },
-                        (error) => {
-                            console.error('Geolocation error (attempt', attemptCount + '):', error);
-
-                            // If high accuracy failed and we haven't tried fallback, try it
-                            if (!isRetry && attemptCount < maxAttempts) {
-                                console.log('High accuracy failed, trying fallback options...');
-                                this.updateLocationProgress(50, 'Mencoba dengan pengaturan alternatif...');
-                                setTimeout(() => tryGetLocation(fallbackOptions, true), 1000);
-                                return;
-                            }
-
-                            // Final error handling
-                            const messages = {
-                                [error.PERMISSION_DENIED]: {
-                                    title: 'Akses Lokasi Ditolak',
-                                    message: 'Aktifkan izin lokasi di browser dan refresh halaman untuk menggunakan fitur ini.'
-                                },
-                                [error.POSITION_UNAVAILABLE]: {
-                                    title: 'Lokasi Tidak Tersedia',
-                                    message: 'Pastikan GPS aktif dan Anda berada di area dengan sinyal yang baik.'
-                                },
-                                [error.TIMEOUT]: {
-                                    title: 'Pencarian Lokasi Timeout',
-                                    message: 'Pencarian lokasi memakan waktu terlalu lama. Pastikan GPS aktif dan coba lagi.'
-                                }
-                            };
-
-                            const errorInfo = messages[error.code] || {
-                                title: 'Gagal Mendapatkan Lokasi',
-                                message: 'Terjadi kesalahan tidak dikenal. Silakan coba lagi.'
-                            };
-
-                            this.handleLocationError(errorInfo.title, errorInfo.message);
-                        },
-                        options
-                    );
+                        if (!bestPosition || accuracy < bestPosition.coords.accuracy) {
+                            bestPosition = position;
+                        }
+                        if (accuracy <= 50 || attempt >= maxAttempts || isRetry) {
+                            this.usePosition(bestPosition);
+                        } else {
+                            setTimeout(() => tryGetLocation(fallback, true), 1000);
+                        }
+                    }, (error) => {
+                        if (!isRetry && attempt < maxAttempts) {
+                            setTimeout(() => tryGetLocation(fallback, true), 1000);
+                            return;
+                        }
+                        const messages = {
+                            [error.PERMISSION_DENIED]: ['Akses lokasi ditolak',
+                                'Izinkan akses lokasi di browser, atau pilih lokasi langsung di peta.'
+                            ],
+                            [error.POSITION_UNAVAILABLE]: ['Lokasi tidak tersedia',
+                                'Pastikan GPS aktif dan sinyal baik, atau pilih lokasi langsung di peta.'
+                            ],
+                            [error.TIMEOUT]: ['Pencarian lokasi terlalu lama',
+                                'Pastikan GPS aktif lalu coba lagi, atau pilih lokasi langsung di peta.'
+                            ],
+                        };
+                        const [title, message] = messages[error.code] || ['Gagal mendapatkan lokasi',
+                            'Silakan coba lagi atau pilih lokasi langsung di peta.'
+                        ];
+                        this.handleLocationError(title, message);
+                    }, options);
                 };
 
-                // Start the location acquisition process
-                tryGetLocation(highAccuracyOptions);
-
-                // Reset button after maximum time
-                setTimeout(() => {
-                    this.resetLocationButton();
-                }, 25000);
+                tryGetLocation(highAccuracy);
+                setTimeout(() => this.resetLocationButton(), 25000);
             }
 
             usePosition(position) {
-                this.updateLocationProgress(95, 'Menyimpan lokasi...');
-
                 const {
                     latitude,
                     longitude,
-                    accuracy,
-                    altitude,
-                    altitudeAccuracy
+                    accuracy
                 } = position.coords;
-
-                console.log('Using position:', {
-                    latitude,
-                    longitude,
-                    accuracy,
-                    altitude,
-                    altitudeAccuracy,
-                    timestamp: new Date(position.timestamp)
-                });
-
                 const latlng = L.latLng(latitude, longitude);
                 this.setMarker(latlng);
 
-                if (this.map) {
-                    // Zoom level based on accuracy
-                    let zoomLevel = 15;
-                    if (accuracy <= 10) zoomLevel = 18; // Very accurate
-                    else if (accuracy <= 50) zoomLevel = 16; // Good accuracy
-                    else if (accuracy <= 100) zoomLevel = 15; // Moderate accuracy
-                    else zoomLevel = 14; // Lower accuracy
+                const zoom = accuracy <= 10 ? 18 : accuracy <= 50 ? 16 : accuracy <= 100 ? 15 : 14;
+                this.map.setView(latlng, zoom);
+                if (this.accuracyCircle) this.map.removeLayer(this.accuracyCircle);
+                this.accuracyCircle = L.circle(latlng, {
+                    radius: accuracy,
+                    color: '#0a84ff',
+                    fillOpacity: 0.08,
+                    weight: 2,
+                    dashArray: '5, 10'
+                }).addTo(this.map);
 
-                    this.map.setView(latlng, zoomLevel);
-
-                    // Add accuracy circle if accuracy is available
-                    if (this.accuracyCircle) {
-                        this.map.removeLayer(this.accuracyCircle);
-                    }
-
-                    this.accuracyCircle = L.circle(latlng, {
-                        radius: accuracy,
-                        color: '#2563eb',
-                        fillColor: '#3b82f6',
-                        fillOpacity: 0.1,
-                        weight: 2,
-                        dashArray: '5, 10'
-                    }).addTo(this.map);
-
-                    // Add popup to accuracy circle
-                    this.accuracyCircle.bindPopup(`
-                        <div class="text-sm">
-                            <strong>Area Akurasi Lokasi</strong><br>
-                            Radius: ±${Math.round(accuracy)} meter<br>
-                            ${altitude ? `Ketinggian: ${Math.round(altitude)} meter<br>` : ''}
-                            Waktu: ${new Date(position.timestamp).toLocaleTimeString('id-ID')}
-                        </div>
-                    `);
-                }
-
-                this.updateLocationProgress(100, 'Lokasi berhasil ditemukan!');
-
-                // Create detailed success message
-                let message = `Lokasi berhasil ditemukan dengan akurasi ±${Math.round(accuracy)} meter.`;
-
-                if (accuracy <= 10) {
-                    message += ' (Sangat akurat)';
-                } else if (accuracy <= 50) {
-                    message += ' (Akurat)';
-                } else if (accuracy <= 100) {
-                    message += ' (Cukup akurat)';
-                } else {
-                    message += ' (Akurasi rendah - pertimbangkan untuk memilih lokasi manual)';
-                }
-
-                if (altitude && altitudeAccuracy) {
-                    message += ` Ketinggian: ${Math.round(altitude)}±${Math.round(altitudeAccuracy)}m.`;
-                }
-
-                // Hide status after showing success
-                setTimeout(() => {
-                    this.hideLocationStatus();
-                }, 3000);
-
-                this.showModal('success', 'Lokasi Ditemukan', message, true);
+                const quality = accuracy <= 10 ? 'sangat akurat' : accuracy <= 50 ? 'akurat' : accuracy <= 100 ?
+                    'cukup akurat' : 'akurasi rendah, pertimbangkan memilih lokasi manual';
+                this.updateLocationProgress(100, 'Lokasi ditemukan.');
+                setTimeout(() => this.hideLocationStatus(), 2500);
+                this.showModal('success', 'Lokasi ditemukan',
+                    `Akurasi ±${Math.round(accuracy)} meter (${quality}). Geser pin bila perlu.`, {
+                        autoHide: true
+                    });
                 this.resetLocationButton();
             }
 
@@ -1167,264 +914,325 @@
 
             resetLocationButton() {
                 this.elements.getLocationBtn.disabled = false;
-                this.elements.getLocationBtn.innerHTML =
-                    '<i class="bi bi-geo-alt mr-1"></i> Gunakan Lokasi Saat Ini';
+                this.elements.getLocationBtn.innerHTML = '<i class="bi bi-crosshair"></i> Gunakan Lokasi Saat Ini';
             }
 
+            /**
+             * Periksa seluruh formulir sebelum dikirim; kolom pertama yang bermasalah difokuskan.
+             * @returns {string|null} pesan kesalahan pertama, atau null bila semua valid
+             */
             validateForm() {
-                let isValid = true;
-                const requiredFields = this.elements.form.querySelectorAll('[required]');
+                const el = this.elements;
+                const problems = [];
 
-                requiredFields.forEach(field => {
-                    if (field.type === 'checkbox') {
-                        if (!field.checked) {
-                            isValid = false;
-                            field.focus();
-                        }
-                    } else if (!field.value.trim()) {
-                        isValid = false;
-                        this.validateField(field, false, 'Field ini wajib diisi');
-                        if (isValid) field.focus();
-                    }
+                if (!this.jenisAspirasi) {
+                    problems.push([el.jenisRadios[0], this.validateField(el.jenisRadios[0], false,
+                        'Pilih jenis aspirasi'), 'Pilih jenis aspirasi terlebih dahulu.']);
+                }
+                Object.entries(this.rules).forEach(([name, rule]) => {
+                    const field = document.getElementById(name);
+                    const ok = this.validateField(field, rule.validate(field.value.trim()), field.value.trim() ?
+                        rule.message : 'Kolom ini wajib diisi');
+                    if (!ok) problems.push([field, false, 'Periksa kembali kolom yang ditandai merah.']);
                 });
+                if (this.jenisAspirasi === 'usulan') {
+                    if (!this.validateField(el.kategoriSelect, !!el.kategoriSelect.value, 'Pilih kategori usulan')) {
+                        problems.push([el.kategoriSelect, false, 'Pilih kategori usulan terlebih dahulu.']);
+                    }
+                    if (!this.validateField(el.latitude, !!el.latitude.value, 'Pilih lokasi usulan pada peta')) {
+                        problems.push([el.getLocationBtn, false, 'Pilih lokasi usulan pada peta terlebih dahulu.']);
+                    }
+                    if (!el.lampiranInput.files.length) {
+                        this.validateField(el.lampiranInput, false, 'Lampiran wajib untuk usulan pembangunan');
+                        problems.push([el.lampiranInput.closest('[data-field]').querySelector('label'), false,
+                            'Lampiran wajib disertakan untuk usulan pembangunan.'
+                        ]);
+                    }
+                }
+                const agreement = el.form.elements.agreement;
+                if (!this.validateField(agreement, agreement.checked, 'Centang persetujuan untuk melanjutkan')) {
+                    problems.push([agreement, false, 'Centang persetujuan untuk melanjutkan.']);
+                }
 
-                return isValid;
+                if (!problems.length) return null;
+                const [target, , message] = problems[0];
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                target.focus({
+                    preventScroll: true
+                });
+                return message;
             }
 
             async handleSubmit(e) {
                 e.preventDefault();
-
                 if (this.isSubmitting) return;
 
-                if (!this.validateForm()) {
-                    this.showModal('error', 'Data tidak lengkap', 'Mohon periksa kembali data yang Anda masukkan.');
-                    this.resetCaptcha(); // Reset captcha when client-side validation fails
+                const problem = this.validateForm();
+                if (problem) {
+                    this.showModal('error', 'Data belum lengkap', problem);
+                    return;
+                }
+                if (typeof hcaptcha !== 'undefined' && !hcaptcha.getResponse()) {
+                    this.showModal('error', 'Verifikasi belum selesai',
+                        'Selesaikan verifikasi captcha sebelum mengirim.');
                     return;
                 }
 
-                const jenisAspirasi = this.elements.jenisAspirasi.value;
-
-                // Validation for usulan type
-                if (jenisAspirasi === 'usulan') {
-                    if (!this.elements.kategoriSelect.value) {
-                        this.showModal('error', 'Kategori belum dipilih', 'Pilih kategori usulan terlebih dahulu.');
-                        this.resetCaptcha(); // Reset captcha when category validation fails
-                        return;
-                    }
-                    if (!this.elements.latitude.value || !this.elements.longitude.value) {
-                        this.showModal('error', 'Lokasi belum dipilih', 'Pilih lokasi pada peta terlebih dahulu.');
-                        this.resetCaptcha(); // Reset captcha when location validation fails
-                        return;
-                    }
-                }
-
-                this.showModal('loading', 'Mengirim Aspirasi', 'Mohon tunggu sebentar...');
-
-                // Get location for non-usulan types
-                if (jenisAspirasi !== 'usulan') {
+                this.showModal('loading', 'Mengirim aspirasi', 'Mohon tunggu sebentar…');
+                if (this.jenisAspirasi !== 'usulan') {
                     await this.setCurrentLocationForNonUsulan();
                 }
-
                 this.submitForm();
             }
 
+            // Kritik & saran: lokasi perangkat ikut dikirim bila diizinkan (tidak wajib).
             setCurrentLocationForNonUsulan() {
                 return new Promise((resolve) => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                this.elements.latitude.value = position.coords.latitude;
-                                this.elements.longitude.value = position.coords.longitude;
-                                resolve();
-                            },
-                            (error) => {
-                                console.warn('Location error:', error);
-                                resolve(); // Continue without coordinates
-                            }, {
-                                timeout: 10000,
-                                maximumAge: 300000,
-                                enableHighAccuracy: false
-                            }
-                        );
-                    } else {
+                    if (!navigator.geolocation) {
                         resolve();
+                        return;
                     }
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        this.elements.latitude.value = position.coords.latitude;
+                        this.elements.longitude.value = position.coords.longitude;
+                        resolve();
+                    }, () => resolve(), {
+                        timeout: 10000,
+                        maximumAge: 300000,
+                        enableHighAccuracy: false
+                    });
                 });
             }
 
             async submitForm() {
+                const el = this.elements;
                 this.isSubmitting = true;
-                this.elements.submitBtn.disabled = true;
+                el.submitBtn.disabled = true;
+                el.submitText.textContent = 'Mengirim…';
 
-                const formData = new FormData(this.elements.form);
-
-                // Add hCaptcha response
-                try {
-                    if (typeof hcaptcha !== 'undefined') {
-                        const hcaptchaResponse = hcaptcha.getResponse();
-                        if (hcaptchaResponse) {
-                            formData.set('h-captcha-response', hcaptchaResponse);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('hCaptcha not available:', error);
+                const formData = new FormData(el.form);
+                if (typeof hcaptcha !== 'undefined' && hcaptcha.getResponse()) {
+                    formData.set('h-captcha-response', hcaptcha.getResponse());
                 }
 
                 try {
-                    const response = await fetch(this.elements.form.action, {
+                    const response = await fetch(el.form.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
+                            'X-Requested-With': 'XMLHttpRequest',
+                            Accept: 'application/json'
+                        },
                     });
-
                     const data = await response.json();
 
                     if (data.status === 'success') {
-                        const tiket = data.data?.nomor_tiket;
-                        const pesan = tiket
-                            ? `${data.message} Nomor tiket Anda: ${tiket}. Simpan nomor ini untuk melacak status pengajuan.`
-                            : data.message;
-                        this.showModal('success', 'Aspirasi Berhasil Dikirim', pesan);
+                        const ticket = data.data?.nomor_tiket || null;
+                        this.lastTicket = ticket ? {
+                            ticket,
+                            contact: el.form.elements.email.value.trim()
+                        } : null;
+                        this.showModal('success', 'Aspirasi berhasil dikirim', ticket ?
+                            'Simpan nomor tiket berikut untuk melacak status. Salinannya juga dikirim ke email Anda.' :
+                            data.message, {
+                                ticket
+                            });
                         this.resetForm();
                     } else {
                         this.handleSubmitError(data);
                     }
                 } catch (error) {
-                    console.error('Submit error:', error);
-                    this.showModal('error', 'Koneksi Bermasalah', 'Terjadi kesalahan koneksi. Silakan coba lagi.');
-                    // Reset captcha on connection errors as well
+                    this.showModal('error', 'Koneksi bermasalah', 'Terjadi kesalahan koneksi. Silakan coba lagi.');
                     this.resetCaptcha();
                 } finally {
                     this.isSubmitting = false;
-                    this.elements.submitBtn.disabled = false;
+                    el.submitBtn.disabled = false;
+                    el.submitText.textContent = 'Kirim Aspirasi';
                 }
             }
 
             handleSubmitError(data) {
-                // Always reset captcha when there are any validation errors
-                // This prevents users from thinking captcha is valid when other fields fail
+                this.resetCaptcha();
                 if (data.errors) {
-                    this.resetCaptcha();
-
                     if (data.errors['h-captcha-response']) {
-                        this.showModal('error', 'Verifikasi Captcha Gagal', data.errors['h-captcha-response'][0]);
-                    } else {
-                        const firstError = Object.values(data.errors)[0];
-                        this.showModal('error', 'Validasi Gagal', Array.isArray(firstError) ? firstError[0] :
-                            firstError);
+                        this.showModal('error', 'Verifikasi captcha gagal', data.errors['h-captcha-response'][0]);
+                        return;
                     }
+                    // Tandai kolom yang ditolak server supaya mudah ditemukan.
+                    Object.entries(data.errors).forEach(([name, messages]) => {
+                        const field = this.elements.form.elements[name];
+                        const target = field instanceof RadioNodeList ? field[0] : field;
+                        if (target) this.validateField(target, false, messages[0]);
+                    });
+                    const firstError = Object.values(data.errors)[0];
+                    this.showModal('error', 'Data belum sesuai', Array.isArray(firstError) ? firstError[0] :
+                    firstError);
                 } else {
-                    this.showModal('error', 'Terjadi Kesalahan', data.message || 'Silakan coba lagi.');
+                    this.showModal('error', 'Terjadi kesalahan', data.message || 'Silakan coba lagi.');
                 }
             }
 
             resetForm() {
-                this.elements.form.reset();
-                this.elements.kategoriContainer.classList.add('hidden');
-                this.elements.mapContainer.classList.add('hidden');
-
-                // Clear validation states
-                this.elements.form.querySelectorAll('.form-control, input, select, textarea').forEach(field => {
+                const el = this.elements;
+                el.form.reset();
+                el.form.querySelectorAll('input, select, textarea').forEach((field) => {
                     field.classList.remove('is-valid', 'is-invalid');
+                    field.removeAttribute('aria-invalid');
                 });
-
-                // Reset map
-                this.clearMapSelection();
-                if (this.map) {
-                    this.map.remove();
-                    this.map = null;
-                }
-
-                // Reset file info
-                this.elements.fileInfo.classList.add('hidden');
-
-                // Reset character count
-                this.elements.charCount.textContent = '0';
-                this.elements.charCount.className = '';
-
+                el.form.querySelectorAll('.invalid-feedback').forEach((feedback) => feedback.classList.add('hidden'));
+                this.handleJenisAspirasiChange();
+                el.fileInfo.classList.add('hidden');
+                el.charCount.textContent = '0';
+                el.charCount.className = '';
                 this.resetCaptcha();
             }
 
             resetCaptcha() {
                 try {
-                    if (typeof hcaptcha !== 'undefined') {
-                        hcaptcha.reset();
-                    }
+                    if (typeof hcaptcha !== 'undefined') hcaptcha.reset();
                 } catch (error) {
-                    console.warn('Error resetting hCaptcha:', error);
+                    // hCaptcha belum siap; tidak ada yang perlu direset.
                 }
             }
 
-            showModal(type, title, message, autoHide = false) {
-                const iconMap = {
-                    success: {
-                        bgClass: 'bg-green-100',
-                        textClass: 'text-green-600',
-                        icon: '<i class="bi bi-check-circle-fill"></i>'
-                    },
-                    error: {
-                        bgClass: 'bg-red-100',
-                        textClass: 'text-red-600',
-                        icon: '<i class="bi bi-exclamation-triangle-fill"></i>'
-                    },
-                    warning: {
-                        bgClass: 'bg-yellow-100',
-                        textClass: 'text-yellow-600',
-                        icon: '<i class="bi bi-exclamation-circle-fill"></i>'
-                    },
-                    loading: {
-                        bgClass: 'bg-blue-100',
-                        textClass: 'text-blue-600',
-                        icon: '<div class="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>'
-                    }
+            async copyTicket() {
+                if (!this.lastTicket) return;
+                const label = this.elements.copyTicketBtn.querySelector('span');
+                try {
+                    await navigator.clipboard.writeText(this.lastTicket.ticket);
+                    label.textContent = 'Tersalin';
+                } catch (error) {
+                    label.textContent = 'Salin manual nomor di atas';
+                }
+                setTimeout(() => {
+                    label.textContent = 'Salin nomor tiket';
+                }, 2000);
+            }
+
+            // Isi formulir lacak dengan tiket yang baru dibuat, tutup modal, lalu pindah ke tab Lacak.
+            prefillTracking(event) {
+                event?.preventDefault();
+                if (this.lastTicket) {
+                    document.getElementById('nomor_tiket').value = this.lastTicket.ticket;
+                    document.getElementById('kontak').value = this.lastTicket.contact;
+                }
+                this.hideModal();
+                window.AspirasiTabs?.show('lacak');
+            }
+
+            isModalOpen() {
+                return !this.elements.modalOverlay.classList.contains('invisible');
+            }
+
+            /**
+             * @param {'loading'|'success'|'error'} type
+             * @param {Object} options autoHide (tutup otomatis 3 detik) dan ticket (nomor tiket untuk ditampilkan)
+             */
+            showModal(type, title, message, {
+                autoHide = false,
+                ticket = null
+            } = {}) {
+                const el = this.elements;
+                const icons = {
+                    success: ['bg-emerald-100 text-emerald-600', '<i class="bi bi-check-circle-fill"></i>'],
+                    error: ['bg-red-100 text-red-600', '<i class="bi bi-exclamation-triangle-fill"></i>'],
+                    loading: ['bg-ocean/10',
+                        '<span class="h-10 w-10 animate-spin rounded-full border-4 border-ocean/20 border-t-ocean"></span>'
+                    ],
                 };
+                const [iconClass, iconHtml] = icons[type] || icons.loading;
 
-                const config = iconMap[type] || iconMap.loading;
+                el.modalIcon.className =
+                    `mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl ${iconClass}`;
+                el.modalIcon.innerHTML = iconHtml;
+                el.modalTitle.textContent = title;
+                el.modalMessage.textContent = message;
+                el.modalTicket.classList.toggle('hidden', !ticket);
+                el.modalTicketCode.textContent = ticket || '';
+                el.modalTrackBtn.classList.toggle('hidden', !ticket);
+                el.modalActions.classList.toggle('hidden', type === 'loading');
+                el.modalActions.classList.toggle('flex', type !== 'loading');
 
-                // Reset icon classes and apply new ones
-                this.elements.modalIcon.className =
-                    `w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl ${config.bgClass} ${config.textClass}`;
-                this.elements.modalIcon.innerHTML = config.icon;
-                this.elements.modalTitle.textContent = title;
-                this.elements.modalMessage.textContent = message;
-
-                if (type === 'loading') {
-                    this.elements.modalActions.classList.add('hidden');
-                } else {
-                    this.elements.modalActions.classList.remove('hidden');
-                }
-
-                // Show modal with Tailwind classes
-                this.elements.modalOverlay.classList.remove('opacity-0', 'invisible');
-                this.elements.modalOverlay.classList.add('opacity-100', 'visible');
-
-                // Animate modal content
-                const modalContent = this.elements.modalOverlay.querySelector('div:first-child');
-                modalContent.classList.remove('scale-90', 'translate-y-5');
-                modalContent.classList.add('scale-100', 'translate-y-0');
-
-                if (autoHide) {
-                    setTimeout(() => this.hideModal(), 3000);
-                }
+                el.modalOverlay.classList.remove('opacity-0', 'invisible');
+                el.modalCard.classList.remove('scale-95', 'translate-y-5');
+                if (type !== 'loading') el.modalCloseBtn.focus({
+                    preventScroll: true
+                });
+                if (autoHide) setTimeout(() => this.hideModal(), 3000);
             }
 
             hideModal() {
-                // Hide modal with Tailwind classes
-                this.elements.modalOverlay.classList.remove('opacity-100', 'visible');
                 this.elements.modalOverlay.classList.add('opacity-0', 'invisible');
-
-                // Animate modal content back
-                const modalContent = this.elements.modalOverlay.querySelector('div:first-child');
-                modalContent.classList.remove('scale-100', 'translate-y-0');
-                modalContent.classList.add('scale-90', 'translate-y-5');
+                this.elements.modalCard.classList.add('scale-95', 'translate-y-5');
             }
         }
 
-        // Initialize the form when DOM is loaded
+        /**
+         * Tab Kirim / Lacak. Tab aktif tercermin di hash URL (#kirim / #lacak) supaya bisa dibagikan
+         * dan tetap terpilih setelah redirect pencarian tiket. Panah kiri/kanan berpindah tab.
+         */
+        const AspirasiTabs = (() => {
+            const tabs = [...document.querySelectorAll('[role="tab"][data-tab]')];
+            let onShow = () => {};
+
+            function show(name, {
+                focus = false
+            } = {}) {
+                tabs.forEach((tab) => {
+                    const active = tab.dataset.tab === name;
+                    tab.setAttribute('aria-selected', String(active));
+                    tab.tabIndex = active ? 0 : -1;
+                    document.getElementById(`panel-${tab.dataset.tab}`).hidden = !active;
+                    if (active && focus) tab.focus();
+                });
+                history.replaceState(null, '', `#${name}`);
+                // Bila tab berada di bawah layar, gulir sedikit agar awal panel terlihat.
+                const bar = document.querySelector('[role="tablist"]');
+                if (bar.getBoundingClientRect().top > window.innerHeight * 0.5) {
+                    bar.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                onShow(name);
+            }
+
+            tabs.forEach((tab, i) => {
+                tab.addEventListener('click', () => show(tab.dataset.tab));
+                tab.addEventListener('keydown', (e) => {
+                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs
+                        .length];
+                    show(next.dataset.tab, {
+                        focus: true
+                    });
+                });
+            });
+
+            const fromHash = location.hash.slice(1);
+            // Id panel sengaja berbeda dari hash (panel-lacak vs #lacak) agar browser tidak melompat sendiri.
+            if (tabs.some((tab) => tab.dataset.tab === fromHash)) {
+                show(fromHash);
+            }
+
+            return {
+                show,
+                onShow: (fn) => {
+                    onShow = fn;
+                }
+            };
+        })();
+        window.AspirasiTabs = AspirasiTabs;
+
         document.addEventListener('DOMContentLoaded', () => {
-            new AspirasiForm();
+            const form = new AspirasiForm();
+            // Peta Leaflet perlu diukur ulang setelah panelnya terlihat lagi.
+            AspirasiTabs.onShow((name) => {
+                if (name === 'kirim' && form.map) setTimeout(() => form.map.invalidateSize(), 50);
+            });
         });
     </script>
 @endpush

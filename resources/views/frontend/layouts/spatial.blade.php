@@ -34,7 +34,7 @@
     @stack('styles')
 </head>
 
-<body class="overflow-x-hidden bg-mist font-manrope text-base leading-relaxed text-slate-900 antialiased">
+<body class="overflow-x-clip bg-mist font-manrope text-base leading-relaxed text-slate-900 antialiased">
     @hasSection('no-nav')
     @else
         @include('frontend.partials.spatial-nav')

@@ -275,11 +275,20 @@ class FrontendController extends Controller
         return view('frontend.pages.publikasi');
     }
 
+    /**
+     * Halaman aspirasi: formulir kirim aspirasi dan pelacakan status dalam satu halaman.
+     * Hasil pelacakan dibawa lewat flash session oleh aspirasiLacakCari() (pola POST-redirect-GET).
+     */
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', self::KATEGORI_KRITIK_SARAN)->get();
+        $lacakId = session('lacakAspirasiId');
 
-        return view('frontend.pages.aspirasi', compact('aspirasi'));
+        return view('frontend.pages.aspirasi', [
+            'aspirasi' => $aspirasi,
+            'hasilLacak' => $lacakId ? Aspirasi::find($lacakId) : null,
+            'lacakTidakDitemukan' => (bool) session('lacakTidakDitemukan'),
+        ]);
     }
 
     // TAMPILAN PETA //
@@ -1238,27 +1247,27 @@ class FrontendController extends Controller
     }
 
     /**
-     * Tampilkan form pelacakan status aspirasi publik.
-     */
-    public function aspirasiLacak()
-    {
-        return view('frontend.pages.aspirasi-lacak');
-    }
-
-    /**
      * Cari aspirasi berdasarkan nomor tiket + verifikasi kepemilikan (email/phone).
      * Pesan error untuk "tidak ditemukan" dan "kontak tidak cocok" sengaja sama
      * supaya endpoint ini tidak bisa dipakai untuk enumerasi nomor tiket valid.
      */
     public function aspirasiLacakCari(Request $request)
     {
-        $validated = $request->validate([
+        $kembali = redirect()->to(route('tampil.aspirasi').'#lacak');
+
+        $validator = Validator::make($request->all(), [
             'nomor_tiket' => 'required|string|max:30',
             'kontak' => 'required|string|max:255',
         ], [
             'nomor_tiket.required' => 'Nomor tiket wajib diisi.',
             'kontak.required' => 'Email atau nomor WhatsApp wajib diisi.',
         ]);
+
+        if ($validator->fails()) {
+            return $kembali->withErrors($validator, 'lacak')->withInput($request->only('nomor_tiket', 'kontak'));
+        }
+
+        $validated = $validator->validated();
 
         $aspirasi = Aspirasi::where('nomor_tiket', trim($validated['nomor_tiket']))->first();
 
@@ -1268,14 +1277,10 @@ class FrontendController extends Controller
         );
 
         if (! $cocok) {
-            return view('frontend.pages.aspirasi-lacak', [
-                'notFound' => true,
-            ])->withInput($request->only('nomor_tiket'));
+            return $kembali->with('lacakTidakDitemukan', true)->withInput($request->only('nomor_tiket', 'kontak'));
         }
 
-        return view('frontend.pages.aspirasi-lacak', [
-            'aspirasi' => $aspirasi,
-        ]);
+        return $kembali->with('lacakAspirasiId', $aspirasi->id)->withInput($request->only('nomor_tiket', 'kontak'));
     }
 
     /**

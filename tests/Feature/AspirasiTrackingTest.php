@@ -7,6 +7,7 @@ use App\Models\KategoriAspirasi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class AspirasiTrackingTest extends TestCase
@@ -33,11 +34,63 @@ class AspirasiTrackingTest extends TestCase
         ], $overrides));
     }
 
-    public function test_guest_can_open_tracking_form(): void
+    public function test_tracking_form_is_part_of_the_aspirasi_page(): void
     {
-        $this->get(route('aspirasi-masyarakat.lacak'))
+        $this->get(route('tampil.aspirasi'))
             ->assertOk()
-            ->assertSee('Lacak Status Aspirasi');
+            ->assertSee('id="panel-kirim"', false)
+            ->assertSee('id="panel-lacak"', false)
+            ->assertSee('Lacak Status Aspirasi')
+            ->assertSee('action="'.route('aspirasi-masyarakat.lacak.cari').'"', false);
+    }
+
+    public function test_send_tab_is_active_by_default(): void
+    {
+        $html = $this->get(route('tampil.aspirasi'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/id="tab-kirim"[^>]*aria-selected="true"/', $html);
+        $this->assertMatchesRegularExpression('/id="tab-lacak"[^>]*aria-selected="false"/', $html);
+        $this->assertMatchesRegularExpression('/id="panel-lacak" role="tabpanel"[^>]*hidden/', $html);
+    }
+
+    public function test_tracking_tab_is_active_after_a_search(): void
+    {
+        $html = $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
+            'nomor_tiket' => 'MARIMOI-ASP-99999999-9999',
+            'kontak' => 'siapa@example.com',
+        ])->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/id="tab-lacak"[^>]*aria-selected="true"/', $html);
+        $this->assertMatchesRegularExpression('/id="panel-kirim" role="tabpanel"[^>]*hidden/', $html);
+        $this->assertDoesNotMatchRegularExpression('/id="panel-lacak" role="tabpanel"[^>]*hidden/', $html);
+    }
+
+    public function test_old_tracking_page_redirects_to_the_tracking_section(): void
+    {
+        $this->assertFalse(Route::has('aspirasi-masyarakat.lacak'));
+
+        $this->get('/aspirasi-masyarakat/lacak')
+            ->assertStatus(301)
+            ->assertRedirect(route('tampil.aspirasi').'#lacak');
+    }
+
+    public function test_search_redirects_back_to_the_tracking_section(): void
+    {
+        $aspirasi = $this->aspirasi();
+
+        $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+            'nomor_tiket' => $aspirasi->nomor_tiket,
+            'kontak' => 'budi@example.com',
+        ])->assertRedirect(route('tampil.aspirasi').'#lacak');
+    }
+
+    public function test_empty_search_shows_validation_errors_in_the_tracking_form(): void
+    {
+        $this->followingRedirects()
+            ->post(route('aspirasi-masyarakat.lacak.cari'), ['nomor_tiket' => '', 'kontak' => ''])
+            ->assertOk()
+            ->assertSee('Nomor tiket wajib diisi.')
+            ->assertSee('Email atau nomor WhatsApp wajib diisi.');
     }
 
     public function test_matching_ticket_and_email_shows_status(): void
@@ -47,7 +100,7 @@ class AspirasiTrackingTest extends TestCase
             'tanggapan_admin' => 'Sedang kami tinjau di lapangan.',
         ]);
 
-        $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => $aspirasi->nomor_tiket,
             'kontak' => 'budi@example.com',
         ])
@@ -62,7 +115,7 @@ class AspirasiTrackingTest extends TestCase
     {
         $aspirasi = $this->aspirasi(['phone' => '081234567890', 'email' => 'lain@example.com']);
 
-        $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => $aspirasi->nomor_tiket,
             'kontak' => '+62 812-3456-7890',
         ])
@@ -74,7 +127,7 @@ class AspirasiTrackingTest extends TestCase
     {
         $aspirasi = $this->aspirasi();
 
-        $response = $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $response = $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => $aspirasi->nomor_tiket,
             'kontak' => 'bukan-pemilik@example.com',
         ]);
@@ -86,7 +139,7 @@ class AspirasiTrackingTest extends TestCase
 
     public function test_nonexistent_ticket_shows_identical_generic_message(): void
     {
-        $response = $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $response = $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => 'MARIMOI-ASP-99999999-9999',
             'kontak' => 'siapa@example.com',
         ]);
@@ -100,7 +153,7 @@ class AspirasiTrackingTest extends TestCase
         $payload = ['nomor_tiket' => 'MARIMOI-ASP-99999999-9999', 'kontak' => 'siapa@example.com'];
 
         for ($i = 0; $i < 6; $i++) {
-            $this->post(route('aspirasi-masyarakat.lacak.cari'), $payload)->assertOk();
+            $this->post(route('aspirasi-masyarakat.lacak.cari'), $payload)->assertRedirect();
         }
 
         $this->post(route('aspirasi-masyarakat.lacak.cari'), $payload)
@@ -111,7 +164,7 @@ class AspirasiTrackingTest extends TestCase
     {
         $aspirasi = $this->aspirasi(['status' => 'ditolak']);
 
-        $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => $aspirasi->nomor_tiket,
             'kontak' => 'budi@example.com',
         ])
@@ -124,7 +177,7 @@ class AspirasiTrackingTest extends TestCase
     {
         $aspirasi = $this->aspirasi(['tanggapan_admin' => null]);
 
-        $this->post(route('aspirasi-masyarakat.lacak.cari'), [
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
             'nomor_tiket' => $aspirasi->nomor_tiket,
             'kontak' => 'budi@example.com',
         ])
