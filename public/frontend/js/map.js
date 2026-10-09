@@ -187,6 +187,10 @@ const SmoothWheelZoom = L.Handler.extend({
     },
 
     _finish: function () {
+        const snapped = Math.round(this._goalZoom);
+        if (snapped !== this._goalZoom) {
+            this._goalZoom = Math.min(this._map.getMaxZoom(), Math.max(this._map.getMinZoom(), snapped));
+        }
         if (Math.abs(this._goalZoom - this._zoom) > 0.0005) {
             this._endTimer = setTimeout(() => this._finish(), 50);
             return;
@@ -204,12 +208,12 @@ const SmoothWheelZoom = L.Handler.extend({
 });
 L.Map.addInitHook("addHandler", "smoothWheelZoom", SmoothWheelZoom);
 
-// Zoom pecahan supaya pinch layar sentuh & hasil smoothWheelZoom tidak dipaksa ke level bulat.
-// Tombol +/- tetap 1 level.
+// Peta selalu berhenti di level zoom bulat: di level pecahan tile diskalakan sehingga buram
+// dan muncul garis celah antar-tile. Gerakan zoom tetap halus selama berlangsung.
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
-    zoomSnap: 0,
+    zoomSnap: 1,
     zoomDelta: 1,
     scrollWheelZoom: false,
     smoothWheelZoom: true,
@@ -436,48 +440,6 @@ function hideLoadingOverlay() {
     }
 }
 
-/**
- * Update checkbox state with loading indicator - Tailwind version
- */
-function updateCheckboxLoadingState(categoryName, isLoading) {
-    // Find the checkbox for this category
-    const container = document.getElementById("layer-list");
-    if (!container) return;
-
-    const labels = container.querySelectorAll("label");
-    labels.forEach((label) => {
-        if (label.textContent.trim() === categoryName) {
-            const checkbox = document.getElementById(label.htmlFor);
-            if (checkbox) {
-                if (isLoading) {
-                    // Add loading state with Tailwind classes
-                    checkbox.disabled = true;
-                    label.classList.add("opacity-75", "animate-pulse");
-
-                    // Add loading icon with Tailwind
-                    if (!label.querySelector(".loading-icon")) {
-                        const loadingIcon = document.createElement("span");
-                        loadingIcon.className =
-                            "loading-icon ml-2 text-blue-500 animate-spin";
-                        loadingIcon.innerHTML =
-                            '<i class="bi bi-arrow-clockwise"></i>';
-                        label.appendChild(loadingIcon);
-                    }
-                } else {
-                    // Remove loading state
-                    checkbox.disabled = false;
-                    label.classList.remove("opacity-75", "animate-pulse");
-
-                    // Remove loading icon
-                    const loadingIcon = label.querySelector(".loading-icon");
-                    if (loadingIcon) {
-                        loadingIcon.remove();
-                    }
-                }
-            }
-        }
-    });
-}
 
 function showAlert(message, type = "info", persistent = false) {
     // Debug logging disabled for production
@@ -721,6 +683,22 @@ function generateLegend() {
  * lewat setiap eachLayer() sampai ketemu layer yang benar-benar punya opsi
  * numerik tsb.
  */
+/**
+ * Terapkan opacity ke seluruh isi layer group: area/garis lewat setStyle, marker lewat
+ * setOpacity (termasuk marker di dalam marker cluster / L.GeoJSON bertingkat).
+ */
+function setLayerGroupOpacity(layer, opacity) {
+    if (typeof layer.eachLayer === "function") {
+        layer.eachLayer((child) => setLayerGroupOpacity(child, opacity));
+    } else if (layer.marimoiFilteredOut) {
+        return;
+    } else if (typeof layer.setStyle === "function") {
+        layer.setStyle({ opacity, fillOpacity: opacity });
+    } else if (typeof layer.setOpacity === "function") {
+        layer.setOpacity(opacity);
+    }
+}
+
 function getLayerGroupOpacity(layerGroup) {
     let opacity = null;
 
@@ -800,16 +778,22 @@ function refreshFilterPanel() {
         return true;
     }
 
+    // Feature yang lolos filter memakai opacity pilihan pengguna (slider Layer Aktif /
+    // Layer Tools); yang tersaring ditandai supaya slider tidak memunculkannya lagi.
     function applyVisibility(leaf, visible) {
+        const userOpacity = layerOpacityState.get(leaf.feature?.properties?.kategori);
+        leaf.marimoiFilteredOut = !visible;
+
         if (typeof leaf.setStyle === "function") {
             if (visible) {
-                leaf.setStyle(leaf.marimoiOriginalStyle || {});
+                const opacityStyle = typeof userOpacity === "number" ? { opacity: userOpacity, fillOpacity: userOpacity } : {};
+                leaf.setStyle({ ...(leaf.marimoiOriginalStyle || {}), ...opacityStyle });
             } else {
                 leaf.marimoiOriginalStyle = leaf.marimoiOriginalStyle || { ...leaf.options };
                 leaf.setStyle({ opacity: 0, fillOpacity: 0 });
             }
         } else if (typeof leaf.setOpacity === "function") {
-            leaf.setOpacity(visible ? 1 : 0);
+            leaf.setOpacity(visible ? (userOpacity ?? 1) : 0);
         }
     }
 
@@ -892,7 +876,10 @@ async function loadFilterOptionsFromServer() {
  * Memakai pola pencarian checkbox + dispatchEvent("change") yang sama persis dengan
  * applySharedMapState() (sudah terbukti bekerja untuk memuat layer dari share link).
  */
-async function loadCategoriesMatchingFilter(filters) {
+/**
+ * Nama kategori (dataset) yang punya data sesuai filter kabupaten/tahun/OPD.
+ */
+async function fetchCategoriesMatchingFilter(filters) {
     const urlPath = window.location.pathname.replace(/\/$/, "");
     const tipeLayer = getDataType(urlPath);
     const params = new URLSearchParams();
@@ -914,15 +901,12 @@ async function loadCategoriesMatchingFilter(filters) {
         console.error("Gagal memuat daftar layer yang cocok dengan filter:", error);
     }
 
-    for (const categoryName of categoryNames) {
-        const checkbox = findCheckboxForCategory(categoryName);
-        if (!checkbox || checkbox.checked) continue;
+    return categoryNames;
+}
 
-        await expandParentGroupIfNeeded(checkbox);
-        checkbox.checked = true;
-        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-        await new Promise((resolve) => setTimeout(resolve, 300));
-    }
+async function loadCategoriesMatchingFilter(filters) {
+    const categoryNames = await fetchCategoriesMatchingFilter(filters);
+    await window.MarimoiCatalog?.activateByNames(categoryNames);
 }
 
 /**
@@ -1070,14 +1054,9 @@ function updateLayerToolsPanel() {
             layerOpacityState.set(thirdName, val);
             valueLabel.textContent = `${e.target.value}%`;
 
-            if (layerGroup.eachLayer) {
-                layerGroup.eachLayer((layer) => {
-                    if (layer.setStyle) {
-                        layer.setStyle({ opacity: val, fillOpacity: val });
-                    }
-                });
-            }
+            setLayerGroupOpacity(layerGroup, val);
         });
+        slider.addEventListener("change", () => window.MarimoiCatalog?.renderActiveList());
 
         row.appendChild(labelRow);
         row.appendChild(slider);
@@ -1226,7 +1205,6 @@ function bindPopupContent(feature, layer, urlPath) {
         content += `</table></div>`;
     }
 
-    const id = props.uuid || "";
     const lat = center?.[1] || 0;
     const lng = center?.[0] || 0;
 
@@ -1237,11 +1215,10 @@ function bindPopupContent(feature, layer, urlPath) {
                 <i class="bi bi-zoom-in mr-1"></i>
                 Zoom To
             </button>
-            <a href="${urlPath}/${id}"
-                class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 no-underline">
+            <button type="button" class="featureDetailBtn flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
                 <i class="bi bi-eye mr-1"></i>
                 Detail
-            </a>
+            </button>
         </div>
     </div>`;
 
@@ -1260,6 +1237,11 @@ function bindPopupContent(feature, layer, urlPath) {
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
         const zoomButton = popupNode.querySelector(".zoomToBtn");
+
+        popupNode.querySelector(".featureDetailBtn")?.addEventListener("click", () => {
+            layer.closePopup();
+            window.MarimoiFeatureDetail?.open(feature, layer);
+        });
 
         if (zoomButton) {
             zoomButton.addEventListener("click", function () {
@@ -1491,6 +1473,7 @@ async function loadCategoriesMetadata() {
             });
         }
 
+        window.MARIMOI_CATEGORY_METADATA = data;
         updateLayerList();
         generateLegend();
         updateLayerToolsPanel();
@@ -1525,7 +1508,9 @@ async function loadCategoriesMetadata() {
  * Buat ikon marker untuk kategori bertipe marker (dipakai jalur jaringan dan jalur cache).
  */
 function buildMarkerOptions(geoJsonData, categoryName) {
-    const catObj = geoJsonData.all_categories?.find((c) => c.nama === categoryName);
+    // Gaya marker dari metadata katalog (respons /geojson per potongan tidak lagi membawa daftar kategori).
+    const catObj = (window.MARIMOI_CATEGORY_METADATA?.all_categories || geoJsonData?.all_categories || [])
+        .find((c) => c.nama === categoryName);
     if (!(catObj?.is_marker && catObj.icon)) {
         return null;
     }
@@ -1680,7 +1665,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
 
         // Jalur cepat: bila seluruh data kategori sudah tersimpan di cache, tampilkan langsung
         // tanpa layar loading, toast, maupun jeda buatan.
-        updateCheckboxLoadingState(categoryName, true);
         const cachedChunks = await readAllCachedChunks(
             { type: dataType, sub_type: subType, year: year, category: categoryName },
             maxRecords,
@@ -1691,7 +1675,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
             targetLayer.clearLayers();
             await renderCachedChunks(cachedChunks, targetLayer, categoryName, urlPath);
             loadedCategories.add(categoryName);
-            updateCheckboxLoadingState(categoryName, false);
             refreshFilterPanel();
             return;
         }
@@ -1860,7 +1843,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         hideLoadingOverlay();
-        updateCheckboxLoadingState(categoryName, false);
         refreshFilterPanel();
 
         if (loadingToast) {
@@ -1880,7 +1862,6 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
         console.error(`Error loading data for category ${categoryName}:`, error);
 
         hideLoadingOverlay();
-        updateCheckboxLoadingState(categoryName, false);
 
         if (loadingToast) {
             hideToast(loadingToast);
@@ -1905,530 +1886,17 @@ async function loadCategoryData(categoryName, parentName = null, grandparentName
     }
 }
 
-/**
- * Helper function to update parent checkbox state based on children
- */
-function updateParentCheckboxState(parentId, childContainer) {
-    const parentCheckbox = document.getElementById(parentId);
-    if (!parentCheckbox) return;
-    
-    const childCheckboxes = childContainer.querySelectorAll('input[type="checkbox"]');
-    if (childCheckboxes.length === 0) return;
-    
-    const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
-    
-    if (checkedCount === 0) {
-        parentCheckbox.checked = false;
-        parentCheckbox.indeterminate = false;
-    } else if (checkedCount === childCheckboxes.length) {
-        parentCheckbox.checked = true;
-        parentCheckbox.indeterminate = false;
-    } else {
-        parentCheckbox.checked = false;
-        parentCheckbox.indeterminate = true;
-    }
-}
 
 /**
- * Enhanced updateLayerList with support for 3-level hierarchy
- * Root level is now just a header (no checkbox)
+ * Daftar layer kini berupa Katalog Data (modal) + sidebar Layer Aktif, lihat map-catalog.js.
  */
 function updateLayerList() {
-    const container = document.getElementById("layer-list");
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    // Process each root category (Level 1)
-    Object.entries(layerGroups).forEach(([rootName, secondLevel]) => {
-        const rootId = `root-${rootName.replace(/\s+/g, "-")}`;
-        const rootWrapper = document.createElement("div");
-        rootWrapper.className = "mb-3";
-
-        // Create root header (Level 1) - no checkbox, just a clickable header
-        const rootHeader = document.createElement("div");
-        rootHeader.id = rootId;
-        rootHeader.className =
-            "flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200";
-
-        const rootLeftSection = document.createElement("div");
-        rootLeftSection.className = "flex items-center";
-
-        // Root toggle icon
-        const rootToggleBtn = document.createElement("span");
-        rootToggleBtn.className = "mr-2 transition-transform duration-300 ease-in-out";
-        rootToggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-600"></i>`;
-
-        // Induk hanya boleh dicentang bila tidak ada sub kategorinya yang masih punya sub kategori
-        // lagi (aturan yang sama dengan peta admin). Induk bertingkat hanya berfungsi sebagai grup.
-        const isRootCheckable = Object.entries(secondLevel).every(([secondName, thirdLevel]) => {
-            const thirdNames = Object.keys(thirdLevel);
-            return thirdNames.length === 1 && thirdNames[0] === secondName;
-        });
-
-        // Induk tanpa sub kategori sungguhan (hanya placeholder bernama sama dengan dirinya):
-        // cukup satu baris dengan checkbox, tanpa daftar turunan yang menggandakan nama.
-        const isLeafRoot = Object.entries(secondLevel).every(([secondName, thirdLevel]) => {
-            const thirdNames = Object.keys(thirdLevel);
-            return secondName === rootName && thirdNames.length === 1 && thirdNames[0] === rootName;
-        });
-
-        let rootCheckbox = null;
-        if (isRootCheckable) {
-            rootCheckbox = document.createElement("input");
-            rootCheckbox.type = "checkbox";
-            rootCheckbox.className = "mr-2 h-4 w-4 text-blue-500 focus:ring-blue-400 border-2 border-gray-400 rounded";
-            rootCheckbox.id = rootId + "-checkbox";
-            rootCheckbox.setAttribute("data-level", "1");
-            rootCheckbox.setAttribute("data-category", rootName);
-        }
-
-        // Root label (memakai <label> bila induk punya checkbox)
-        const rootLabel = document.createElement(isRootCheckable ? "label" : "div");
-        rootLabel.className = "font-semibold text-gray-900 text-sm layer-label";
-        rootLabel.dataset.layerLevel = "1";
-        rootLabel.textContent = rootName;
-        if (isRootCheckable) {
-            rootLabel.htmlFor = rootCheckbox.id;
-            rootLabel.classList.add("cursor-pointer");
-        }
-
-        // Count badge for root
-        const secondLevelCount = Object.keys(secondLevel).length;
-        const rootBadge = document.createElement("span");
-        rootBadge.className = "ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full";
-        rootBadge.textContent = secondLevelCount;
-
-        // Add root elements to header
-        if (isLeafRoot) {
-            // Tetap ada agar lebar sejajar dengan induk lain, tapi tidak terlihat.
-            rootToggleBtn.classList.add("invisible");
-            rootHeader.classList.remove("cursor-pointer");
-        }
-
-        rootLeftSection.appendChild(rootToggleBtn);
-        if (rootCheckbox) rootLeftSection.appendChild(rootCheckbox);
-        rootLeftSection.appendChild(rootLabel);
-        if (!isLeafRoot) rootLeftSection.appendChild(rootBadge);
-        rootHeader.appendChild(rootLeftSection);
-        rootWrapper.appendChild(rootHeader);
-
-        // Create container for second level items
-        const secondLevelContainer = document.createElement("div");
-        secondLevelContainer.className = "border-l border-r border-b border-gray-300 rounded-b-lg bg-gray-50 rounded-lg hidden layer-root-children";
-        secondLevelContainer.id = `${rootId}-children`;
-        
-        // Process each second level category (Level 2)
-        Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
-            const secondId = `second-${rootName}-${secondName}`.replace(/\s+/g, "-");
-            const secondItemRow = document.createElement("div");
-            secondItemRow.className = "px-2 py-1 layer-second-row";
-            
-            // Create second level header
-            const secondHeader = document.createElement("div");
-            secondHeader.className = 
-                "flex items-center justify-between px-3 py-2 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-200 ml-3 mb-1"; // Added more padding and bottom margin
-            
-            const secondLeftSection = document.createElement("div");
-            secondLeftSection.className = "flex items-center";
-            
-            // Second level toggle icon
-            const secondToggleBtn = document.createElement("span");
-            secondToggleBtn.className = "mr-2 transition-transform duration-300 ease-in-out";
-            secondToggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-500"></i>`;
-            
-            // Second level checkbox
-            const secondCheckbox = document.createElement("input");
-            secondCheckbox.type = "checkbox";
-            secondCheckbox.className = "mr-2 h-4 w-4 text-blue-500 focus:ring-blue-400 border-2 border-gray-400 rounded";
-            secondCheckbox.id = secondId;
-            secondCheckbox.setAttribute('data-level', '2');
-            secondCheckbox.setAttribute('data-category', secondName);
-            secondCheckbox.setAttribute('data-parent', rootName);
-            
-            // Second level label
-            const secondLabel = document.createElement("label");
-            secondLabel.className = "text-sm text-gray-700 cursor-pointer layer-label";
-            secondLabel.dataset.layerLevel = "2";
-            secondLabel.htmlFor = secondId;
-            secondLabel.textContent = secondName;
-            
-            // Count badge for second level
-            const thirdLevelCount = Object.keys(thirdLevel).length;
-            const secondBadge = document.createElement("span");
-            secondBadge.className = "ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full";
-            secondBadge.textContent = thirdLevelCount;
-            
-            // Sub kategori tanpa turunan sungguhan (hanya placeholder bernama sama): berperilaku
-            // sebagai daun, jadi tidak ada panah/hitungan dan tidak menampilkan baris duplikat.
-            const thirdNamesOfSecond = Object.keys(thirdLevel);
-            const isPlaceholderOnly = thirdNamesOfSecond.length === 1 && thirdNamesOfSecond[0] === secondName;
-            if (isPlaceholderOnly) {
-                secondToggleBtn.classList.add("invisible");
-                secondHeader.classList.remove("cursor-pointer");
-            }
-
-            // Add second level elements to header
-            secondLeftSection.appendChild(secondToggleBtn);
-            secondLeftSection.appendChild(secondCheckbox);
-            secondLeftSection.appendChild(secondLabel);
-            if (!isPlaceholderOnly) secondLeftSection.appendChild(secondBadge);
-            secondHeader.appendChild(secondLeftSection);
-            secondItemRow.appendChild(secondHeader);
-            
-            // Create container for third level items
-            const thirdLevelContainer = document.createElement("div");
-            thirdLevelContainer.className = "pl-4 ml-5 border-l border-gray-200 mt-1 hidden layer-third-children";
-            thirdLevelContainer.id = `${secondId}-children`;
-            
-            // Second level checkbox controls all children
-            const applySecondLevelChange = async () => {
-                const isChecked = secondCheckbox.checked;
-                
-                // Disable checkbox during loading
-                secondCheckbox.disabled = true;
-                secondCheckbox.className = secondCheckbox.className + " opacity-50 cursor-not-allowed";
-                
-                try {
-                    // Update all third level checkboxes
-                    const thirdLevelCheckboxes = thirdLevelContainer.querySelectorAll('input[type="checkbox"]');
-                    
-                    for (const checkbox of thirdLevelCheckboxes) {
-                        checkbox.checked = isChecked;
-                        
-                        // Get category data
-                        const categoryName = checkbox.getAttribute('data-category');
-                        
-                        if (categoryName) {
-                            if (isChecked) {
-                                // Load data for checked categories
-                                await loadCategoryData(categoryName, secondName, rootName);
-                                
-                                // Add layer to map
-                                if (layerGroups[rootName]?.[secondName]?.[categoryName]) {
-                                    map.addLayer(layerGroups[rootName][secondName][categoryName]);
-                                }
-                            } else {
-                                // Remove layer from map
-                                if (layerGroups[rootName]?.[secondName]?.[categoryName]) {
-                                    map.removeLayer(layerGroups[rootName][secondName][categoryName]);
-                                }
-                            }
-                        }
-                    }
-
-                    updateRootCheckboxState(rootCheckbox, secondLevelContainer);
-                    generateLegend();
-                    updateLayerToolsPanel();
-                } finally {
-                    secondCheckbox.disabled = false;
-                    secondCheckbox.className = secondCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
-                }
-            };
-            secondCheckbox.addEventListener("change", applySecondLevelChange);
-            // Dipakai checkbox induk agar tiap sub kategori dimuat berurutan (loadCategoryData tidak paralel).
-            secondCheckbox._applyChange = applySecondLevelChange;
-            
-            // Process third level categories (Level 3)
-            Object.keys(thirdLevel).forEach((thirdName) => {
-                // Skip if same name as parent (used as placeholder)
-                if (thirdName === secondName && Object.keys(thirdLevel).length > 1) return;
-                
-                const thirdId = `third-${rootName}-${secondName}-${thirdName}`.replace(/\s+/g, "-");
-                const thirdRow = document.createElement("div");
-                thirdRow.className = "flex items-center py-2 hover:bg-gray-100 transition-colors duration-150 rounded px-2 mt-1 layer-third-row"; // Added vertical spacing
-                
-                // Third level checkbox - with consistent size
-                const thirdCheckbox = document.createElement("input");
-                thirdCheckbox.type = "checkbox";
-                thirdCheckbox.className = "mr-2 h-4 w-4 text-blue-400 focus:ring-blue-300 border-2 border-gray-300 rounded";
-                thirdCheckbox.id = thirdId;
-                thirdCheckbox.setAttribute('data-level', '3');
-                thirdCheckbox.setAttribute('data-category', thirdName);
-                thirdCheckbox.setAttribute('data-parent', secondName);
-                thirdCheckbox.setAttribute('data-grandparent', rootName);
-                
-                // Third level label
-                const thirdLabel = document.createElement("label");
-                thirdLabel.className = "text-xs text-gray-600 cursor-pointer flex-1 leading-tight layer-label";
-                thirdLabel.dataset.layerLevel = "3";
-                thirdLabel.htmlFor = thirdId;
-                thirdLabel.textContent = thirdName;
-                
-                // Add third level elements
-                thirdRow.appendChild(thirdCheckbox);
-                thirdRow.appendChild(thirdLabel);
-                thirdLevelContainer.appendChild(thirdRow);
-                
-                // Third level checkbox handler
-                const applyThirdLevelChange = async () => {
-                    // Disable checkbox during loading
-                    thirdCheckbox.disabled = true;
-                    thirdCheckbox.className = thirdCheckbox.className + " opacity-50 cursor-not-allowed";
-
-                    try {
-                        if (thirdCheckbox.checked) {
-                            // Load data on-demand if not loaded yet
-                            await loadCategoryData(thirdName, secondName, rootName);
-
-                            // Add layer to map
-                            if (layerGroups[rootName]?.[secondName]?.[thirdName]) {
-                                map.addLayer(layerGroups[rootName][secondName][thirdName]);
-                            }
-                        } else {
-                            // Remove layer from map
-                            if (layerGroups[rootName]?.[secondName]?.[thirdName]) {
-                                map.removeLayer(layerGroups[rootName][secondName][thirdName]);
-                            }
-                        }
-
-                        // Update second level checkbox state based on third level checkboxes
-                        updateSecondLevelCheckboxState(secondCheckbox, thirdLevelContainer);
-                        updateRootCheckboxState(rootCheckbox, secondLevelContainer);
-
-                        // Update legend & layer tools panel
-                        generateLegend();
-                        updateLayerToolsPanel();
-                    } finally {
-                        thirdCheckbox.disabled = false;
-                        thirdCheckbox.className = thirdCheckbox.className.replace(" opacity-50 cursor-not-allowed", "");
-                    }
-                };
-                thirdCheckbox.addEventListener("change", applyThirdLevelChange);
-                // Referensi ke handler-nya sendiri, dipakai checkbox induk (root/second level)
-                // agar tiap kategori dimuat berurutan lewat pemanggilan langsung yang bisa di-`await`.
-                thirdCheckbox._applyChange = applyThirdLevelChange;
-            });
-            
-            // Toggle functionality for second level
-            secondHeader.addEventListener("click", (e) => {
-                if (isPlaceholderOnly) return;
-
-                // Ignore clicks on checkbox and label
-                if (e.target !== secondCheckbox && e.target !== secondLabel) {
-                    const isVisible = !thirdLevelContainer.classList.contains("hidden");
-                    
-                    if (isVisible) {
-                        thirdLevelContainer.classList.add("hidden");
-                        secondToggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-500"></i>`;
-                        secondToggleBtn.classList.remove("rotate-90");
-                    } else {
-                        thirdLevelContainer.classList.remove("hidden");
-                        secondToggleBtn.innerHTML = `<i class="bi bi-chevron-down text-gray-500"></i>`;
-                        secondToggleBtn.classList.add("rotate-90");
-                    }
-                }
-            });
-            
-            // Add third level container to second level row
-            secondItemRow.appendChild(thirdLevelContainer);
-            secondLevelContainer.appendChild(secondItemRow);
-        });
-        
-        // Checkbox induk: centang/hapus centang seluruh sub kategori (berurutan).
-        if (rootCheckbox) {
-            rootCheckbox.addEventListener("change", async () => {
-                const isChecked = rootCheckbox.checked;
-                rootCheckbox.indeterminate = false;
-                rootCheckbox.disabled = true;
-                rootCheckbox.classList.add("opacity-50", "cursor-not-allowed");
-
-                try {
-                    const secondCheckboxes = secondLevelContainer.querySelectorAll('input[data-level="2"]');
-
-                    for (const cb of secondCheckboxes) {
-                        if (cb.checked !== isChecked && cb._applyChange) {
-                            cb.checked = isChecked;
-                            await cb._applyChange();
-                        }
-                    }
-
-                    if (isChecked && !isLeafRoot) {
-                        secondLevelContainer.classList.remove("hidden");
-                        rootToggleBtn.innerHTML = `<i class="bi bi-chevron-down text-gray-600"></i>`;
-                        rootToggleBtn.classList.add("rotate-90");
-                    }
-                } finally {
-                    rootCheckbox.disabled = false;
-                    rootCheckbox.classList.remove("opacity-50", "cursor-not-allowed");
-                    updateRootCheckboxState(rootCheckbox, secondLevelContainer);
-                }
-            });
-        }
-
-        // Toggle functionality for root level (klik pada checkbox/label tidak ikut membuka/menutup)
-        rootHeader.addEventListener("click", (e) => {
-            if (isLeafRoot) return;
-            if (rootCheckbox && (e.target === rootCheckbox || e.target === rootLabel)) return;
-
-            const isVisible = !secondLevelContainer.classList.contains("hidden");
-            
-            if (isVisible) {
-                secondLevelContainer.classList.add("hidden");
-                rootToggleBtn.innerHTML = `<i class="bi bi-chevron-right text-gray-600"></i>`;
-                rootToggleBtn.classList.remove("rotate-90");
-            } else {
-                secondLevelContainer.classList.remove("hidden");
-                rootToggleBtn.innerHTML = `<i class="bi bi-chevron-down text-gray-600"></i>`;
-                rootToggleBtn.classList.add("rotate-90");
-            }
-        });
-        
-        // Add second level container to root
-        rootWrapper.appendChild(secondLevelContainer);
-        container.appendChild(rootWrapper);
-    });
+    window.MarimoiCatalog?.rebuild();
 }
 
-/**
- * Sinkronkan checkbox induk dengan status checkbox sub kategorinya (centang penuh / sebagian).
- */
-function updateRootCheckboxState(rootCheckbox, secondLevelContainer) {
-    if (!rootCheckbox) return;
 
-    const children = secondLevelContainer.querySelectorAll('input[data-level="2"]');
-    if (children.length === 0) return;
 
-    const checkedCount = Array.from(children).filter((cb) => cb.checked).length;
-    rootCheckbox.checked = checkedCount === children.length;
-    rootCheckbox.indeterminate = checkedCount > 0 && checkedCount < children.length;
-}
 
-/**
- * Helper function to update second level checkbox state based on third level checkboxes
- */
-function updateSecondLevelCheckboxState(secondLevelCheckbox, thirdLevelContainer) {
-    if (!secondLevelCheckbox) return;
-    
-    const childCheckboxes = thirdLevelContainer.querySelectorAll('input[type="checkbox"]');
-    if (childCheckboxes.length === 0) return;
-    
-    const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
-    
-    if (checkedCount === 0) {
-        secondLevelCheckbox.checked = false;
-        secondLevelCheckbox.indeterminate = false;
-    } else if (checkedCount === childCheckboxes.length) {
-        secondLevelCheckbox.checked = true;
-        secondLevelCheckbox.indeterminate = false;
-    } else {
-        secondLevelCheckbox.checked = false;
-        secondLevelCheckbox.indeterminate = true;
-    }
-}
-
-/**
- * This function needs to be updated for expandParentGroupIfNeeded
- * to work with the new hierarchy structure where root level has no checkbox
- */
-async function expandParentGroupIfNeeded(checkbox) {
-    // For third level - need to expand both parent and grandparent
-    if (checkbox.getAttribute('data-level') === '3') {
-        const parentName = checkbox.getAttribute('data-parent');
-        const grandparentName = checkbox.getAttribute('data-grandparent');
-        
-        if (parentName && grandparentName) {
-            // First expand root level
-            const rootId = `root-${grandparentName.replace(/\s+/g, "-")}`;
-            const rootContainer = document.getElementById(`${rootId}-children`);
-            
-            if (rootContainer && rootContainer.classList.contains('hidden')) {
-                // Find root header and click it
-                const rootWrapper = rootContainer.closest('.mb-3');
-                const rootHeader = rootWrapper?.querySelector('.flex.items-center.justify-between');
-                if (rootHeader) {
-                    rootHeader.click();
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-            }
-            
-            // Then expand second level
-            const secondId = `second-${grandparentName}-${parentName}`.replace(/\s+/g, "-");
-            const secondContainer = document.getElementById(`${secondId}-children`);
-            
-            if (secondContainer && secondContainer.classList.contains('hidden')) {
-                // Find second header and click it
-                const secondItem = secondContainer.closest('.px-2.py-1');
-                const secondHeader = secondItem?.querySelector('.flex.items-center.justify-between');
-                if (secondHeader) {
-                    secondHeader.click();
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-            }
-            
-            return;
-        }
-    }
-    
-    // For second level - just expand parent
-    if (checkbox.getAttribute('data-level') === '2') {
-        const parentName = checkbox.getAttribute('data-parent');
-        
-        if (parentName) {
-            const rootId = `root-${parentName.replace(/\s+/g, "-")}`;
-            const rootContainer = document.getElementById(`${rootId}-children`);
-            
-            if (rootContainer && rootContainer.classList.contains('hidden')) {
-                const rootWrapper = rootContainer.closest('.mb-3');
-                const rootHeader = rootWrapper?.querySelector('.flex.items-center.justify-between');
-                if (rootHeader) {
-                    rootHeader.click();
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-            }
-            
-            return;
-        }
-    }
-    
-    // Legacy handling for backward compatibility
-    const groupElement = checkbox.closest(".mb-3");
-
-    if (!groupElement) {
-        return;
-    }
-
-    // Cari sub-layer list (container yang mungkin hidden)
-    const subLayerList = groupElement.querySelector(".border-l");
-
-    if (subLayerList && subLayerList.classList.contains("hidden")) {
-        // Cari header untuk diklik
-        const header = groupElement.querySelector(
-            ".flex.items-center.justify-between"
-        );
-
-        if (header) {
-            // Simulasi klik header untuk expand
-            header.click();
-
-            // Tunggu animasi expand selesai
-            await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-    }
-}
-
-/**
- * Helper function to update second level checkbox state based on third level checkboxes
- */
-function updateSecondLevelCheckboxState(secondLevelCheckbox, thirdLevelContainer) {
-    if (!secondLevelCheckbox) return;
-    
-    const childCheckboxes = thirdLevelContainer.querySelectorAll('input[type="checkbox"]');
-    if (childCheckboxes.length === 0) return;
-    
-    const checkedCount = Array.from(childCheckboxes).filter(cb => cb.checked).length;
-    
-    if (checkedCount === 0) {
-        secondLevelCheckbox.checked = false;
-        secondLevelCheckbox.indeterminate = false;
-    } else if (checkedCount === childCheckboxes.length) {
-        secondLevelCheckbox.checked = true;
-        secondLevelCheckbox.indeterminate = false;
-    } else {
-        secondLevelCheckbox.checked = false;
-        secondLevelCheckbox.indeterminate = true;
-    }
-}
 function generatePreviewUrl(basemap) {
     switch (basemap.id) {
         case "osm":
@@ -2588,23 +2056,10 @@ async function applySharedMapState() {
         return;
     }
 
-    for (const categoryName of state.layers) {
-        const checkbox = findCheckboxForCategory(categoryName);
-
-        if (!checkbox) {
-            showAlert(`Layer "${categoryName}" dari link share tidak ditemukan.`, "warning");
-            continue;
-        }
-
-        await expandParentGroupIfNeeded(checkbox);
-
-        if (!checkbox.checked) {
-            checkbox.checked = true;
-            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-            // Beri jeda supaya pemuatan data tiap layer tidak saling tabrakan
-            await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-    }
+    const { missing } = await window.MarimoiCatalog.activateByNames(state.layers);
+    missing.forEach((categoryName) => {
+        showAlert(`Layer "${categoryName}" dari link share tidak ditemukan.`, "warning");
+    });
 
     const viewport = state.viewport;
     if (viewport && typeof viewport.lat === "number" && typeof viewport.lng === "number") {
@@ -2618,6 +2073,12 @@ async function applySharedMapState() {
         if (state.filters.kabupaten && kabupatenEl) kabupatenEl.value = state.filters.kabupaten;
         if (state.filters.tahun && tahunEl) tahunEl.value = String(state.filters.tahun);
         if (state.filters.opd_pengelola && opdEl) opdEl.value = state.filters.opd_pengelola;
+        // Opsi select bisa belum termuat dari server; nilai dari link share tetap dipasang.
+        window.MarimoiCatalog?.syncAppliedFilters({
+            kabupaten: state.filters.kabupaten || "",
+            tahun: state.filters.tahun ? String(state.filters.tahun) : "",
+            opd_pengelola: state.filters.opd_pengelola || "",
+        });
         // Filter di share link juga harus menampilkan layer yang cocok di luar
         // state.layers yang eksplisit tercentang — bukan cuma menyaring yang sudah dimuat.
         await applyStructuredFilters();
@@ -2636,215 +2097,29 @@ function getSelectedCategoryFromSession() {
 }
 
 /**
- * Auto-click checkbox untuk kategori yang dipilih dari session
+ * Aktifkan kategori yang dipilih dari halaman lain (disimpan di session).
  */
 async function autoClickCategoryFromSession() {
     const selectedCategory = getSelectedCategoryFromSession();
 
-    if (!selectedCategory) {
+    if (!selectedCategory || !window.MarimoiCatalog) {
         return;
     }
 
-    // Auto-click category from session
-
-    // Tunggu hingga UI benar-benar siap
-    let attempts = 0;
-    const maxAttempts = 30; // 15 detik maksimal
-
-    const waitForUI = async () => {
-        // Cek apakah layer list sudah ada dan tidak kosong
-        const layerList = document.getElementById("layer-list");
-        const checkboxes = layerList?.querySelectorAll(
-            'input[type="checkbox"]'
-        );
-
-        if (!layerList || !checkboxes || checkboxes.length === 0) {
-            if (attempts < maxAttempts) {
-                attempts++;
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                return waitForUI();
-            }
-            return false;
-        }
-        return true;
-    };
-
-    const uiReady = await waitForUI();
-
-    if (!uiReady) {
-        showAlert(
-            `UI tidak siap untuk memuat kategori ${selectedCategory}`,
-            "warning"
-        );
-        return;
-    }
-
-    // Cari checkbox yang sesuai dengan kategori
-    const targetCheckbox = findCheckboxForCategory(selectedCategory);
-
-    if (!targetCheckbox) {
-        showAlert(
-            `Kategori "${selectedCategory}" tidak ditemukan di daftar layer`,
-            "warning"
-        );
+    if (window.MarimoiCatalog.findEntriesByName(selectedCategory).length === 0) {
+        showAlert(`Kategori "${selectedCategory}" tidak ditemukan di daftar layer`, "warning");
         return;
     }
 
     try {
-        // Show info message
-        showAlert(`Memuat peta ${selectedCategory}...`, "info", true);
-
-        // Expand parent group jika diperlukan (untuk sub-kategori)
-        await expandParentGroupIfNeeded(targetCheckbox);
-
-        // Simulasi klik checkbox - ini akan trigger event handler yang sudah ada
-        targetCheckbox.checked = true;
-
-        // Trigger change event untuk mengaktifkan fungsi loadCategoryData yang sudah ada
-        const changeEvent = new Event("change", { bubbles: true });
-        targetCheckbox.dispatchEvent(changeEvent);
-
+        showAlert(`Memuat peta ${selectedCategory}...`, "info");
+        await window.MarimoiCatalog.activateByNames([selectedCategory]);
     } catch (error) {
-        // Log error in development only
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.error("Error during auto-click:", error);
-        }
-        showAlert(
-            `Gagal memuat kategori "${selectedCategory}": ${error.message}`,
-            "danger"
-        );
+        showAlert(`Gagal memuat kategori "${selectedCategory}": ${error.message}`, "danger");
     }
 }
 
-/**
- * Cari checkbox yang sesuai dengan nama kategori
- */
-function findCheckboxForCategory(categoryName) {
-    const allCheckboxes = document.querySelectorAll(
-        '#layer-list input[type="checkbox"]'
-    );
 
-    // Cari berdasarkan label text
-    for (const checkbox of allCheckboxes) {
-        const label = document.querySelector(`label[for="${checkbox.id}"]`);
-        if (label && label.textContent.trim() === categoryName) {
-            return checkbox;
-        }
-    }
-
-    // Cari berdasarkan data attributes sebagai prioritas
-    for (const checkbox of allCheckboxes) {
-        if (checkbox.getAttribute('data-category') === categoryName) {
-            return checkbox;
-        }
-    }
-
-    // Cari berdasarkan ID pattern sebagai fallback
-    const possibleIds = [
-        `root-${categoryName}`.replace(/\s+/g, "-"),
-        `second-${categoryName}`.replace(/\s+/g, "-"),
-        `third-.*-${categoryName}`.replace(/\s+/g, "-"),
-    ];
-
-    for (const idPattern of possibleIds) {
-        const regex = new RegExp(idPattern);
-        for (const checkbox of allCheckboxes) {
-            if (regex.test(checkbox.id)) {
-                return checkbox;
-            }
-        }
-    }
-
-    // Cari dengan pattern yang lebih fleksibel
-    for (const checkbox of allCheckboxes) {
-        const checkboxId = checkbox.id.toLowerCase();
-        const categoryLower = categoryName.toLowerCase().replace(/\s+/g, "-");
-
-        if (checkboxId.includes(categoryLower)) {
-            return checkbox;
-        }
-    }
-
-    return null;
-}
-
-/**
- * Expand parent group jika checkbox adalah sub-kategori
- */
-async function expandParentGroupIfNeeded(checkbox) {
-    // For third level - need to expand both parent and grandparent
-    if (checkbox.getAttribute('data-level') === '3') {
-        const parentName = checkbox.getAttribute('data-parent');
-        const grandparentName = checkbox.getAttribute('data-grandparent');
-        
-        if (parentName && grandparentName) {
-            // First expand root level
-            const rootId = `root-${grandparentName.replace(/\s+/g, "-")}`;
-            const rootHeader = document.querySelector(`#${rootId}`).closest('.flex.items-center.justify-between');
-            const rootContainer = document.getElementById(`${rootId}-children`);
-            
-            if (rootHeader && rootContainer && rootContainer.classList.contains('hidden')) {
-                rootHeader.click();
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            // Then expand second level
-            const secondId = `second-${grandparentName}-${parentName}`.replace(/\s+/g, "-");
-            const secondHeader = document.querySelector(`#${secondId}`).closest('.flex.items-center.justify-between');
-            const secondContainer = document.getElementById(`${secondId}-children`);
-            
-            if (secondHeader && secondContainer && secondContainer.classList.contains('hidden')) {
-                secondHeader.click();
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            return;
-        }
-    }
-    
-    // For second level - just expand parent
-    if (checkbox.getAttribute('data-level') === '2') {
-        const parentName = checkbox.getAttribute('data-parent');
-        
-        if (parentName) {
-            const rootId = `root-${parentName.replace(/\s+/g, "-")}`;
-            const rootHeader = document.querySelector(`#${rootId}`).closest('.flex.items-center.justify-between');
-            const rootContainer = document.getElementById(`${rootId}-children`);
-            
-            if (rootHeader && rootContainer && rootContainer.classList.contains('hidden')) {
-                rootHeader.click();
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            return;
-        }
-    }
-    
-    // Legacy handling for backward compatibility
-    const groupElement = checkbox.closest(".mb-3");
-
-    if (!groupElement) {
-        return;
-    }
-
-    // Cari sub-layer list (container yang mungkin hidden)
-    const subLayerList = groupElement.querySelector(".border-l");
-
-    if (subLayerList && subLayerList.classList.contains("hidden")) {
-        // Cari header untuk diklik
-        const header = groupElement.querySelector(
-            ".flex.items-center.justify-between"
-        );
-
-        if (header) {
-            // Simulasi klik header untuk expand
-            header.click();
-
-            // Tunggu animasi expand selesai
-            await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-    }
-}
 
 // Update existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
@@ -3044,34 +2319,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Filter Data kini menyatu di sidebar Layer: opsi bertambah otomatis saat data
-    // dimuat (lihat loadCategoryData). Memilih nilai filter memuat & mencentang seluruh
-    // kategori yang belum aktif (applyStructuredFilters -> activateAllCategoriesForFilter)
-    // supaya filter menampilkan layer yang cocok, bukan cuma menyaring layer yang
-    // kebetulan sudah dicentang lebih dulu.
-    ["filter-kabupaten", "filter-tahun", "filter-opd"].forEach((id) => {
-        document.getElementById(id)?.addEventListener("change", applyStructuredFilters);
-    });
-
-    document.getElementById("btn-reset-filter")?.addEventListener("click", () => {
-        ["filter-kabupaten", "filter-tahun", "filter-opd"].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = "";
-        });
-        refreshFilterPanel();
-    });
-
+    // Kontrol Filter Data ada di modal Katalog Data dan diikat oleh map-catalog.js.
     toggleButtons.layer?.addEventListener("click", refreshFilterPanel);
-
-    // Toggle panel Filter Data, terpisah dari toggle sidebar Layer supaya filter
-    // bisa dibuka/ditutup tanpa menutup sidebar Layer itu sendiri.
-    const filterPanel = document.getElementById("filter-panel");
-    const btnToggleFilterPanel = document.getElementById("btn-toggle-filter-panel");
-    btnToggleFilterPanel?.addEventListener("click", () => {
-        if (!filterPanel) return;
-        const isHidden = filterPanel.classList.toggle("hidden");
-        btnToggleFilterPanel.setAttribute("aria-expanded", String(!isHidden));
-    });
 
     // Layer Tools panel (independen dari sidebar lain: boleh dibuka bersamaan
     // dengan panel Layer, karena isinya bergantung pada layer yang sedang aktif)
@@ -3123,104 +2372,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             map.setView(mapConfig.center, mapConfig.zoom);
         });
 
-    // Search (debounce)
-    const layerSearchInput = document.getElementById("layer-search");
-    const layerSearchClear = document.getElementById("layer-search-clear");
-    const layerSearchEmpty = document.getElementById("layer-search-empty");
-    let searchTimeout;
-
-    function applyLayerSearch(rawTerm) {
-        const term = rawTerm.trim().toLowerCase();
-        const showAll = term === "";
-
-        // Strict substring match (equivalent to SQL LIKE '%term%'): a row is only
-        // ever shown if its OWN label literally contains the term, or it is an
-        // ancestor of a row that does — non-matching siblings stay hidden even when
-        // a parent/child in the same branch matches. Matching/navigation below relies
-        // only on stable classes (.layer-label, .layer-root-children, .layer-second-row,
-        // .layer-third-row, .layer-third-children) added in updateLayerList() — no
-        // selectors are ever built from category-name-derived strings, so there is
-        // nothing here for an unusual category name to break.
-        const rootWrappers = document.querySelectorAll("#layer-list > .mb-3");
-        let resultCount = 0;
-
-        const isMatch = (label) => showAll || (label?.textContent.toLowerCase().includes(term) ?? false);
-
-        rootWrappers.forEach((rootWrapper) => {
-            try {
-                const rootHeader = rootWrapper.querySelector(".flex.items-center.justify-between");
-                const rootLabelEl = rootWrapper.querySelector('.layer-label[data-layer-level="1"]');
-                const rootOwnMatch = isMatch(rootLabelEl);
-
-                let rootHasVisibleChild = false;
-
-                rootWrapper.querySelectorAll('.layer-second-row').forEach((secondRow) => {
-                    const secondLabelEl = secondRow.querySelector('.layer-label[data-layer-level="2"]');
-                    const secondOwnMatch = isMatch(secondLabelEl);
-                    if (secondOwnMatch) resultCount++;
-
-                    let secondHasVisibleChild = false;
-
-                    secondRow.querySelectorAll('.layer-third-row').forEach((thirdRow) => {
-                        const thirdLabelEl = thirdRow.querySelector('.layer-label[data-layer-level="3"]');
-                        const thirdOwnMatch = isMatch(thirdLabelEl);
-                        if (thirdOwnMatch) resultCount++;
-
-                        thirdRow.style.display = thirdOwnMatch ? "" : "none";
-                        if (thirdOwnMatch) secondHasVisibleChild = true;
-                    });
-
-                    const secondVisible = secondOwnMatch || secondHasVisibleChild;
-                    secondRow.style.display = secondVisible ? "" : "none";
-                    if (secondVisible) rootHasVisibleChild = true;
-
-                    // Auto-expand this branch so a matching third-level child is visible
-                    if (!showAll && secondHasVisibleChild) {
-                        const thirdChildren = secondRow.querySelector('.layer-third-children');
-                        const secondHeader = secondRow.querySelector('.flex.items-center.justify-between');
-                        if (secondHeader && thirdChildren && thirdChildren.classList.contains('hidden')) {
-                            secondHeader.click();
-                        }
-                    }
-                });
-
-                const rootVisible = rootOwnMatch || rootHasVisibleChild;
-                rootWrapper.style.display = rootVisible ? "block" : "none";
-
-                // Auto-expand the root so a matching branch/leaf underneath is visible
-                if (!showAll && rootVisible && rootHasVisibleChild) {
-                    const rootChildren = rootWrapper.querySelector('.layer-root-children');
-                    if (rootChildren && rootChildren.classList.contains("hidden")) {
-                        rootHeader?.click();
-                    }
-                }
-            } catch (err) {
-                console.warn('Layer search: gagal memproses root wrapper', err);
-            }
-        });
-
-        if (layerSearchEmpty) {
-            layerSearchEmpty.classList.toggle('hidden', showAll || resultCount > 0);
-        }
-        if (layerSearchClear) {
-            layerSearchClear.classList.toggle('hidden', rawTerm === "");
-        }
-    }
-
-    layerSearchInput?.addEventListener("input", (e) => {
-        clearTimeout(searchTimeout);
-        const value = e.target.value;
-        searchTimeout = setTimeout(() => applyLayerSearch(value), 300);
-    });
-
-    layerSearchClear?.addEventListener("click", () => {
-        if (!layerSearchInput) return;
-        layerSearchInput.value = "";
-        layerSearchInput.focus();
-        clearTimeout(searchTimeout);
-        applyLayerSearch("");
-    });
-
     // ==================== SHARE PETA ====================
     const shareModal = document.getElementById("shareMapModal");
     const shareMapLinkInput = document.getElementById("shareMapLink");
@@ -3236,17 +2387,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     let copyFeedbackTimeout = null;
 
     function getCheckedLayerNames() {
-        const checked = document.querySelectorAll(
-            '#layer-list input[type="checkbox"]:checked'
-        );
-        const names = new Set();
-
-        checked.forEach((checkbox) => {
-            const name = checkbox.getAttribute("data-category");
-            if (name) names.add(name);
-        });
-
-        return Array.from(names);
+        return (window.MarimoiCatalog?.getActiveEntries() || [])
+            .filter((entry) => map.hasLayer(entry.layerGroup))
+            .map((entry) => entry.leafName);
     }
 
     function openShareModal() {

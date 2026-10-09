@@ -2,37 +2,51 @@
 
 namespace Tests\Feature;
 
-use App\Models\DataSpatial;
-use App\Models\LegacyCategory as Category;
-use App\Models\Opd;
-use App\Models\User;
+use App\Models\Category;
+use App\Models\SpatialLayer;
+use App\Models\SpatialLayerFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * Filter Peta Tematik membaca feature V3 (`spatial_features.properties`) milik Layer
+ * published — sama dengan properti yang diekspos `/geojson` dan disaring di browser.
+ */
 class FrontendFilterOptionsTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function layer(string $name, string $status = 'published'): SpatialLayer
+    {
+        $category = Category::create(['nama' => 'Kategori '.$name]);
+
+        return SpatialLayer::create([
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'slug' => 'layer-'.Str::random(8),
+            'name' => $name,
+            'status' => $status,
+            'published_at' => $status === 'published' ? now() : null,
+        ]);
+    }
+
+    private function feature(SpatialLayer $layer, array $properties): void
+    {
+        SpatialLayerFeature::create([
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => $properties,
+        ]);
+    }
+
     public function test_filter_options_endpoint_returns_distinct_values_without_needing_any_layer_active(): void
     {
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Uji', 'warna' => '#0d6efd']);
-        $user = User::factory()->create();
-        $opd = Opd::create(['name' => 'Dinas Uji Coba', 'singkatan' => 'DUC']);
-
-        DataSpatial::factory()->create([
-            'user_id' => $user->id,
-            'kategori_id' => $category->id,
-            'tahun' => 2025,
-            'opd_pengelola_id' => $opd->id,
-            'dbf_attributes' => ['KABUPATEN' => 'Kota Ternate'],
-        ]);
-        DataSpatial::factory()->create([
-            'user_id' => $user->id,
-            'kategori_id' => $category->id,
-            'tahun' => 2024,
-            'opd_pengelola_id' => null,
-            'dbf_attributes' => ['KABUPATEN' => 'Kota Ternate'],
-        ]);
+        $layer = $this->layer('Fasilitas Uji');
+        $this->feature($layer, ['KABUPATEN' => 'Kota Ternate', 'tahun' => '2025', 'opd_penanggung_jawab' => 'Dinas Uji Coba']);
+        $this->feature($layer, ['KABUPATEN' => 'Kota Ternate', 'tahun' => '2024']);
 
         $response = $this->getJson('/geojson/filter-options?type=tematik');
 
@@ -44,41 +58,33 @@ class FrontendFilterOptionsTest extends TestCase
         $this->assertEqualsCanonicalizing([2024, 2025], $response->json('tahun'));
     }
 
+    public function test_filter_options_ignore_features_of_draft_layers(): void
+    {
+        $this->feature($this->layer('Layer Draft', 'draft'), ['KABUPATEN' => 'Kota Rahasia', 'tahun' => '2030']);
+
+        $this->getJson('/geojson/filter-options?type=tematik')
+            ->assertOk()
+            ->assertJson(['kabupaten' => [], 'tahun' => [], 'opd_pengelola' => []]);
+    }
+
     public function test_filter_categories_endpoint_returns_only_categories_matching_kabupaten(): void
     {
-        $ternate = Category::create(['type' => 'tematik', 'nama' => 'Layer Ternate', 'warna' => '#0d6efd']);
-        $tidore = Category::create(['type' => 'tematik', 'nama' => 'Layer Tidore', 'warna' => '#ff0000']);
-        $user = User::factory()->create();
-
-        DataSpatial::factory()->create([
-            'user_id' => $user->id,
-            'kategori_id' => $ternate->id,
-            'dbf_attributes' => ['KABUPATEN' => 'Kota Ternate'],
-        ]);
-        DataSpatial::factory()->create([
-            'user_id' => $user->id,
-            'kategori_id' => $tidore->id,
-            'dbf_attributes' => ['KABUPATEN' => 'Kota Tidore'],
-        ]);
+        $this->feature($this->layer('Layer Ternate'), ['KABUPATEN' => 'Kota Ternate']);
+        $this->feature($this->layer('Layer Tidore'), ['KABUPATEN' => 'Kota Tidore']);
+        $this->feature($this->layer('Layer Draft Ternate', 'draft'), ['KABUPATEN' => 'Kota Ternate']);
 
         $response = $this->getJson('/geojson/filter-categories?type=tematik&kabupaten='.urlencode('Kota Ternate'));
 
         $response->assertOk();
-        $response->assertJson(['categories' => ['Layer Ternate']]);
+        $response->assertExactJson(['categories' => ['Layer Ternate']]);
     }
 
     public function test_filter_categories_endpoint_combines_kabupaten_tahun_and_opd_with_and_logic(): void
     {
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Layer Gabungan', 'warna' => '#0d6efd']);
-        $user = User::factory()->create();
-        $opd = Opd::create(['name' => 'Dinas Uji Coba', 'singkatan' => 'DUC']);
-
-        DataSpatial::factory()->create([
-            'user_id' => $user->id,
-            'kategori_id' => $category->id,
-            'tahun' => 2025,
-            'opd_pengelola_id' => $opd->id,
-            'dbf_attributes' => ['KABUPATEN' => 'Kota Ternate'],
+        $this->feature($this->layer('Layer Gabungan'), [
+            'KABUPATEN' => 'Kota Ternate',
+            'tahun' => '2025',
+            'opd_penanggung_jawab' => 'Dinas Uji Coba',
         ]);
 
         $matching = $this->getJson(

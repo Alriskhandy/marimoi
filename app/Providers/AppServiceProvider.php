@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\DataSpatial;
 use App\Models\LegacyCategory;
+use App\Models\SpatialLayer;
+use App\Models\SpatialLayerFeature;
 use App\Support\MapDataVersion;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -40,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
         DataSpatial::deleted(fn () => MapDataVersion::forget());
         LegacyCategory::saved(fn () => MapDataVersion::forget());
         LegacyCategory::deleted(fn () => MapDataVersion::forget());
+        SpatialLayer::saved(fn () => MapDataVersion::forget());
+        SpatialLayer::deleted(fn () => MapDataVersion::forget());
+        SpatialLayerFeature::saved(fn () => MapDataVersion::forget());
+        SpatialLayerFeature::deleted(fn () => MapDataVersion::forget());
 
         RateLimiter::for('api-v1', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());

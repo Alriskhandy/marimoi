@@ -2,14 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category as V3Category;
 use App\Models\DataSpatial;
 use App\Models\LegacyCategory as Category;
 use App\Models\Opd;
 use App\Models\Role;
+use App\Models\SpatialLayer;
+use App\Models\SpatialLayerFeature;
 use App\Models\User;
 use App\Support\MapDataVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -100,6 +104,29 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="filter-kabupaten"', false)
             ->assertSee('id="filter-tahun"', false)
             ->assertSee('id="filter-opd"', false);
+    }
+
+    public function test_thematic_map_page_has_data_catalog_modal_and_active_layer_sidebar(): void
+    {
+        $this->get(route('tampil.tematik'))
+            ->assertOk()
+            ->assertSee('id="catalogModal"', false)
+            ->assertSee('id="catalog-group-list"', false)
+            ->assertSee('id="catalog-items"', false)
+            ->assertSee('id="catalog-search"', false)
+            ->assertSee('id="catalog-apply"', false)
+            ->assertSee('id="btn-open-catalog"', false)
+            ->assertSee('Layer Aktif')
+            ->assertSee('id="layer-list"', false)
+            ->assertDontSee('id="layer-search"', false)
+            ->assertSee('id="catalog-filter-toggle"', false)
+            ->assertSee('id="catalog-filter-panel"', false)
+            ->assertDontSee('id="btn-toggle-filter-panel"', false)
+            ->assertDontSee('id="filter-panel"', false)
+            ->assertSee('id="feature-drawer"', false)
+            ->assertSee('id="feature-modal"', false)
+            ->assertSee('frontend/js/map-feature-detail.js', false)
+            ->assertSee('frontend/js/map-catalog.js', false);
     }
 
     public function test_thematic_map_page_replaces_navbar_with_home_search_and_account_controls(): void
@@ -228,11 +255,34 @@ class FrontendPagesTest extends TestCase
             ->assertSee('Metadata belum lengkap');
     }
 
+    private function publishedLayer(string $name, string $status = 'published'): SpatialLayer
+    {
+        $category = V3Category::create(['nama' => 'Kategori '.$name]);
+
+        return SpatialLayer::create([
+            'category_id' => $category->id,
+            'layer_type_id' => 4,
+            'code' => 'layer-'.Str::random(8),
+            'slug' => 'layer-'.Str::random(8),
+            'name' => $name,
+            'status' => $status,
+            'published_at' => $status === 'published' ? now() : null,
+        ]);
+    }
+
+    private function mapFeature(SpatialLayer $layer): SpatialLayerFeature
+    {
+        return SpatialLayerFeature::create([
+            'layer_id' => $layer->id,
+            'geom' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
+            'properties' => ['NAMA' => 'Uji'],
+        ]);
+    }
+
     public function test_tematik_map_version_is_public_and_stable_until_data_or_category_changes(): void
     {
-        $user = User::factory()->create();
-        $category = Category::create(['type' => 'tematik', 'nama' => 'Kawasan A', 'warna' => '#0d6efd']);
-        $item = DataSpatial::factory()->create(['user_id' => $user->id, 'kategori_id' => $category->id]);
+        $layer = $this->publishedLayer('Kawasan A');
+        $item = $this->mapFeature($layer);
 
         $version = fn () => $this->getJson(route('tematik.version'))->assertOk()->json('version');
 
@@ -241,19 +291,19 @@ class FrontendPagesTest extends TestCase
         $this->assertSame($first, $version(), 'versi stabil bila tidak ada perubahan');
 
         $this->travel(2)->seconds();
-        $item->update(['deskripsi' => 'Diubah']);
+        $item->update(['properties' => ['NAMA' => 'Diubah']]);
         $afterUpdate = $version();
         $this->assertNotSame($first, $afterUpdate, 'ubah data mengubah versi');
 
         $this->travel(2)->seconds();
-        $category->update(['nama' => 'Kawasan A (baru)']);
-        $afterCategory = $version();
-        $this->assertNotSame($afterUpdate, $afterCategory, 'ubah kategori mengubah versi');
+        $layer->update(['name' => 'Kawasan A (baru)']);
+        $afterLayer = $version();
+        $this->assertNotSame($afterUpdate, $afterLayer, 'ubah layer mengubah versi');
 
         $this->travel(2)->seconds();
-        DataSpatial::factory()->create(['user_id' => $user->id, 'kategori_id' => $category->id]);
+        $this->mapFeature($layer);
         $afterAdd = $version();
-        $this->assertNotSame($afterCategory, $afterAdd, 'tambah data mengubah versi');
+        $this->assertNotSame($afterLayer, $afterAdd, 'tambah data mengubah versi');
 
         $item->delete();
         $this->assertNotSame($afterAdd, $version(), 'hapus data mengubah versi');
@@ -261,25 +311,28 @@ class FrontendPagesTest extends TestCase
 
     public function test_tematik_map_version_changes_after_bulk_query_operations(): void
     {
-        $user = User::factory()->create();
-        $a = Category::create(['type' => 'tematik', 'nama' => 'A', 'warna' => '#111111']);
-        $b = Category::create(['type' => 'tematik', 'nama' => 'B', 'warna' => '#222222']);
-        DataSpatial::factory()->count(2)->create(['user_id' => $user->id, 'kategori_id' => $a->id]);
+        $a = $this->publishedLayer('A');
+        $b = $this->publishedLayer('B');
+        $this->mapFeature($a);
+        $this->mapFeature($a);
 
         $before = $this->getJson(route('tematik.version'))->json('version');
 
-        // Query massal (tanpa event model), seperti "Ubah Kategori/Layer" pada aksi bulk.
-        DB::table('data_spatial_legacy_v1')->update(['kategori_id' => $b->id]);
+        // Query massal (tanpa event model), seperti "Pindahkan data" pada aksi bulk.
+        DB::table('spatial_features')->update(['layer_id' => $b->id]);
         MapDataVersion::forget();
 
         $this->assertNotSame($before, $this->getJson(route('tematik.version'))->json('version'));
     }
 
-    public function test_tematik_map_version_ignores_non_tematik_categories(): void
+    public function test_tematik_map_version_ignores_draft_layers(): void
     {
+        $this->mapFeature($this->publishedLayer('Layer Publik'));
+        $draft = $this->publishedLayer('Layer Draft', 'draft');
         $before = $this->getJson(route('tematik.version'))->json('version');
 
-        Category::create(['type' => 'pokir_dprd', 'nama' => 'Bukan tematik', 'warna' => '#333333']);
+        $this->mapFeature($draft);
+        MapDataVersion::forget();
 
         $this->assertSame($before, $this->getJson(route('tematik.version'))->json('version'));
     }

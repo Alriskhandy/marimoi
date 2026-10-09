@@ -238,13 +238,126 @@
                     </div>
                 </div>
 
+                <!-- Modal Katalog Data: memilih layer (dataset) yang ditampilkan di peta -->
+                <div id="catalogModal" class="catalog-modal hidden" role="dialog" aria-modal="true"
+                    aria-labelledby="catalog-modal-title">
+                    <div class="catalog-dialog">
+                        <header class="catalog-header">
+                            <h2 id="catalog-modal-title">Katalog Peta</h2>
+                            <button type="button" class="catalog-icon-btn" data-catalog-close aria-label="Tutup katalog">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </header>
+
+                        <div class="catalog-body">
+                            <nav class="catalog-groups" aria-label="Kelompok data">
+                                <ul id="catalog-group-list"></ul>
+                            </nav>
+
+                            <section class="catalog-main">
+                                <p id="catalog-section-parent" class="catalog-section-parent" hidden></p>
+                                <h3 id="catalog-section-title">Semua Mapset</h3>
+                                <div class="catalog-toolbar">
+                                    <label class="catalog-search">
+                                        <i class="bi bi-search"></i>
+                                        <span class="sr-only">Cari Mapset</span>
+                                        <input type="search" id="catalog-search" autocomplete="off"
+                                            placeholder="Cari Mapset">
+                                    </label>
+                                    <button type="button" id="catalog-filter-toggle" class="catalog-filter-toggle"
+                                        aria-expanded="false" aria-controls="catalog-filter-panel">
+                                        <i class="bi bi-funnel-fill"></i>
+                                        <span>Filter</span>
+                                        <span id="filter-summary-count" class="catalog-filter-count hidden"></span>
+                                    </button>
+                                    <div class="catalog-view-toggle" role="group" aria-label="Tampilan katalog">
+                                        <button type="button" data-catalog-view="grid" aria-pressed="true"
+                                            aria-label="Tampilan grid"><i class="bi bi-grid-fill"></i></button>
+                                        <button type="button" data-catalog-view="list" aria-pressed="false"
+                                            aria-label="Tampilan daftar"><i class="bi bi-list-ul"></i></button>
+                                    </div>
+                                </div>
+                                <!-- Filter Data: menyaring dataset di katalog sekaligus titik/area di peta
+                                     setelah Terapkan Pilihan. Opsi diisi map.js (loadFilterOptionsFromServer). -->
+                                <div id="catalog-filter-panel" class="catalog-filter-panel hidden">
+                                    <label>
+                                        <span>Kabupaten/Kota</span>
+                                        <select id="filter-kabupaten">
+                                            <option value="">Semua Kabupaten/Kota</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>Tahun</span>
+                                        <select id="filter-tahun">
+                                            <option value="">Semua Tahun</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>OPD Pengelola</span>
+                                        <select id="filter-opd">
+                                            <option value="">Semua OPD</option>
+                                        </select>
+                                    </label>
+                                    <button id="btn-reset-filter" type="button" class="catalog-btn-outline">Reset</button>
+                                    <p id="catalog-filter-note" class="catalog-filter-note">Filter menampilkan mapset yang
+                                        memiliki data sesuai pilihan, dan menyaring titik/area di peta setelah
+                                        diterapkan.</p>
+                                    <p id="filter-count" class="sr-only" aria-live="polite"></p>
+                                </div>
+                                <div id="catalog-items" class="catalog-items is-grid"></div>
+                            </section>
+                        </div>
+
+                        <footer class="catalog-footer">
+                            <div class="catalog-summary">
+                                <span id="catalog-summary-text">0 layer</span>
+                                <button type="button" id="catalog-select-all" class="catalog-chip">
+                                    <i class="bi bi-check2-all"></i> <span>Pilih Semua</span>
+                                </button>
+                            </div>
+                            <div class="catalog-actions">
+                                <button type="button" class="catalog-btn-outline" data-catalog-close>Tutup</button>
+                                <button type="button" id="catalog-apply" class="catalog-btn-primary">
+                                    <i class="bi bi-check-lg"></i> Terapkan Pilihan
+                                </button>
+                            </div>
+                        </footer>
+                    </div>
+                </div>
+
+                <!-- Detail fitur area/garis: panel kanan menutupi sidebar & tombol kontrol kanan -->
+                <aside id="feature-drawer" class="feature-panel feature-drawer hidden" role="dialog"
+                    aria-labelledby="feature-drawer-title">
+                    <header class="feature-panel-header">
+                        <h2 id="feature-drawer-title">Detail Fitur</h2>
+                        <button type="button" class="catalog-icon-btn" data-feature-close aria-label="Tutup detail">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </header>
+                    <div class="feature-panel-body" data-feature-body></div>
+                </aside>
+
+                <!-- Detail fitur titik: modal di tengah (paling atas) -->
+                <div id="feature-modal" class="feature-modal hidden" role="dialog" aria-modal="true"
+                    aria-labelledby="feature-modal-title">
+                    <div class="feature-panel feature-modal-dialog">
+                        <header class="feature-panel-header">
+                            <h2 id="feature-modal-title">Detail Fitur</h2>
+                            <button type="button" class="catalog-icon-btn" data-feature-close aria-label="Tutup detail">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </header>
+                        <div class="feature-panel-body" data-feature-body></div>
+                    </div>
+                </div>
+
                 <!-- Sidebar Layer -->
                 <div id="sidebar-layer"
                     class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
                     <!-- Header with gradient background -->
                     <div
                         class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
-                        <h6 class="text-white mb-0 text-sm font-semibold">Layer</h6>
+                        <h6 class="text-white mb-0 text-sm font-semibold">Layer Aktif</h6>
                         <button id="btn-close-sidebar-layer"
                             class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
                             <i class="bi bi-x-lg text-white"></i>
@@ -253,74 +366,17 @@
 
                     <div class="shrink-0 mb-2 w-full">
                         <div class="flex items-center gap-2 w-full">
-                            <label for="layer-search" class="sr-only">Cari Layer/Kategori</label>
-                            <div
-                                class="flex items-center gap-2 flex-1 min-w-0 px-3 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
-                                <i class="bi bi-search text-gray-400 text-sm shrink-0"></i>
-                                <input type="text" id="layer-search" name="layer-search" autocomplete="off"
-                                    spellcheck="false" maxlength="100"
-                                    class="flex-1 min-w-0 text-sm text-gray-900 placeholder-gray-400 bg-transparent border-0 py-2 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
-                                    placeholder="Cari layer atau kategori...">
-                                <button type="button" id="layer-search-clear"
-                                    class="hidden shrink-0 text-gray-400 hover:text-gray-600"
-                                    aria-label="Hapus pencarian">
-                                    <i class="bi bi-x-circle-fill text-sm"></i>
-                                </button>
-                            </div>
-
-                            <!-- Toggle panel Filter Data, di samping kolom pencarian agar sidebar
-                                     Layer tetap ringkas (panel filter default tersembunyi). -->
-                            <button type="button" id="btn-toggle-filter-panel"
-                                class="relative shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-500 hover:bg-slate-100 transition-colors"
-                                title="Filter Data" data-tooltip="Filter Data" aria-expanded="false"
-                                aria-controls="filter-panel">
-                                <i class="bi bi-funnel-fill text-sm"></i>
-                                <span id="filter-summary-count"
-                                    class="hidden absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] leading-none"></span>
+                            <button type="button" id="btn-open-catalog" data-open-catalog
+                                class="flex-1 min-w-0 h-9 flex items-center justify-center gap-2 rounded-lg bg-[#071a2d] text-white text-sm font-semibold hover:bg-[#0b3a66] transition-colors">
+                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                                Katalog Peta
                             </button>
+
                         </div>
-                        <p id="layer-search-empty" class="hidden text-xs text-gray-500 mt-2 px-1">
-                            Tidak ada layer/kategori yang cocok.
-                        </p>
-                    </div>
-
-                    <!-- Panel Filter Data: tersembunyi secara default, dibuka lewat tombol corong
-                             di samping pencarian. Filter bisa diatur lebih dulu tanpa mengaktifkan
-                             layer apa pun, baru layer yang sesuai hasil filter dicentang. -->
-                    <div id="filter-panel" class="hidden shrink-0 border border-gray-200 rounded-lg bg-white p-3 mb-2">
-                        <div class="mb-2">
-                            <label for="filter-kabupaten"
-                                class="block text-xs font-medium text-gray-700 mb-1">Kabupaten/Kota</label>
-                            <select id="filter-kabupaten" class="w-full text-sm rounded-lg border-gray-300">
-                                <option value="">Semua Kabupaten/Kota</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-2">
-                            <label for="filter-tahun" class="block text-xs font-medium text-gray-700 mb-1">Tahun</label>
-                            <select id="filter-tahun" class="w-full text-sm rounded-lg border-gray-300">
-                                <option value="">Semua Tahun</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-2">
-                            <label for="filter-opd" class="block text-xs font-medium text-gray-700 mb-1">OPD
-                                Pengelola</label>
-                            <select id="filter-opd" class="w-full text-sm rounded-lg border-gray-300">
-                                <option value="">Semua OPD</option>
-                            </select>
-                        </div>
-
-                        <button id="btn-reset-filter" type="button"
-                            class="w-full text-sm text-blue-600 border border-blue-200 rounded-lg py-1.5 hover:bg-blue-50 mb-2">
-                            Reset Filter
-                        </button>
-
-                        <p id="filter-count" class="text-xs text-gray-500 text-center"></p>
                     </div>
 
                     <div id="layer-list" class="flex-1 min-h-0 overflow-y-auto text-sm">
-                        <!-- Layer list will be populated dynamically -->
+                        <!-- Daftar layer aktif diisi oleh map-catalog.js -->
                     </div>
                 </div>
 
@@ -519,6 +575,11 @@
     <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map.js') }}?v={{ filemtime(public_path('frontend/js/map.js')) }}"></script>
+    <script src="{{ asset('frontend/js/map-catalog.js') }}?v={{ filemtime(public_path('frontend/js/map-catalog.js')) }}">
+    </script>
+    <script
+        src="{{ asset('frontend/js/map-feature-detail.js') }}?v={{ filemtime(public_path('frontend/js/map-feature-detail.js')) }}">
+    </script>
 
     {{-- HUD koordinat/zoom + skala. `map` adalah konstanta global yang dibuat map.js. --}}
     <script>

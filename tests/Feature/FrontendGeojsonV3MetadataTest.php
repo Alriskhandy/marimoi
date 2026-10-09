@@ -47,6 +47,9 @@ class FrontendGeojsonV3MetadataTest extends TestCase
             'code' => 'layer-'.Str::random(8),
             'slug' => 'layer-'.Str::random(8),
             'name' => 'Layer Uji',
+            // Peta publik hanya menampilkan Layer published.
+            'status' => 'published',
+            'published_at' => now(),
         ]);
     }
 

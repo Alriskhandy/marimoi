@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Versi data Peta Tematik (data spasial bertipe tematik + kategori bertipe tematik).
+ * Versi data Peta Tematik (Layer published V3 beserta feature, gaya, dan kategorinya).
  *
  * Klien menyimpan data peta di cache browser (IndexedDB) dengan TTL 24 jam. Versi ini dipakai
  * untuk skenario kedua: begitu ada data atau kategori yang ditambah, diubah, atau dihapus,
  * versinya berubah dan cache di browser dibuang.
  *
- * Versi dihitung dari isi database (jumlah, updated_at terbaru, dan penjumlahan kategori_id),
+ * Versi dihitung dari isi database (jumlah, updated_at terbaru, dan penempatan Layer),
  * sehingga ikut berubah walau perubahan dilakukan lewat query massal atau impor yang tidak
  * memicu event model. Hasilnya di-cache singkat di server dan dihapus segera oleh event model.
  */
@@ -32,18 +32,32 @@ class MapDataVersion
         Cache::forget(self::CACHE_KEY);
     }
 
+    /**
+     * Dihitung dari skema V3 yang dibaca peta publik (lihat PublicMapCatalog): feature,
+     * Layer published, gaya, dan pohon kategori/node.
+     */
     private static function compute(): string
     {
-        $data = DB::table('data_spatial_legacy_v1')
-            ->where('data_type', 'tematik')
-            ->selectRaw('count(*) as total, max(updated_at) as latest, coalesce(sum(kategori_id), 0) as category_sum, coalesce(sum(id), 0) as id_sum')
+        $features = DB::table('spatial_features as sf')
+            ->join('layers as l', 'l.id', '=', 'sf.layer_id')
+            ->where('l.status', 'published')
+            ->whereNull('l.deleted_at')
+            ->selectRaw('count(*) as total, max(sf.updated_at) as latest, coalesce(sum(sf.id), 0) as id_sum')
             ->first();
 
-        $categories = DB::table('categories_legacy_v1')
-            ->where('type', 'tematik')
-            ->selectRaw('count(*) as total, max(updated_at) as latest, coalesce(sum(id), 0) as id_sum, coalesce(sum(parent_id), 0) as parent_sum')
+        $layers = DB::table('layers')
+            ->where('status', 'published')
+            ->whereNull('deleted_at')
+            ->selectRaw("count(*) as total, max(updated_at) as latest, string_agg(id::text || ':' || coalesce(category_node_id::text, category_id::text), ',' order by id) as placement")
             ->first();
 
-        return md5(json_encode([$data, $categories]));
+        $styles = DB::table('layer_styles')->selectRaw('count(*) as total, max(updated_at) as latest')->first();
+
+        $categories = [
+            DB::table('categories_v3')->selectRaw('count(*) as total, max(updated_at) as latest, max(deleted_at) as deleted')->first(),
+            DB::table('category_nodes')->selectRaw('count(*) as total, max(updated_at) as latest, max(deleted_at) as deleted')->first(),
+        ];
+
+        return md5(json_encode([$features, $layers, $styles, $categories]));
     }
 }

@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
 use App\Support\MapDataVersion;
+use App\Support\PublicMapCatalog;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -299,11 +301,11 @@ class FrontendController extends Controller
         try {
             $category = Category::findOrFail($id);
 
-            // Store selected category in session
-            session(['selectedCategory' => $category->nama]);
+            // Tautan beranda masih memakai ID kategori lama; peta publik memakai nama V3.
+            $mapsetName = PublicMapCatalog::nameForLegacyCategory((int) $category->id) ?? $category->nama;
 
-            // Flash message for user feedback
-            session()->flash('info', "Memuat peta {$category->nama}...");
+            session(['selectedCategory' => $mapsetName]);
+            session()->flash('info', "Memuat peta {$mapsetName}...");
 
             return redirect()->route('tampil.tematik');
         } catch (\Exception $e) {
@@ -443,17 +445,16 @@ class FrontendController extends Controller
             $query = DB::table('spatial_features as sf')
                 ->join('layers as l', 'l.id', '=', 'sf.layer_id')
                 ->join('categories_v3 as cat_root', 'cat_root.id', '=', 'l.category_id')
-                ->leftJoin('category_nodes as node_leaf', 'node_leaf.id', '=', 'l.category_node_id')
                 ->leftJoin('layer_styles as ls', 'ls.id', '=', 'l.default_style_id')
                 ->leftJoin('data_spatial_legacy_v1 as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
                 ->leftJoin('opd', 'opd.id', '=', 'ds.opd_pengelola_id')
                 ->select(
                     'sf.id',
+                    'sf.layer_id',
                     'ds.uuid',
                     'sf.gambar',
                     'l.legacy_category_id as kategori_id',
                     'sf.properties',
-                    DB::raw('COALESCE(node_leaf.name, cat_root.name) as kategori'),
                     DB::raw('ds.deskripsi as deskripsi'),
                     DB::raw("COALESCE(ds.sumber_data, sf.properties->>'sumber_data') as sumber_data"),
                     DB::raw("COALESCE(opd.name, sf.properties->>'opd_penanggung_jawab') as opd_pengelola"),
@@ -464,6 +465,11 @@ class FrontendController extends Controller
                     DB::raw("COALESCE((ls.definition->>'is_marker')::boolean, false) as is_marker"),
                     DB::raw('ST_AsGeoJSON(sf.geom) as geojson')
                 );
+
+            // Peta publik hanya menampilkan Layer berstatus published (draft tidak bocor).
+            $query->where('l.status', 'published')
+                ->whereNull('l.deleted_at')
+                ->whereNull('cat_root.deleted_at');
 
             // Apply filters with validation
             //
@@ -487,10 +493,8 @@ class FrontendController extends Controller
                 // Sanitize category names
                 $categories = array_filter(array_map('trim', $categories));
                 if (! empty($categories)) {
-                    $query->whereRaw(
-                        'COALESCE(node_leaf.name, cat_root.name) IN ('.implode(',', array_fill(0, count($categories), '?')).')',
-                        array_values($categories)
-                    );
+                    // `kategori[]` = nama mapset dari PublicMapCatalog (nama tampilan unik per Layer).
+                    $query->whereIn('sf.layer_id', PublicMapCatalog::layerIdsForNames(array_values($categories)));
                 }
             }
 
@@ -520,7 +524,7 @@ class FrontendController extends Controller
                 $search = trim($request->search);
                 if (strlen($search) > 0) {
                     $query->where(function ($q) use ($search) {
-                        $q->whereRaw('COALESCE(node_leaf.name, cat_root.name) ILIKE ?', ["%{$search}%"])
+                        $q->where('l.name', 'ILIKE', "%{$search}%")
                             ->orWhere('ds.deskripsi', 'ILIKE', "%{$search}%")
                             ->orWhereRaw('sf.properties::text ILIKE ?', ["%{$search}%"]);
                     });
@@ -567,6 +571,7 @@ class FrontendController extends Controller
             // supaya tidak menimpa balik format yang sudah diformat (tanggal_data
             // d-m-Y, dst) dengan nilai mentahnya.
             $structuralKeys = ['sumber_data', 'tanggal_data', 'tahun', 'opd_penanggung_jawab'];
+            $mapsetNames = PublicMapCatalog::namesById();
 
             $features = [];
             $processedCount = 0;
@@ -607,7 +612,7 @@ class FrontendController extends Controller
                             'sub_type' => $featureSubType,
                             'gambar' => $lokasi->gambar ? asset('storage/'.$lokasi->gambar) : null,
                             'kategori_id' => $lokasi->kategori_id,
-                            'kategori' => $lokasi->kategori,
+                            'kategori' => $mapsetNames[$lokasi->layer_id] ?? null,
                             'tahun' => $lokasi->tahun,
                             'deskripsi' => $lokasi->deskripsi,
                             'sumber_data' => $lokasi->sumber_data,
@@ -632,41 +637,14 @@ class FrontendController extends Controller
                 }
             }
 
-            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-            // Ambil categories untuk reference dengan error handling
-            $rootCategories = [];
-            $allCategories = [];
-
-            try {
-                $rootCategories = Category::where('type', $categoryType)
-                    ->with(['children' => function ($query) {
-                        $query->orderBy('nama');
-                    }])
-                    ->roots()
-                    ->orderBy('nama')
-                    ->get();
-
-                $allCategories = Category::where('type', $categoryType)
-                    ->with('parent')
-                    ->orderBy('nama')
-                    ->get();
-            } catch (\Exception $e) {
-                Log::warning('Failed to load categories: '.$e->getMessage());
-            }
-
             $response = [
                 'type' => 'FeatureCollection',
                 'features' => $features,
-                'root_categories' => $rootCategories,
-                'all_categories' => $allCategories,
                 'meta' => [
                     'data_type' => $dataType,
                     'sub_type' => $subType,
                     'year' => $year,
                     'total_features' => count($features),
-                    'total_root_categories' => count($rootCategories),
-                    'total_categories' => count($allCategories),
                     'limit' => $limit,
                     'offset' => $offset,
                     'has_more' => count($features) == $limit, // Indikasi ada data lagi
@@ -705,41 +683,27 @@ class FrontendController extends Controller
      */
     public function getFilterOptions(Request $request)
     {
-        $dataType = $request->get('type', 'tematik');
-        $subType = $request->get('sub_type');
-        $year = $request->get('year');
-
-        $base = DB::table('data_spatial_legacy_v1 as data_spatial')
-            ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
-            ->where('data_spatial.data_type', $dataType);
-
-        if ($subType && is_string($subType)) {
-            $base->where('data_spatial.sub_type', $subType);
-        }
-
-        if ($year && is_numeric($year)) {
-            $base->where('data_spatial.tahun', intval($year));
-        }
+        $base = $this->publishedFeatureFilterQuery($request);
 
         $kabupaten = (clone $base)
-            ->select(DB::raw("dbf_attributes->>'KABUPATEN' as value"))
-            ->whereRaw("dbf_attributes->>'KABUPATEN' IS NOT NULL AND dbf_attributes->>'KABUPATEN' != ''")
+            ->select(DB::raw("sf.properties->>'KABUPATEN' as value"))
+            ->whereRaw("NULLIF(sf.properties->>'KABUPATEN', '') IS NOT NULL")
             ->distinct()
             ->pluck('value')
             ->sort()
             ->values();
 
         $tahun = (clone $base)
-            ->select('data_spatial.tahun as value')
-            ->whereNotNull('data_spatial.tahun')
+            ->select(DB::raw(self::FEATURE_TAHUN_SQL.' as value'))
+            ->whereRaw(self::FEATURE_TAHUN_SQL.' IS NOT NULL')
             ->distinct()
             ->pluck('value')
             ->sortDesc()
             ->values();
 
         $opdPengelola = (clone $base)
-            ->select('opd.name as value')
-            ->whereNotNull('opd.name')
+            ->select(DB::raw(self::FEATURE_OPD_SQL.' as value'))
+            ->whereRaw('NULLIF('.self::FEATURE_OPD_SQL.", '') IS NOT NULL")
             ->distinct()
             ->pluck('value')
             ->sort()
@@ -753,47 +717,66 @@ class FrontendController extends Controller
     }
 
     /**
-     * Kategori (nama layer) mana saja yang punya minimal satu feature yang cocok
-     * dengan kombinasi filter yang dipilih user, supaya frontend hanya perlu memuat
-     * & mencentang layer yang relevan saja — bukan seluruh pohon layer.
+     * Mapset (nama tampilan Layer, sama dengan PublicMapCatalog) yang punya minimal satu
+     * feature cocok dengan kombinasi filter, supaya katalog hanya menampilkan yang relevan.
      */
     public function getFilterCategories(Request $request)
     {
-        $dataType = $request->get('type', 'tematik');
-        $subType = $request->get('sub_type');
-        $year = $request->get('year');
         $kabupaten = $request->get('kabupaten');
         $tahun = $request->get('tahun');
         $opdPengelola = $request->get('opd_pengelola');
 
-        $query = DB::table('data_spatial_legacy_v1 as data_spatial')
-            ->join('categories_legacy_v1 as categories', 'data_spatial.kategori_id', '=', 'categories.id')
-            ->leftJoin('opd', 'data_spatial.opd_pengelola_id', '=', 'opd.id')
-            ->where('data_spatial.data_type', $dataType);
-
-        if ($subType && is_string($subType)) {
-            $query->where('data_spatial.sub_type', $subType);
-        }
-
-        if ($year && is_numeric($year)) {
-            $query->where('data_spatial.tahun', intval($year));
-        }
+        $query = $this->publishedFeatureFilterQuery($request);
 
         if ($kabupaten && is_string($kabupaten)) {
-            $query->whereRaw("dbf_attributes->>'KABUPATEN' = ?", [$kabupaten]);
+            $query->whereRaw("sf.properties->>'KABUPATEN' = ?", [$kabupaten]);
         }
 
         if ($tahun && is_numeric($tahun)) {
-            $query->where('data_spatial.tahun', intval($tahun));
+            $query->whereRaw(self::FEATURE_TAHUN_SQL.' = ?', [intval($tahun)]);
         }
 
         if ($opdPengelola && is_string($opdPengelola)) {
-            $query->where('opd.name', $opdPengelola);
+            $query->whereRaw(self::FEATURE_OPD_SQL.' = ?', [$opdPengelola]);
         }
 
-        $categories = $query->distinct()->pluck('categories.nama')->values();
+        $names = PublicMapCatalog::namesById();
+        $categories = $query->distinct()
+            ->pluck('sf.layer_id')
+            ->map(fn (string $layerId) => $names[$layerId] ?? null)
+            ->filter()
+            ->sort()
+            ->values();
 
         return response()->json(['categories' => $categories]);
+    }
+
+    /**
+     * Ekspresi tahun/OPD sama persis dengan yang diekspos `/geojson`, supaya filter di
+     * server cocok dengan properti yang disaring refreshFilterPanel() di browser.
+     */
+    private const FEATURE_TAHUN_SQL = "COALESCE(ds.tahun, NULLIF(sf.properties->>'tahun', '')::int)";
+
+    private const FEATURE_OPD_SQL = "COALESCE(opd.name, sf.properties->>'opd_penanggung_jawab')";
+
+    /**
+     * Feature milik Layer published (dengan join balik read-only ke data lama untuk tahun/OPD).
+     */
+    private function publishedFeatureFilterQuery(Request $request): Builder
+    {
+        $query = DB::table('spatial_features as sf')
+            ->join('layers as l', 'l.id', '=', 'sf.layer_id')
+            ->leftJoin('data_spatial_legacy_v1 as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
+            ->leftJoin('opd', 'opd.id', '=', 'ds.opd_pengelola_id')
+            ->where('l.status', 'published')
+            ->whereNull('l.deleted_at');
+
+        $year = $request->get('year');
+        if ($year && is_numeric($year)) {
+            $query->whereRaw(self::FEATURE_TAHUN_SQL.' = ?', [intval($year)]);
+        }
+
+        return $query;
     }
 
     /**
@@ -802,59 +785,18 @@ class FrontendController extends Controller
     private function getCategoriesMetadata($dataType, $subType)
     {
         try {
-            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
+            $metadata = PublicMapCatalog::metadata();
 
-            $rootCategories = Category::where('type', $categoryType)
-                ->with(['children' => function ($query) {
-                    $query->orderBy('nama');
-                }])
-                ->roots()
-                ->orderBy('nama')
-                ->get();
-
-            $allCategories = Category::where('type', $categoryType)
-                ->with('parent')
-                ->orderBy('nama')
-                ->get();
-
-            // Hitung jumlah data per kategori (optional, bisa di-comment jika lambat).
-            // category_versions dipakai frontend (map-cache.js) untuk membuat cache key
-            // ikut berubah begitu ada data yang ditambah/diedit/dihapus, supaya IndexedDB
-            // cache di browser tidak menampilkan data basi.
-            $categoryCounts = [];
-            $categoryVersions = [];
-            foreach ($allCategories as $category) {
-                $baseQuery = DataSpatial::where('kategori_id', $category->id);
-                if ($dataType) {
-                    $baseQuery->where('data_type', $dataType);
-                }
-                if ($subType) {
-                    $baseQuery->where('sub_type', $subType);
-                }
-
-                $categoryCounts[$category->nama] = (clone $baseQuery)->count();
-
-                $maxUpdatedAt = (clone $baseQuery)->max('updated_at');
-                $categoryVersions[$category->nama] = $maxUpdatedAt
-                    ? Carbon::parse($maxUpdatedAt)->timestamp
-                    : 0;
-            }
-
-            return response()->json([
-                'type' => 'MetadataCollection',
-                'root_categories' => $rootCategories,
-                'all_categories' => $allCategories,
-                'category_counts' => $categoryCounts,
-                'category_versions' => $categoryVersions,
+            return response()->json(array_merge(['type' => 'MetadataCollection'], $metadata, [
                 'meta' => [
                     'data_type' => $dataType,
                     'sub_type' => $subType,
-                    'category_type' => $categoryType,
-                    'total_root_categories' => $rootCategories->count(),
-                    'total_categories' => $allCategories->count(),
+                    'category_type' => $this->getCategoryTypeByDataType($dataType, $subType),
+                    'total_root_categories' => count($metadata['root_categories']),
+                    'total_categories' => count($metadata['all_categories']),
                     'generated_at' => now()->toISOString(),
                 ],
-            ]);
+            ]));
         } catch (\Exception $e) {
             Log::error('Error in getCategoriesMetadata: '.$e->getMessage());
 
