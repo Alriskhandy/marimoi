@@ -137,9 +137,6 @@
                 <ul class="menu-list">
                     <li><a href="{{ route('beranda') }}"
                             class="{{ request()->routeIs('beranda') ? 'active' : '' }}">Beranda</a></li>
-                    <li><a href="{{ route('tampil.reformer') }}"
-                            class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a>
-                    </li>
                     <li><a href="{{ route('tampil.interaktif') }}"
                             class="{{ request()->routeIs('tampil.interaktif') ? 'active' : '' }}">Peta
                             Tematik</a></li>

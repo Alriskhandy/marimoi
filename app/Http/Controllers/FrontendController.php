@@ -270,11 +270,6 @@ class FrontendController extends Controller
         return view('frontend.pages.faq');
     }
 
-    public function reformer()
-    {
-        return view('frontend.pages.reformer');
-    }
-
     public function publikasi()
     {
         return view('frontend.pages.publikasi');

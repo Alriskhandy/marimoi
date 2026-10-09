@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\MapDataVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -30,7 +31,6 @@ class FrontendPagesTest extends TestCase
             'prioritas daerah' => ['tampil.prioritas', true],
             'publikasi' => ['tampil.publikasi', true],
             'aspirasi' => ['tampil.aspirasi', true],
-            'profil reformer' => ['tampil.reformer', true],
             'kebijakan privasi' => ['kebijakan_privasi', true],
             'syarat ketentuan' => ['syarat_ketentuan', true],
             'tentang' => ['tampil.tentang', true],
@@ -79,6 +79,10 @@ class FrontendPagesTest extends TestCase
             ->assertSee('Kenali MARIMOI dalam video')
             ->assertSee('data-video-id="rxI6vk7dFGw"', false)
             ->assertSee('Enam prinsip')
+            ->assertSee('Pendekatan THIS-DP')
+            ->assertSee('Maluku Utara Bangkit')
+            ->assertSee('bersatu kita teguh')
+            ->assertSee('Penggagas MARIMOI')
             ->assertSee('Dukungan Terhadap MARIMOI')
             ->assertSee('data-video-id="cWA8hBj4PcE"', false)
             ->assertSee('id="videoModal"', false);
@@ -89,14 +93,27 @@ class FrontendPagesTest extends TestCase
             ->assertSee('Bagaimana cara menyampaikan aspirasi?');
     }
 
-    public function test_reformer_profile_shows_structured_history(): void
+    public function test_about_page_includes_the_reformer_profile(): void
     {
-        $this->get(route('tampil.reformer'))
+        $this->get(route('tampil.tentang'))
             ->assertOk()
-            ->assertSee('Riwayat pendidikan')
-            ->assertSee('Riwayat jabatan')
+            ->assertSee('id="profil-reformer"', false)
+            ->assertSee('Dr. Muhammad Sarmin S. Adam')
+            ->assertSeeInOrder(['Filosofi logo', 'id="profil-reformer"', 'Riwayat pendidikan & jabatan', 'Mulai menjelajah'], false)
+            ->assertSee('SD Kenari Tinggi 4 Ternate')
+            ->assertSee('TMT 13-09-2023')
             ->assertSee('data-cv-open', false)
+            ->assertSee('id="cvModal"', false)
+            ->assertSee('window.MARIMOI_CV', false)
+            ->assertDontSee('>Profil Reformer</a>', false)
             ->assertDontSee('Mangga Dua');
+    }
+
+    public function test_reformer_page_is_removed_and_redirects_to_about(): void
+    {
+        $this->assertFalse(Route::has('tampil.reformer'));
+
+        $this->get('/profil-reformer')->assertRedirect('/tentang#profil-reformer')->assertStatus(301);
     }
 
     public function test_thematic_map_page_keeps_map_controls_and_shows_hud(): void

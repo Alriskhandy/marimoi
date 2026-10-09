@@ -28,7 +28,6 @@
                     <li><a href="{{ route('tampil.prioritas') }}" class="{{ $footUnderline }} hover:text-white">Prioritas Daerah</a></li>
                     <li><a href="{{ route('tampil.publikasi') }}" class="{{ $footUnderline }} hover:text-white">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}" class="{{ $footUnderline }} hover:text-white">Aspirasi</a></li>
-                    <li><a href="{{ route('tampil.reformer') }}" class="{{ $footUnderline }} hover:text-white">Profil Reformer</a></li>
                     <li><a href="{{ route('tampil.tentang') }}" class="{{ $footUnderline }} hover:text-white">Tentang</a></li>
                     <li><a href="{{ route('tampil.faq') }}" class="{{ $footUnderline }} hover:text-white">FAQ</a></li>
                 </ul>

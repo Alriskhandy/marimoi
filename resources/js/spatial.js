@@ -531,7 +531,7 @@ if (videoModal) {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && videoModal.dataset.open === 'true') { closeVideo(); } });
 }
 
-/* ---------- CV viewer (Profil Reformer) ---------- */
+/* ---------- CV viewer (Profil Reformer di halaman Tentang) ---------- */
 const cvModal = $('#cvModal');
 if (cvModal && Array.isArray(window.MARIMOI_CV) && window.MARIMOI_CV.length) {
     const docs = window.MARIMOI_CV;

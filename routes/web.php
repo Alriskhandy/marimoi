@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Route;
 
 // HALAMAN //
 Route::get('/', [FrontendController::class, 'indexDark'])->name('beranda');
-Route::get('/profil-reformer', [FrontendController::class, 'reformer'])->name('tampil.reformer');
 Route::get('/tentang', [FrontendController::class, 'tentang'])->name('tampil.tentang');
+// Profil Reformer kini menjadi bagian halaman Tentang //
+Route::permanentRedirect('/profil-reformer', '/tentang#profil-reformer');
 Route::get('/faq', [FrontendController::class, 'faq'])->name('tampil.faq');
 // Halaman lama digabung ke Peta Interaktif //
 foreach (['proyek-strategis-daerah', 'proyek-strategis-nasional', 'usulan-musrenbang', 'pokir-dprd'] as $halamanLama) {

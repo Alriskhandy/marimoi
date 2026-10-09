@@ -6,7 +6,6 @@
         ['Peta Interaktif', route('tampil.interaktif'), request()->routeIs('tampil.interaktif', 'detail.interaktif', 'interaktif.share.show')],
         ['Publikasi', route('tampil.publikasi'), request()->routeIs('tampil.publikasi')],
         ['Aspirasi', route('tampil.aspirasi'), request()->routeIs('tampil.aspirasi')],
-        ['Profil Reformer', route('tampil.reformer'), request()->routeIs('tampil.reformer')],
         ['Tentang', route('tampil.tentang'), request()->routeIs('tampil.tentang')],
         ['FAQ', route('tampil.faq'), request()->routeIs('tampil.faq')],
     ];
