@@ -3,7 +3,7 @@
     $navSolid = $navSolid ?? ! request()->routeIs('beranda');
     $navItems = [
         ['Beranda', route('beranda'), request()->routeIs('beranda')],
-        ['Peta Tematik', route('tampil.tematik'), request()->routeIs('tampil.tematik', 'detail.tematik', 'tematik.share.show')],
+        ['Peta Interaktif', route('tampil.interaktif'), request()->routeIs('tampil.interaktif', 'detail.interaktif', 'interaktif.share.show')],
         ['Publikasi', route('tampil.publikasi'), request()->routeIs('tampil.publikasi')],
         ['Aspirasi', route('tampil.aspirasi'), request()->routeIs('tampil.aspirasi')],
         ['Profil Reformer', route('tampil.reformer'), request()->routeIs('tampil.reformer')],

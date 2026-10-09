@@ -17,7 +17,7 @@
     $dbfAttributes = is_string($project->dbf_attributes) ? json_decode($project->dbf_attributes, true) : $project->dbf_attributes;
     $dbfAttributes = collect(is_array($dbfAttributes) ? $dbfAttributes : [])
         ->reject(fn ($value, $key) => strtolower((string) $key) === 'id' || $value === null || trim((string) $value) === '');
-    $backUrl = url()->previous() === url()->current() ? route('tampil.tematik') : url()->previous();
+    $backUrl = url()->previous() === url()->current() ? route('tampil.interaktif') : url()->previous();
     $btn = 'inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition duration-300 hover:-translate-y-0.5';
 @endphp
 
@@ -34,7 +34,7 @@
                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
                     <span data-label>Salin tautan</span>
                 </button>
-                <a href="{{ route('tampil.tematik') }}" class="{{ $btn }} bg-ocean text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)]">Buka Peta Tematik</a>
+                <a href="{{ route('tampil.interaktif') }}" class="{{ $btn }} bg-ocean text-white shadow-[0_10px_30px_-12px_rgba(10,132,255,.8)]">Buka Peta Interaktif</a>
             </div>
         </div>
 

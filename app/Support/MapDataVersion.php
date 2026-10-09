@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Versi data Peta Tematik (Layer published V3 beserta feature, gaya, dan kategorinya).
+ * Versi data Peta Interaktif (Layer published V3 beserta feature, gaya, dan kategorinya).
  *
  * Klien menyimpan data peta di cache browser (IndexedDB) dengan TTL 24 jam. Versi ini dipakai
  * untuk skenario kedua: begitu ada data atau kategori yang ditambah, diubah, atau dihapus,
@@ -21,6 +21,12 @@ class MapDataVersion
     public const CACHE_KEY = 'map.tematik.data_version';
 
     private const SERVER_CACHE_SECONDS = 15;
+
+    /**
+     * Naikkan bila bentuk payload /geojson berubah (mis. properti baru seperti
+     * style_override), supaya cache browser yang berisi format lama ikut dibuang.
+     */
+    private const PAYLOAD_VERSION = 3;
 
     public static function current(): string
     {
@@ -58,6 +64,6 @@ class MapDataVersion
             DB::table('category_nodes')->selectRaw('count(*) as total, max(updated_at) as latest, max(deleted_at) as deleted')->first(),
         ];
 
-        return md5(json_encode([$features, $layers, $styles, $categories]));
+        return md5(json_encode([self::PAYLOAD_VERSION, $features, $layers, $styles, $categories]));
     }
 }

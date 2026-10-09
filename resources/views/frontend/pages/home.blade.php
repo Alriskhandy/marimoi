@@ -53,7 +53,7 @@
                     pengambilan keputusan di Maluku Utara.
                 </p>
                 <div class="reveal mt-9 flex flex-wrap gap-3 delay-300" data-reveal>
-                    <a href="{{ route('tampil.tematik') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
+                    <a href="{{ route('tampil.interaktif') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
                     <a href="{{ route('tampil.tentang') }}" class="{{ $btnGhost }}">Tentang MARIMOI</a>
                 </div>
             </div>
@@ -259,12 +259,12 @@
                         <dt id="infoSourceLabel" class="text-white/45">Sumber</dt><dd id="infoSource"></dd>
                         <dt id="infoOpdLabel" class="text-white/45">Instansi</dt><dd id="infoOpd"></dd>
                     </dl>
-                    <a href="{{ route('tampil.tematik') }}" class="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2 text-[13px] font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">Buka peta lengkap {!! $arrow !!}</a>
+                    <a href="{{ route('tampil.interaktif') }}" class="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2 text-[13px] font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg">Buka peta lengkap {!! $arrow !!}</a>
                 </aside>
             </div>
 
             <div class="reveal mt-10 text-center" data-reveal>
-                <a href="{{ route('tampil.tematik') }}" class="{{ $btnPrimary }}">Buka Peta Pembangunan {!! $arrow !!}</a>
+                <a href="{{ route('tampil.interaktif') }}" class="{{ $btnPrimary }}">Buka Peta Pembangunan {!! $arrow !!}</a>
             </div>
         </div>
     </section>
@@ -304,7 +304,7 @@
             <h2 class="reveal mx-auto mb-5 max-w-[18ch] text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl" data-reveal>Bangun Maluku Utara bersama.</h2>
             <p class="reveal mx-auto mb-10 max-w-[54ch] text-lg text-white/70 delay-100" data-reveal>Jelajahi peta pembangunan atau sampaikan aspirasi untuk wilayah Anda.</p>
             <div class="reveal flex flex-wrap justify-center gap-3 delay-200" data-reveal>
-                <a href="{{ route('tampil.tematik') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
+                <a href="{{ route('tampil.interaktif') }}" class="{{ $btnPrimary }}">Jelajahi Peta {!! $arrow !!}</a>
                 <a href="{{ route('tampil.aspirasi') }}" class="{{ $btnGhost }}">Sampaikan Aspirasi</a>
             </div>
         </div>

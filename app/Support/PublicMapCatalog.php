@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Katalog Peta Tematik publik dari skema V3: satu mapset = satu Layer berstatus
+ * Katalog Peta Interaktif publik dari skema V3: satu mapset = satu Layer berstatus
  * `published` (`layers`), dikelompokkan Kategori (`categories_v3`) › Node
  * (`category_nodes`, boleh bertingkat).
  *
@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
 class PublicMapCatalog
 {
     /**
-     * Layer published beserta nama tampilan unik, gaya default, dan jumlah feature.
+     * Layer published beserta nama tampilan unik, style default, jumlah feature, dan
+     * `version` (timestamp perubahan terakhir layer/style/feature, untuk cache browser).
      *
      * @return Collection<int, object>
      */
@@ -29,6 +30,8 @@ class PublicMapCatalog
     }
 
     /**
+     * Query sebenarnya di balik layers(): urut kategori lalu layer, sesuai urutan di katalog.
+     *
      * @return Collection<int, object>
      */
     private static function loadLayers(): Collection
@@ -62,7 +65,11 @@ class PublicMapCatalog
                 'l.category_node_id',
                 'l.legacy_category_id',
                 'l.updated_at',
+                'l.default_opacity',
                 'c.name as category_name',
+                'ls.style_type',
+                'ls.classification_field',
+                'ls.definition',
                 DB::raw("ls.definition->>'color' as color"),
                 DB::raw("ls.definition->>'icon' as icon"),
                 DB::raw("COALESCE((ls.definition->>'is_marker')::boolean, false) as is_marker"),
@@ -84,6 +91,7 @@ class PublicMapCatalog
                 'icon' => $row->icon,
                 'is_marker' => (bool) $row->is_marker,
                 'description' => $row->short_description,
+                'style' => self::style($row),
                 'feature_count' => (int) ($stats?->total ?? 0),
                 'version' => $timestamps ? max(array_map('strtotime', $timestamps)) : 0,
                 'legacy_category_id' => $row->legacy_category_id,
@@ -128,6 +136,7 @@ class PublicMapCatalog
                         'icon' => $layer->icon,
                         'is_marker' => $layer->is_marker,
                         'deskripsi' => $layer->description,
+                        'style' => $layer->style,
                     ]);
                     $items[] = $leaf;
 
@@ -166,6 +175,8 @@ class PublicMapCatalog
     }
 
     /**
+     * Peta id Layer → nama tampilan, untuk mengisi properti `kategori` di setiap feature.
+     *
      * @return array<string, string> layer id => nama tampilan
      */
     public static function namesById(): array
@@ -196,6 +207,31 @@ class PublicMapCatalog
     }
 
     /**
+     * Style default Layer persis seperti yang diatur di dashboard (layer_styles.definition):
+     * simple = satu simbol; categorized/graduated = warna per kelas atribut `field`.
+     *
+     * @return array{type: string, color: string, icon: ?string, is_marker: bool, opacity: float, size: float, field: ?string, classes: array<int, array<string, mixed>>}
+     */
+    private static function style(object $row): array
+    {
+        $definition = is_string($row->definition) ? (json_decode($row->definition, true) ?: []) : (array) ($row->definition ?? []);
+        $isMarker = (bool) ($definition['is_marker'] ?? false);
+
+        return [
+            'type' => $row->style_type ?? 'simple',
+            'color' => $definition['color'] ?? '#2563eb',
+            'icon' => $isMarker ? ($definition['icon'] ?? null) : null,
+            'is_marker' => $isMarker,
+            'opacity' => (float) ($definition['opacity'] ?? $row->default_opacity ?? 1),
+            'size' => (float) ($definition['size'] ?? 6),
+            'field' => $definition['field'] ?? $row->classification_field,
+            'classes' => array_values($definition['classes'] ?? []),
+        ];
+    }
+
+    /**
+     * Jalur nama node dari yang teratas sampai node milik layer, mis. ["Pola Ruang", "Kawasan"].
+     *
      * @param  Collection<string, object>  $nodes
      * @return array<int, string>
      */
@@ -244,6 +280,8 @@ class PublicMapCatalog
     }
 
     /**
+     * Satu item `all_categories` dalam format lama yang dibaca map.js (nama, warna, induk).
+     *
      * @param  array<string, mixed>  $style
      * @return array<string, mixed>
      */

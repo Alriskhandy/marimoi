@@ -140,8 +140,8 @@
                     <li><a href="{{ route('tampil.reformer') }}"
                             class="{{ request()->routeIs('tampil.reformer') ? 'active' : '' }}">Profil Reformer</a>
                     </li>
-                    <li><a href="{{ route('tampil.tematik') }}"
-                            class="{{ request()->routeIs('tampil.tematik') ? 'active' : '' }}">Peta
+                    <li><a href="{{ route('tampil.interaktif') }}"
+                            class="{{ request()->routeIs('tampil.interaktif') ? 'active' : '' }}">Peta
                             Tematik</a></li>
                     <li><a href="{{ route('tampil.prioritas') }}"
                             class="{{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}">Prioritas Daerah

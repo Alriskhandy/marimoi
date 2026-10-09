@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Katalog Peta Tematik publik dibaca dari skema V3: satu mapset = satu Layer published,
+ * Katalog Peta Interaktif publik dibaca dari skema V3: satu mapset = satu Layer published,
  * dikelompokkan Kategori › Node (lihat App\Support\PublicMapCatalog).
  */
 class PublicMapCatalogTest extends TestCase
@@ -136,6 +136,85 @@ class PublicMapCatalogTest extends TestCase
 
         $this->assertContains($publik->id, $ids);
         $this->assertNotContains($draft->id, $ids);
+    }
+
+    public function test_metadata_exposes_the_dashboard_style_of_each_mapset(): void
+    {
+        $kategori = Category::create(['nama' => 'Kategori Style']);
+        $layer = $this->layer($kategori, 'Layer Bergaya');
+        $style = $layer->styles()->create([
+            'name' => 'Default',
+            'style_type' => 'simple',
+            'is_default' => true,
+            'definition' => ['color' => '#ff0000', 'icon' => 'fa fa-home', 'is_marker' => true, 'opacity' => 0.6, 'size' => 9],
+        ]);
+        $layer->update(['default_style_id' => $style->id]);
+
+        $leaf = collect($this->metadata()['all_categories'])->firstWhere('nama', 'Layer Bergaya');
+
+        $this->assertSame([
+            'type' => 'simple',
+            'color' => '#ff0000',
+            'icon' => 'fa fa-home',
+            'is_marker' => true,
+            'opacity' => 0.6,
+            'size' => 9,
+            'field' => null,
+            'classes' => [],
+        ], $leaf['style']);
+    }
+
+    public function test_metadata_exposes_classes_of_categorized_style(): void
+    {
+        $kategori = Category::create(['nama' => 'Kategori Kelas']);
+        $layer = $this->layer($kategori, 'Layer Berkelas');
+        $style = $layer->styles()->create([
+            'name' => 'Per Jenis',
+            'style_type' => 'categorized',
+            'classification_field' => 'JENIS',
+            'is_default' => true,
+            'definition' => ['field' => 'JENIS', 'classes' => [['value' => 'Hutan', 'color' => '#00aa00', 'label' => 'Hutan']]],
+        ]);
+        $layer->update(['default_style_id' => $style->id]);
+
+        $leaf = collect($this->metadata()['all_categories'])->firstWhere('nama', 'Layer Berkelas');
+
+        $this->assertSame('categorized', $leaf['style']['type']);
+        $this->assertSame('JENIS', $leaf['style']['field']);
+        $this->assertSame('#00aa00', $leaf['style']['classes'][0]['color']);
+    }
+
+    public function test_geojson_features_carry_their_style_override(): void
+    {
+        $kategori = Category::create(['nama' => 'Kategori Override']);
+        $layer = $this->layer($kategori, 'Layer Override');
+        $custom = $this->feature($layer);
+        $custom->update(['style_override' => ['color' => '#123abc', 'opacity' => 0.5, 'size' => 4, 'is_marker' => false, 'icon' => null]]);
+        $plain = $this->feature($layer);
+
+        $features = collect($this->getJson('/geojson?type=tematik&kategori[]='.urlencode('Layer Override'))
+            ->assertOk()
+            ->json('features'))->keyBy('properties.id');
+
+        $this->assertSame('#123abc', $features[$custom->id]['properties']['style_override']['color']);
+        $this->assertNull($features[$plain->id]['properties']['style_override']);
+    }
+
+    public function test_geojson_features_list_their_documentation_photos(): void
+    {
+        $kategori = Category::create(['nama' => 'Kategori Foto']);
+        $layer = $this->layer($kategori, 'Layer Foto');
+        $withPhoto = $this->feature($layer);
+        $withPhoto->update(['gambar' => 'features/foto-uji.jpg']);
+        $withoutPhoto = $this->feature($layer);
+
+        $features = collect($this->getJson('/geojson?type=tematik&kategori[]='.urlencode('Layer Foto'))
+            ->assertOk()
+            ->json('features'))->keyBy('properties.id');
+
+        $this->assertSame([asset('storage/features/foto-uji.jpg')], $features[$withPhoto->id]['properties']['gambar_list']);
+        $this->assertSame(asset('storage/features/foto-uji.jpg'), $features[$withPhoto->id]['properties']['gambar']);
+        $this->assertSame([], $features[$withoutPhoto->id]['properties']['gambar_list']);
     }
 
     public function test_geojson_feature_chunks_no_longer_carry_the_legacy_category_tree(): void

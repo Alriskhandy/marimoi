@@ -12,7 +12,7 @@ class SharedMapFilterTest extends TestCase
 
     public function test_creating_shared_map_stores_active_filters(): void
     {
-        $response = $this->postJson(route('tematik.share.store'), [
+        $response = $this->postJson(route('interaktif.share.store'), [
             'layers' => ['Kesehatan'],
             'viewport' => ['lat' => 0.78, 'lng' => 127.38, 'zoom' => 8],
             'filters' => [
@@ -34,7 +34,7 @@ class SharedMapFilterTest extends TestCase
 
     public function test_creating_shared_map_without_filters_still_succeeds(): void
     {
-        $response = $this->postJson(route('tematik.share.store'), [
+        $response = $this->postJson(route('interaktif.share.store'), [
             'layers' => ['Kesehatan'],
         ]);
 
@@ -53,7 +53,7 @@ class SharedMapFilterTest extends TestCase
             'filters' => ['kabupaten' => 'Kota Ternate', 'tahun' => 2025, 'opd_pengelola' => 'DINKES'],
         ]);
 
-        $response = $this->get(route('tematik.share.show', $sharedMap->slug));
+        $response = $this->get(route('interaktif.share.show', $sharedMap->slug));
 
         $response->assertOk();
         $response->assertSee('MARIMOI_SHARED_STATE', false);
@@ -63,7 +63,7 @@ class SharedMapFilterTest extends TestCase
 
     public function test_non_integer_tahun_filter_is_rejected(): void
     {
-        $response = $this->postJson(route('tematik.share.store'), [
+        $response = $this->postJson(route('interaktif.share.store'), [
             'layers' => ['Kesehatan'],
             'filters' => ['tahun' => 'bukan-angka'],
         ]);

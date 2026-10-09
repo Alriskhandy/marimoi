@@ -12,7 +12,7 @@ class SharedMapTest extends TestCase
 
     public function test_guest_can_create_a_shared_map_link(): void
     {
-        $response = $this->postJson(route('tematik.share.store'), [
+        $response = $this->postJson(route('interaktif.share.store'), [
             'layers' => ['Kesehatan', 'Batas Administrasi'],
             'viewport' => ['lat' => 0.78, 'lng' => 127.38, 'zoom' => 8],
         ]);
@@ -33,7 +33,7 @@ class SharedMapTest extends TestCase
 
     public function test_creating_shared_map_requires_at_least_one_layer(): void
     {
-        $response = $this->postJson(route('tematik.share.store'), [
+        $response = $this->postJson(route('interaktif.share.store'), [
             'layers' => [],
         ]);
 
@@ -50,7 +50,7 @@ class SharedMapTest extends TestCase
             'data_type' => 'tematik',
         ]);
 
-        $response = $this->get(route('tematik.share.show', $sharedMap->slug));
+        $response = $this->get(route('interaktif.share.show', $sharedMap->slug));
 
         $response->assertOk();
         $response->assertSee('MARIMOI_SHARED_STATE', false);
@@ -60,7 +60,7 @@ class SharedMapTest extends TestCase
 
     public function test_invalid_slug_falls_back_to_default_map_with_error_message(): void
     {
-        $response = $this->get(route('tematik.share.show', 'does-not-exist'));
+        $response = $this->get(route('interaktif.share.show', 'does-not-exist'));
 
         $response->assertOk();
         $response->assertSee('MARIMOI_SHARE_ERROR', false);
@@ -76,7 +76,7 @@ class SharedMapTest extends TestCase
             'expired_at' => now()->subDay(),
         ]);
 
-        $response = $this->get(route('tematik.share.show', $sharedMap->slug));
+        $response = $this->get(route('interaktif.share.show', $sharedMap->slug));
 
         $response->assertOk();
         $response->assertSee('MARIMOI_SHARE_ERROR', false);

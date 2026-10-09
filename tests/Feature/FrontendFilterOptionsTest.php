@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Filter Peta Tematik membaca feature V3 (`spatial_features.properties`) milik Layer
+ * Filter Peta Interaktif membaca feature V3 (`spatial_features.properties`) milik Layer
  * published — sama dengan properti yang diekspos `/geojson` dan disaring di browser.
  */
 class FrontendFilterOptionsTest extends TestCase

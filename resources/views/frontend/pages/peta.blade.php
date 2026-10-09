@@ -4,15 +4,12 @@
     @vite(['resources/css/app.css', 'resources/css/peta.css'])
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="{{ asset('frontend/css/leaflet.extra-markers.min.css') }}">
     <link href="{{ asset('frontend/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
     <link href="{{ asset('frontend/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
-    {{-- <link rel="stylesheet" href="{{ asset('frontend/css/map.css') }}"> --}}
 
     <style>
-        /* Typography Fonts */
+        /* Font judul & teks halaman peta. */
         h1,
         h2,
         h3,
@@ -60,7 +57,7 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
         }
 
-        /* Pastikan text dalam popup tidak terpengaruh global styles */
+        /* Tabel & tautan di popup tidak boleh terpengaruh style global halaman. */
         .tailwind-popup table td {
             padding: 0.25rem 0.5rem 0.25rem 0 !important;
             vertical-align: top !important;
@@ -85,7 +82,7 @@
             outline-offset: 2px !important;
         }
 
-        /* Mobile responsive popup */
+        /* Popup lebih sempit di layar kecil. */
         @media (max-width: 640px) {
             .tailwind-popup .leaflet-popup-content-wrapper {
                 max-width: calc(100vw - 40px) !important;
@@ -109,94 +106,46 @@
 
 @section('main')
     <div class="p-0 h-screen">
-        <!-- Map Section -->
         <section id="map-section" class="relative p-0 h-screen w-full overflow-hidden">
             <div class="p-0 relative h-full">
-                <!-- Container Toast -->
+                {{-- Tempat notifikasi singkat (showAlert di map.js). --}}
                 <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[1200] space-y-2"></div>
 
-                <!-- Modal Panduan Awal -->
-                <div id="guideModal"
-                    class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
-                    <div
-                        class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
-                        <!-- Header -->
-                        <div class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white">
-                            <h5 class="text-lg font-bold tracking-tight">Panduan Penggunaan</h5>
+                {{-- Panduan (tur berlangkah): menyorot kontrol peta satu per satu. Isi langkahnya di map-guide.js. --}}
+                <div id="mapGuide" class="map-guide hidden" role="dialog" aria-modal="true"
+                    aria-labelledby="map-guide-title" aria-describedby="map-guide-text">
+                    <div class="map-guide-spotlight" data-guide-spotlight></div>
+                    <div class="map-guide-card" data-guide-card>
+                        <div class="map-guide-head">
+                            <span class="map-guide-icon" data-guide-icon aria-hidden="true"></span>
+                            <span class="map-guide-progress" data-guide-progress></span>
+                            <button type="button" class="map-guide-close" data-guide-skip aria-label="Tutup panduan">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
                         </div>
-
-                        <!-- Body -->
-                        <div class="px-6 py-6 text-sm leading-relaxed">
-                            <div class="guide-step" data-step="1">
-                                <p>Selamat datang di WebGIS Perencanaan! Gunakan tombol-tombol kontrol untuk
-                                    mengatur tampilan peta.</p>
+                        <h3 id="map-guide-title" data-guide-title></h3>
+                        <p id="map-guide-text" data-guide-text></p>
+                        <div class="map-guide-dots" data-guide-dots aria-hidden="true"></div>
+                        <div class="map-guide-actions">
+                            <button type="button" class="map-guide-link" data-guide-skip>Lewati</button>
+                            <div>
+                                <button type="button" class="catalog-btn-outline" data-guide-prev>Sebelumnya</button>
+                                <button type="button" class="catalog-btn-primary" data-guide-next>Berikutnya</button>
                             </div>
-                            <div class="guide-step hidden" data-step="2">
-                                <p>Tombol <strong><i class="bi bi-plus border border-gray-700 p-1 text-gray-700"></i> Zoom
-                                        In & <i class="bi bi-dash border border-gray-700 p-1 text-gray-700"></i> Zoom
-                                        Out</strong>, digunakan untuk
-                                    mengatur zoom peta.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="3">
-                                <p>Gunakan tombol <strong><i
-                                            class="bi bi-info-circle-fill border border-gray-700 p-1 text-gray-700"></i>
-                                        Bantuan</strong> untuk melihat panduan ini kapan saja.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="4">
-                                <p>Tombol <strong><i class="bi bi-list-ul border border-gray-700 p-1 text-gray-700"></i>
-                                        Legenda Peta</strong>
-                                    menampilkan keterangan simbol pada peta.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="5">
-                                <p>Tombol <strong><i class="bi bi-grid-fill border border-gray-700 p-1 text-gray-700"></i>
-                                        Basemap Peta</strong>
-                                    digunakan untuk memilih jenis peta dasar.
-                                </p>
-                            </div>
-                            <div class="guide-step hidden" data-step="6">
-                                <p>Tombol <strong><i class="bi bi-layers-fill border border-gray-700 p-1 text-gray-700"></i>
-                                        Layer Peta</strong>
-                                    digunakan untuk mengatur layer yang ingin
-                                    ditampilkan.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="7">
-                                <p>Tombol <strong><i
-                                            class="bi bi-arrows-fullscreen border border-gray-700 p-1 text-gray-700"></i>
-                                        Fullscreen</strong> memungkinkan Anda untuk masuk dan keluar dari tampilan
-                                    penuh.</p>
-                            </div>
-                            <div class="guide-step hidden" data-step="8">
-                                <p>Tombol <strong><i
-                                            class="bi bi-house-door-fill border border-gray-700 p-1 text-gray-700"></i>
-                                        Home</strong>
-                                    memungkinkan Anda kembali ke default zoom dari peta.</p>
-                            </div>
-                        </div>
-
-                        <!-- Footer -->
-                        <div class="flex justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
-                            <button id="btnSkip"
-                                class="rounded-full border border-slate-300 bg-white px-4 py-1.5 font-semibold text-slate-600 transition-colors hover:bg-slate-100">Skip</button>
-                            <button id="btnPrev"
-                                class="rounded-full border border-slate-300 bg-white px-4 py-1.5 font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
-                                disabled>Prev</button>
-                            <button id="btnNext"
-                                class="rounded-full bg-[#0a84ff] px-5 py-1.5 font-bold text-white transition-colors hover:bg-[#0a72e0]">Next</button>
                         </div>
                     </div>
                 </div>
 
-                {{-- Tailwind safelist: kelas berikut hanya ditoggle lewat map.js (file di public/,
-                     di luar cakupan `content` tailwind.config.js), jadi ditulis literal di sini
-                     supaya tetap ikut ter-compile. Div ini tidak pernah ditampilkan. --}}
-                <div class="hidden hover:bg-green-600"></div>
+                {{-- Safelist Tailwind: kelas ini hanya dipasang lewat map.js (tombol Copy Link saat berhasil),
+                     padahal file di public/ tidak dipindai Tailwind. Ditulis di sini agar ikut di-build;
+                     elemen ini tidak pernah tampil. --}}
+                <div class="hidden bg-green-500 hover:bg-green-600"></div>
 
-                <!-- Modal Share Peta -->
+                {{-- Modal share: link pendek ke tampilan peta saat ini (dibuat lewat map.js). --}}
                 <div id="shareMapModal"
                     class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm">
                     <div
                         class="mx-3 bg-white text-gray-700 relative self-center overflow-hidden rounded-3xl shadow-2xl w-full max-w-lg">
-                        <!-- Header -->
                         <div
                             class="px-6 py-4 bg-gradient-to-br from-[#071a2d] to-[#0b3a66] text-white flex justify-between items-center">
                             <h5 class="text-lg font-bold tracking-tight">Bagikan Peta</h5>
@@ -205,7 +154,6 @@
                             </button>
                         </div>
 
-                        <!-- Body -->
                         <div class="px-4 py-5 text-sm">
                             <p id="shareMapEmptyState" class="hidden text-gray-500">
                                 Pilih minimal satu layer di panel Layer sebelum membagikan peta.
@@ -238,7 +186,7 @@
                     </div>
                 </div>
 
-                <!-- Modal Katalog Data: memilih layer (dataset) yang ditampilkan di peta -->
+                {{-- Modal Katalog Peta: memilih mapset yang ditampilkan. Isi kolom & kartu dibuat map-catalog.js. --}}
                 <div id="catalogModal" class="catalog-modal hidden" role="dialog" aria-modal="true"
                     aria-labelledby="catalog-modal-title">
                     <div class="catalog-dialog">
@@ -277,8 +225,8 @@
                                             aria-label="Tampilan daftar"><i class="bi bi-list-ul"></i></button>
                                     </div>
                                 </div>
-                                <!-- Filter Data: menyaring dataset di katalog sekaligus titik/area di peta
-                                     setelah Terapkan Pilihan. Opsi diisi map.js (loadFilterOptionsFromServer). -->
+                                {{-- Filter Data: menyaring kartu katalog, lalu titik/area di peta setelah
+                                     "Terapkan Pilihan". Opsinya diisi loadFilterOptionsFromServer() di map.js. --}}
                                 <div id="catalog-filter-panel" class="catalog-filter-panel hidden">
                                     <label>
                                         <span>Kabupaten/Kota</span>
@@ -298,7 +246,8 @@
                                             <option value="">Semua OPD</option>
                                         </select>
                                     </label>
-                                    <button id="btn-reset-filter" type="button" class="catalog-btn-outline">Reset</button>
+                                    <button id="btn-reset-filter" type="button"
+                                        class="catalog-btn-outline">Reset</button>
                                     <p id="catalog-filter-note" class="catalog-filter-note">Filter menampilkan mapset yang
                                         memiliki data sesuai pilihan, dan menyaring titik/area di peta setelah
                                         diterapkan.</p>
@@ -325,7 +274,7 @@
                     </div>
                 </div>
 
-                <!-- Detail fitur area/garis: panel kanan menutupi sidebar & tombol kontrol kanan -->
+                {{-- Detail fitur area/garis: panel kanan menutupi sidebar & tombol kontrol kanan (map-feature-detail.js). --}}
                 <aside id="feature-drawer" class="feature-panel feature-drawer hidden" role="dialog"
                     aria-labelledby="feature-drawer-title">
                     <header class="feature-panel-header">
@@ -337,7 +286,7 @@
                     <div class="feature-panel-body" data-feature-body></div>
                 </aside>
 
-                <!-- Detail fitur titik: modal di tengah (paling atas) -->
+                {{-- Detail fitur titik: modal di tengah, di atas panel detail area/garis. --}}
                 <div id="feature-modal" class="feature-modal hidden" role="dialog" aria-modal="true"
                     aria-labelledby="feature-modal-title">
                     <div class="feature-panel feature-modal-dialog">
@@ -351,10 +300,9 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Layer -->
+                {{-- Panel Layer Aktif: daftarnya (#layer-list) diisi map-catalog.js. --}}
                 <div id="sidebar-layer"
                     class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
-                    <!-- Header with gradient background -->
                     <div
                         class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Layer Aktif</h6>
@@ -376,15 +324,13 @@
                     </div>
 
                     <div id="layer-list" class="flex-1 min-h-0 overflow-y-auto text-sm">
-                        <!-- Daftar layer aktif diisi oleh map-catalog.js -->
                     </div>
                 </div>
 
-                <!-- Sidebar Basemap -->
+                {{-- Panel Basemap: kartu pratinjau diisi setupUI() di map.js. --}}
                 <div id="sidebar-basemap"
                     class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
-                    <!-- Header with gradient background -->
                     <div
                         class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Basemap</h6>
@@ -394,17 +340,14 @@
                         </button>
                     </div>
 
-                    <!-- List area -->
                     <div id="basemap-list" class="pt-2 max-h-[calc(100vh-250px)] overflow-y-auto text-sm">
-                        <!-- Generated By Js -->
                     </div>
                 </div>
 
-                <!-- Sidebar Legend -->
+                {{-- Panel Legenda: diisi generateLegend() di map.js. --}}
                 <div id="sidebar-legend"
                     class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
-                    <!-- Header with gradient background -->
                     <div
                         class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Legenda</h6>
@@ -414,41 +357,17 @@
                         </button>
                     </div>
 
-                    <!-- Content area -->
                     <div id="legend-content" class="ml-2 max-h-[calc(100vh-250px)] overflow-y-auto">
-                        <!-- Generated By Js -->
                     </div>
                 </div>
 
-                <!-- Panel Layer Tools (slider transparansi per layer aktif, posisi diatur oleh JS
-                                     agar selalu menyambung tepat di bawah kolom tombol Leaflet sisi kiri) -->
-                <div id="sidebar-layer-tools"
-                    class="absolute w-[280px] md:w-[300px] bg-slate-50 border border-gray-300 rounded-lg shadow-lg z-[101] text-gray-900 hidden">
-                    <!-- Header with gradient background -->
-                    <div id="layer-tools-header"
-                        class="flex justify-between items-center bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-2 px-3 rounded-t-lg w-full">
-                        <h6 class="text-white mb-0 text-sm font-semibold flex items-center gap-2">
-                            <i class="bi bi-sliders"></i> Layer Tools
-                        </h6>
-                        <button id="btn-close-sidebar-layer-tools"
-                            class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
-                            <i class="bi bi-x-lg text-white"></i>
-                        </button>
-                    </div>
-
-                    <!-- Content area (max-height diatur oleh JS berdasarkan sisa ruang aktual, lihat positionLayerToolsPanel di map.js) -->
-                    <div id="layer-tools-content" class="overflow-y-auto">
-                        <!-- Generated by JS: empty state atau slider per layer aktif -->
-                    </div>
-                </div>
-
-                <!-- Kiri atas: kembali ke Beranda -->
+                {{-- Kiri atas: kembali ke Beranda. --}}
                 <a id="btn-home-page" class="map-pill" href="{{ route('beranda') }}" aria-label="Beranda">
                     <i class="bi bi-house-fill"></i>
                     <span>Beranda</span>
                 </a>
 
-                <!-- Tengah atas: bar pencarian -->
+                {{-- Tengah atas: pencarian fitur pada layer aktif (skrip di bagian bawah halaman). --}}
                 <div id="map-search-bar" role="search">
                     <label for="map-feature-search" class="sr-only">Cari data pada peta</label>
                     <div class="map-search-field">
@@ -460,7 +379,7 @@
                 </div>
 
                 <div id="right-control-stack">
-                    <!-- Kanan atas: Masuk / Dashboard & Keluar -->
+                    {{-- Kanan atas: Masuk, atau Dashboard (admin) & Keluar. --}}
                     <div id="app-control-buttons" class="map-pill-group" role="group" aria-label="Akun">
                         @auth
                             @if (auth()->user()->isAdmin())
@@ -486,9 +405,8 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Control Buttons -->
-                <div id="sidebar-control-buttons"
-                    class="bg-gray-300 shadow-md flex flex-col items-center rounded-none"
+                {{-- Tombol panel kanan: Bantuan, Legenda, Basemap, Layer. --}}
+                <div id="sidebar-control-buttons" class="bg-gray-300 shadow-md flex flex-col items-center rounded-none"
                     role="group" aria-label="Sidebar Control Buttons">
 
                     <button id="btn-toggle-sidebar-help" type="button"
@@ -516,7 +434,7 @@
                     </button>
                 </div>
 
-                <!-- Navigation Control Buttons -->
+                {{-- Kanan bawah: Share peta. --}}
                 <div id="nav-control-buttons"
                     class="absolute bottom-[30px] right-2.5 z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
                     role="group" aria-label="Navigation Control Buttons">
@@ -528,14 +446,14 @@
                     </button>
                 </div>
 
-                <!-- Tombol Fullscreen & Home dirender oleh Leaflet sebagai control 'topleft',
-                                     langsung menyambung di bawah tombol zoom in/out bawaan Leaflet (lihat map.js) -->
 
-                <!-- HUD koordinat & zoom (diisi oleh skrip di bawah) -->
-                <div id="map-hud" aria-hidden="true"><span>Lat <b id="hud-lat">-</b></span><i></i><span>Lng <b
-                            id="hud-lng">-</b></span><i></i><span>Zoom <b id="hud-zoom">-</b></span></div>
+                {{-- Kiri bawah, sejajar tombol share: HUD koordinat & zoom, dengan skala Leaflet di bawahnya
+                     (elemen skala dipindah ke sini oleh skrip HUD). --}}
+                <div id="map-bottom-bar">
+                    <div id="map-hud" aria-hidden="true"><span>Lat <b id="hud-lat">-</b></span><i></i><span>Lng <b
+                                id="hud-lng">-</b></span><i></i><span>Zoom <b id="hud-zoom">-</b></span></div>
+                </div>
 
-                <!-- Map -->
                 <div id="map" class="relative z-10 h-full w-full bg-gray-200 flex items-center justify-center">
                 </div>
             </div>
@@ -547,21 +465,22 @@
     @vite(['resources/js/app.js'])
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="{{ asset('frontend/js/leaflet.extra-markers.min.js') }}"></script>
 
     @if (session('selectedCategory'))
         <script>
-            // Pass selected category from session to JavaScript
+            // Mapset yang dipilih dari halaman lain (tautan "Lihat peta" di beranda).
             window.MARIMOI_SELECTED_CATEGORY = @json(session('selectedCategory'));
         </script>
     @endif
 
+    {{-- Konfigurasi dari server untuk skrip peta (URL endpoint, token CSRF, state link share). --}}
     <script>
         window.MARIMOI_CSRF_TOKEN = @json(csrf_token());
-        window.MARIMOI_MAP_VERSION_URL = @json(route('tematik.version'));
-        window.MARIMOI_SHARE_STORE_URL = @json(route('tematik.share.store'));
-        window.MARIMOI_SHARE_SHOW_URL_TEMPLATE = @json(route('tematik.share.show', ':slug'));
+        window.MARIMOI_MAP_VERSION_URL = @json(route('interaktif.version'));
+        window.MARIMOI_SHARE_STORE_URL = @json(route('interaktif.share.store'));
+        window.MARIMOI_SHARE_SHOW_URL_TEMPLATE = @json(route('interaktif.share.show', ':slug'));
+        window.MARIMOI_FEATURE_DETAIL_URL_TEMPLATE = @json(route('detail.interaktif', ':uuid'));
 
         @if (isset($sharedMapState))
             window.MARIMOI_SHARED_STATE = @json($sharedMapState);
@@ -572,6 +491,8 @@
         @endif
     </script>
 
+    {{-- Urutan penting: map-cache.js & map.js membuat global yang dipakai file map-*.js berikutnya.
+         ?v=filemtime memaksa browser mengambil versi terbaru setiap file berubah. --}}
     <script src="{{ asset('frontend/js/map-cache.js') }}?v={{ filemtime(public_path('frontend/js/map-cache.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map.js') }}?v={{ filemtime(public_path('frontend/js/map.js')) }}"></script>
@@ -580,8 +501,13 @@
     <script
         src="{{ asset('frontend/js/map-feature-detail.js') }}?v={{ filemtime(public_path('frontend/js/map-feature-detail.js')) }}">
     </script>
+    <script src="{{ asset('frontend/js/map-labels.js') }}?v={{ filemtime(public_path('frontend/js/map-labels.js')) }}">
+    </script>
+    <script src="{{ asset('frontend/js/map-guide.js') }}?v={{ filemtime(public_path('frontend/js/map-guide.js')) }}">
+    </script>
 
-    {{-- HUD koordinat/zoom + skala. `map` adalah konstanta global yang dibuat map.js. --}}
+    {{-- HUD: koordinat di bawah kursor (atau tengah peta saat kursor di luar peta) dan zoom,
+         plus skala jarak. `map` adalah konstanta global dari map.js. --}}
     <script>
         (function() {
             if (typeof map === 'undefined' || typeof L === 'undefined') {
@@ -591,10 +517,11 @@
             var lng = document.getElementById('hud-lng');
             var zoom = document.getElementById('hud-zoom');
             var pending = null;
-            L.control.scale({
+            var scale = L.control.scale({
                 imperial: false,
                 position: 'bottomleft'
             }).addTo(map);
+            document.getElementById('map-bottom-bar')?.appendChild(scale.getContainer());
 
             function showZoom() {
                 zoom.textContent = Number(map.getZoom().toFixed(2));
@@ -605,6 +532,7 @@
                 lat.textContent = c.lat.toFixed(4);
                 lng.textContent = c.lng.toFixed(4);
             }
+            // Koordinat diperbarui paling banyak sekali per frame agar mousemove tidak membebani.
             map.on('mousemove', function(e) {
                 pending = e.latlng;
                 if (pending && !map._hudRaf) {
@@ -623,7 +551,9 @@
         })();
     </script>
 
-    {{-- Bar pencarian: mencari fitur pada layer yang sedang tampil. `layerGroups` dibuat map.js. --}}
+    {{-- Pencarian: mencocokkan kata (min. 2 huruf) dengan semua atribut fitur pada layer yang sedang
+         tampil, lalu menampilkan maksimal 10 hasil. Memilih hasil memperbesar peta ke fitur itu dan
+         membuka popup-nya. `map` dan `layerGroups` adalah global dari map.js. --}}
     <script>
         (function() {
             var input = document.getElementById('map-feature-search');
@@ -641,6 +571,7 @@
                 return div.innerHTML;
             }
 
+            // Layer group mapset yang sedang tampil, dari struktur bertingkat layerGroups.
             function collectActiveGroups(node, groups) {
                 if (!node) {
                     return groups;
@@ -657,6 +588,7 @@
                 return groups;
             }
 
+            // Semua fitur (Path/Marker asli) di dalam satu layer group.
             function collectFeatureLayers(layer, result) {
                 if (layer.feature) {
                     result.push(layer);
@@ -668,6 +600,7 @@
                 return result;
             }
 
+            // Judul hasil: atribut nama yang umum, atau teks pertama yang bukan URL.
             function featureTitle(props) {
                 var preferred = props.KEGIATAN || props.kegiatan || props.nama || props.NAMA || props.name;
                 if (preferred) {
@@ -686,7 +619,6 @@
                 var found = [];
                 var groups = collectActiveGroups(layerGroups, []);
                 for (var g = 0; g < groups.length && found.length < maxResults; g++) {
-                    var cluster = typeof groups[g].zoomToShowLayer === 'function' ? groups[g] : null;
                     var layers = collectFeatureLayers(groups[g], []);
                     for (var i = 0; i < layers.length && found.length < maxResults; i++) {
                         var props = layers[i].feature.properties || {};
@@ -698,7 +630,6 @@
                         if (isMatch) {
                             found.push({
                                 layer: layers[i],
-                                cluster: cluster,
                                 title: featureTitle(props),
                                 subtitle: props.kategori || ''
                             });
@@ -736,7 +667,8 @@
                 list.innerHTML = matches.map(function(match, index) {
                     return '<li role="option"><button type="button" data-index="' + index + '">' +
                         '<span class="search-result-title">' + escapeHtml(match.title) + '</span>' +
-                        (match.subtitle ? '<span class="search-result-subtitle">' + escapeHtml(match.subtitle) + '</span>' : '') +
+                        (match.subtitle ? '<span class="search-result-subtitle">' + escapeHtml(match.subtitle) +
+                            '</span>' : '') +
                         '</button></li>';
                 }).join('');
                 list.classList.remove('hidden');
@@ -749,10 +681,6 @@
                         layer.openPopup();
                     }
                 };
-                if (match.cluster) {
-                    match.cluster.zoomToShowLayer(layer, open);
-                    return;
-                }
                 if (typeof layer.getBounds === 'function') {
                     map.fitBounds(layer.getBounds(), {
                         maxZoom: 17

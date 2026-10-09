@@ -18,8 +18,8 @@
                 </ul>',
         ],
         [
-            'q' => 'Bagaimana cara menggunakan Peta Tematik?',
-            'a' => '<p>Peta Tematik menampilkan berbagai data pembangunan Maluku Utara di atas peta. Buka menu <a href="'.route('tampil.tematik').'" class="'.$link.'">Peta Tematik</a>, lalu gunakan tombol kontrol di sisi kanan peta:</p>
+            'q' => 'Bagaimana cara menggunakan Peta Interaktif?',
+            'a' => '<p>Peta Interaktif menampilkan berbagai data pembangunan Maluku Utara di atas peta. Buka menu <a href="'.route('tampil.interaktif').'" class="'.$link.'">Peta Interaktif</a>, lalu gunakan tombol kontrol di sisi kanan peta:</p>
                 <ul class="mt-3 list-disc space-y-1 pl-5">
                     <li><b class="text-navy">Bantuan</b>: melihat panduan penggunaan peta</li>
                     <li><b class="text-navy">Legenda</b>: keterangan simbol pada peta</li>
@@ -32,7 +32,7 @@
             'q' => 'Apa perbedaan Proyek Strategis Daerah dan Nasional?',
             'a' => '<p><b class="text-navy">Proyek Strategis Daerah (PSD)</b> adalah proyek prioritas yang diinisiasi dan dikelola Pemerintah Provinsi Maluku Utara, umumnya didanai APBD Provinsi, dan dikoordinasikan oleh Bappeda Provinsi Maluku Utara.</p>
                 <p class="mt-3"><b class="text-navy">Proyek Strategis Nasional (PSN)</b> adalah proyek prioritas nasional yang berlokasi di Maluku Utara, umumnya didanai APBN atau kombinasi sumber lain, dan dikoordinasikan Kementerian/Lembaga terkait dengan dukungan Pemerintah Provinsi.</p>
-                <p class="mt-3">Keduanya dapat dilihat sebagai layer di <a href="'.route('tampil.tematik').'" class="'.$link.'">Peta Tematik</a>.</p>',
+                <p class="mt-3">Keduanya dapat dilihat sebagai layer di <a href="'.route('tampil.interaktif').'" class="'.$link.'">Peta Interaktif</a>.</p>',
         ],
         [
             'q' => 'Apa itu Prioritas Daerah 2025-2029?',
@@ -43,7 +43,7 @@
             'q' => 'Apa itu Musrenbang dan Pokir DPRD?',
             'a' => '<p><b class="text-navy">Musrenbang</b> (Musyawarah Perencanaan Pembangunan) adalah forum penyusunan rencana pembangunan daerah yang melibatkan berbagai pemangku kepentingan, dari tingkat desa atau kelurahan hingga provinsi.</p>
                 <p class="mt-3"><b class="text-navy">Pokir DPRD</b> (Pokok Pikiran DPRD) adalah usulan program atau kegiatan dari anggota DPRD berdasarkan aspirasi masyarakat di daerah pemilihannya, untuk dimasukkan dalam perencanaan pembangunan daerah.</p>
-                <p class="mt-3">Sebaran usulan keduanya dapat dilihat di <a href="'.route('tampil.tematik').'" class="'.$link.'">Peta Tematik</a>.</p>',
+                <p class="mt-3">Sebaran usulan keduanya dapat dilihat di <a href="'.route('tampil.interaktif').'" class="'.$link.'">Peta Interaktif</a>.</p>',
         ],
         [
             'q' => 'Bagaimana cara menyampaikan aspirasi?',

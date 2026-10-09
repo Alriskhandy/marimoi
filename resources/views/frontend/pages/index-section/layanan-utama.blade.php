@@ -1,9 +1,9 @@
 @php
     $layananUtama = [
         [
-            'judul' => 'Peta Tematik',
+            'judul' => 'Peta Interaktif',
             'deskripsi' => 'Jelajahi proyek strategis, Musrenbang, Pokok Pikiran DPRD, dan data spasial pembangunan di atas peta.',
-            'url' => route('tampil.tematik'),
+            'url' => route('tampil.interaktif'),
             'ikon' => 'bi-map',
             'aksi' => 'Buka peta',
         ],

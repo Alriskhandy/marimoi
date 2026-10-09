@@ -1,13 +1,13 @@
 /**
- * Katalog Data & daftar Layer Aktif untuk peta tematik.
+ * map-catalog.js — Katalog Peta (modal pemilih mapset) & sidebar Layer Aktif.
  *
- * Satu-satunya sumber state layer aktif: setiap dataset (kategori daun di
- * `layerGroups[root][second][leaf]` milik map.js) aktif/nonaktif lewat API di sini.
- * Modal katalog memilih dataset secara bertahap (staged) lalu diterapkan sekaligus;
- * sidebar "Layer Aktif" hanya menampilkan dataset yang sedang dipilih.
+ * File ini satu-satunya pemegang state layer aktif. Setiap mapset (layer group di
+ * `layerGroups[kategori][sub kategori][mapset]` milik map.js) diaktifkan/dinonaktifkan
+ * lewat API window.MarimoiCatalog di bawah. Pilihan di modal katalog disusun dulu
+ * (staged) lalu diterapkan sekaligus dengan "Terapkan Pilihan".
  *
- * Elemen yang dibuat di file ini memakai kelas CSS dari resources/css/peta.css
- * (bukan utility Tailwind), karena file di public/ tidak dipindai Tailwind.
+ * Markup yang dibuat di sini memakai kelas CSS dari resources/css/peta.css, bukan
+ * utility Tailwind, karena file di public/ tidak dipindai Tailwind.
  */
 (function () {
     const state = {
@@ -16,7 +16,12 @@
         groups: [],
         activeKeys: [],
         hiddenKeys: new Set(),
-        loadingKeys: new Set(),
+        // Pemuatan per layer: key → { status: "queued" | "loading", loaded, controller }.
+        loads: new Map(),
+        // Layer yang gagal dimuat: key → pesan galat (ditampilkan di baris + tombol Coba lagi).
+        errors: new Map(),
+        queue: [],
+        running: 0,
         staged: new Set(),
         currentGroup: null,
         currentSub: null,
@@ -42,13 +47,14 @@
         return Number(value || 0).toLocaleString("en-US");
     }
 
+    // Kunci unik mapset: nama bisa kembar antar kategori, jadi jalurnya ikut digabung.
     function entryKey(rootName, secondName, leafName) {
         return [rootName, secondName, leafName].join("\u0001");
     }
 
     /**
-     * Bangun indeks dataset dari `layerGroups` (struktur) + metadata kategori
-     * (warna, ikon, deskripsi, gambar, jumlah fitur) hasil loadCategoriesMetadata().
+     * Bangun daftar mapset dari `layerGroups` (struktur) dan metadata server
+     * (warna, ikon, deskripsi, gambar, jumlah data) hasil loadCategoriesMetadata().
      */
     function rebuild() {
         const meta = window.MARIMOI_CATEGORY_METADATA || {};
@@ -88,7 +94,7 @@
                     group.entries.push(entry);
                     group.total += entry.count;
 
-                    // Daun level 3 → milik sub kategori (level 2) yang punya turunan.
+                    // Mapset di level 3 dikelompokkan ke sub kategorinya (level 2).
                     if (secondName !== leafName) {
                         if (!subgroupByName.has(secondName)) {
                             const subgroup = { name: secondName, entries: [], total: 0 };
@@ -115,40 +121,132 @@
         }
     }
 
-    // ==================== API layer aktif ====================
+    // ==================== Layer aktif: aktifkan, muat, batalkan ====================
 
     function isActive(entry) {
         return state.activeKeys.includes(entry.key);
     }
 
-    async function waitUntilDataIdle() {
-        while (typeof isLoadingData !== "undefined" && isLoadingData) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-    }
-
+    // Perbarui semua tampilan yang bergantung pada layer aktif: legenda, filter, label, daftar.
     function refreshDependentPanels() {
         generateLegend();
-        updateLayerToolsPanel();
         if (typeof refreshFilterPanel === "function") {
             refreshFilterPanel();
         }
+        window.MarimoiLabels?.refresh();
         renderActiveList();
     }
 
-    function setLoading(entry, isLoading) {
-        if (isLoading) {
-            state.loadingKeys.add(entry.key);
-        } else {
-            state.loadingKeys.delete(entry.key);
+    // Paling banyak segini layer dimuat bersamaan; sisanya menunggu di antrean.
+    const MAX_PARALLEL_LOADS = 2;
+
+    // Masukkan mapset ke antrean pemuatan; resolve setelah selesai, gagal, atau dibatalkan.
+    function enqueue(entry) {
+        return new Promise((resolve) => {
+            state.loads.set(entry.key, { status: "queued", loaded: 0, controller: null });
+            state.queue.push({ entry, resolve });
+            pumpQueue();
+        });
+    }
+
+    // Jalankan antrean selama slot pemuatan masih ada; lewati mapset yang sudah dinonaktifkan.
+    function pumpQueue() {
+        while (state.running < MAX_PARALLEL_LOADS && state.queue.length) {
+            const job = state.queue.shift();
+            if (!isActive(job.entry) || !state.loads.has(job.entry.key)) {
+                job.resolve();
+                continue;
+            }
+            state.running++;
+            loadEntry(job.entry).finally(() => {
+                state.running--;
+                job.resolve();
+                pumpQueue();
+            });
         }
-        renderActiveList();
     }
 
     /**
-     * Aktifkan dataset satu per satu (loadCategoryData tidak boleh paralel).
+     * Muat satu layer: tampil bertahap di peta selama dimuat, kemajuan di barisnya sendiri,
+     * dan bisa dibatalkan lewat AbortController (tombol Batalkan / hapus layer).
+     */
+    async function loadEntry(entry) {
+        const controller = new AbortController();
+        state.loads.set(entry.key, { status: "loading", loaded: 0, controller });
+        state.errors.delete(entry.key);
+        renderActiveList();
+
+        if (!state.hiddenKeys.has(entry.key)) {
+            map.addLayer(entry.layerGroup);
+            applyLayerOrder();
+        }
+
+        const result = await loadCategoryData(entry.leafName, entry.secondName, entry.rootName, {
+            signal: controller.signal,
+            onProgress: (loaded) => updateLoadProgress(entry, loaded),
+        });
+
+        state.loads.delete(entry.key);
+        if (result.status === "aborted" || !isActive(entry)) {
+            return;
+        }
+
+        if (result.status === "error") {
+            state.errors.set(entry.key, result.error);
+            if (map.hasLayer(entry.layerGroup)) {
+                map.removeLayer(entry.layerGroup);
+            }
+            showAlert(`Gagal memuat ${entry.leafName}: ${result.error}`, "danger");
+        } else if (!state.hiddenKeys.has(entry.key)) {
+            map.addLayer(entry.layerGroup);
+            if (layerOpacityState.has(entry.leafName)) {
+                setLayerGroupOpacity(entry.layerGroup, layerOpacityState.get(entry.leafName));
+            }
+            applyLayerOrder();
+        }
+
+        refreshDependentPanels();
+    }
+
+    /**
+     * Perbarui teks & bilah kemajuan satu baris tanpa menggambar ulang seluruh daftar.
+     */
+    function updateLoadProgress(entry, loaded) {
+        const load = state.loads.get(entry.key);
+        if (!load) {
+            return;
+        }
+        load.loaded = loaded;
+        const row = document.querySelector(`#layer-list [data-key="${CSS.escape(entry.key)}"]`);
+        if (!row) {
+            return;
+        }
+        const percent = entry.count > 0 ? Math.min(100, Math.round((loaded / entry.count) * 100)) : 0;
+        row.querySelector("[data-layer-progress-text]")?.replaceChildren(loadText(entry, load));
+        const bar = row.querySelector("[data-layer-progress-bar]");
+        if (bar) {
+            bar.style.width = `${percent}%`;
+            bar.parentElement.classList.toggle("is-indeterminate", loaded === 0);
+            bar.parentElement.setAttribute("aria-valuenow", String(percent));
+        }
+    }
+
+    // Teks status pemuatan di baris Layer Aktif.
+    function loadText(entry, load) {
+        if (load.status === "queued") {
+            return "Menunggu antrean…";
+        }
+        return entry.count > 0
+            ? `Memuat ${formatCount(load.loaded)} / ${formatCount(entry.count)} data`
+            : `Memuat ${formatCount(load.loaded)} data`;
+    }
+
+    /**
+     * Aktifkan layer (masuk antrean pemuatan). Resolve setelah semua layer tersebut
+     * selesai dimuat, gagal, atau dibatalkan.
      */
     async function activate(entries) {
+        const pending = [];
         for (const entry of entries) {
             if (isActive(entry)) {
                 if (state.hiddenKeys.has(entry.key)) {
@@ -159,26 +257,37 @@
 
             // Urutan daftar = urutan gambar di peta (indeks 0 paling atas); layer baru di atas.
             state.activeKeys.unshift(entry.key);
-            setLoading(entry, true);
-            try {
-                await waitUntilDataIdle();
-                await loadCategoryData(entry.leafName, entry.secondName, entry.rootName);
-                if (isActive(entry) && !state.hiddenKeys.has(entry.key)) {
-                    map.addLayer(entry.layerGroup);
-                    if (layerOpacityState.has(entry.leafName)) {
-                        setLayerGroupOpacity(entry.layerGroup, layerOpacityState.get(entry.leafName));
-                    }
-                    applyLayerOrder();
-                }
-            } finally {
-                setLoading(entry, false);
-            }
+            pending.push(enqueue(entry));
         }
-        refreshDependentPanels();
+        renderActiveList();
+        await Promise.all(pending);
     }
 
+    // Batalkan request yang berjalan (AbortController) atau keluarkan dari antrean.
+    function cancelLoad(entry) {
+        state.loads.get(entry.key)?.controller?.abort();
+        state.loads.delete(entry.key);
+        state.queue = state.queue.filter((job) => {
+            if (job.entry.key === entry.key) {
+                job.resolve();
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // Tombol "Coba lagi" setelah pemuatan gagal.
+    function retry(entry) {
+        state.errors.delete(entry.key);
+        enqueue(entry);
+        renderActiveList();
+    }
+
+    // Nonaktifkan mapset: batalkan pemuatannya bila masih berjalan, lalu lepas dari peta.
     function deactivate(entries) {
         entries.forEach((entry) => {
+            cancelLoad(entry);
+            state.errors.delete(entry.key);
             state.activeKeys = state.activeKeys.filter((key) => key !== entry.key);
             state.hiddenKeys.delete(entry.key);
             if (map.hasLayer(entry.layerGroup)) {
@@ -188,6 +297,7 @@
         refreshDependentPanels();
     }
 
+    // Tampilkan/sembunyikan tanpa menonaktifkan (data tetap tersimpan, tombol mata).
     function setVisibility(entry, isVisible) {
         if (isVisible) {
             state.hiddenKeys.delete(entry.key);
@@ -223,6 +333,7 @@
         }
     }
 
+    // Tombol naik/turun: geser urutan di daftar sekaligus urutan gambar di peta.
     function moveEntry(entry, direction) {
         const from = state.activeKeys.indexOf(entry.key);
         const to = from + direction;
@@ -233,9 +344,11 @@
         state.activeKeys.splice(to, 0, entry.key);
         applyLayerOrder();
         renderActiveList();
-        updateLayerToolsPanel();
+        generateLegend();
+        window.MarimoiLabels?.refresh();
     }
 
+    // Opacity untuk slider: nilai pilihan pengguna, atau opacity style bila belum diubah.
     function opacityOf(entry) {
         if (!layerOpacityState.has(entry.leafName)) {
             layerOpacityState.set(entry.leafName, getLayerGroupOpacity(entry.layerGroup));
@@ -243,13 +356,14 @@
         return layerOpacityState.get(entry.leafName);
     }
 
+    // Mapset aktif sesuai urutan daftar (indeks 0 = paling atas di peta).
     function getActiveEntries() {
         return state.activeKeys.map((key) => state.entryByKey.get(key)).filter(Boolean);
     }
 
     /**
-     * Nama dari link share/session bisa menunjuk dataset (daun) atau kelompok di
-     * atasnya (induk/sub kategori) — kelompok berarti semua dataset di bawahnya.
+     * Cari mapset berdasarkan nama dari link share/session. Nama bisa berupa mapset atau
+     * kelompok di atasnya (kategori / sub kategori) — kelompok berarti semua mapset di dalamnya.
      */
     function findEntriesByName(name) {
         const exact = state.entries.filter((entry) => entry.leafName === name);
@@ -259,6 +373,7 @@
         return state.entries.filter((entry) => entry.secondName === name || entry.rootName === name);
     }
 
+    // Aktifkan mapset dari daftar nama (link share, session, filter); kembalikan nama yang tidak ditemukan.
     async function activateByNames(names) {
         const missing = [];
         const entries = [];
@@ -279,6 +394,7 @@
 
     // ==================== Sidebar Layer Aktif ====================
 
+    // Gambar kartu katalog: gambar kategori bila ada, di atas pola titik berwarna + ikon layer.
     function thumbnailHtml(entry, extraClass = "") {
         const iconClass = entry.icon || (entry.isMarker ? "bi bi-geo-alt-fill" : "bi bi-bounding-box-circles");
         const fallback = `<span class="catalog-thumb-fallback" style="--layer-color:${escapeHtml(entry.color)}">
@@ -290,6 +406,7 @@
         return `<span class="catalog-thumb ${extraClass}">${fallback}${image}</span>`;
     }
 
+    // Gambar ulang sidebar Layer Aktif (chip filter, status pemuatan, slider, tombol aksi).
     function renderActiveList() {
         const container = document.getElementById("layer-list");
         if (!container) {
@@ -313,47 +430,80 @@
 
         const rows = active.map((entry, index) => {
             const isHidden = state.hiddenKeys.has(entry.key);
-            const isLoading = state.loadingKeys.has(entry.key);
+            const load = state.loads.get(entry.key);
+            const error = state.errors.get(entry.key);
+            const isBusy = Boolean(load) || Boolean(error);
             const name = escapeHtml(entry.leafName);
             const path = entry.path.length ? `<span class="active-layer-path">${escapeHtml(entry.path.join(" › "))}</span>` : "";
             const opacity = Math.round(opacityOf(entry) * 100);
+
+            let status = `<span class="active-layer-count">${formatCount(entry.count)} data</span>`;
+            if (load) {
+                status = `<span class="active-layer-count is-loading" data-layer-progress-text>${escapeHtml(loadText(entry, load))}</span>`;
+            } else if (error) {
+                status = `<span class="active-layer-count is-error" title="${escapeHtml(error)}">Gagal memuat data</span>`;
+            }
+
+            let controls;
+            if (load) {
+                const percent = entry.count > 0 ? Math.min(100, Math.round((load.loaded / entry.count) * 100)) : 0;
+                controls = `
+                    <span class="active-layer-progress${load.status === "queued" ? " is-queued" : load.loaded === 0 ? " is-indeterminate" : ""}" role="progressbar" aria-label="Kemajuan memuat ${name}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
+                        <span data-layer-progress-bar style="width:${load.status === "queued" ? 0 : percent}%"></span>
+                    </span>
+                    <button type="button" class="active-layer-cancel" data-layer-action="cancel" aria-label="Batalkan memuat ${name}">
+                        <i class="bi bi-x-circle"></i> Batalkan
+                    </button>`;
+            } else if (error) {
+                controls = `
+                    <button type="button" class="active-layer-retry" data-layer-action="retry" aria-label="Coba muat ulang ${name}">
+                        <i class="bi bi-arrow-clockwise"></i> Coba lagi
+                    </button>
+                    <span class="active-layer-actions">
+                        <button type="button" data-layer-action="remove" title="Hapus dari peta" aria-label="Hapus ${name}">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </span>`;
+            } else {
+                controls = `
+                    <label class="active-layer-opacity">
+                        <span class="sr-only">Opacity ${name}</span>
+                        <i class="bi bi-circle-half" aria-hidden="true"></i>
+                        <input type="range" min="0" max="100" step="5" value="${opacity}" data-layer-opacity style="accent-color:${escapeHtml(entry.color)}"${isHidden ? " disabled" : ""}>
+                        <output>${opacity}%</output>
+                    </label>
+                    <span class="active-layer-actions">
+                        <button type="button" data-layer-action="zoom" title="Perbesar ke layer" aria-label="Perbesar ke ${name}"${isHidden ? " disabled" : ""}>
+                            <i class="bi bi-crosshair"></i>
+                        </button>
+                        <button type="button" data-layer-action="visibility" title="${isHidden ? "Tampilkan" : "Sembunyikan"}" aria-label="${isHidden ? "Tampilkan" : "Sembunyikan"} ${name}" aria-pressed="${isHidden ? "false" : "true"}">
+                            <i class="bi ${isHidden ? "bi-eye-slash" : "bi-eye"}"></i>
+                        </button>
+                        <button type="button" data-layer-action="remove" title="Hapus dari peta" aria-label="Hapus ${name}">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </span>`;
+            }
+
             return `
-                <li class="active-layer${isHidden ? " is-hidden" : ""}${isLoading ? " is-loading" : ""}" data-key="${escapeHtml(entry.key)}">
+                <li class="active-layer${isHidden ? " is-hidden" : ""}${load ? " is-loading" : ""}${error ? " is-error" : ""}" data-key="${escapeHtml(entry.key)}">
                     <div class="active-layer-main">
                         <span class="active-layer-swatch" style="--layer-color:${escapeHtml(entry.color)}" aria-hidden="true"></span>
                         <span class="active-layer-text">
                             <span class="active-layer-name" title="${name}">${name}</span>
                             ${path}
-                            <span class="active-layer-count">${isLoading ? "Memuat data..." : `${formatCount(entry.count)} data`}</span>
+                            ${status}
                         </span>
                         <span class="active-layer-order">
-                            <button type="button" data-layer-action="up" title="Naikkan urutan" aria-label="Naikkan ${name}"${index === 0 ? " disabled" : ""}>
+                            <button type="button" data-layer-action="up" title="Naikkan urutan" aria-label="Naikkan ${name}"${index === 0 || isBusy ? " disabled" : ""}>
                                 <i class="bi bi-chevron-up"></i>
                             </button>
-                            <button type="button" data-layer-action="down" title="Turunkan urutan" aria-label="Turunkan ${name}"${index === active.length - 1 ? " disabled" : ""}>
+                            <button type="button" data-layer-action="down" title="Turunkan urutan" aria-label="Turunkan ${name}"${index === active.length - 1 || isBusy ? " disabled" : ""}>
                                 <i class="bi bi-chevron-down"></i>
                             </button>
                         </span>
                     </div>
-                    <div class="active-layer-controls">
-                        <label class="active-layer-opacity">
-                            <span class="sr-only">Opacity ${name}</span>
-                            <i class="bi bi-circle-half" aria-hidden="true"></i>
-                            <input type="range" min="0" max="100" step="5" value="${opacity}" data-layer-opacity style="accent-color:${escapeHtml(entry.color)}"${isHidden || isLoading ? " disabled" : ""}>
-                            <output>${opacity}%</output>
-                        </label>
-                        <span class="active-layer-actions">
-                            <button type="button" data-layer-action="zoom" title="Perbesar ke layer" aria-label="Perbesar ke ${name}"${isHidden || isLoading ? " disabled" : ""}>
-                                <i class="bi bi-crosshair"></i>
-                            </button>
-                            <button type="button" data-layer-action="visibility" title="${isHidden ? "Tampilkan" : "Sembunyikan"}" aria-label="${isHidden ? "Tampilkan" : "Sembunyikan"} ${name}" aria-pressed="${isHidden ? "false" : "true"}"${isLoading ? " disabled" : ""}>
-                                <i class="bi ${isHidden ? "bi-eye-slash" : "bi-eye"}"></i>
-                            </button>
-                            <button type="button" data-layer-action="remove" title="Hapus dari peta" aria-label="Hapus ${name}"${isLoading ? " disabled" : ""}>
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </span>
-                    </div>
+                    <div class="active-layer-controls">${controls}</div>
                 </li>`;
         });
 
@@ -375,6 +525,7 @@
             <ul class="active-layer-list">${rows.join("")}</ul>`;
     }
 
+    // Perbesar peta ke seluruh fitur satu mapset.
     function zoomToEntry(entry) {
         const bounds = typeof entry.layerGroup.getBounds === "function" ? entry.layerGroup.getBounds() : null;
         if (bounds && bounds.isValid()) {
@@ -389,6 +540,7 @@
         }
     }
 
+    // Satu handler untuk semua tombol di Layer Aktif (data-layer-action).
     function onActiveListClick(event) {
         const button = event.target.closest("[data-layer-action]");
         if (!button || button.disabled) {
@@ -407,8 +559,10 @@
             return;
         }
 
-        if (action === "remove") {
+        if (action === "remove" || action === "cancel") {
             deactivate([entry]);
+        } else if (action === "retry") {
+            retry(entry);
         } else if (action === "visibility") {
             setVisibility(entry, state.hiddenKeys.has(entry.key));
         } else if (action === "zoom") {
@@ -418,6 +572,7 @@
         }
     }
 
+    // Slider opacity: terapkan langsung ke peta saat digeser.
     function onActiveListInput(event) {
         const slider = event.target.closest("[data-layer-opacity]");
         const entry = slider ? state.entryByKey.get(slider.closest("[data-key]")?.dataset.key) : null;
@@ -434,6 +589,7 @@
 
     const FILTER_FIELDS = { kabupaten: "filter-kabupaten", tahun: "filter-tahun", opd_pengelola: "filter-opd" };
 
+    // Nilai select filter di modal (belum tentu sudah diterapkan ke peta).
     function readFilterInputs() {
         const values = {};
         Object.entries(FILTER_FIELDS).forEach(([key, id]) => {
@@ -442,6 +598,7 @@
         return values;
     }
 
+    // Pasang nilai ke select filter; opsi yang belum ada ditambahkan dulu.
     function writeFilterInputs(values) {
         Object.entries(FILTER_FIELDS).forEach(([key, id]) => {
             const select = document.getElementById(id);
@@ -460,11 +617,13 @@
         return Object.values(values).some(Boolean);
     }
 
+    // Teks ringkas filter untuk chip di Layer Aktif, mis. "Kota Ternate · 2025".
     function filterLabels(values) {
         const opdLabel = document.getElementById(FILTER_FIELDS.opd_pengelola)?.selectedOptions[0]?.textContent;
         return [values.kabupaten, values.tahun, values.opd_pengelola ? opdLabel || values.opd_pengelola : ""].filter(Boolean);
     }
 
+    // Saring kartu katalog ke mapset yang punya data sesuai filter (dari server).
     async function updateFilterMatches() {
         const filters = readFilterInputs();
         const requestId = ++state.filterRequest;
@@ -486,6 +645,7 @@
         renderCatalog();
     }
 
+    // Badge jumlah filter pada tombol Filter.
     function renderFilterState() {
         const count = Object.values(readFilterInputs()).filter(Boolean).length;
         el.filterCount.textContent = count ? String(count) : "";
@@ -493,12 +653,13 @@
         el.filterToggle.classList.toggle("is-active", count > 0);
     }
 
-    // ==================== Modal Katalog Data ====================
+    // ==================== Modal Katalog Peta ====================
 
     function isCatalogOpen() {
         return el.modal && !el.modal.classList.contains("hidden");
     }
 
+    // Buka katalog: pilihan disusun ulang dari layer aktif, filter dari yang sedang berlaku.
     function openCatalog() {
         if (!el.modal) {
             return;
@@ -539,6 +700,7 @@
         return state.groups.find((group) => group.name === name) || null;
     }
 
+    // Kartu yang tampil sesuai kelompok terpilih, filter, dan kata pencarian.
     function visibleEntries() {
         const term = state.searchTerm.trim().toLowerCase();
         // Pencarian selalu lintas kelompok; memilih kelompok mengosongkan pencarian.
@@ -558,6 +720,7 @@
         );
     }
 
+    // Tombol kategori/sub kategori di kolom kiri katalog.
     function groupButtonHtml({ group, sub, label, total, icon, isCurrent, depth, expandable, isExpanded }) {
         const chevron = expandable
             ? `<span class="catalog-group-toggle" data-group-toggle="${escapeHtml(group)}" role="button" tabindex="0" aria-label="${isExpanded ? "Tutup" : "Buka"} sub kategori ${escapeHtml(label)}" aria-expanded="${isExpanded}"><i class="bi ${isExpanded ? "bi-chevron-down" : "bi-chevron-right"}"></i></span>`
@@ -571,6 +734,7 @@
             </button>`;
     }
 
+    // Kolom kiri katalog: "Semua Mapset", kategori, dan sub kategori yang sedang dibuka.
     function renderGroups() {
         const allTotal = state.groups.reduce((sum, group) => sum + group.total, 0);
         const isSearching = state.searchTerm.trim() !== "";
@@ -614,10 +778,11 @@
         el.groupList.querySelector(".catalog-group.is-current")?.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
 
+    // Satu kartu mapset (gambar, jumlah data, nama, deskripsi, tombol Tambah/Hapus).
     function cardHtml(entry) {
         const isSelected = state.staged.has(entry.key);
         const isSearching = state.searchTerm.trim() !== "";
-        // Saat kelompok dibuka, jalurnya sudah terlihat di judul/judul bagian, jadi tidak diulang.
+        // Saat kelompok dibuka, jalurnya sudah terlihat di judul, jadi tidak diulang di kartu.
         const relativePath = isSearching || !state.currentGroup ? entry.path : [];
         const path = relativePath.length ? `<span class="catalog-card-path">${escapeHtml(relativePath.join(" › "))}</span>` : "";
         const description = entry.description || (entry.isMarker ? "Data titik lokasi" : "Data area / garis");
@@ -640,8 +805,8 @@
     }
 
     /**
-     * Saat satu kelompok induk dipilih (tanpa sub kategori/pencarian), kartu dikelompokkan
-     * per sub kategori: dataset langsung milik induk dulu, lalu tiap sub kategori.
+     * Saat satu kategori dibuka (tanpa sub kategori/pencarian), kartu dikelompokkan per
+     * sub kategori: mapset yang langsung di bawah kategori dulu, lalu tiap sub kategori.
      */
     function sectionsFor(entries) {
         const group = state.currentGroup && !state.currentSub && !state.searchTerm.trim() ? findGroup(state.currentGroup) : null;
@@ -660,6 +825,7 @@
         return sections;
     }
 
+    // Kolom kanan katalog: judul, daftar kartu (per bagian bila perlu), dan ringkasan pilihan.
     function renderItems() {
         const entries = visibleEntries();
         el.title.textContent = state.searchTerm.trim()
@@ -698,6 +864,7 @@
         renderSummary(entries);
     }
 
+    // Ringkasan "N layer · M terpilih" dan tombol Pilih/Batalkan Semua.
     function renderSummary(entries = visibleEntries()) {
         el.summary.textContent = `${formatCount(entries.length)} layer · ${formatCount(state.staged.size)} terpilih`;
         const allSelected = entries.length > 0 && entries.every((entry) => state.staged.has(entry.key));
@@ -714,35 +881,33 @@
         });
     }
 
-    async function applySelection() {
-        if (state.isApplying) {
-            return;
-        }
-        state.isApplying = true;
-        el.apply.disabled = true;
-
+    /**
+     * Terapkan pilihan katalog. Pemuatan layer berjalan di latar (antrean + kemajuan per baris
+     * di Layer Aktif), jadi katalog bisa langsung dipakai lagi tanpa menunggu.
+     */
+    function applySelection() {
         const toRemove = getActiveEntries().filter((entry) => !state.staged.has(entry.key));
         const toAdd = state.entries.filter((entry) => state.staged.has(entry.key) && !isActive(entry));
         state.appliedFilters = readFilterInputs();
 
+        // isApplying: closeCatalog() tidak boleh mengembalikan select filter yang baru diterapkan.
+        state.isApplying = true;
         closeCatalog();
-        try {
-            if (toRemove.length) {
-                deactivate(toRemove);
-            }
-            if (toAdd.length || state.activeKeys.length) {
-                document.getElementById("sidebar-layer")?.classList.remove("hidden");
-            }
-            if (toAdd.length) {
-                await activate(toAdd);
-            }
-            refreshDependentPanels();
-        } finally {
-            state.isApplying = false;
-            el.apply.disabled = false;
+        state.isApplying = false;
+
+        if (toRemove.length) {
+            deactivate(toRemove);
         }
+        if (toAdd.length || state.activeKeys.length) {
+            document.getElementById("sidebar-layer")?.classList.remove("hidden");
+        }
+        if (toAdd.length) {
+            activate(toAdd);
+        }
+        refreshDependentPanels();
     }
 
+    // Ikat semua event modal katalog (sekali saat halaman dibuka).
     function bindCatalogEvents() {
         el.modal = document.getElementById("catalogModal");
         if (!el.modal) {
@@ -863,7 +1028,7 @@
                 try {
                     localStorage.setItem("marimoi.catalogView", state.view);
                 } catch (error) {
-                    // Penyimpanan preferensi tampilan bersifat opsional.
+                    // localStorage bisa diblokir browser; preferensi tampilan cukup tidak disimpan.
                 }
                 renderCatalog();
             })
@@ -918,12 +1083,6 @@
         const layerList = document.getElementById("layer-list");
         layerList?.addEventListener("click", onActiveListClick);
         layerList?.addEventListener("input", onActiveListInput);
-        // Selesai menggeser: samakan slider di panel Layer Tools.
-        layerList?.addEventListener("change", (event) => {
-            if (event.target.matches("[data-layer-opacity]")) {
-                updateLayerToolsPanel();
-            }
-        });
     });
 
     window.MarimoiCatalog = {

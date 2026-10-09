@@ -220,7 +220,7 @@
                 </div>
             </div>
 
-            <!-- FAQ Item 2: Peta Tematik -->
+            <!-- FAQ Item 2: Peta Interaktif -->
             <div
                 class="tab mb-4 px-5 py-4 bg-white shadow-lg rounded-lg relative transition-all duration-300 hover:shadow-xl">
                 <input type="radio" name="faq" id="faq2" class="hidden peer">
@@ -230,15 +230,15 @@
                            after:text-gray-400 hover:after:text-gray-800 peer-checked:after:transform peer-checked:after:rotate-45 
                            after:transition-transform after:duration-300"
                     tabindex="0">
-                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Tematik?
+                    <h3 class="pr-4 md:pr-0 text-sm md:text-base"><i class="bi bi-map me-2"></i> Bagaimana cara menggunakan Peta Interaktif?
                     </h3>
                 </label>
                 <div class="answer mt-0 overflow-hidden transition-all ease-in-out duration-300 peer-checked:pt-4">
                     <div class="text-gray-700 text-sm md:text-md leading-relaxed">
-                        <p class="mb-3">Peta Tematik MARIMOI menyediakan visualisasi spasial dari berbagai data
+                        <p class="mb-3">Peta Interaktif MARIMOI menyediakan visualisasi spasial dari berbagai data
                             pembangunan di Maluku Utara. Untuk menggunakan fitur ini:</p>
                         <ol class="list-decimal list-inside space-y-2 pl-4">
-                            <li>Klik menu "Peta Tematik" pada navbar</li>
+                            <li>Klik menu "Peta Interaktif" pada navbar</li>
                             <li>Gunakan tombol kontrol di sisi kanan peta untuk:
                                 <ul class="list-disc list-inside pl-6 mt-1 space-y-1">
                                     <li>Bantuan - Melihat panduan penggunaan peta</li>

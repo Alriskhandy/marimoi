@@ -25,7 +25,7 @@
                             loading="lazy">
                             <div class="swiper-footer">
                                 <h2>Peta Contoh {{ $i }}</h2>
-                                <a href="{{ route('tampil.tematik') }}" class="view-map-btn">Lihat Peta</a>
+                                <a href="{{ route('tampil.interaktif') }}" class="view-map-btn">Lihat Peta</a>
                             </div>
                         </div>
                     @endforeach
@@ -329,7 +329,7 @@
                             loading="lazy">
                             <div class="swiper-footer">
                                 <h2>Peta {{ $peta->nama }}</h2>
-                                <form action="{{ route('post.tematik', $peta->id) }}" method="POST">
+                                <form action="{{ route('post.interaktif', $peta->id) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="view-map-btn">Lihat Peta</a>
                                 </form>

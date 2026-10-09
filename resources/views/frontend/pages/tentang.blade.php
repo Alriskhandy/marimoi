@@ -17,7 +17,7 @@
         ['Lokasi', 'filosofi-3.png', 'Elemen lokasi (pin) menegaskan fokus MARIMOI pada peta dan data spasial. Bentuknya menyatukan aspek identitas dan konteks geografis.'],
     ];
     $layanan = [
-        ['Peta Tematik', route('tampil.tematik')],
+        ['Peta Interaktif', route('tampil.interaktif')],
         ['Prioritas Daerah 2025-2029', route('tampil.prioritas')],
         ['Dokumen Publikasi', route('tampil.publikasi')],
         ['Aspirasi Masyarakat', route('tampil.aspirasi')],

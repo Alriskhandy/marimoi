@@ -32,7 +32,7 @@ class HomepageTest extends TestCase
         $response->assertDontSee('class="btn', false);
         $response->assertDontSee('class="container', false);
 
-        foreach (['tampil.tematik', 'tampil.prioritas', 'tampil.aspirasi', 'tampil.publikasi'] as $name) {
+        foreach (['tampil.interaktif', 'tampil.prioritas', 'tampil.aspirasi', 'tampil.publikasi'] as $name) {
             $response->assertSee('href="'.route($name).'"', false);
         }
     }

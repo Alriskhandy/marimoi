@@ -24,7 +24,7 @@
                 <h4 class="mb-4 font-grotesk text-xs uppercase tracking-widest text-white">Jelajahi</h4>
                 <ul class="grid gap-3">
                     <li><a href="{{ route('beranda') }}" class="{{ $footUnderline }} hover:text-white">Beranda</a></li>
-                    <li><a href="{{ route('tampil.tematik') }}" class="{{ $footUnderline }} hover:text-white">Peta</a></li>
+                    <li><a href="{{ route('tampil.interaktif') }}" class="{{ $footUnderline }} hover:text-white">Peta</a></li>
                     <li><a href="{{ route('tampil.prioritas') }}" class="{{ $footUnderline }} hover:text-white">Prioritas Daerah</a></li>
                     <li><a href="{{ route('tampil.publikasi') }}" class="{{ $footUnderline }} hover:text-white">Publikasi</a></li>
                     <li><a href="{{ route('tampil.aspirasi') }}" class="{{ $footUnderline }} hover:text-white">Aspirasi</a></li>

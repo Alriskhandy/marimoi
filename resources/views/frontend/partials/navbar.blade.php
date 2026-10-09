@@ -14,7 +14,7 @@
                         href="{{ route('beranda') }}"><span class="nav-text">Beranda</span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('tampil.tematik') ? 'active' : '' }}" href="{{ route('tampil.tematik') }}"><span class="nav-text">Peta Tematik</span></a>
+                    <a class="nav-link {{ request()->routeIs('tampil.interaktif') ? 'active' : '' }}" href="{{ route('tampil.interaktif') }}"><span class="nav-text">Peta Interaktif</span></a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('tampil.prioritas') ? 'active' : '' }}" href="{{ route('tampil.prioritas') }}">

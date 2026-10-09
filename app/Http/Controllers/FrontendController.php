@@ -290,7 +290,7 @@ class FrontendController extends Controller
     // TAMPILAN PETA //
     public function tematik()
     {
-        // Get selected category from session if exists
+        // Mapset pilihan dari tautan "Lihat peta" di beranda (lihat lihatTematik()).
         $selectedCategory = session('selectedCategory');
 
         return view('frontend.pages.peta', compact('selectedCategory'));
@@ -307,17 +307,17 @@ class FrontendController extends Controller
             session(['selectedCategory' => $mapsetName]);
             session()->flash('info', "Memuat peta {$mapsetName}...");
 
-            return redirect()->route('tampil.tematik');
+            return redirect()->route('tampil.interaktif');
         } catch (\Exception $e) {
             Log::error('Error in lihatTematik: '.$e->getMessage());
 
-            return redirect()->route('tampil.tematik')
+            return redirect()->route('tampil.interaktif')
                 ->with('error', 'Kategori peta tidak ditemukan.');
         }
     }
 
     /**
-     * Generate slug unik untuk membagikan kombinasi layer + viewport peta tematik.
+     * Generate slug unik untuk membagikan kombinasi layer + viewport Peta Interaktif.
      */
     public function createSharedMap(Request $request)
     {
@@ -354,12 +354,12 @@ class FrontendController extends Controller
         return response()->json([
             'success' => true,
             'slug' => $sharedMap->slug,
-            'url' => route('tematik.share.show', $sharedMap->slug),
+            'url' => route('interaktif.share.show', $sharedMap->slug),
         ]);
     }
 
     /**
-     * Muat halaman peta tematik dengan state layer + viewport dari link share.
+     * Muat halaman Peta Interaktif dengan state layer + viewport dari link share.
      */
     public function showSharedMap(string $slug)
     {
@@ -384,10 +384,11 @@ class FrontendController extends Controller
         return view('frontend.pages.prioritas');
     }
 
-    // API - AMBIL DATA GEOJSON BERDASARKAN DATA_TYPE - OPTIMIZED VERSION //
+    // ===== API PETA INTERAKTIF PUBLIK (dibaca public/frontend/js/map*.js) =====
+
     /**
-     * Versi data Peta Tematik. Klien membandingkannya dengan versi yang tersimpan bersama cache
-     * peta di browser; bila berbeda, cache dibuang (selain kedaluwarsa 24 jam bawaan).
+     * Versi data Peta Interaktif. Browser membandingkannya dengan versi yang tersimpan bersama
+     * cache peta; bila berbeda, cache dibuang (selain kedaluwarsa 24 jam).
      */
     public function tematikVersion()
     {
@@ -397,10 +398,8 @@ class FrontendController extends Controller
     }
 
     /**
-     * Kebalikan dari getCategoryTypeByDataType() — dipakai saat `type` request
-     * tidak diisi (mode "semua tipe"), karena tiap fitur v3 tidak lagi
-     * menyimpan data_type/sub_type langsung (itu atribut kategori/layer,
-     * bukan kolom per-fitur seperti data_spatial lama).
+     * Pasangan data_type/sub_type untuk properti feature saat request tidak menyertakan
+     * `type` (feature V3 tidak menyimpan jenis data per baris).
      *
      * @return array{0: ?string, 1: ?string} [data_type, sub_type]
      */
@@ -417,17 +416,15 @@ class FrontendController extends Controller
     }
 
     /**
-     * Sejak Fase 4 (plan mellow-weaving-eclipse) dibaca dari skema v3
-     * (spatial_features_v3/layers_v3/categories_v3/category_nodes) — bukan
-     * lagi data_spatial/categories lama. `data_spatial` tetap jadi sumber
-     * tulis admin (DataSpatialController, belum direwrite, lihat Fase 5) dan
-     * direplikasi real-time ke spatial_features_v3 lewat
-     * App\Support\SpatialFeaturesV3Sync (lihat AppServiceProvider), supaya
-     * endpoint ini tetap up-to-date tanpa menunggu command migrasi manual.
-     * Field deskripsi/sumber_data/tanggal_data/opd_pengelola yang tidak ada
-     * di `properties` v3 dibaca balik lewat LEFT JOIN ke data_spatial via
-     * `legacy_data_spatial_id` (read-only, pola sama seperti
-     * SpatialMapController::featureDetail()).
+     * GET /geojson — data peta publik dari skema V3 (spatial_features, layers, layer_styles).
+     *
+     * - `?metadata_only=true`: daftar mapset untuk Katalog Peta (lihat PublicMapCatalog).
+     * - Tanpa itu: feature GeoJSON per potongan (`limit` maks. 3000, `offset`), bisa disaring
+     *   `kategori[]` (nama mapset), `year`, `bbox`, `search`, dan `dbf_filter`.
+     *
+     * Hanya Layer berstatus published yang dikirim. Deskripsi, sumber data, tanggal, tahun,
+     * OPD, dan gambar dari data lama dibaca lewat LEFT JOIN ke data_spatial_legacy_v1
+     * (`legacy_data_spatial_id`), karena belum semuanya ada di `properties` V3.
      */
     public function getGeojsonByDataType(Request $request)
     {
@@ -437,7 +434,6 @@ class FrontendController extends Controller
             $year = $request->get('year');
             $metadataOnly = $request->boolean('metadata_only');
 
-            // Jika hanya butuh metadata (kategori), return categories saja
             if ($metadataOnly) {
                 return $this->getCategoriesMetadata($dataType, $subType);
             }
@@ -453,8 +449,10 @@ class FrontendController extends Controller
                     'sf.layer_id',
                     'ds.uuid',
                     'sf.gambar',
+                    'ds.gambar as legacy_gambar',
                     'l.legacy_category_id as kategori_id',
                     'sf.properties',
+                    'sf.style_override',
                     DB::raw('ds.deskripsi as deskripsi'),
                     DB::raw("COALESCE(ds.sumber_data, sf.properties->>'sumber_data') as sumber_data"),
                     DB::raw("COALESCE(opd.name, sf.properties->>'opd_penanggung_jawab') as opd_pengelola"),
@@ -471,26 +469,16 @@ class FrontendController extends Controller
                 ->whereNull('l.deleted_at')
                 ->whereNull('cat_root.deleted_at');
 
-            // Apply filters with validation
-            //
-            // `categories_v3.type` (dan `cat_root.type` di query di atas)
-            // DIHAPUS 2026-10-06 (kolom type/icon/color/is_active/gambar/
-            // is_marker dibuang dari categories_v3/category_nodes — gaya
-            // tampil sudah sepenuhnya milik layer_styles, dan pengelompokan
-            // jenis sudah tersedia lewat layers.map_type_id -> map_types).
-            // Filter `?type=` endpoint publik ini SENGAJA dibiarkan no-op
-            // untuk sementara (atas keputusan user) — perlu diganti supaya
-            // baca `map_types.slug` lewat `l.map_type_id`, bukan bagian dari
-            // migration ini.
+            // Parameter `type`/`sub_type` sengaja tidak menyaring apa pun: skema V3 tidak lagi
+            // menyimpan jenis data (tematik/PSD/dll.) pada kategori maupun layer.
 
             if ($year && is_numeric($year)) {
                 $query->whereRaw("COALESCE(ds.tahun, NULLIF(sf.properties->>'tahun', '')::int) = ?", [intval($year)]);
             }
 
-            // Filter by specific categories (untuk on-demand loading)
+            // Pemuatan per mapset: frontend mengirim nama mapset di `kategori[]`.
             if ($request->has('kategori') && ! empty($request->kategori)) {
                 $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
-                // Sanitize category names
                 $categories = array_filter(array_map('trim', $categories));
                 if (! empty($categories)) {
                     // `kategori[]` = nama mapset dari PublicMapCatalog (nama tampilan unik per Layer).
@@ -498,12 +486,11 @@ class FrontendController extends Controller
                 }
             }
 
-            // Bounding box filter dengan validasi koordinat
+            // `bbox` = minLng,minLat,maxLng,maxLat; diabaikan bila koordinat di luar rentang derajat.
             if ($request->has('bbox') && ! empty($request->bbox)) {
                 $bbox = explode(',', $request->bbox);
                 if (count($bbox) === 4) {
                     $bbox = array_map('floatval', $bbox);
-                    // Validate bbox coordinates
                     if (
                         $bbox[0] >= -180 && $bbox[0] <= 180 &&
                         $bbox[1] >= -90 && $bbox[1] <= 90 &&
@@ -519,7 +506,7 @@ class FrontendController extends Controller
                 }
             }
 
-            // Search filter dengan sanitasi
+            // Pencarian teks pada nama layer, deskripsi, dan seluruh atribut feature.
             if ($request->has('search') && ! empty($request->search)) {
                 $search = trim($request->search);
                 if (strlen($search) > 0) {
@@ -531,7 +518,7 @@ class FrontendController extends Controller
                 }
             }
 
-            // DBF attribute filter dengan validasi JSON
+            // `dbf_filter[ATRIBUT]=nilai`: atribut feature harus sama persis dengan nilai.
             if ($request->has('dbf_filter') && ! empty($request->dbf_filter) && is_array($request->dbf_filter)) {
                 foreach ($request->dbf_filter as $attribute => $value) {
                     if (is_string($attribute) && ! empty($attribute)) {
@@ -544,32 +531,24 @@ class FrontendController extends Controller
                 }
             }
 
-            // Enhanced limit and offset with maximum cap
-            $limit = min(intval($request->get('limit', 500)), 3000); // Max 3000 records
+            $limit = min(intval($request->get('limit', 500)), 3000);
             $offset = max(0, intval($request->get('offset', 0)));
 
-            // Apply limit and offset
-            $query->limit($limit)->offset($offset);
+            // Urut id supaya potongan limit/offset berikutnya tidak tumpang tindih.
+            $query->limit($limit)->offset($offset)->orderBy('sf.id');
 
-            // Add ordering untuk konsistensi
-            $query->orderBy('sf.id');
-
-            // Execute query with timeout protection
             $startTime = microtime(true);
             $lokasis = $query->get();
             $queryTime = microtime(true) - $startTime;
 
             Log::info("Query executed in {$queryTime} seconds, returned ".$lokasis->count().' records');
 
-            // Check if query took too long
             if ($queryTime > 30) {
                 Log::warning("Slow query detected: {$queryTime} seconds");
             }
 
-            // Key struktural yang sudah disurfacekan eksplisit sebagai field
-            // tetap di bawah — jangan ikut di-spread lagi dari raw properties,
-            // supaya tidak menimpa balik format yang sudah diformat (tanggal_data
-            // d-m-Y, dst) dengan nilai mentahnya.
+            // Kunci ini sudah dikirim sebagai field tersendiri (sudah diformat, mis. tanggal_data
+            // d-m-Y), jadi tidak ikut disalin lagi dari properties mentah agar tidak tertimpa.
             $structuralKeys = ['sumber_data', 'tanggal_data', 'tahun', 'opd_penanggung_jawab'];
             $mapsetNames = PublicMapCatalog::namesById();
 
@@ -586,7 +565,6 @@ class FrontendController extends Controller
                         }
                     }
 
-                    // Handle geometry safely
                     $geometry = null;
                     if (! empty($lokasi->geojson)) {
                         if (is_string($lokasi->geojson)) {
@@ -596,12 +574,17 @@ class FrontendController extends Controller
                         }
                     }
 
-                    // `kategori_type` tidak lagi tersedia sejak categories_v3.type
-                    // dihapus (lihat catatan di atas) — tanpa `type` di query
-                    // string, data_type/sub_type sekarang selalu null.
                     [$featureDataType, $featureSubType] = $dataType
                         ? [$dataType, $subType]
                         : $this->dataTypeFromCategoryType(null);
+
+                    // Foto dokumentasi: gambar fitur V3 lalu gambar data lama (tanpa duplikat).
+                    $gambarList = collect([$lokasi->gambar, $lokasi->legacy_gambar])
+                        ->filter()
+                        ->unique()
+                        ->map(fn (string $path) => asset('storage/'.$path))
+                        ->values()
+                        ->all();
 
                     $feature = [
                         'type' => 'Feature',
@@ -610,7 +593,8 @@ class FrontendController extends Controller
                             'uuid' => $lokasi->uuid,
                             'data_type' => $featureDataType,
                             'sub_type' => $featureSubType,
-                            'gambar' => $lokasi->gambar ? asset('storage/'.$lokasi->gambar) : null,
+                            'gambar' => $gambarList[0] ?? null,
+                            'gambar_list' => $gambarList,
                             'kategori_id' => $lokasi->kategori_id,
                             'kategori' => $mapsetNames[$lokasi->layer_id] ?? null,
                             'tahun' => $lokasi->tahun,
@@ -623,6 +607,8 @@ class FrontendController extends Controller
                             'icon' => $lokasi->icon,
                             'warna' => $lokasi->warna,
                             'is_marker' => (bool) $lokasi->is_marker,
+                            // Style khusus Data Spasial ini (diatur per fitur di dashboard); null = ikut style Layer.
+                            'style_override' => $lokasi->style_override ? json_decode($lokasi->style_override, true) : null,
                         ], $dbfAttributes),
                         'geometry' => $geometry,
                     ];
@@ -632,7 +618,7 @@ class FrontendController extends Controller
                 } catch (\Exception $featureError) {
                     Log::error("Error processing feature {$lokasi->id}: ".$featureError->getMessage());
 
-                    // Continue processing other features
+                    // Satu feature rusak tidak boleh menggagalkan seluruh potongan.
                     continue;
                 }
             }
@@ -647,7 +633,8 @@ class FrontendController extends Controller
                     'total_features' => count($features),
                     'limit' => $limit,
                     'offset' => $offset,
-                    'has_more' => count($features) == $limit, // Indikasi ada data lagi
+                    // Potongan penuh = kemungkinan masih ada data di offset berikutnya.
+                    'has_more' => count($features) == $limit,
                     'query_time' => round($queryTime, 3),
                     'processed_count' => $processedCount,
                     'max_limit' => 3000,
@@ -677,7 +664,7 @@ class FrontendController extends Controller
 
     /**
      * Nilai distinct Kabupaten/Kota, Tahun, dan OPD Pengelola untuk mengisi dropdown
-     * filter Peta Tematik tanpa harus menunggu layer tertentu dimuat/dicentang dulu
+     * filter Peta Interaktif tanpa harus menunggu layer tertentu dimuat/dicentang dulu
      * di browser (beda dari opsi yang digali progresif dari feature yang sudah
      * dirender di refreshFilterPanel() pada map.js).
      */

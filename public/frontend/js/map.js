@@ -1,18 +1,23 @@
-// map-app.js - Enhanced version with comprehensive loading effects and 3-level hierarchy
 /**
- * map-app.js - Enhanced version with comprehensive loading effects and 3-level hierarchy
- * Entry point utama aplikasi peta frontend dengan loading data yang efisien dan visual loading indicators.
+ * map.js — inti Peta Interaktif publik (URL /peta-interaktif).
+ *
+ * Berisi: inisialisasi Leaflet & basemap, zoom halus, style fitur dari dashboard,
+ * pemuatan data per mapset (cache IndexedDB + /geojson), popup, legenda, filter,
+ * dan share. File pendamping (dimuat setelah file ini, memakai global di bawah):
+ *   - map-catalog.js        Katalog Peta & daftar Layer Aktif (state layer aktif)
+ *   - map-feature-detail.js Panel/modal detail fitur
+ *   - map-labels.js         Label teks fitur di peta
+ *   - map-guide.js          Panduan (tur) peta
+ *   - map-cache.js          MapDataStore (cache IndexedDB), dimuat sebelum file ini
  */
 
 /**
- * Konfigurasi utama peta, termasuk daftar basemap, center, zoom, dan style default.
+ * Posisi awal peta (tengah Maluku Utara) dan daftar basemap yang bisa dipilih.
  */
 const mapConfig = {
-    weight: 6,
-    center: [0.735485, 128.028201], // Koordinat tengah Maluku Utara
+    center: [0.735485, 128.028201],
     zoom: 7,
     baseMapsList: [
-        // OpenStreetMap
         {
             id: "osm",
             label: "OpenStreetMap",
@@ -20,7 +25,6 @@ const mapConfig = {
             maxZoom: 19,
         },
 
-        // ESRI Streets
         {
             id: "esri-streets",
             label: "ESRI Streets",
@@ -28,7 +32,6 @@ const mapConfig = {
             maxZoom: 19,
         },
 
-        // Topographic
         {
             id: "esri-topographic",
             label: "Topographic",
@@ -36,7 +39,6 @@ const mapConfig = {
             maxZoom: 19,
         },
 
-        // ESRI Oceans
         {
             id: "esri-oceans",
             label: "ESRI Oceans",
@@ -44,7 +46,6 @@ const mapConfig = {
             maxZoom: 16,
         },
 
-        // ESRI World Imagery
         {
             id: "esri-world-imagery",
             label: "ESRI World Imagery",
@@ -52,7 +53,6 @@ const mapConfig = {
             maxZoom: 18,
         },
 
-        // ESRI Dark Gray Canvas
         {
             id: "esri-dark-gray",
             label: "ESRI Dark Gray Canvas",
@@ -60,7 +60,6 @@ const mapConfig = {
             maxZoom: 16,
         },
 
-        // Light Gray Canvas
         {
             id: "esri-light-gray",
             label: "Light Gray Canvas",
@@ -68,7 +67,7 @@ const mapConfig = {
             maxZoom: 16,
         },
 
-        // Google Maps (mungkin perlu API key)
+        // Tile Google tanpa API key resmi: bisa sewaktu-waktu diblokir Google.
         {
             id: "google-roadmap",
             label: "Google Map (ROADMAP)",
@@ -94,18 +93,19 @@ const mapConfig = {
 };
 
 /**
- * Inisialisasi objek Leaflet map dengan konfigurasi awal.
- */
-/**
- * Pengganti scrollWheelZoom bawaan Leaflet (yang men-debounce wheel lalu melompat
- * dengan animasi per kelompok). Setiap event wheel hanya menggeser target zoom; tiap
- * frame zoom peta dikejar ke target di sekitar posisi kursor, sehingga scroll mouse
- * dan pinch/scroll trackpad (wheel + ctrlKey) mengalir kontinu.
+ * Zoom halus untuk scroll mouse & touchpad, pengganti scrollWheelZoom bawaan Leaflet
+ * (yang mengumpulkan beberapa scroll lalu melompat sekaligus).
  *
- * Anti-goyang: (1) titik acuan dihitung dari center/zoom eksak milik handler ini dan
- * hanya diperbarui saat kursor benar-benar berpindah, supaya galat pembulatan tidak
- * menumpuk; (2) Leaflet membulatkan pixel origin ke piksel bulat di setiap _move —
- * sisa pecahannya dikompensasi dengan translate sub-piksel pada map pane.
+ * Cara kerja: setiap event wheel hanya menggeser target zoom; tiap frame zoom peta
+ * dikejar mendekati target dengan titik di bawah kursor sebagai pusat. Gerakan cubit
+ * touchpad (wheel + ctrlKey) diberi sensitivitas lebih tinggi. Saat scroll berhenti, zoom
+ * dirapikan ke kelipatan 0,1 terdekat (mis. 9,3) dan dipertahankan di sana.
+ *
+ * Supaya peta tidak bergoyang:
+ *   1. Titik acuan dihitung dari center/zoom milik handler ini (bukan dari peta yang sudah
+ *      dibulatkan) dan baru diperbarui bila kursor berpindah > 2px.
+ *   2. Leaflet membulatkan posisi peta ke piksel bulat setiap _move; sisa pecahannya
+ *      dikoreksi dengan translate sub-piksel pada map pane (_compensateRounding).
  */
 const SmoothWheelZoom = L.Handler.extend({
     addHooks: function () {
@@ -186,10 +186,14 @@ const SmoothWheelZoom = L.Handler.extend({
             `translate3d(${panePos.x - error.x}px, ${panePos.y - error.y}px, 0)`;
     },
 
+    // Scroll berhenti: target dirapikan ke kelipatan zoomSnap terdekat (0,1), tunggu animasi
+    // mencapainya, lalu akhiri gerakan di sana.
     _finish: function () {
-        const snapped = Math.round(this._goalZoom);
-        if (snapped !== this._goalZoom) {
-            this._goalZoom = Math.min(this._map.getMaxZoom(), Math.max(this._map.getMinZoom(), snapped));
+        const map = this._map;
+        const snap = map.options.zoomSnap;
+        if (snap > 0) {
+            const snapped = Math.round(this._goalZoom / snap) * snap;
+            this._goalZoom = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), Number(snapped.toFixed(2))));
         }
         if (Math.abs(this._goalZoom - this._zoom) > 0.0005) {
             this._endTimer = setTimeout(() => this._finish(), 50);
@@ -208,22 +212,22 @@ const SmoothWheelZoom = L.Handler.extend({
 });
 L.Map.addInitHook("addHandler", "smoothWheelZoom", SmoothWheelZoom);
 
-// Peta selalu berhenti di level zoom bulat: di level pecahan tile diskalakan sehingga buram
-// dan muncul garis celah antar-tile. Gerakan zoom tetap halus selama berlangsung.
+// zoomSnap 0.1: zoom berhenti di kelipatan 0,1 (scroll, pinch, fitBounds). Di zoom pecahan
+// tile basemap diskalakan browser, jadi bisa sedikit kurang tajam dibanding zoom bulat.
+// (Memperbesar ukuran tile untuk menutup celah justru memunculkan garis putih — jangan.)
 const map = L.map("map", {
     zoomControl: true,
     attributionControl: true,
-    zoomSnap: 1,
+    zoomSnap: 0.1,
     zoomDelta: 1,
     scrollWheelZoom: false,
     smoothWheelZoom: true,
 }).setView(mapConfig.center, mapConfig.zoom);
 
 /**
- * Tombol Fullscreen & Home, dirender sebagai Leaflet control 'topleft' (bukan div
- * absolute custom) supaya otomatis memakai class/ukuran/spacing yang persis sama
- * dengan tombol zoom in/out bawaan Leaflet di atasnya (termasuk saat leaflet-touch
- * mode aktif dan tombol zoom membesar ke 30px) — tanpa perlu hardcode pixel manual.
+ * Tombol Tampilan Penuh & Default Zoom, dibuat sebagai Leaflet control agar ukuran dan
+ * jaraknya otomatis sama dengan tombol zoom bawaan di atasnya. Aksinya diikat di
+ * DOMContentLoaded (#btn-fullscreen, #btn-default-zoom).
  */
 const LeftControlButtons = L.Control.extend({
     options: { position: "topleft" },
@@ -255,198 +259,31 @@ const LeftControlButtons = L.Control.extend({
 });
 map.addControl(new LeftControlButtons());
 
-/**
- * Tombol toggle panel "Layer Tools", dirender sebagai Leaflet control 'topleft'
- * terpisah supaya otomatis menyambung tepat di bawah tombol Fullscreen/Home
- * dengan spacing yang sama seperti antar-control Leaflet lainnya.
- */
-const LayerToolsControl = L.Control.extend({
-    options: { position: "topleft" },
-    onAdd: function () {
-        const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+// ---- State global (juga dibaca file map-*.js lain) ----
 
-        const toolsBtn = L.DomUtil.create("a", "", container);
-        toolsBtn.id = "btn-toggle-layer-tools";
-        toolsBtn.href = "#";
-        toolsBtn.title = "Layer Tools";
-        toolsBtn.setAttribute("role", "button");
-        toolsBtn.setAttribute("aria-label", "Layer Tools");
-        toolsBtn.innerHTML = '<i class="bi bi-sliders"></i>';
-
-        L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.disableScrollPropagation(container);
-
-        return container;
-    },
-});
-map.addControl(new LayerToolsControl());
-
-// Menyimpan opacity per layer aktif (key: nama kategori level-3) agar tetap
-// konsisten saat panel Layer Tools dibuka/ditutup atau layer lain diaktifkan.
+// Opacity pilihan pengguna per mapset (key: nama mapset), diatur slider di Layer Aktif.
 const layerOpacityState = new Map();
 
-// Update layerGroups structure to support 3 levels
+// Layer group Leaflet per mapset: layerGroups[kategori][sub kategori][mapset].
 let layerGroups = {};
 let currentBaseMap = null;
+// Warna utama per nama mapset (cadangan bila style lengkap tidak tersedia).
 let kategoriWarnaMap = {};
-let iconMap = {};
-let loadedCategories = new Set(); // Track loaded categories
-let isLoadingData = false; // Prevent concurrent loading
-let currentLoadingCategory = null; // Track current loading category
-let loadingProgressInterval = null; // For animated progress
-
-// Add near the top after other global variables
-let mapDataStore = null; // Will be initialized in DOMContentLoaded
+// Mapset yang datanya sudah selesai dimuat ke layer group-nya.
+let loadedCategories = new Set();
+// Cache IndexedDB (MapDataStore dari map-cache.js), dibuat saat DOMContentLoaded.
+let mapDataStore = null;
 
 /**
- * Create and manage loading overlay
+ * Tampilkan notifikasi singkat (toast) di tengah atas peta.
+ * Pesan info berawalan "Memuat" diberi spinner dan tidak hilang sendiri.
+ *
+ * @returns {HTMLElement} elemen toast, untuk ditutup manual lewat hideToast()
  */
-function createLoadingOverlay() {
-    if (document.getElementById("map-loading-overlay")) return;
-
-    const overlay = document.createElement("div");
-    overlay.id = "map-loading-overlay";
-    overlay.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-family: Arial, sans-serif;
-    `;
-
-    overlay.innerHTML = `
-        <div class="loading-spinner" style="
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #ffffff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        "></div>
-        <div id="loading-text" style="
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-        ">Memuat data...</div>
-        <div id="loading-progress" style="
-            font-size: 14px;
-            opacity: 0.9;
-            text-align: center;
-        ">Mempersiapkan...</div>
-        <div id="loading-bar-container" style="
-            width: 300px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            margin-top: 15px;
-            overflow: hidden;
-        ">
-            <div id="loading-bar" style="
-                width: 0%;
-                height: 100%;
-                background: linear-gradient(90deg, #4CAF50, #81C784);
-                border-radius: 3px;
-                transition: width 0.3s ease;
-            "></div>
-        </div>
-    `;
-
-    // Add CSS animation for spinner
-    const style = document.createElement("style");
-    style.textContent = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    const mapContainer = document.getElementById("map");
-    mapContainer.style.position = "relative";
-    mapContainer.appendChild(overlay);
-}
-
-/**
- * Show loading overlay with category name
- */
-function showLoadingOverlay(categoryName) {
-    createLoadingOverlay();
-    const overlay = document.getElementById("map-loading-overlay");
-    const loadingText = document.getElementById("loading-text");
-    const loadingProgress = document.getElementById("loading-progress");
-    const loadingBar = document.getElementById("loading-bar");
-
-    currentLoadingCategory = categoryName;
-    loadingText.textContent = `Memuat data ${categoryName}`;
-    loadingProgress.textContent = "Mengirim permintaan ke server...";
-    loadingBar.style.width = "10%";
-
-    overlay.style.display = "flex";
-}
-
-/**
- * Update loading progress
- */
-function updateLoadingProgress(loaded, total, message = "") {
-    const loadingProgress = document.getElementById("loading-progress");
-    const loadingBar = document.getElementById("loading-bar");
-
-    if (loadingProgress && loadingBar) {
-        const percentage = Math.min(Math.max((loaded / total) * 100, 10), 100);
-        loadingBar.style.width = `${percentage}%`;
-
-        if (message) {
-            loadingProgress.textContent = message;
-        } else {
-            loadingProgress.textContent = `${loaded} dari ${total} fitur dimuat`;
-        }
-    }
-}
-
-/**
- * Hide loading overlay
- */
-function hideLoadingOverlay() {
-    const overlay = document.getElementById("map-loading-overlay");
-    if (overlay) {
-        overlay.style.display = "none";
-    }
-    currentLoadingCategory = null;
-
-    if (loadingProgressInterval) {
-        clearInterval(loadingProgressInterval);
-        loadingProgressInterval = null;
-    }
-}
-
-
 function showAlert(message, type = "info", persistent = false) {
-    // Debug logging disabled for production
     const toastContainer = document.getElementById("toast-container");
     if (!toastContainer) return;
 
-    // Mapping warna sesuai tipe
     const colors = {
         success: "bg-green-500 text-white",
         danger: "bg-red-500 text-white",
@@ -458,7 +295,6 @@ function showAlert(message, type = "info", persistent = false) {
         type === "info" &&
         (message.includes("Memuat") || message.includes("Loading"));
 
-    // Elemen toast
     const toast = document.createElement("div");
     toast.className = `
         flex items-center px-4 py-3 rounded-lg shadow-lg text-sm font-medium
@@ -482,7 +318,6 @@ function showAlert(message, type = "info", persistent = false) {
             <button class="ml-3 text-lg leading-none focus:outline-none">&times;</button>
         `;
 
-        // Tombol close
         toast
             .querySelector("button")
             .addEventListener("click", () => hideToast(toast));
@@ -490,13 +325,12 @@ function showAlert(message, type = "info", persistent = false) {
 
     toastContainer.appendChild(toast);
 
-    // Trigger animasi masuk
+    // Kelas transisi dilepas setelah elemen masuk DOM supaya animasi masuknya berjalan.
     setTimeout(() => {
         toast.classList.remove("opacity-0", "translate-y-2");
         toast.classList.add("opacity-100", "translate-y-0");
     }, 50);
 
-    // Auto hide
     if (!persistent && !isLoading) {
         const delay = type === "success" ? 4000 : 6000;
         setTimeout(() => hideToast(toast), delay);
@@ -516,176 +350,304 @@ function hideToast(toast) {
     }, 500);
 }
 
+// =====================================================================
+// Style fitur — aturan sama dengan preview peta di dashboard (spatial-layers/show)
+// =====================================================================
+
 /**
- * Menghasilkan style untuk kategori tertentu.
+ * Rasio isian area terhadap opacity style — sama dengan preview peta di dashboard
+ * (spatial-layers/show: fillOpacity = opacity * 0.4), supaya area tetap tembus pandang.
  */
-function getStyleForCategory(kategori) {
-    const warna = kategoriWarnaMap[kategori] || "#ECE6D6";
+const POLYGON_FILL_RATIO = 0.4;
 
-    // Return function yang akan dipanggil dengan feature
-    return function (feature) {
-        const geometryType = feature.geometry.type;
-        const categoryStyles = {
-            polygon: {
-                color: warna,
-                weight: 2,
-                opacity: 0.7,
-                fillColor: warna,
-                fillOpacity: 0.4,
-                lineCap: "round",
-                lineJoin: "round",
-            },
-            line: {
-                color: warna,
-                weight: 5,
-                opacity: 0.9,
-                lineCap: "round",
-                lineJoin: "round",
-            },
-        };
-
-        // Tentukan style berdasarkan geometry type
-        if (
-            geometryType === "LineString" ||
-            geometryType === "MultiLineString"
-        ) {
-            return {
-                ...categoryStyles.line,
-                interactive: true,
-                className: "leaflet-interactive-line",
-            };
-        } else if (
-            geometryType === "Polygon" ||
-            geometryType === "MultiPolygon"
-        ) {
-            return {
-                ...categoryStyles.polygon,
-                interactive: true,
-                className: "leaflet-interactive-polygon",
-            };
-        } else {
-            // Point akan menggunakan marker, return basic style
-            return {
-                ...categoryStyles.polygon,
-                interactive: true,
-            };
+/**
+ * Style Layer (mapset) dari metadata katalog: hasil PublicMapCatalog::style() di server.
+ */
+function getLayerStyle(categoryName) {
+    const item = (window.MARIMOI_CATEGORY_METADATA?.all_categories || []).find((c) => c.nama === categoryName);
+    return (
+        item?.style || {
+            type: "simple",
+            color: kategoriWarnaMap[categoryName] || "#2563eb",
+            icon: null,
+            is_marker: false,
+            opacity: 1,
+            size: 6,
+            field: null,
+            classes: [],
         }
+    );
+}
+
+/**
+ * Kelas categorized (nilai sama persis) / graduated (min ≤ nilai ≤ max) yang cocok.
+ */
+function matchStyleClass(layerStyle, properties) {
+    if (!layerStyle.field || !Array.isArray(layerStyle.classes)) {
+        return null;
+    }
+    const raw = properties?.[layerStyle.field];
+    if (raw === undefined || raw === null) {
+        return null;
+    }
+
+    if (layerStyle.type === "categorized") {
+        return layerStyle.classes.find((cls) => String(cls.value ?? "") === String(raw)) || null;
+    }
+
+    const value = Number(raw);
+    if (layerStyle.type === "graduated" && !Number.isNaN(value)) {
+        return (
+            layerStyle.classes.find((cls) => {
+                const min = cls.min === null || cls.min === undefined || cls.min === "" ? -Infinity : Number(cls.min);
+                const max = cls.max === null || cls.max === undefined || cls.max === "" ? Infinity : Number(cls.max);
+                return value >= min && value <= max;
+            }) || null
+        );
+    }
+
+    return null;
+}
+
+/**
+ * Style akhir satu feature, urutan sama dengan dashboard: style Layer → kelas
+ * (categorized/graduated) → style_override per Data Spasial.
+ */
+function resolveFeatureStyle(feature, categoryName) {
+    const layerStyle = getLayerStyle(categoryName);
+    const matchedClass = matchStyleClass(layerStyle, feature.properties);
+    const override = feature.properties?.style_override;
+
+    const resolved = {
+        color: matchedClass?.color || layerStyle.color || "#2563eb",
+        icon: layerStyle.is_marker ? layerStyle.icon : null,
+        opacity: Number(layerStyle.opacity ?? 1),
+        size: Number(layerStyle.size ?? 6),
+    };
+
+    if (override) {
+        resolved.color = override.color ?? resolved.color;
+        resolved.icon = override.is_marker ? override.icon || null : null;
+        resolved.opacity = Number(override.opacity ?? resolved.opacity);
+        resolved.size = Number(override.size ?? resolved.size);
+    }
+
+    return resolved;
+}
+
+/**
+ * Style Leaflet untuk area/garis (fungsi `style` L.geoJSON).
+ */
+function getStyleForCategory(categoryName) {
+    return function (feature) {
+        const s = resolveFeatureStyle(feature, categoryName);
+        const isLine = ["LineString", "MultiLineString"].includes(feature.geometry?.type);
+
+        return {
+            color: s.color,
+            weight: 2,
+            opacity: s.opacity,
+            fillColor: s.color,
+            fillOpacity: s.opacity * POLYGON_FILL_RATIO,
+            lineCap: "round",
+            lineJoin: "round",
+            interactive: true,
+            className: isLine ? "leaflet-interactive-line" : "leaflet-interactive-polygon",
+        };
     };
 }
 
 /**
- * Membuat dan menampilkan legend pada UI berdasarkan kategori dan icon/warna.
+ * Simbol titik: ikon berwarna bila style memakai ikon, selain itu lingkaran berjari-jari
+ * `size` — sama dengan preview peta di dashboard.
+ */
+function pointToLayerForCategory(categoryName) {
+    return function (feature, latlng) {
+        const s = resolveFeatureStyle(feature, categoryName);
+
+        if (s.icon) {
+            const pixels = s.size * 4;
+            return L.marker(latlng, {
+                opacity: s.opacity,
+                icon: L.divIcon({
+                    html: `<i class="${s.icon}" style="color:${s.color};font-size:${pixels}px;line-height:1;"></i>`,
+                    className: "map-feature-icon",
+                    iconSize: [pixels, pixels],
+                    iconAnchor: [pixels / 2, pixels / 2],
+                }),
+            });
+        }
+
+        return L.circleMarker(latlng, {
+            radius: s.size,
+            color: s.color,
+            fillColor: s.color,
+            weight: 1,
+            opacity: s.opacity,
+            fillOpacity: s.opacity,
+        });
+    };
+}
+
+// =====================================================================
+// Legenda
+// =====================================================================
+
+/**
+ * Atribut nama yang dicoba (berurutan) untuk label warna per-fitur di legenda.
+ */
+const LEGEND_LABEL_KEYS = ["NAMOBJ", "NAMA", "nama", "name", "KABUPATEN", "WADMKK", "KEGIATAN", "Keterangan", "label"];
+
+/**
+ * Jenis simbol legenda dari geometri fitur pertama di layer: "point", "line", atau "polygon".
+ */
+function legendGeometryKind(layerGroup) {
+    let kind = null;
+    const visit = (layer) => {
+        if (kind) return;
+        const type = layer.feature?.geometry?.type;
+        if (type) {
+            kind = /Point/.test(type) ? "point" : /LineString/.test(type) ? "line" : "polygon";
+        } else if (typeof layer.eachLayer === "function") {
+            layer.eachLayer(visit);
+        }
+    };
+    visit(layerGroup);
+    return kind || "polygon";
+}
+
+/**
+ * Warna per-feature dari style_override (mis. tiap kabupaten beda warna), dikelompokkan
+ * per warna dengan nama feature-nya sebagai label.
+ */
+function legendOverrideItems(layerGroup) {
+    const byColor = new Map();
+    const visit = (layer) => {
+        if (typeof layer.eachLayer === "function" && !layer.feature) {
+            layer.eachLayer(visit);
+            return;
+        }
+        const props = layer.feature?.properties;
+        const color = props?.style_override?.color;
+        if (!color) return;
+        const key = LEGEND_LABEL_KEYS.find((name) => props[name]);
+        const label = key ? String(props[key]) : null;
+        if (!byColor.has(color)) byColor.set(color, new Set());
+        if (label) byColor.get(color).add(label);
+    };
+    visit(layerGroup);
+    return Array.from(byColor.entries()).map(([color, labels]) => ({
+        color,
+        label: labels.size ? Array.from(labels).sort().join(", ") : color,
+    }));
+}
+
+function legendSymbol(kind, color, icon, opacity) {
+    const symbol = document.createElement("span");
+    symbol.className = `legend-symbol is-${icon ? "icon" : kind}`;
+    symbol.style.setProperty("--legend-color", color);
+    symbol.style.setProperty("--legend-fill-opacity", String((opacity ?? 1) * POLYGON_FILL_RATIO));
+    if (icon) {
+        const iconEl = document.createElement("i");
+        iconEl.className = icon;
+        symbol.appendChild(iconEl);
+    }
+    return symbol;
+}
+
+function legendRow(kind, color, icon, opacity, text, isSub) {
+    const row = document.createElement("div");
+    row.className = `legend-row${isSub ? " is-sub" : ""}`;
+    row.appendChild(legendSymbol(kind, color, icon, opacity));
+    const label = document.createElement("span");
+    label.className = "legend-label";
+    label.textContent = text;
+    row.appendChild(label);
+    return row;
+}
+
+/**
+ * Legenda layer yang sedang tampil, urut sesuai daftar Layer Aktif (atas = paling atas
+ * di peta), memakai style dari dashboard: simbol sesuai geometri, kelas categorized/
+ * graduated, dan warna per-feature (style_override).
  */
 function generateLegend() {
     const legendContainer = document.getElementById("legend-content");
     if (!legendContainer) return;
 
     legendContainer.innerHTML = "";
-    const added = new Set();
+    const entries = (window.MarimoiCatalog?.getActiveEntries() || []).filter(
+        (entry) => map.hasLayer(entry.layerGroup) && entry.layerGroup.getLayers().length > 0
+    );
 
-    // Ambil layer yang sedang aktif
-    const activeLayers = new Set();
-
-    // Loop through all levels to find active layers
-    Object.entries(layerGroups).forEach(([rootName, secondLevel]) => {
-        Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
-            Object.entries(thirdLevel).forEach(([thirdName, layer]) => {
-                // Check if layer is added to map and has layers
-                if (map.hasLayer(layer) && layer.getLayers().length > 0) {
-                    activeLayers.add(thirdName);
-                }
-            });
-        });
-    });
-
-    // If no active layers, show message
-    if (activeLayers.size === 0) {
+    if (entries.length === 0) {
         legendContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center text-center py-8 text-gray-500">
-                <i class="bi bi-layers text-3xl mb-2"></i>
-                <p class="text-sm">Tidak ada layer aktif</p>
-                <p class="text-xs">Aktifkan layer untuk melihat legenda</p>
-            </div>
-        `;
+            <div class="legend-empty">
+                <i class="bi bi-layers"></i>
+                <p>Tidak ada layer aktif</p>
+                <small>Aktifkan layer untuk melihat legenda</small>
+            </div>`;
         return;
     }
 
-    // Only show legend for active layers
-    Object.entries(layerGroups).forEach(([rootName, secondLevel]) => {
-        Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
-            Object.entries(thirdLevel).forEach(([thirdName, layer]) => {
-                // Skip if not active or already added
-                if (!activeLayers.has(thirdName) || added.has(thirdName)) return;
+    const maxSubItems = 15;
 
-                let icon = iconMap[thirdName] || null;
-                let color =
-                    kategoriWarnaMap[thirdName] || 
-                    kategoriWarnaMap[secondName] || 
-                    kategoriWarnaMap[rootName] || 
-                    "#ccc";
+    entries.forEach((entry) => {
+        const layerStyle = getLayerStyle(entry.leafName);
+        const kind = legendGeometryKind(entry.layerGroup);
+        const icon = layerStyle.is_marker ? layerStyle.icon : null;
 
-                const legendItem = document.createElement('div');
-                legendItem.className = 'flex items-center mb-2 w-full';
+        const group = document.createElement("section");
+        group.className = "legend-group";
 
-                const iconWrap = document.createElement('div');
-                iconWrap.style.cssText = 'width: 14px; height: 14px; margin-right: 8px;';
+        const title = document.createElement("h6");
+        title.className = "legend-title";
+        title.textContent = entry.leafName;
+        group.appendChild(title);
 
-                if (icon) {
-                    iconWrap.className = 'custom-fa-icon flex-shrink-0 flex items-center justify-center';
-                    iconWrap.style.cssText += 'background: transparent; border: none;';
+        let subItems = [];
+        if (["categorized", "graduated"].includes(layerStyle.type) && layerStyle.classes?.length) {
+            subItems = layerStyle.classes.map((cls) => ({
+                color: cls.color,
+                label: cls.label || (layerStyle.type === "categorized" ? cls.value : `${cls.min ?? ""} – ${cls.max ?? ""}`),
+            }));
+        }
+        subItems = subItems.concat(legendOverrideItems(entry.layerGroup));
 
-                    const iconEl = document.createElement('i');
-                    iconEl.className = `${icon} text-[${color}]`;
-                    iconEl.style.cssText = `font-size: 12px; color: ${color}; line-height: 1;`;
-                    iconWrap.appendChild(iconEl);
-                } else {
-                    iconWrap.className = 'flex-shrink-0';
-                    iconWrap.style.cssText += `background-color: ${color}; border: 1px solid #333;`;
-                }
-
-                const labelEl = document.createElement('span');
-                labelEl.className = 'flex-1';
-                labelEl.style.fontSize = '0.85rem';
-                labelEl.textContent = thirdName;
-
-                legendItem.appendChild(iconWrap);
-                legendItem.appendChild(labelEl);
-                legendContainer.appendChild(legendItem);
-
-                added.add(thirdName);
+        if (subItems.length === 0) {
+            group.appendChild(legendRow(kind, layerStyle.color, icon, layerStyle.opacity, entry.leafName, false));
+        } else {
+            subItems.slice(0, maxSubItems).forEach((item) => {
+                group.appendChild(legendRow(kind, item.color, icon, layerStyle.opacity, item.label, true));
             });
-        });
-    });
+            if (subItems.length > maxSubItems) {
+                const more = document.createElement("p");
+                more.className = "legend-more";
+                more.textContent = `+${subItems.length - maxSubItems} warna lainnya`;
+                group.appendChild(more);
+            }
+        }
 
-    // If no legend items were added (edge case), show empty message
-    if (added.size === 0) {
-        legendContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center text-center py-8 text-gray-500">
-                <i class="bi bi-exclamation-triangle text-3xl mb-2"></i>
-                <p class="text-sm">Legenda tidak tersedia</p>
-                <p class="text-xs">Layer aktif tidak memiliki legenda</p>
-            </div>
-        `;
-    }
+        legendContainer.appendChild(group);
+    });
+}
+
+// =====================================================================
+// Opacity per layer (slider di Layer Aktif)
+// =====================================================================
+
+/**
+ * Style opacity untuk satu fitur: area memakai rasio isian dashboard, lingkaran titik
+ * terisi penuh. (Ikon titik diatur lewat setOpacity, lihat setLayerGroupOpacity.)
+ */
+function opacityStyleFor(leaf, opacity) {
+    const fillOpacity = leaf instanceof L.CircleMarker ? opacity : opacity * POLYGON_FILL_RATIO;
+    return { opacity, fillOpacity };
 }
 
 /**
- * Baca opacity yang SEDANG dirender pada sebuah layerGroup (bukan asumsi
- * default 100%) — dipakai supaya nilai awal slider di Layer Tools selalu
- * sinkron dengan tampilan layer yang sebenarnya. Polygon dan garis punya
- * default opacity berbeda-beda (lihat getStyleForCategory).
- *
- * Setiap feature ditambahkan lewat `L.geoJSON(feature, {...}).addTo(targetLayer)`,
- * jadi anak langsung dari layerGroup adalah WRAPPER L.GeoJSON (FeatureGroup) —
- * options-nya cuma menyimpan referensi fungsi `style` yang dipakai, BUKAN angka
- * fillOpacity/opacity hasil resolusinya. Nilai numerik yang sebenarnya ada satu
- * level lebih dalam, di layer Path/Marker asli. Makanya di sini turun rekursif
- * lewat setiap eachLayer() sampai ketemu layer yang benar-benar punya opsi
- * numerik tsb.
- */
-/**
- * Terapkan opacity ke seluruh isi layer group: area/garis lewat setStyle, marker lewat
- * setOpacity (termasuk marker di dalam marker cluster / L.GeoJSON bertingkat).
+ * Terapkan opacity ke seluruh fitur di layer group (rekursif). Fitur yang sedang
+ * tersaring Filter Data dilewati supaya tidak muncul lagi.
  */
 function setLayerGroupOpacity(layer, opacity) {
     if (typeof layer.eachLayer === "function") {
@@ -693,12 +655,18 @@ function setLayerGroupOpacity(layer, opacity) {
     } else if (layer.marimoiFilteredOut) {
         return;
     } else if (typeof layer.setStyle === "function") {
-        layer.setStyle({ opacity, fillOpacity: opacity });
+        layer.setStyle(opacityStyleFor(layer, opacity));
     } else if (typeof layer.setOpacity === "function") {
         layer.setOpacity(opacity);
     }
 }
 
+/**
+ * Opacity yang sedang dipakai sebuah layer group, untuk nilai awal slider opacity.
+ *
+ * Anak langsung layer group adalah pembungkus L.GeoJSON (satu per fitur) yang tidak
+ * menyimpan angka opacity, jadi pencarian turun rekursif sampai Path/Marker asli.
+ */
 function getLayerGroupOpacity(layerGroup) {
     let opacity = null;
 
@@ -710,12 +678,9 @@ function getLayerGroupOpacity(layerGroup) {
             return;
         }
 
-        if (layer.options) {
-            if (typeof layer.options.fillOpacity === "number") {
-                opacity = layer.options.fillOpacity;
-            } else if (typeof layer.options.opacity === "number") {
-                opacity = layer.options.opacity;
-            }
+        // `opacity` (garis tepi / ikon) = nilai style; fillOpacity area sudah dikalikan rasio isian.
+        if (layer.options && typeof layer.options.opacity === "number") {
+            opacity = layer.options.opacity;
         }
     }
 
@@ -726,9 +691,13 @@ function getLayerGroupOpacity(layerGroup) {
     return opacity ?? 1;
 }
 
+// =====================================================================
+// Filter Data (kabupaten / tahun / OPD). Kontrolnya di modal Katalog (map-catalog.js).
+// =====================================================================
+
 /**
- * Nilai filter yang sedang aktif, dibaca dari 3 <select> di panel Filter.
- * String kosong berarti "semua" (tidak memfilter dimensi itu).
+ * Nilai filter yang sedang berlaku, dibaca dari 3 <select> di panel Filter.
+ * String kosong berarti "semua" (dimensi itu tidak disaring).
  */
 function getActiveFilterValues() {
     return {
@@ -739,8 +708,8 @@ function getActiveFilterValues() {
 }
 
 /**
- * Isi <select> dengan opsi baru yang belum ada, tanpa mengubah pilihan yang
- * sedang aktif (append-only) — dipanggil berulang setiap kali data baru dimuat.
+ * Tambahkan opsi yang belum ada ke <select> tanpa mengubah pilihan saat ini
+ * (hanya menambah), sehingga aman dipanggil berulang setiap data baru dimuat.
  */
 function ensureFilterOptions(selectEl, values) {
     if (!selectEl) return;
@@ -757,11 +726,9 @@ function ensureFilterOptions(selectEl, values) {
 }
 
 /**
- * Jalan-jalan rekursif ke setiap leaf layer yang sedang aktif di peta (pola sama
- * dengan generateLegend()/getLayerGroupOpacity()), lalu: (a) kumpulkan nilai
- * distinct KABUPATEN/tahun/opd_pengelola untuk opsi dropdown, (b) terapkan
- * visibility sesuai filter aktif. Dipanggil setelah data baru dimuat, setiap kali
- * filter berubah, dan saat panel filter dibuka.
+ * Terapkan Filter Data ke setiap fitur layer yang tampil: fitur yang tidak cocok
+ * disembunyikan (opacity 0), sekaligus mengumpulkan nilai KABUPATEN/tahun/OPD dari
+ * data yang sudah dimuat sebagai opsi tambahan dropdown filter.
  */
 function refreshFilterPanel() {
     const filters = getActiveFilterValues();
@@ -778,15 +745,15 @@ function refreshFilterPanel() {
         return true;
     }
 
-    // Feature yang lolos filter memakai opacity pilihan pengguna (slider Layer Aktif /
-    // Layer Tools); yang tersaring ditandai supaya slider tidak memunculkannya lagi.
+    // Fitur yang lolos memakai opacity pilihan pengguna (slider Layer Aktif); yang
+    // tersaring ditandai marimoiFilteredOut supaya slider tidak memunculkannya lagi.
     function applyVisibility(leaf, visible) {
         const userOpacity = layerOpacityState.get(leaf.feature?.properties?.kategori);
         leaf.marimoiFilteredOut = !visible;
 
         if (typeof leaf.setStyle === "function") {
             if (visible) {
-                const opacityStyle = typeof userOpacity === "number" ? { opacity: userOpacity, fillOpacity: userOpacity } : {};
+                const opacityStyle = typeof userOpacity === "number" ? opacityStyleFor(leaf, userOpacity) : {};
                 leaf.setStyle({ ...(leaf.marimoiOriginalStyle || {}), ...opacityStyle });
             } else {
                 leaf.marimoiOriginalStyle = leaf.marimoiOriginalStyle || { ...leaf.options };
@@ -841,12 +808,8 @@ function refreshFilterPanel() {
 }
 
 /**
- * Isi 3 dropdown filter dari nilai distinct yang ada di database (endpoint
- * /geojson/filter-options), supaya pilihan seperti "Kota Ternate" sudah bisa dipilih
- * sejak awal — tanpa menunggu satu pun layer dimuat/dicentang dulu. Dipanggil sekali
- * saat inisialisasi peta. refreshFilterPanel() tetap menambah opsi baru secara
- * progresif dari feature yang sudah dirender (ensureFilterOptions bersifat
- * append-only, jadi tidak ada duplikasi antara sumber server ini dan sumber client).
+ * Isi dropdown filter dari seluruh data publik (/geojson/filter-options), supaya
+ * pilihan sudah tersedia sebelum ada layer yang dimuat. Dipanggil sekali saat peta dibuka.
  */
 async function loadFilterOptionsFromServer() {
     try {
@@ -870,14 +833,8 @@ async function loadFilterOptionsFromServer() {
 }
 
 /**
- * Muat & centang hanya kategori yang punya feature cocok dengan kombinasi filter aktif
- * (lewat endpoint /geojson/filter-categories) — bukan seluruh pohon layer, supaya
- * memilih satu Kabupaten/Kota saja tidak memicu pemuatan semua data yang ada.
- * Memakai pola pencarian checkbox + dispatchEvent("change") yang sama persis dengan
- * applySharedMapState() (sudah terbukti bekerja untuk memuat layer dari share link).
- */
-/**
- * Nama kategori (dataset) yang punya data sesuai filter kabupaten/tahun/OPD.
+ * Nama mapset yang punya minimal satu fitur cocok dengan filter (/geojson/filter-categories).
+ * Dipakai katalog untuk menyaring kartu, dan link share untuk mengaktifkan layer yang cocok.
  */
 async function fetchCategoriesMatchingFilter(filters) {
     const urlPath = window.location.pathname.replace(/\/$/, "");
@@ -904,16 +861,17 @@ async function fetchCategoriesMatchingFilter(filters) {
     return categoryNames;
 }
 
+/**
+ * Aktifkan semua mapset yang cocok dengan filter.
+ */
 async function loadCategoriesMatchingFilter(filters) {
     const categoryNames = await fetchCategoriesMatchingFilter(filters);
     await window.MarimoiCatalog?.activateByNames(categoryNames);
 }
 
 /**
- * Terapkan filter yang sedang aktif: bila ada minimal satu dimensi filter terisi,
- * muat dulu kategori yang cocok (loadCategoriesMatchingFilter) supaya filter bekerja
- * lintas layer tanpa perlu layer dicentang manual lebih dulu, baru refreshFilterPanel()
- * menyaring hasilnya per-feature. Kontrol filter dikunci sementara selama pemuatan.
+ * Terapkan filter dari link share: aktifkan mapset yang cocok lebih dulu, lalu saring
+ * fiturnya (refreshFilterPanel). Kontrol filter dikunci selama pemuatan.
  */
 async function applyStructuredFilters() {
     const filters = getActiveFilterValues();
@@ -944,162 +902,13 @@ async function applyStructuredFilters() {
     }
 }
 
-/**
- * Resolusi warna representatif sebuah layer, sama persis dengan urutan
- * fallback yang dipakai generateLegend() supaya warna slider di Layer Tools
- * konsisten dengan warna swatch di Legenda.
- */
-function getLayerColor(rootName, secondName, thirdName) {
-    return (
-        kategoriWarnaMap[thirdName] ||
-        kategoriWarnaMap[secondName] ||
-        kategoriWarnaMap[rootName] ||
-        "#9ca3af"
-    );
-}
+// =====================================================================
+// Popup fitur & pemuatan data
+// =====================================================================
 
 /**
- * Isi ulang panel "Layer Tools": satu slider transparansi per layer yang
- * sedang aktif di peta (bukan satu slider global untuk semua layer).
- *
- * Layer kategori point/marker (is_marker) dikecualikan: feature-nya dirender
- * sebagai L.marker (icon), bukan Path, jadi tidak punya .setStyle() sama
- * sekali — slider transparansi tidak akan berefek apa-apa padanya. Ditandai
- * lewat `iconMap`, flag yang sama yang sudah dipakai generateLegend() untuk
- * membedakan kategori marker dari kategori vector (lihat loadCategoriesMetadata).
- */
-function updateLayerToolsPanel() {
-    const content = document.getElementById("layer-tools-content");
-    if (!content) return;
-
-    const activeEntries = [];
-    Object.entries(layerGroups).forEach(([rootName, secondLevel]) => {
-        Object.entries(secondLevel).forEach(([secondName, thirdLevel]) => {
-            Object.entries(thirdLevel).forEach(([thirdName, layerGroup]) => {
-                if (iconMap[thirdName]) return; // layer point/marker, tidak ditampilkan
-
-                if (
-                    map.hasLayer(layerGroup) &&
-                    layerGroup.getLayers &&
-                    layerGroup.getLayers().length > 0
-                ) {
-                    activeEntries.push({ rootName, secondName, thirdName, layerGroup });
-                }
-            });
-        });
-    });
-
-    content.innerHTML = "";
-
-    if (activeEntries.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "text-center py-8 px-4";
-        empty.innerHTML = `
-            <i class="bi bi-layers text-4xl text-gray-300 mb-3 block"></i>
-            <p class="text-sm font-semibold text-gray-700 mb-1">Tidak ada layer aktif</p>
-            <p class="text-xs text-gray-400">Aktifkan layer dari panel Layer untuk menggunakan alat ini.</p>
-        `;
-        content.appendChild(empty);
-        return;
-    }
-
-    activeEntries.forEach(({ rootName, secondName, thirdName, layerGroup }) => {
-        // Nilai awal: pakai yang pernah diset user di sesi ini (jika ada),
-        // kalau belum pernah sama sekali baca opacity ASLI dari layer yang
-        // sedang dirender supaya value slider = tampilan layer sebenarnya.
-        if (!layerOpacityState.has(thirdName)) {
-            layerOpacityState.set(thirdName, getLayerGroupOpacity(layerGroup));
-        }
-        const opacity = layerOpacityState.get(thirdName);
-        const color = getLayerColor(rootName, secondName, thirdName);
-
-        const row = document.createElement("div");
-        row.className = "px-4 py-3 border-b border-gray-200 last:border-b-0";
-
-        const labelRow = document.createElement("div");
-        labelRow.className = "flex items-center justify-between mb-2 gap-2";
-
-        const labelWrap = document.createElement("span");
-        labelWrap.className = "flex items-center gap-2 min-w-0";
-
-        const colorDot = document.createElement("span");
-        colorDot.className = "inline-block w-2.5 h-2.5 rounded-full shrink-0";
-        colorDot.style.backgroundColor = color;
-
-        const label = document.createElement("span");
-        label.className = "text-sm text-gray-700 truncate";
-        label.textContent = thirdName;
-
-        labelWrap.appendChild(colorDot);
-        labelWrap.appendChild(label);
-
-        const valueLabel = document.createElement("span");
-        valueLabel.className = "text-xs text-gray-400 shrink-0";
-        valueLabel.textContent = `${Math.round(opacity * 100)}%`;
-
-        labelRow.appendChild(labelWrap);
-        labelRow.appendChild(valueLabel);
-
-        const slider = document.createElement("input");
-        slider.type = "range";
-        slider.min = "0";
-        slider.max = "100";
-        slider.value = String(Math.round(opacity * 100));
-        slider.className = "range range-sm w-full";
-        slider.style.accentColor = color;
-        slider.setAttribute("aria-label", `Transparansi ${thirdName}`);
-
-        slider.addEventListener("input", (e) => {
-            const val = Number(e.target.value) / 100;
-            layerOpacityState.set(thirdName, val);
-            valueLabel.textContent = `${e.target.value}%`;
-
-            setLayerGroupOpacity(layerGroup, val);
-        });
-        slider.addEventListener("change", () => window.MarimoiCatalog?.renderActiveList());
-
-        row.appendChild(labelRow);
-        row.appendChild(slider);
-        content.appendChild(row);
-    });
-}
-
-/**
- * Posisikan panel Layer Tools tepat di bawah kolom tombol Leaflet (zoom,
- * fullscreen/home, layer tools) di sisi kiri peta, dihitung dari posisi
- * render sebenarnya supaya tetap presisi walau ukuran tombol Leaflet
- * berubah (mis. saat mode leaflet-touch aktif). max-height konten dihitung
- * dari sisa ruang yang benar-benar tersedia sampai tepi bawah peta, supaya
- * daftar layer aktif selalu bisa di-scroll alih-alih meluber keluar peta.
- */
-function positionLayerToolsPanel() {
-    const panel = document.getElementById("sidebar-layer-tools");
-    const header = document.getElementById("layer-tools-header");
-    const content = document.getElementById("layer-tools-content");
-    const leftControls = document.querySelector("#map .leaflet-top.leaflet-left");
-    const mapEl = document.getElementById("map");
-    if (!panel || !leftControls || !mapEl) return;
-
-    const mapRect = mapEl.getBoundingClientRect();
-    const controlsRect = leftControls.getBoundingClientRect();
-
-    // Kontrol kiri ada di tengah vertikal: panel dibuka di samping kanannya, mulai di
-    // bawah baris tombol atas (Beranda/pencarian, ±70px) supaya tidak tertutup.
-    const topRowBottom = 70;
-    const top = Math.max(topRowBottom, controlsRect.top - mapRect.top);
-    panel.style.top = `${top}px`;
-    panel.style.left = `${controlsRect.right - mapRect.left + 12}px`;
-
-    if (content) {
-        const headerHeight = header?.getBoundingClientRect().height || 40;
-        const bottomMargin = 16;
-        const available = mapRect.height - top - headerHeight - bottomMargin;
-        content.style.maxHeight = `${Math.max(120, available)}px`;
-    }
-}
-
-/**
- * Membuat dan mengikat konten popup pada setiap fitur peta.
+ * Pasang popup ringkas pada satu fitur: atribut utama, geometri, koordinat, dan tombol
+ * Zoom To serta Detail (membuka panel detail di map-feature-detail.js).
  */
 function bindPopupContent(feature, layer, urlPath) {
     const props = feature.properties;
@@ -1122,6 +931,7 @@ function bindPopupContent(feature, layer, urlPath) {
             <div class="max-h-40 overflow-y-auto">
                 <table class="w-full text-[9px]" >`;
 
+    // Popup hanya menampilkan atribut ringkas ini; atribut lengkap ada di panel detail.
     const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN", "SUMBER_DATA", "OPD_PENGELOLA", "TANGGAL_DATA"];
     Object.entries(props).forEach(([key, value]) => {
         if (allowedKeys.includes(key.toUpperCase()) && value) {
@@ -1151,6 +961,7 @@ function bindPopupContent(feature, layer, urlPath) {
                         <td class="text-[9px] text-gray-600 py-1">${type}</td>
                     </tr>`;
 
+        // Panjang garis (km) dengan rumus haversine antar titik berurutan.
         if (type === "LineString" && Array.isArray(geom.coordinates)) {
             let length = 0;
             for (let i = 1; i < geom.coordinates.length; i++) {
@@ -1177,7 +988,7 @@ function bindPopupContent(feature, layer, urlPath) {
                 </tr>`;
         }
 
-        // Hitung center
+        // Titik perkiraan untuk koordinat & Zoom To: titik tengah daftar koordinat.
         if (type === "Point") {
             center = geom.coordinates;
         } else if (type === "LineString") {
@@ -1209,20 +1020,19 @@ function bindPopupContent(feature, layer, urlPath) {
     const lng = center?.[0] || 0;
 
     content += `
-        <div class="flex gap-2 pt-2">
-            <button class="zoomToBtn flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        <div class="popup-actions">
+            <button type="button" class="zoomToBtn popup-action popup-action-zoom"
                 data-lat="${lat}" data-lng="${lng}">
-                <i class="bi bi-zoom-in mr-1"></i>
+                <i class="bi bi-zoom-in"></i>
                 Zoom To
             </button>
-            <button type="button" class="featureDetailBtn flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
-                <i class="bi bi-eye mr-1"></i>
+            <button type="button" class="featureDetailBtn popup-action popup-action-detail">
+                <i class="bi bi-eye"></i>
                 Detail
             </button>
         </div>
     </div>`;
 
-    // Set popup options untuk Tailwind styling
     const popupOptions = {
         maxWidth: 320,
         minWidth: 280,
@@ -1282,7 +1092,7 @@ function bindPopupContent(feature, layer, urlPath) {
 }
 
 /**
- * Mengganti basemap yang aktif sesuai pilihan user.
+ * Ganti basemap aktif dengan basemap dari mapConfig.baseMapsList.
  */
 function changeBaseMap(baseMapId) {
     if (currentBaseMap) {
@@ -1301,7 +1111,8 @@ function changeBaseMap(baseMapId) {
 }
 
 /**
- * Menentukan tipe data berdasarkan path URL.
+ * Jenis data peta dari path URL. Halaman lama (PSD, PSN, musrenbang, pokir) kini
+ * dialihkan ke /peta-interaktif, jadi praktis selalu "tematik".
  */
 function getDataType(urlPath) {
     const defaultResult = { type: "tematik", sub_type: null, year: null };
@@ -1311,7 +1122,7 @@ function getDataType(urlPath) {
             return { type: "proyek_strategis", sub_type: "psd", year: null };
         case "/proyek-strategis-nasional":
             return { type: "proyek_strategis", sub_type: "psn", year: null };
-        case "/peta-tematik":
+        case "/peta-interaktif":
             return { type: "tematik", sub_type: null, year: null };
         case "/usulan-musrenbang":
             return { type: "usulan_musrenbang", sub_type: null, year: null };
@@ -1323,26 +1134,20 @@ function getDataType(urlPath) {
 }
 
 /**
- * Buat layer group untuk satu kategori "leaf". Kategori marker (is_marker = true)
- * memakai Leaflet.markercluster supaya titik yang berdekatan/menumpuk otomatis
- * dikelompokkan jadi satu bubble dan tidak berantakan di peta; kategori garis/poligon
- * tetap pakai layer group biasa karena clustering hanya relevan untuk point marker.
+ * Layer group untuk satu kategori "leaf". Titik tidak dikelompokkan (tanpa clustering):
+ * setiap fitur tampil apa adanya dengan simbol dari style dashboard.
  */
-function createCategoryLayerGroup(catObj) {
-    if (catObj?.is_marker && typeof L.markerClusterGroup === "function") {
-        return L.markerClusterGroup({
-            maxClusterRadius: 60,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            disableClusteringAtZoom: 18,
-        });
-    }
-
+function createCategoryLayerGroup() {
     return L.layerGroup();
 }
 
 /**
- * Load only categories metadata without spatial data - Modified for 3-level hierarchy
+ * Muat daftar mapset (tanpa data spasial) dari /geojson?metadata_only=true, lalu bangun
+ * layerGroups[kategori][sub kategori][mapset] (maksimal 3 level, lihat PublicMapCatalog
+ * di server) dan isi Katalog Peta.
+ *
+ * Cache-first: metadata dari IndexedDB langsung dipakai, versi terbaru diambil di latar
+ * untuk kunjungan berikutnya.
  */
 async function loadCategoriesMetadata() {
     try {
@@ -1369,8 +1174,6 @@ async function loadCategoriesMetadata() {
             return response.json();
         };
 
-        // Cache-first: daftar kategori yang sudah pernah dimuat langsung dipakai tanpa loading.
-        // Di latar belakang cache diperbarui untuk kunjungan berikutnya.
         let data = mapDataStore ? await mapDataStore.getCachedMetadata(metaKey) : null;
         const fromCache = Boolean(data);
         let loadingToast = null;
@@ -1387,69 +1190,54 @@ async function loadCategoriesMetadata() {
             }
         }
 
-        // Build kategoriWarnaMap dan iconMap
         kategoriWarnaMap = {};
-        iconMap = {};
 
         if (Array.isArray(data.all_categories)) {
             data.all_categories.forEach((cat) => {
                 if (!cat.nama || !cat.warna) return;
                 kategoriWarnaMap[cat.nama] = cat.warna;
-                if (cat.is_marker === true && cat.icon) {
-                    iconMap[cat.nama] = cat.icon;
-                }
             });
         }
 
-        // Initialize empty layer structure - Now with 3 levels
+        // all_categories berisi item datar dengan parent_id: level 1 = kategori, level 2 =
+        // node (sub kategori) atau mapset langsung di bawah kategori, level 3 = mapset.
+        // Mapset yang tidak punya level di bawahnya memakai namanya sendiri sebagai kunci
+        // berikutnya, misalnya layerGroups[kategori][mapset][mapset].
         layerGroups = {};
 
         if (data.all_categories?.length) {
-            // Level 1: Root categories (no parent)
             const rootCategories = data.all_categories.filter(cat => !cat.parent_id);
-            
-            // Level 2: Second-level categories (parent is a root category)
             const secondLevelCategories = data.all_categories.filter(cat => 
                 cat.parent_id && rootCategories.some(root => root.id === cat.parent_id)
             );
-            
-            // Level 3: Third-level categories (parent is a second-level category)
             const thirdLevelCategories = data.all_categories.filter(cat => 
                 cat.parent_id && secondLevelCategories.some(second => second.id === cat.parent_id)
             );
 
             rootCategories.forEach((root) => {
                 layerGroups[root.nama] = {};
-                
-                // Find second level children for this root
                 const childrenL2 = secondLevelCategories.filter(child => child.parent_id === root.id);
                 
                 if (childrenL2.length > 0) {
-                    // For each second level category
                     childrenL2.forEach((childL2) => {
                         layerGroups[root.nama][childL2.nama] = {};
-                        
-                        // Find third level children for this second level
                         const childrenL3 = thirdLevelCategories.filter(child => child.parent_id === childL2.id);
                         
                         if (childrenL3.length > 0) {
-                            // Add third level categories
                             childrenL3.forEach((childL3) => {
-                                layerGroups[root.nama][childL2.nama][childL3.nama] = createCategoryLayerGroup(childL3);
+                                layerGroups[root.nama][childL2.nama][childL3.nama] = createCategoryLayerGroup();
                             });
                         } else {
-                            // No third level, use second level as leaf
-                            layerGroups[root.nama][childL2.nama][childL2.nama] = createCategoryLayerGroup(childL2);
+                            layerGroups[root.nama][childL2.nama][childL2.nama] = createCategoryLayerGroup();
                         }
                     });
                 } else {
-                    // No second level, use root as both second and third
                     layerGroups[root.nama][root.nama] = {};
-                    layerGroups[root.nama][root.nama][root.nama] = createCategoryLayerGroup(root);
+                    layerGroups[root.nama][root.nama][root.nama] = createCategoryLayerGroup();
                 }
             });
         } else if (data.root_categories) {
-            // Alternative structure if using root_categories format
+            // Cadangan untuk respons berbentuk pohon (root_categories[].children).
             data.root_categories.forEach((root) => {
                 const rootName = root.nama;
                 layerGroups[rootName] = {};
@@ -1460,15 +1248,15 @@ async function loadCategoriesMetadata() {
                         
                         if (Array.isArray(childL2.children) && childL2.children.length > 0) {
                             childL2.children.forEach((childL3) => {
-                                layerGroups[rootName][childL2.nama][childL3.nama] = createCategoryLayerGroup(childL3);
+                                layerGroups[rootName][childL2.nama][childL3.nama] = createCategoryLayerGroup();
                             });
                         } else {
-                            layerGroups[rootName][childL2.nama][childL2.nama] = createCategoryLayerGroup(childL2);
+                            layerGroups[rootName][childL2.nama][childL2.nama] = createCategoryLayerGroup();
                         }
                     });
                 } else {
                     layerGroups[rootName][rootName] = {};
-                    layerGroups[rootName][rootName][rootName] = createCategoryLayerGroup(root);
+                    layerGroups[rootName][rootName][rootName] = createCategoryLayerGroup();
                 }
             });
         }
@@ -1476,12 +1264,10 @@ async function loadCategoriesMetadata() {
         window.MARIMOI_CATEGORY_METADATA = data;
         updateLayerList();
         generateLegend();
-        updateLayerToolsPanel();
 
-        // Tutup loading toast manual
         if (loadingToast) hideToast(loadingToast);
 
-        // Tampilkan pesan sukses (dilewati bila daftar kategori berasal dari cache)
+        // Pesan sukses hanya saat daftar diambil dari server (bukan dari cache).
         if (!fromCache) {
             showAlert(
                 "Kategori berhasil dimuat. Pilih layer untuk memuat data.",
@@ -1505,44 +1291,23 @@ async function loadCategoriesMetadata() {
 }
 
 /**
- * Buat ikon marker untuk kategori bertipe marker (dipakai jalur jaringan dan jalur cache).
+ * Gambar satu fitur GeoJSON ke layer group dengan style & popup-nya.
+ *
+ * @returns {boolean} false bila fitur tidak punya geometri
  */
-function buildMarkerOptions(geoJsonData, categoryName) {
-    // Gaya marker dari metadata katalog (respons /geojson per potongan tidak lagi membawa daftar kategori).
-    const catObj = (window.MARIMOI_CATEGORY_METADATA?.all_categories || geoJsonData?.all_categories || [])
-        .find((c) => c.nama === categoryName);
-    if (!(catObj?.is_marker && catObj.icon)) {
-        return null;
-    }
-
-    return L.ExtraMarkers.icon({
-        icon: catObj.icon,
-        prefix: "fa",
-        svg: true,
-        markerColor: catObj.warna || "blue",
-        iconColor: "white",
-        shape: "circle",
-        html: `<i class='fa ${catObj.icon}' style='color:white; background: blue;'></i>`,
-    });
-}
-
-/**
- * Tambahkan satu feature ke layer. Mengembalikan true bila feature valid dan ditambahkan.
- */
-function addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath) {
+function addFeatureToLayer(feature, targetLayer, categoryName, urlPath) {
     if (!feature || !feature.geometry) {
         return false;
     }
 
     L.geoJSON(feature, {
-        pointToLayer: (f, latlng) =>
-            markerOptions ? L.marker(latlng, { icon: markerOptions }) : L.marker(latlng),
+        pointToLayer: pointToLayerForCategory(categoryName),
         style: getStyleForCategory(categoryName),
         onEachFeature: (f, l) => {
             try {
                 bindPopupContent(f, l, urlPath);
             } catch (popupError) {
-                // Silently handle popup binding errors
+                // Popup yang gagal dibuat tidak boleh menghalangi fiturnya tampil.
             }
         },
     }).addTo(targetLayer);
@@ -1551,9 +1316,10 @@ function addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, ur
 }
 
 /**
- * Baca seluruh potongan (chunk) data kategori dari cache IndexedDB.
- * Mengembalikan array chunk bila SEMUA potongan ada di cache, atau null bila ada yang kurang
- * (mis. belum pernah dimuat) sehingga pemanggil harus memakai jalur jaringan.
+ * Baca seluruh potongan (chunk) data satu mapset dari cache IndexedDB.
+ *
+ * @returns {Promise<Array|null>} semua potongan bila lengkap di cache; null bila ada yang
+ *   belum tersimpan sehingga data harus diambil dari jaringan
  */
 async function readAllCachedChunks(baseParams, maxRecords, chunkSize) {
     if (!mapDataStore) return null;
@@ -1586,11 +1352,12 @@ async function readAllCachedChunks(baseParams, maxRecords, chunkSize) {
 }
 
 /**
- * Render chunk dari cache ke layer secara bertahap (per irisan kecil) agar UI tetap responsif
- * tanpa layar loading. Mengembalikan jumlah feature yang ditambahkan.
+ * Gambar potongan data dari cache per 200 fitur, dengan jeda antar irisan agar halaman
+ * tetap responsif. Berhenti bila `signal` dibatalkan.
+ *
+ * @returns {Promise<number>} jumlah fitur yang digambar
  */
-async function renderCachedChunks(chunks, targetLayer, categoryName, urlPath) {
-    const markerOptions = buildMarkerOptions(chunks[0], categoryName);
+async function renderCachedChunks(chunks, targetLayer, categoryName, urlPath, { signal, onProgress } = {}) {
     const slice = 200;
     let added = 0;
 
@@ -1598,15 +1365,17 @@ async function renderCachedChunks(chunks, targetLayer, categoryName, urlPath) {
         const features = chunk.features || [];
 
         for (let i = 0; i < features.length; i += slice) {
+            throwIfAborted(signal);
             features.slice(i, i + slice).forEach((feature) => {
                 try {
-                    if (addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath)) {
+                    if (addFeatureToLayer(feature, targetLayer, categoryName, urlPath)) {
                         added++;
                     }
                 } catch (featureError) {
-                    // Silently handle individual feature errors
+                    // Satu feature rusak tidak boleh menggagalkan seluruh layer.
                 }
             });
+            onProgress?.(added);
 
             if (i + slice < features.length) {
                 await new Promise((resolve) => setTimeout(resolve, 0));
@@ -1618,315 +1387,162 @@ async function renderCachedChunks(chunks, targetLayer, categoryName, urlPath) {
 }
 
 /**
- * Enhanced loadCategoryData with cache integration
+ * Hentikan pemuatan (lempar AbortError) bila pengguna sudah membatalkannya.
  */
-async function loadCategoryData(categoryName, parentName = null, grandparentName = null) {
-    // Skip if already loaded or currently loading
-    if (isLoadingData || loadedCategories.has(categoryName)) {
-        return;
+function throwIfAborted(signal) {
+    if (signal?.aborted) {
+        throw new DOMException("Pemuatan layer dibatalkan", "AbortError");
+    }
+}
+
+/**
+ * Layer group milik satu mapset di layerGroups (lihat loadCategoriesMetadata).
+ */
+function findCategoryLayerGroup(categoryName, parentName, grandparentName) {
+    if (grandparentName && parentName) {
+        return layerGroups[grandparentName]?.[parentName]?.[categoryName] || null;
+    }
+    if (parentName) {
+        return layerGroups[parentName]?.[categoryName]?.[categoryName] || null;
+    }
+    return layerGroups[categoryName]?.[categoryName]?.[categoryName] || null;
+}
+
+/**
+ * Muat data satu kategori (mapset) ke layer group-nya: dari cache IndexedDB bila lengkap,
+ * kalau tidak per potongan dari /geojson. Fitur langsung ditambahkan selama pemuatan
+ * (tampil bertahap bila layer group sudah ada di peta).
+ *
+ * Antrean & status per layer diatur map-catalog.js; fungsi ini tidak menampilkan overlay
+ * maupun toast. Pemanggil bisa membatalkan lewat `signal` (AbortController) dan menerima
+ * jumlah fitur yang sudah dimuat lewat `onProgress`.
+ *
+ * @returns {Promise<{status: "loaded"|"already"|"aborted"|"error", count?: number, error?: string}>}
+ */
+async function loadCategoryData(categoryName, parentName = null, grandparentName = null, { signal, onProgress } = {}) {
+    if (loadedCategories.has(categoryName)) {
+        return { status: "already" };
     }
 
-    let loadingToast = null;
+    const targetLayer = findCategoryLayerGroup(categoryName, parentName, grandparentName);
+    if (!targetLayer) {
+        return { status: "error", error: `Layer ${categoryName} tidak ditemukan` };
+    }
+
+    const urlPath = window.location.pathname.replace(/\/$/, "");
+    const tipeLayer = getDataType(urlPath);
+    const dataType = tipeLayer.type;
+    const subType = tipeLayer.sub_type || null;
+    const year = tipeLayer.year || null;
+    const maxRecords = 3000;
+    const chunkSize = 500;
+
+    targetLayer.clearLayers();
 
     try {
-        isLoadingData = true;
-
-        const urlPath = window.location.pathname.replace(/\/$/, "");
-        const tipeLayer = getDataType(urlPath);
-        const dataType = tipeLayer.type;
-        const subType = tipeLayer.sub_type || null;
-        const year = tipeLayer.year || null;
-
-        // Find target layer for this category
-        let targetLayer = null;
-
-        if (grandparentName && parentName) {
-            if (layerGroups[grandparentName]?.[parentName]?.[categoryName]) {
-                targetLayer = layerGroups[grandparentName][parentName][categoryName];
-            }
-        } else if (parentName) {
-            if (layerGroups[parentName]?.[categoryName]) {
-                if (layerGroups[parentName][categoryName][categoryName]) {
-                    targetLayer = layerGroups[parentName][categoryName][categoryName];
-                }
-            }
-        } else {
-            if (layerGroups[categoryName]?.[categoryName]?.[categoryName]) {
-                targetLayer = layerGroups[categoryName][categoryName][categoryName];
-            }
-        }
-
-        if (!targetLayer) {
-            throw new Error(`Layer group for ${categoryName} not found`);
-        }
-
-        const maxRecords = 3000;
-        const chunkSize = 500;
-
-        // Jalur cepat: bila seluruh data kategori sudah tersimpan di cache, tampilkan langsung
-        // tanpa layar loading, toast, maupun jeda buatan.
         const cachedChunks = await readAllCachedChunks(
             { type: dataType, sub_type: subType, year: year, category: categoryName },
             maxRecords,
             chunkSize
         );
+        throwIfAborted(signal);
 
         if (cachedChunks) {
-            targetLayer.clearLayers();
-            await renderCachedChunks(cachedChunks, targetLayer, categoryName, urlPath);
+            const count = await renderCachedChunks(cachedChunks, targetLayer, categoryName, urlPath, { signal, onProgress });
             loadedCategories.add(categoryName);
-            refreshFilterPanel();
-            return;
+            return { status: "loaded", count };
         }
-
-        // Belum (sepenuhnya) ada di cache: tampilkan layar loading seperti biasa.
-        showLoadingOverlay(categoryName);
-        loadingToast = showAlert(
-            `Memuat data untuk ${categoryName}...`,
-            "info",
-            true
-        );
-
-        targetLayer.clearLayers();
 
         let offset = 0;
         let totalLoaded = 0;
         let hasMore = true;
-        let estimatedTotal = maxRecords;
 
-        // Load data in chunks with cache check
         while (hasMore && totalLoaded < maxRecords) {
-            try {
-                const cacheParams = {
-                    type: dataType,
-                    sub_type: subType,
-                    year: year,
-                    category: categoryName,
-                    limit: Math.min(chunkSize, maxRecords - totalLoaded),
-                    offset: offset
-                };
+            throwIfAborted(signal);
 
-                const cacheKey = mapDataStore?.generateCacheKey(cacheParams);
-                
-                // Try cache first
-                let geoJsonData = null;
-                if (mapDataStore && cacheKey) {
-                    geoJsonData = await mapDataStore.getCachedData(cacheKey);
-                    
-                    if (geoJsonData) {
-                        // Update progress for cache hit
-                        updateLoadingProgress(
-                            totalLoaded,
-                            estimatedTotal,
-                            `Memuat Data - Layer ${Math.floor(offset / chunkSize) + 1}...`
-                        );
-                    }
+            const limit = Math.min(chunkSize, maxRecords - totalLoaded);
+            const cacheParams = { type: dataType, sub_type: subType, year, category: categoryName, limit, offset };
+            const cacheKey = mapDataStore?.generateCacheKey(cacheParams);
+
+            let geoJsonData = mapDataStore && cacheKey ? await mapDataStore.getCachedData(cacheKey) : null;
+
+            if (!geoJsonData) {
+                const params = new URLSearchParams();
+                if (dataType) params.set("type", dataType);
+                if (subType) params.set("sub_type", subType);
+                if (year) params.set("year", year);
+                params.append("kategori[]", categoryName);
+                params.set("limit", String(limit));
+                params.set("offset", String(offset));
+
+                const response = await fetch(`/geojson?${params.toString()}`, { signal });
+                if (!response.ok) {
+                    throw new Error(`Server merespons ${response.status}`);
                 }
 
-                // If no cache hit, fetch from network
-                if (!geoJsonData) {
-                    let queryString = "?";
-                    if (dataType) queryString += `type=${encodeURIComponent(dataType)}`;
-                    if (subType) queryString += `&sub_type=${encodeURIComponent(subType)}`;
-                    if (year) queryString += `&year=${encodeURIComponent(year)}`;
-                    queryString += `&kategori[]=${encodeURIComponent(categoryName)}`;
+                geoJsonData = await response.json();
 
-                    const remainingRecords = maxRecords - totalLoaded;
-                    const currentChunkSize = Math.min(chunkSize, remainingRecords);
-                    queryString += `&limit=${currentChunkSize}&offset=${offset}`;
-
-                    updateLoadingProgress(
-                        totalLoaded,
-                        estimatedTotal,
-                        `Memuat Data - Layer ${Math.floor(offset / chunkSize) + 1}...`
-                    );
-
-                    const response = await fetch(`/geojson${queryString}`);
-
-                    if (!response.ok) {
-                        let errorDetails = `HTTP ${response.status}: ${response.statusText}`;
-                        try {
-                            const errorData = await response.json();
-                            if (errorData.message) {
-                                errorDetails += ` - ${errorData.message}`;
-                            }
-                        } catch (e) {
-                            // Handle error parsing
-                        }
-                        throw new Error(errorDetails);
-                    }
-
-                    geoJsonData = await response.json();
-
-                    // Cache the result
-                    if (mapDataStore && cacheKey && Array.isArray(geoJsonData?.features)) {
-                        await mapDataStore.setCachedData(cacheKey, geoJsonData, categoryName);
-                    }
+                if (mapDataStore && cacheKey && Array.isArray(geoJsonData?.features)) {
+                    await mapDataStore.setCachedData(cacheKey, geoJsonData, categoryName);
                 }
+            }
 
-                // Check if we got any features
-                if (!geoJsonData?.features?.length) {
-                    break;
-                }
+            throwIfAborted(signal);
 
-                // Update estimate if we have metadata
-                if (geoJsonData.meta?.total_features && offset === 0) {
-                    estimatedTotal = Math.min(geoJsonData.meta.total_features, maxRecords);
-                }
-
-                // Determine marker options (only need to do this once)
-                let markerOptions = null;
-                if (offset === 0) {
-                    markerOptions = buildMarkerOptions(geoJsonData, categoryName);
-                }
-
-                // Add features to layer with error handling
-                let featuresAdded = 0;
-                geoJsonData.features.forEach((feature, index) => {
-                    try {
-                        if (!addFeatureToLayer(feature, targetLayer, categoryName, markerOptions, urlPath)) {
-                            return;
-                        }
-
-                        featuresAdded++;
-
-                        if (index % 50 === 0) {
-                            updateLoadingProgress(
-                                totalLoaded + featuresAdded,
-                                estimatedTotal,
-                                `Memproses fitur ${totalLoaded + featuresAdded}...`
-                            );
-                        }
-                    } catch (featureError) {
-                        // Silently handle individual feature errors
-                    }
-                });
-
-                totalLoaded += featuresAdded;
-
-                updateLoadingProgress(
-                    totalLoaded,
-                    estimatedTotal,
-                    totalLoaded >= maxRecords
-                        ? `${totalLoaded} fitur dimuat (maksimum tercapai)`
-                        : `${totalLoaded} fitur dimuat...`
-                );
-
-                const serverHasMore = geoJsonData.meta?.has_more === true;
-                hasMore = serverHasMore && totalLoaded < maxRecords && featuresAdded > 0;
-                offset += chunkSize;
-
-                if (hasMore) {
-                    await new Promise((resolve) => setTimeout(resolve, 100));
-                }
-            } catch (chunkError) {
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    console.error(`Error loading layer at offset ${offset}:`, chunkError);
-                }
-
-                if (offset === 0) {
-                    throw chunkError;
-                }
-
-                updateLoadingProgress(
-                    totalLoaded,
-                    estimatedTotal,
-                    `Error pada Layer ${Math.floor(offset / chunkSize)}: ${chunkError.message}`
-                );
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+            if (!geoJsonData?.features?.length) {
                 break;
             }
+
+            let featuresAdded = 0;
+            geoJsonData.features.forEach((feature) => {
+                try {
+                    if (addFeatureToLayer(feature, targetLayer, categoryName, urlPath)) {
+                        featuresAdded++;
+                    }
+                } catch (featureError) {
+                    // Satu feature rusak tidak boleh menggagalkan seluruh layer.
+                }
+            });
+
+            totalLoaded += featuresAdded;
+            onProgress?.(totalLoaded);
+
+            hasMore = geoJsonData.meta?.has_more === true && featuresAdded > 0;
+            offset += chunkSize;
         }
 
         loadedCategories.add(categoryName);
-        updateLoadingProgress(totalLoaded, totalLoaded, "Selesai!");
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        hideLoadingOverlay();
-        refreshFilterPanel();
-
-        if (loadingToast) {
-            hideToast(loadingToast);
-        }
-
-        let finalMessage;
-        if (totalLoaded >= maxRecords) {
-            finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur - maksimum tercapai)`;
-        } else {
-            finalMessage = `Data ${categoryName} berhasil dimuat (${totalLoaded} fitur)`;
-        }
-
-        showAlert(finalMessage, "success");
-
+        return { status: "loaded", count: totalLoaded };
     } catch (error) {
-        console.error(`Error loading data for category ${categoryName}:`, error);
-
-        hideLoadingOverlay();
-
-        if (loadingToast) {
-            hideToast(loadingToast);
-        }
-
-        let errorMessage = `Gagal memuat data ${categoryName}`;
-
-        if (error.message.includes("500")) {
-            errorMessage += ": Server mengalami masalah internal. Coba lagi nanti.";
-        } else if (error.message.includes("404")) {
-            errorMessage += ": Data tidak ditemukan.";
-        } else if (error.message.includes("timeout")) {
-            errorMessage += ": Koneksi timeout. Periksa koneksi internet Anda.";
-        } else {
-            errorMessage += `: ${error.message}`;
-        }
-
-        showAlert(errorMessage, "danger");
+        targetLayer.clearLayers();
         loadedCategories.delete(categoryName);
-    } finally {
-        isLoadingData = false;
+
+        if (error?.name === "AbortError") {
+            return { status: "aborted" };
+        }
+
+        console.error(`Gagal memuat data ${categoryName}:`, error);
+        return { status: "error", error: error?.message || "Terjadi kesalahan" };
     }
 }
 
 
 /**
- * Daftar layer kini berupa Katalog Data (modal) + sidebar Layer Aktif, lihat map-catalog.js.
+ * Bangun ulang Katalog Peta & Layer Aktif setelah daftar mapset dimuat (map-catalog.js).
  */
 function updateLayerList() {
     window.MarimoiCatalog?.rebuild();
 }
 
-
-
-
+/**
+ * Gambar pratinjau basemap untuk panel Basemap (public/frontend/img/map-preview).
+ */
 function generatePreviewUrl(basemap) {
-    switch (basemap.id) {
-        case "osm":
-            return `frontend/img/map-preview/${basemap.id}-min.png`;
-        case "google-roadmap":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "google-hybrid":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "google-terrain":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-world-imagery":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-dark-gray":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-streets":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-topographic":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-oceans":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-        case "esri-light-gray":
-            return `/frontend/img/map-preview/${basemap.id}-min.png`;
-
-        default:
-            return "/frontend/img/placeholder.png";
-    }
+    return `/frontend/img/map-preview/${basemap.id}-min.png`;
 }
 
 /**
- * Inisialisasi dan setup event handler untuk UI (slider transparansi, basemap, sidebar, dll) - Tailwind version
+ * Isi panel Basemap dengan kartu pratinjau; klik kartu untuk mengganti basemap.
  */
 function setupUI() {
     const basemapList = document.getElementById("basemap-list");
@@ -1948,7 +1564,6 @@ function setupUI() {
             cursor: pointer;
         `;
 
-            // Preview image
             const previewImg = document.createElement("img");
             previewImg.src = generatePreviewUrl(bm);
             previewImg.alt = bm.label;
@@ -1961,7 +1576,7 @@ function setupUI() {
             box-shadow: 6px rgba(0,0,0,1);
         `;
 
-            // Error handling
+            // Gambar pratinjau gagal dimuat: ganti dengan kotak "Preview tidak tersedia".
             previewImg.onerror = function () {
                 this.style.display = "none";
                 const placeholder = document.createElement("div");
@@ -1980,7 +1595,6 @@ function setupUI() {
                 this.parentNode.insertBefore(placeholder, this);
             };
 
-            // Label
             const label = document.createElement("div");
             label.className = "p-2";
             label.style.cssText = `
@@ -1992,7 +1606,7 @@ function setupUI() {
         `;
             label.textContent = bm.label;
 
-            // Radio input (hidden)
+            // Radio tersembunyi menyimpan basemap terpilih (kartu pertama = OSM, default).
             const radioInput = document.createElement("input");
             radioInput.type = "radio";
             radioInput.name = "basemap-radio";
@@ -2002,7 +1616,6 @@ function setupUI() {
             radioInput.style.cssText = "display:none;";
             if (i === 0) radioInput.checked = true;
 
-            // Click handler
             basemapItem.addEventListener("click", function () {
                 document
                     .querySelectorAll('input[name="basemap-radio"]')
@@ -2010,7 +1623,6 @@ function setupUI() {
                         input.checked = false;
                         const item = input.closest(".basemap-item");
                         if (item) {
-                            // reset style
                             const img = item.querySelector("img");
                             const lbl = item.querySelector("div.p-2");
                             if (img) img.style.boxShadow = "6px rgba(0,0,0,1)";
@@ -2018,7 +1630,6 @@ function setupUI() {
                         }
                     });
 
-                // Aktifkan yang dipilih
                 radioInput.checked = true;
                 previewImg.style.boxShadow = "0 0 10px rgba(0, 123, 255, 0.6)";
                 label.style.color = "#0d6efd";
@@ -2026,7 +1637,6 @@ function setupUI() {
                 changeBaseMap(bm.id);
             });
 
-            // Set initial state
             if (radioInput.checked) {
                 previewImg.style.boxShadow = "0 0 10px rgba(0, 123, 255, 0.6)";
                 label.style.color = "#0d6efd";
@@ -2045,9 +1655,8 @@ function setupUI() {
 }
 
 /**
- * Terapkan state dari link share (kombinasi beberapa layer + viewport) ke peta.
- * Dipicu saat halaman dibuka lewat /peta-tematik/share/{slug} dan server
- * sudah menaruh state-nya di window.MARIMOI_SHARED_STATE (lihat peta.blade.php).
+ * Pulihkan tampilan dari link share (/peta-interaktif/share/{slug}): layer, posisi peta,
+ * dan filter. State-nya ditaruh server di window.MARIMOI_SHARED_STATE (peta.blade.php).
  */
 async function applySharedMapState() {
     const state = window.MARIMOI_SHARED_STATE;
@@ -2073,23 +1682,24 @@ async function applySharedMapState() {
         if (state.filters.kabupaten && kabupatenEl) kabupatenEl.value = state.filters.kabupaten;
         if (state.filters.tahun && tahunEl) tahunEl.value = String(state.filters.tahun);
         if (state.filters.opd_pengelola && opdEl) opdEl.value = state.filters.opd_pengelola;
-        // Opsi select bisa belum termuat dari server; nilai dari link share tetap dipasang.
+        // Catat sebagai filter yang berlaku. Opsi select bisa belum termuat dari server,
+        // jadi nilainya dipasang lewat katalog (yang menambahkan opsinya bila perlu).
         window.MarimoiCatalog?.syncAppliedFilters({
             kabupaten: state.filters.kabupaten || "",
             tahun: state.filters.tahun ? String(state.filters.tahun) : "",
             opd_pengelola: state.filters.opd_pengelola || "",
         });
-        // Filter di share link juga harus menampilkan layer yang cocok di luar
-        // state.layers yang eksplisit tercentang — bukan cuma menyaring yang sudah dimuat.
+        // Filter dari link share juga mengaktifkan mapset lain yang cocok, bukan hanya
+        // menyaring layer yang tercantum di state.layers.
         await applyStructuredFilters();
     }
 }
 
 /**
- * Get selected category from session/server
+ * Mapset yang dipilih dari halaman lain (tautan "Lihat peta" di beranda), dikirim server
+ * lewat session sebagai window.MARIMOI_SELECTED_CATEGORY.
  */
 function getSelectedCategoryFromSession() {
-    // Check if there's a global variable set by server
     if (typeof window.MARIMOI_SELECTED_CATEGORY !== "undefined") {
         return window.MARIMOI_SELECTED_CATEGORY;
     }
@@ -2097,7 +1707,7 @@ function getSelectedCategoryFromSession() {
 }
 
 /**
- * Aktifkan kategori yang dipilih dari halaman lain (disimpan di session).
+ * Aktifkan mapset yang dipilih dari halaman lain (lihat getSelectedCategoryFromSession).
  */
 async function autoClickCategoryFromSession() {
     const selectedCategory = getSelectedCategoryFromSession();
@@ -2120,42 +1730,29 @@ async function autoClickCategoryFromSession() {
 }
 
 
+// =====================================================================
+// Inisialisasi halaman
+// =====================================================================
 
-// Update existing DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
-    // Initialize MapDataStore first
     if (window.MapDataStore) {
         mapDataStore = new window.MapDataStore();
-        
-        // Add debug tools in development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            window.MAP_DEBUG = {
-                cache: mapDataStore,
-                getCacheStats: () => mapDataStore.getCacheStats(),
-                clearCache: () => mapDataStore.clearAllCache(),
-                layerGroups: () => layerGroups,
-                loadedCategories: () => Array.from(loadedCategories)
-            };
-            console.log('Debug tools available at window.MAP_DEBUG');
-        }
     }
 
-    // Cache dua skenario: TTL 24 jam (di MapDataStore) dan pembuangan saat data/kategori berubah.
-    // Versi data dicek sebelum daftar kategori dibaca dari cache.
+    // Cache browser dibuang bila kedaluwarsa (24 jam, di MapDataStore) atau bila versi data
+    // di server berubah. Versi dicek lebih dulu sebelum daftar mapset dibaca dari cache.
     if (mapDataStore && window.MARIMOI_MAP_VERSION_URL) {
         await mapDataStore.syncVersion(window.MARIMOI_MAP_VERSION_URL);
     }
 
-    // Init map
     changeBaseMap("osm");
     setupUI();
 
-    // Beri tahu pengguna jika mereka datang dari link share yang tidak valid/kedaluwarsa
+    // Link share tidak valid / kedaluwarsa (pesan dari server).
     if (window.MARIMOI_SHARE_ERROR) {
         showAlert(window.MARIMOI_SHARE_ERROR, "warning");
     }
 
-    // Show loading spinner for layer list
     const layerListContainer = document.getElementById("layer-list");
     if (layerListContainer) {
         layerListContainer.innerHTML = `
@@ -2166,150 +1763,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-        // Isi dropdown filter dari database (paralel, tidak perlu menunggu pohon layer
-        // selesai dibangun — elemen <select>-nya statis di Blade, tanpa layerGroups).
+        // Opsi filter diambil paralel; tidak bergantung pada daftar mapset.
         loadFilterOptionsFromServer();
 
-        // Load categories metadata - ini akan build layerGroups dan UI
         await loadCategoriesMetadata();
-
-        // Remove spinner
         document.getElementById("layer-loading")?.remove();
 
-        // Tunggu sebentar agar UI benar-benar selesai di-render
+        // Jeda singkat agar Katalog & Layer Aktif selesai dirender sebelum layer diaktifkan.
         setTimeout(async () => {
-            // Auto-click checkbox untuk kategori yang dipilih dari session
             await autoClickCategoryFromSession();
-
-            // Terapkan state dari link share (multi-layer + viewport), jika ada
             await applySharedMapState();
-        }, 1000); // 1 detik delay untuk memastikan UI siap
+        }, 1000);
 
     } catch (error) {
         console.error("Error during map initialization:", error);
         showAlert("Terjadi kesalahan saat memuat aplikasi peta", "danger");
     }
 
-    // Sidebar elements
+    // Panel samping kanan dan tombol pembukanya; hanya satu panel terbuka sekaligus.
+    // (Tombol Bantuan ditangani map-guide.js.)
     const sidebarElements = {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
         legend: document.getElementById("sidebar-legend"),
-        help: document.getElementById("guideModal"),
     };
 
-    // Toggle buttons
     const toggleButtons = {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
         legend: document.getElementById("btn-toggle-sidebar-legend"),
-        help: document.getElementById("btn-toggle-sidebar-help"),
     };
-
-    const guideModal = document.getElementById("guideModal");
-    const guideSteps = document.querySelectorAll(".guide-step");
-    const btnPrev = document.getElementById("btnPrev");
-    const btnNext = document.getElementById("btnNext");
-    const btnSkip = document.getElementById("btnSkip");
-    const btnToggleHelp = toggleButtons.help;
-
-    const controlButtons = [
-        toggleButtons.help,
-        toggleButtons.legend,
-        toggleButtons.basemap,
-        toggleButtons.layer,
-        document.getElementById("btn-fullscreen"),
-        document.getElementById("btn-default-zoom"),
-    ];
 
     function closeAllSidebars() {
         Object.values(sidebarElements).forEach((el) => {
-            if (el && el !== guideModal) el.classList.add("hidden");
+            if (el) el.classList.add("hidden");
         });
     }
 
-    let currentStep = 1;
-    const totalSteps = guideSteps.length;
-
-    function clearHighlights() {
-        controlButtons.forEach((btn) => {
-            btn?.classList.remove("ring-2", "ring-white", "shadow-lg", "z-50");
-        });
-    }
-
-    function showStep(step) {
-        guideSteps.forEach((div) => {
-            div.classList.toggle("hidden", parseInt(div.dataset.step) !== step);
-        });
-
-        btnPrev.disabled = step === 1;
-        btnNext.textContent = step === totalSteps ? "Finish" : "Next";
-
-        clearHighlights();
-        if (controlButtons[step - 3]) {
-            controlButtons[step - 3]?.classList.add(
-                "ring-2",
-                "ring-white",
-                "shadow-lg",
-                "z-50"
-            );
-        }
-    }
-
-    function showGuideModal() {
-        closeAllSidebars();
-        currentStep = 1;
-        showStep(currentStep);
-        guideModal.classList.remove("hidden");
-        guideModal.classList.add("flex");
-    }
-
-    function hideGuideModal() {
-        guideModal.classList.add("hidden");
-        guideModal.classList.remove("flex");
-        clearHighlights();
-    }
-
-    // Modal help toggle
-    btnToggleHelp?.addEventListener("click", () => {
-        const isHidden = guideModal.classList.contains("hidden");
-        isHidden ? showGuideModal() : hideGuideModal();
-    });
-
-    // Modal controls
-    btnPrev?.addEventListener("click", () => {
-        if (currentStep > 1) {
-            currentStep--;
-            showStep(currentStep);
-        }
-    });
-
-    btnNext?.addEventListener("click", () => {
-        if (currentStep < totalSteps) {
-            currentStep++;
-            showStep(currentStep);
-        } else {
-            hideGuideModal();
-        }
-    });
-
-    btnSkip?.addEventListener("click", hideGuideModal);
-
-    // Sidebar toggles
     Object.entries(toggleButtons).forEach(([key, btn]) => {
         if (btn && sidebarElements[key]) {
             btn.addEventListener("click", () => {
                 const sidebar = sidebarElements[key];
                 const isHidden = sidebar.classList.contains("hidden");
                 closeAllSidebars();
-                if (key !== "help") {
-                    sidebar.classList.toggle("hidden", !isHidden);
-                }
+                sidebar.classList.toggle("hidden", !isHidden);
             });
         }
     });
 
-    // Close sidebar buttons
     ["layer", "basemap", "legend"].forEach((type) => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
@@ -2319,44 +1820,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Kontrol Filter Data ada di modal Katalog Data dan diikat oleh map-catalog.js.
+    // Kontrol Filter Data ada di modal Katalog (map-catalog.js); di sini hanya memastikan
+    // filter yang berlaku diterapkan ulang saat panel Layer dibuka.
     toggleButtons.layer?.addEventListener("click", refreshFilterPanel);
 
-    // Layer Tools panel (independen dari sidebar lain: boleh dibuka bersamaan
-    // dengan panel Layer, karena isinya bergantung pada layer yang sedang aktif)
-    const layerToolsPanel = document.getElementById("sidebar-layer-tools");
-    const btnToggleLayerTools = document.getElementById("btn-toggle-layer-tools");
-    const btnCloseLayerTools = document.getElementById("btn-close-sidebar-layer-tools");
-
-    function openLayerToolsPanel() {
-        if (!layerToolsPanel) return;
-        positionLayerToolsPanel();
-        updateLayerToolsPanel();
-        layerToolsPanel.classList.remove("hidden");
-        btnToggleLayerTools?.classList.add("bg-blue-50", "text-blue-600");
-    }
-
-    function closeLayerToolsPanel() {
-        if (!layerToolsPanel) return;
-        layerToolsPanel.classList.add("hidden");
-        btnToggleLayerTools?.classList.remove("bg-blue-50", "text-blue-600");
-    }
-
-    btnToggleLayerTools?.addEventListener("click", () => {
-        if (!layerToolsPanel) return;
-        const isHidden = layerToolsPanel.classList.contains("hidden");
-        isHidden ? openLayerToolsPanel() : closeLayerToolsPanel();
-    });
-
-    btnCloseLayerTools?.addEventListener("click", closeLayerToolsPanel);
-
-    window.addEventListener("resize", () => {
-        if (layerToolsPanel && !layerToolsPanel.classList.contains("hidden")) {
-            positionLayerToolsPanel();
-        }
-    });
-
-    // Fullscreen
     document.getElementById("btn-fullscreen")?.addEventListener("click", () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(console.error);
@@ -2365,14 +1832,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Zoom reset
     document
         .getElementById("btn-default-zoom")
         ?.addEventListener("click", () => {
             map.setView(mapConfig.center, mapConfig.zoom);
         });
 
-    // ==================== SHARE PETA ====================
+    // ---- Share peta: simpan layer + posisi + filter ke link pendek (/peta-interaktif/share/{slug}) ----
     const shareModal = document.getElementById("shareMapModal");
     const shareMapLinkInput = document.getElementById("shareMapLink");
     const shareMapLinkSpinner = document.getElementById("shareMapLinkSpinner");
@@ -2386,6 +1852,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const shareQuickButtons = document.querySelectorAll(".share-quick-btn");
     let copyFeedbackTimeout = null;
 
+    // Hanya layer yang sedang tampil (layer tersembunyi tidak ikut dibagikan).
     function getCheckedLayerNames() {
         return (window.MarimoiCatalog?.getActiveEntries() || [])
             .filter((entry) => map.hasLayer(entry.layerGroup))
@@ -2469,7 +1936,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (shareMapLinkInput) shareMapLinkInput.value = shareUrl;
 
             const encodedUrl = encodeURIComponent(shareUrl);
-            const shareText = encodeURIComponent(`Lihat peta tematik ini: ${shareUrl}`);
+            const shareText = encodeURIComponent(`Lihat peta interaktif ini: ${shareUrl}`);
 
             const waLink = document.getElementById("share-whatsapp");
             const tgLink = document.getElementById("share-telegram");
@@ -2478,7 +1945,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (waLink) waLink.href = `https://wa.me/?text=${shareText}`;
             if (tgLink) tgLink.href = `https://t.me/share/url?url=${encodedUrl}`;
             if (mailLink) {
-                mailLink.href = `mailto:?subject=${encodeURIComponent("Peta Tematik MARIMOI")}&body=${shareText}`;
+                mailLink.href = `mailto:?subject=${encodeURIComponent("Peta Interaktif MARIMOI")}&body=${shareText}`;
             }
 
             setShareLinkLoading(false);
@@ -2526,6 +1993,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             await navigator.clipboard.writeText(shareMapLinkInput.value);
         } catch (error) {
+            // Clipboard API ditolak (mis. bukan HTTPS): pakai cara lama lewat seleksi teks.
             shareMapLinkInput.select();
             document.execCommand("copy");
         }

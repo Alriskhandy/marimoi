@@ -55,6 +55,14 @@ class FrontendPagesTest extends TestCase
         }
     }
 
+    public function test_map_menu_is_named_peta_interaktif(): void
+    {
+        $this->get(route('tampil.tentang'))
+            ->assertOk()
+            ->assertSee('>Peta Interaktif</a>', false)
+            ->assertDontSee('>Peta Tematik</a>', false);
+    }
+
     public function test_content_pages_show_the_page_hero_with_breadcrumb(): void
     {
         $this->get(route('tampil.publikasi'))
@@ -93,7 +101,7 @@ class FrontendPagesTest extends TestCase
 
     public function test_thematic_map_page_keeps_map_controls_and_shows_hud(): void
     {
-        $this->get(route('tampil.tematik'))
+        $this->get(route('tampil.interaktif'))
             ->assertOk()
             ->assertSee('id="map"', false)
             ->assertSee('id="map-hud"', false)
@@ -108,7 +116,7 @@ class FrontendPagesTest extends TestCase
 
     public function test_thematic_map_page_has_data_catalog_modal_and_active_layer_sidebar(): void
     {
-        $this->get(route('tampil.tematik'))
+        $this->get(route('tampil.interaktif'))
             ->assertOk()
             ->assertSee('id="catalogModal"', false)
             ->assertSee('id="catalog-group-list"', false)
@@ -126,12 +134,20 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="feature-drawer"', false)
             ->assertSee('id="feature-modal"', false)
             ->assertSee('frontend/js/map-feature-detail.js', false)
+            ->assertSee('id="map-bottom-bar"', false)
+            ->assertSee('frontend/js/map-labels.js', false)
+            ->assertSee('id="mapGuide"', false)
+            ->assertSee('frontend/js/map-guide.js', false)
+            ->assertDontSee('id="guideModal"', false)
+            ->assertDontSee('leaflet.markercluster', false)
+            ->assertDontSee('id="sidebar-layer-tools"', false)
+            ->assertSee('MARIMOI_FEATURE_DETAIL_URL_TEMPLATE', false)
             ->assertSee('frontend/js/map-catalog.js', false);
     }
 
     public function test_thematic_map_page_replaces_navbar_with_home_search_and_account_controls(): void
     {
-        $this->get(route('tampil.tematik'))
+        $this->get(route('tampil.interaktif'))
             ->assertOk()
             ->assertDontSee('id="nav"', false)
             ->assertDontSee('id="mobileMenu"', false)
@@ -149,7 +165,7 @@ class FrontendPagesTest extends TestCase
         $role = Role::create(['name' => 'User', 'slug' => 'user', 'description' => null]);
         $user = User::factory()->create(['role_id' => $role->id]);
 
-        $this->actingAs($user)->get(route('tampil.tematik'))
+        $this->actingAs($user)->get(route('tampil.interaktif'))
             ->assertOk()
             ->assertSee('id="logout-form"', false)
             ->assertSee('id="btn-logout"', false)
@@ -163,7 +179,7 @@ class FrontendPagesTest extends TestCase
         $role = Role::create(['name' => 'Super Admin', 'slug' => 'super-admin', 'description' => null]);
         $user = User::factory()->create(['role_id' => $role->id]);
 
-        $this->actingAs($user)->get(route('tampil.tematik'))
+        $this->actingAs($user)->get(route('tampil.interaktif'))
             ->assertOk()
             ->assertSee('id="btn-dashboard" class="map-pill" href="'.route('dashboard').'"', false)
             ->assertSee('id="btn-logout"', false);
@@ -181,7 +197,7 @@ class FrontendPagesTest extends TestCase
             'geom' => DB::raw("ST_SetSRID(ST_GeomFromText('MULTIPOLYGON(((14422913 100000, 14423913 100000, 14423913 101000, 14422913 100000)))'), 4326)"),
         ]);
 
-        $response = $this->get(route('detail.tematik', $data->uuid));
+        $response = $this->get(route('detail.interaktif', $data->uuid));
 
         $response->assertOk();
         $geometry = $response->viewData('project')->geojson;
@@ -202,7 +218,7 @@ class FrontendPagesTest extends TestCase
             'dbf_attributes' => ['ANGGARAN' => 'Rp. 1.500.000.000', 'ID' => 5],
         ]);
 
-        $this->get(route('detail.tematik', $data->uuid))
+        $this->get(route('detail.interaktif', $data->uuid))
             ->assertOk()
             ->assertSee('id="map-detail"', false)
             ->assertSee('Fasilitas Uji')
@@ -224,7 +240,7 @@ class FrontendPagesTest extends TestCase
             'tanggal_data' => '2025-06-01',
         ]);
 
-        $this->get(route('detail.tematik', $data->uuid))
+        $this->get(route('detail.interaktif', $data->uuid))
             ->assertOk()
             ->assertSee('Sumber Data')
             ->assertSee('Survei lapangan 2025')
@@ -247,7 +263,7 @@ class FrontendPagesTest extends TestCase
             'tanggal_data' => null,
         ]);
 
-        $this->get(route('detail.tematik', $data->uuid))
+        $this->get(route('detail.interaktif', $data->uuid))
             ->assertOk()
             ->assertDontSee('Sumber Data')
             ->assertDontSee('Instansi Pengelola')
@@ -284,7 +300,7 @@ class FrontendPagesTest extends TestCase
         $layer = $this->publishedLayer('Kawasan A');
         $item = $this->mapFeature($layer);
 
-        $version = fn () => $this->getJson(route('tematik.version'))->assertOk()->json('version');
+        $version = fn () => $this->getJson(route('interaktif.version'))->assertOk()->json('version');
 
         $first = $version();
         $this->assertNotEmpty($first);
@@ -316,24 +332,24 @@ class FrontendPagesTest extends TestCase
         $this->mapFeature($a);
         $this->mapFeature($a);
 
-        $before = $this->getJson(route('tematik.version'))->json('version');
+        $before = $this->getJson(route('interaktif.version'))->json('version');
 
         // Query massal (tanpa event model), seperti "Pindahkan data" pada aksi bulk.
         DB::table('spatial_features')->update(['layer_id' => $b->id]);
         MapDataVersion::forget();
 
-        $this->assertNotSame($before, $this->getJson(route('tematik.version'))->json('version'));
+        $this->assertNotSame($before, $this->getJson(route('interaktif.version'))->json('version'));
     }
 
     public function test_tematik_map_version_ignores_draft_layers(): void
     {
         $this->mapFeature($this->publishedLayer('Layer Publik'));
         $draft = $this->publishedLayer('Layer Draft', 'draft');
-        $before = $this->getJson(route('tematik.version'))->json('version');
+        $before = $this->getJson(route('interaktif.version'))->json('version');
 
         $this->mapFeature($draft);
         MapDataVersion::forget();
 
-        $this->assertSame($before, $this->getJson(route('tematik.version'))->json('version'));
+        $this->assertSame($before, $this->getJson(route('interaktif.version'))->json('version'));
     }
 }
