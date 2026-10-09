@@ -1104,9 +1104,12 @@ function positionLayerToolsPanel() {
     const mapRect = mapEl.getBoundingClientRect();
     const controlsRect = leftControls.getBoundingClientRect();
 
-    const top = controlsRect.bottom - mapRect.top + 8;
+    // Kontrol kiri ada di tengah vertikal: panel dibuka di samping kanannya, mulai di
+    // bawah baris tombol atas (Beranda/pencarian, ±70px) supaya tidak tertutup.
+    const topRowBottom = 70;
+    const top = Math.max(topRowBottom, controlsRect.top - mapRect.top);
     panel.style.top = `${top}px`;
-    panel.style.left = `${controlsRect.left - mapRect.left}px`;
+    panel.style.left = `${controlsRect.right - mapRect.left + 12}px`;
 
     if (content) {
         const headerHeight = header?.getBoundingClientRect().height || 40;

@@ -428,36 +428,36 @@
                             </a>
                         @endauth
                     </div>
+                </div>
 
-                    <!-- Sidebar Control Buttons -->
-                    <div id="sidebar-control-buttons"
-                        class="z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
-                        role="group" aria-label="Sidebar Control Buttons">
+                <!-- Sidebar Control Buttons -->
+                <div id="sidebar-control-buttons"
+                    class="bg-gray-300 shadow-md flex flex-col items-center rounded-none"
+                    role="group" aria-label="Sidebar Control Buttons">
 
-                        <button id="btn-toggle-sidebar-help" type="button"
-                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                            title="Bantuan" data-tooltip="Bantuan">
-                            <i class="bi bi-info-circle-fill"></i>
-                        </button>
+                    <button id="btn-toggle-sidebar-help" type="button"
+                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Bantuan" data-tooltip="Bantuan">
+                        <i class="bi bi-info-circle-fill"></i>
+                    </button>
 
-                        <button id="btn-toggle-sidebar-legend" type="button"
-                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                            title="Legenda Peta" data-tooltip="Legenda Peta">
-                            <i class="bi bi-list-ul"></i>
-                        </button>
+                    <button id="btn-toggle-sidebar-legend" type="button"
+                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Legenda Peta" data-tooltip="Legenda Peta">
+                        <i class="bi bi-list-ul"></i>
+                    </button>
 
-                        <button id="btn-toggle-sidebar-basemap" type="button"
-                            class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                            title="Basemap Peta" data-tooltip="Basemap Peta">
-                            <i class="bi bi-grid-fill"></i>
-                        </button>
+                    <button id="btn-toggle-sidebar-basemap" type="button"
+                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Basemap Peta" data-tooltip="Basemap Peta">
+                        <i class="bi bi-grid-fill"></i>
+                    </button>
 
-                        <button id="btn-toggle-sidebar-layer" type="button"
-                            class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
-                            title="Layer Peta" data-tooltip="Layer Peta">
-                            <i class="bi bi-layers-fill"></i>
-                        </button>
-                    </div>
+                    <button id="btn-toggle-sidebar-layer" type="button"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Layer Peta" data-tooltip="Layer Peta">
+                        <i class="bi bi-layers-fill"></i>
+                    </button>
                 </div>
 
                 <!-- Navigation Control Buttons -->

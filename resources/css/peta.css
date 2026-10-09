@@ -54,16 +54,19 @@
     background: transparent;
 }
 
-/* Baris atas (Beranda, pencarian, akun) setinggi 44px di top 14px — kontrol Leaflet kiri turun di bawahnya. */
+/* Kontrol Leaflet kiri (zoom, fullscreen/home, layer tools) di tengah vertikal layar. */
 #map-section .leaflet-top.leaflet-left {
-    top: 58px;
+    top: 50%;
     left: 8px;
+    transform: translateY(-50%);
 }
 
 #map-section .leaflet-top.leaflet-left .leaflet-control {
     margin-top: 10px;
     margin-left: 4px;
 }
+
+#map-section .leaflet-top.leaflet-left .leaflet-control:first-child { margin-top: 0; }
 
 /* ---------- Baris atas: tombol pil (Beranda & akun) ---------- */
 #map-section .map-pill,
@@ -163,6 +166,13 @@
 }
 
 #map-section #nav-control-buttons { bottom: 36px; z-index: 102; }
+
+#map-section #sidebar-control-buttons {
+    position: absolute;
+    top: 50%;
+    z-index: 102;
+    transform: translateY(-50%);
+}
 
 /* ---------- Tengah atas: bar pencarian ---------- */
 #map-section #map-search-bar {
