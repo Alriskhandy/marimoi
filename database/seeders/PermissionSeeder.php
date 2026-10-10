@@ -39,6 +39,9 @@ class PermissionSeeder extends Seeder
             'spatial-layers.edit',
             'spatial-layers.delete',
         ],
+        'pimpinan' => [
+            'dashboard.view',
+        ],
     ];
 
     /**

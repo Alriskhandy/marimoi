@@ -6,9 +6,11 @@ use App\Models\Aspirasi;
 use App\Models\Opd;
 use App\Models\SpatialLayerFeature;
 use App\Models\Visitor;
+use App\Support\DashboardMetrics;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
@@ -37,88 +39,54 @@ class DashboardController extends Controller
     /**
      * Display the main dashboard
      */
-    public function index()
+    public function index(Request $request): View
     {
-        if ($this->isAdminOpd()) {
-            $userOpdId = Auth::user()->id;
-            $totalLokasi = SpatialLayerFeature::where('created_by', $userOpdId)->count();
-        } else {
-            $totalLokasi = SpatialLayerFeature::count();
+        $metrics = new DashboardMetrics(Auth::user(), $request->query('tampilan'));
+        $spatial = $metrics->spatial();
+        $aspirasi = $metrics->aspirasi();
+        $projects = $metrics->projects();
+
+        $data = [
+            'profile' => $metrics->profile,
+            'canSwitchToExecutive' => $metrics->canSwitchToExecutive,
+            'spatial' => $spatial,
+            'aspirasi' => $aspirasi,
+            'projects' => $projects,
+            'aspirasiTrend' => $metrics->aspirasiTrend(),
+            'sectors' => $metrics->projectsBySector(),
+            'attention' => $metrics->attention($spatial, $aspirasi, $projects),
+            // Dipertahankan untuk kompatibilitas (DashboardTotalLokasiTest & widget lama).
+            'totalLokasi' => $spatial['features'],
+        ];
+
+        if ($metrics->profile === DashboardMetrics::PROFILE_EXECUTIVE) {
+            $reach = $metrics->reach();
+
+            return view('dashboard', $data + [
+                'reach' => $reach,
+                'visitorTrend' => $metrics->visitorTrend(),
+                'projectsByYear' => $metrics->projectsByYear(),
+                'opdScorecard' => $metrics->opdScorecard(),
+                'topCategories' => $metrics->topCategories(),
+                'highlights' => $metrics->highlights($spatial, $aspirasi, $projects, $reach, $data['sectors']),
+            ]);
         }
 
-        $totalOpd = Opd::count();
+        $data += [
+            'recentAspirasi' => $metrics->recentAspirasi(),
+            'recentLayers' => $metrics->recentLayers(),
+        ];
 
-        // Build base query for aspirasi with OPD filter
-        $aspirasiBaseQuery = DB::table('aspirasi');
-        $aspirasiBaseQuery = $this->applyOpdFilterToRawQuery($aspirasiBaseQuery);
-
-        $totalPendingAspirasi = (clone $aspirasiBaseQuery)->where('aspirasi.status', 'pending')->count();
-        $totalAspirasi = (clone $aspirasiBaseQuery)->count();
-        $totalSelesaiAspirasi = (clone $aspirasiBaseQuery)->where('aspirasi.status', 'selesai')->count();
-
-        // Get monthly data for current year
-        $currentYear = date('Y');
-        $monthlyAspirasi = $this->getMonthlyAspirasiData($currentYear);
-
-        // Get category distribution
-        $categoryData = $this->getCategoryDistributionForDashboard();
-
-        // Get recent aspirasi with OPD filter
-        if ($this->isAdminOpd()) {
-            $userOpdId = Auth::user()->opd_id;
-            $recentAspirasi = DB::table('aspirasi')
-                ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
-                ->where('kategori_aspirasi.opd_id', $userOpdId)
-                ->orderBy('aspirasi.created_at', 'desc')
-                ->limit(5)
-                ->select('aspirasi.*', 'kategori_aspirasi.nama_kategori')
-                ->get();
-        } else {
-            $recentAspirasi = DB::table('aspirasi')
-                ->join('kategori_aspirasi', 'aspirasi.kategori_aspirasi_id', '=', 'kategori_aspirasi.id')
-                ->orderBy('aspirasi.created_at', 'desc')
-                ->limit(5)
-                ->select('aspirasi.*', 'kategori_aspirasi.nama_kategori')
-                ->get();
+        if ($metrics->profile === DashboardMetrics::PROFILE_ADMIN) {
+            $data += [
+                'reach' => $metrics->reach(),
+                'visitorTrend' => $metrics->visitorTrend(),
+                'topCategories' => $metrics->topCategories(),
+                'topPages' => $metrics->topPages(),
+            ];
         }
 
-        // Get visitor data - HANYA untuk non admin-opd
-        $visitorData = [];
-        $totalVisitors = 0;
-        $todayVisitors = 0;
-        $availableYears = [];
-
-        if (! $this->isAdminOpd()) {
-            $totalVisitors = Visitor::count();
-            $todayVisitors = Visitor::whereDate('created_at', today())->count();
-            $visitorData = $this->getMonthlyVisitorData($currentYear);
-
-            // Get available years for visitor data - FIXED FOR POSTGRESQL
-            $availableYears = Visitor::selectRaw('EXTRACT(YEAR FROM created_at) as year')
-                ->distinct()
-                ->orderBy('year', 'desc')
-                ->pluck('year')
-                ->toArray();
-
-            if (empty($availableYears)) {
-                $availableYears = [$currentYear];
-            }
-        }
-
-        return view('dashboard', compact(
-            'totalLokasi',
-            'totalOpd',
-            'totalPendingAspirasi',
-            'totalAspirasi',
-            'totalSelesaiAspirasi',
-            'monthlyAspirasi',
-            'categoryData',
-            'recentAspirasi',
-            'totalVisitors',
-            'todayVisitors',
-            'visitorData',
-            'availableYears'
-        ));
+        return view('dashboard', $data);
     }
 
     /**
