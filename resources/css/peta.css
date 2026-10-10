@@ -173,7 +173,7 @@
     box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .6);
 }
 
-#map-section #nav-control-buttons { bottom: 36px; z-index: 102; }
+#map-section #nav-control-buttons { bottom: 36px; z-index: 100; } /* di bawah sidebar (z 101) */
 
 #map-section #sidebar-control-buttons {
     position: absolute;
@@ -325,7 +325,7 @@
 #map-section #sidebar-download {
     top: 70px;
     right: 76px;
-    bottom: 36px;
+    bottom: 84px; /* berhenti di atas tombol Unduh & Share (bottom 36px) */
     height: auto;
     border: 1px solid rgba(255, 255, 255, .5);
     border-radius: 22px;

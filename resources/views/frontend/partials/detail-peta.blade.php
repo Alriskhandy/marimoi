@@ -38,10 +38,10 @@
             </div>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[7fr_5fr] lg:items-start">
-            {{-- Peta --}}
+        <div class="grid gap-6">
+            {{-- Peta (hero, lebar penuh) --}}
             <div class="reveal-blur relative overflow-hidden rounded-3xl border border-slate-900/10 bg-navy shadow-[0_30px_70px_-40px_rgba(7,26,45,.6)]" data-reveal>
-                <div id="map-detail" class="z-0 h-[420px] w-full bg-navy sm:h-[520px] lg:h-[620px]" role="application" aria-label="Peta lokasi {{ $kategori->nama ?? '' }}"></div>
+                <div id="map-detail" class="z-0 h-[360px] w-full bg-navy sm:h-[460px] lg:h-[560px]" role="application" aria-label="Peta lokasi {{ $kategori->nama ?? '' }}"></div>
 
                 <div class="pointer-events-none absolute left-4 top-4 z-[500] flex flex-wrap items-center gap-2">
                     <span class="rounded-full border border-white/15 bg-slate-950/70 px-3.5 py-1.5 font-grotesk text-[11px] uppercase tracking-widest text-white backdrop-blur-md">{{ $geometryLabel }}</span>
@@ -68,7 +68,7 @@
                 </button>
             </div>
 
-            {{-- Informasi --}}
+            {{-- Informasi (lebar penuh di bawah peta) --}}
             <div class="reveal grid gap-6" data-reveal>
                 <article class="rounded-3xl border border-slate-900/10 bg-white p-6 md:p-8">
                     <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold" style="color: {{ $warna }}; border-color: {{ $warna }}55; background-color: {{ $warna }}12">
@@ -80,7 +80,7 @@
                         <div class="mt-4 text-[15px] leading-relaxed text-slate-600 [&_a]:text-ocean [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5">{!! HtmlSanitizer::clean($project->deskripsi) !!}</div>
                     @endif
 
-                    <dl class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-900/10 pt-6 text-sm">
+                    <dl class="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-900/10 pt-6 text-sm sm:grid-cols-3 lg:grid-cols-4">
                         @if ($project->tahun)
                             <div><dt class="text-slate-500">Tahun</dt><dd class="mt-0.5 font-grotesk text-lg font-medium text-navy">{{ $project->tahun }}</dd></div>
                         @endif
@@ -108,17 +108,18 @@
                     @endif
                 </article>
 
+                <div @class(['grid gap-6 lg:items-start', 'lg:grid-cols-[5fr_7fr]' => ! empty($project->gambar) && $dbfAttributes->isNotEmpty()])>
                 @if (! empty($project->gambar))
                     <div class="overflow-hidden rounded-3xl border border-slate-900/10 bg-white p-2">
                         <img src="{{ asset('storage/' . $project->gambar) }}" alt="{{ strip_tags($project->deskripsi ?? $kategori->nama ?? 'Foto lokasi') }}" loading="lazy"
-                            class="h-64 w-full rounded-2xl object-cover">
+                            class="h-64 w-full rounded-2xl object-cover lg:h-80">
                     </div>
                 @endif
 
                 @if ($dbfAttributes->isNotEmpty())
                     <article class="rounded-3xl border border-slate-900/10 bg-white p-6 md:p-8">
                         <h3 class="mb-4 font-grotesk text-xs uppercase tracking-widest text-ocean">Atribut data</h3>
-                        <dl class="divide-y divide-slate-900/10">
+                        <dl @class(['divide-y divide-slate-900/10', 'lg:grid lg:grid-cols-2 lg:gap-x-10 lg:divide-y-0 lg:[&>div]:border-b lg:[&>div]:border-slate-900/10' => empty($project->gambar)])>
                             @foreach ($dbfAttributes as $key => $value)
                                 <div class="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
                                     <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ ucwords(str_replace('_', ' ', (string) $key)) }}</dt>
@@ -128,6 +129,7 @@
                         </dl>
                     </article>
                 @endif
+                </div>
             </div>
         </div>
     </div>

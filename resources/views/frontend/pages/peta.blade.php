@@ -556,22 +556,22 @@
 
                     {{-- Analisis layer aktif; nonaktif (aria-disabled) bila belum ada layer aktif. --}}
                     <button id="btn-open-analysis" type="button" aria-haspopup="dialog" aria-controls="analysisModal"
-                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
                         title="Analisis Peta" data-tooltip="Analisis Peta">
                         <i class="bi bi-bar-chart-line-fill"></i>
                     </button>
+                </div>
+
+                {{-- Kanan bawah: Unduh & Share peta. --}}
+                <div id="nav-control-buttons"
+                    class="absolute bottom-[30px] right-2.5 z-[99] bg-gray-300 shadow-md flex flex-row items-center rounded-none"
+                    role="group" aria-label="Navigation Control Buttons">
 
                     <button id="btn-toggle-sidebar-download" type="button" aria-controls="sidebar-download"
-                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        class="text-black border border-black/20 border-r border-r-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
                         title="Unduh Peta" data-tooltip="Unduh Peta">
                         <i class="bi bi-download"></i>
                     </button>
-                </div>
-
-                {{-- Kanan bawah: Share peta. --}}
-                <div id="nav-control-buttons"
-                    class="absolute bottom-[30px] right-2.5 z-[99] bg-gray-300 shadow-md flex flex-col items-center rounded-none"
-                    role="group" aria-label="Navigation Control Buttons">
 
                     <button id="btn-share-map" type="button"
                         class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
