@@ -20,6 +20,12 @@
             text: "Buka daftar Layer Aktif untuk mengatur urutan, transparansi, dan visibilitas layer. Bila belum ada layer, tombol ini langsung membuka Katalog Peta untuk memilih mapset, menyaringnya dengan Filter, lalu Terapkan Pilihan.",
         },
         {
+            target: "#btn-open-analysis",
+            icon: "bi-bar-chart-line-fill",
+            title: "Analisis Peta",
+            text: "Lihat ringkasan layer aktif: jumlah fitur, luas dan panjang, sebaran per kabupaten/kota, tren per tahun, OPD pengelola, hingga wawasan singkat. Aktif bila minimal satu layer aktif, dan bisa dicetak atau disimpan sebagai PDF.",
+        },
+        {
             target: "#map-search-bar",
             icon: "bi-search",
             title: "Pencarian",

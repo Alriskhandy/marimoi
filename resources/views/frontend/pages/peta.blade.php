@@ -187,6 +187,30 @@
                 </div>
 
                 {{-- Modal Katalog Peta: memilih mapset yang ditampilkan. Isi kolom & kartu dibuat map-catalog.js. --}}
+                {{-- Analisis Peta: isi dirender map-analysis.js dari layer aktif --}}
+                <div id="analysisModal" class="catalog-modal analysis-modal hidden" role="dialog" aria-modal="true"
+                    aria-labelledby="analysis-modal-title">
+                    <div class="catalog-dialog analysis-dialog">
+                        <header class="analysis-header">
+                            <div>
+                                <h2 id="analysis-modal-title">Analisis Peta</h2>
+                                <p data-analysis-subtitle></p>
+                            </div>
+                            <div class="analysis-header-actions">
+                                <div class="analysis-scope" role="group" aria-label="Cakupan analisis">
+                                    <button type="button" data-analysis-scope="view" aria-pressed="true"><i class="bi bi-aspect-ratio"></i> Tampilan peta</button>
+                                    <button type="button" data-analysis-scope="all" aria-pressed="false"><i class="bi bi-globe2"></i> Seluruh data</button>
+                                </div>
+                                <button type="button" class="analysis-print" data-analysis-print><i class="bi bi-printer"></i> <span>Cetak / PDF</span></button>
+                                <button type="button" class="catalog-icon-btn" data-analysis-close aria-label="Tutup analisis">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </header>
+                        <div class="analysis-body" data-analysis-body aria-live="polite"></div>
+                    </div>
+                </div>
+
                 <div id="catalogModal" class="catalog-modal hidden" role="dialog" aria-modal="true"
                     aria-labelledby="catalog-modal-title">
                     <div class="catalog-dialog">
@@ -428,9 +452,16 @@
                     </button>
 
                     <button id="btn-toggle-sidebar-layer" type="button"
-                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
                         title="Layer Peta" data-tooltip="Layer Peta">
                         <i class="bi bi-layers-fill"></i>
+                    </button>
+
+                    {{-- Analisis layer aktif; nonaktif (aria-disabled) bila belum ada layer aktif. --}}
+                    <button id="btn-open-analysis" type="button" aria-haspopup="dialog" aria-controls="analysisModal"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Analisis Peta" data-tooltip="Analisis Peta">
+                        <i class="bi bi-bar-chart-line-fill"></i>
                     </button>
                 </div>
 
@@ -502,6 +533,8 @@
         src="{{ asset('frontend/js/map-feature-detail.js') }}?v={{ filemtime(public_path('frontend/js/map-feature-detail.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map-labels.js') }}?v={{ filemtime(public_path('frontend/js/map-labels.js')) }}">
+    </script>
+    <script src="{{ asset('frontend/js/map-analysis.js') }}?v={{ filemtime(public_path('frontend/js/map-analysis.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map-guide.js') }}?v={{ filemtime(public_path('frontend/js/map-guide.js')) }}">
     </script>

@@ -407,7 +407,13 @@
     }
 
     // Gambar ulang sidebar Layer Aktif (chip filter, status pemuatan, slider, tombol aksi).
+    // Gambar ulang daftar Layer Aktif lalu kabari modul lain (mis. Analisis) bahwa isinya berubah.
     function renderActiveList() {
+        drawActiveList();
+        document.dispatchEvent(new CustomEvent("marimoi:active-layers-change"));
+    }
+
+    function drawActiveList() {
         const container = document.getElementById("layer-list");
         if (!container) {
             return;
@@ -1101,6 +1107,9 @@
         findEntriesByName,
         getActiveEntries,
         isActive,
+        // Sedang antre/dimuat: datanya belum lengkap untuk dianalisis.
+        isLoading: (entry) => state.loads.has(entry.key),
+        isHidden: (entry) => state.hiddenKeys.has(entry.key),
         open: openCatalog,
         close: closeCatalog,
     };

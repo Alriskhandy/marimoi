@@ -146,6 +146,20 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="filter-opd"', false);
     }
 
+    public function test_map_page_has_analysis_button_and_modal(): void
+    {
+        $this->get(route('tampil.interaktif'))
+            ->assertOk()
+            ->assertSee('id="btn-open-analysis"', false)
+            ->assertSee('aria-controls="analysisModal"', false)
+            ->assertSee('id="analysisModal"', false)
+            ->assertSee('data-analysis-scope="view"', false)
+            ->assertSee('data-analysis-scope="all"', false)
+            ->assertSee('data-analysis-print', false)
+            ->assertSee('data-analysis-body', false)
+            ->assertSee('frontend/js/map-analysis.js', false);
+    }
+
     public function test_thematic_map_page_has_data_catalog_modal_and_active_layer_sidebar(): void
     {
         $this->get(route('tampil.interaktif'))
