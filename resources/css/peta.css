@@ -321,7 +321,8 @@
 /* ---------- Panel samping (Layer Aktif, Basemap, Legenda) ---------- */
 #map-section #sidebar-layer,
 #map-section #sidebar-basemap,
-#map-section #sidebar-legend {
+#map-section #sidebar-legend,
+#map-section #sidebar-download {
     top: 70px;
     right: 76px;
     bottom: 36px;
@@ -338,7 +339,8 @@
 /* Kepala panel: gradasi navy dengan garis aqua di bawahnya. */
 #map-section #sidebar-layer > div:first-child,
 #map-section #sidebar-basemap > div:first-child,
-#map-section #sidebar-legend > div:first-child {
+#map-section #sidebar-legend > div:first-child,
+#map-section #sidebar-download > div:first-child {
     border-radius: 14px;
     background: linear-gradient(135deg, var(--peta-navy), #0b3a66) !important;
     box-shadow: inset 0 -2px 0 rgba(32, 217, 255, .55);
@@ -454,7 +456,8 @@
 @media (max-width: 767px) {
     #map-section #sidebar-layer,
     #map-section #sidebar-basemap,
-    #map-section #sidebar-legend {
+    #map-section #sidebar-legend,
+    #map-section #sidebar-download {
         left: 12px;
         right: 70px;
         width: auto;
@@ -1114,6 +1117,53 @@ body.catalog-open { overflow: hidden; }
     cursor: pointer;
 }
 
+/* Sakelar label fitur di atas daftar Layer Aktif. */
+.active-layer-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.active-layer-switch > span:first-child { flex: 1; display: flex; align-items: center; gap: 8px; }
+.active-layer-switch i { color: #0a84ff; }
+.active-layer-switch input { position: absolute; opacity: 0; pointer-events: none; }
+
+.active-layer-switch-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    background: #cbd5e1;
+    transition: background-color .15s;
+}
+
+.active-layer-switch-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .3);
+    transition: transform .15s;
+}
+
+.active-layer-switch input:checked + .active-layer-switch-track { background: #0a84ff; }
+.active-layer-switch input:checked + .active-layer-switch-track::after { transform: translateX(14px); }
+.active-layer-switch input:focus-visible + .active-layer-switch-track { box-shadow: 0 0 0 3px rgba(10, 132, 255, .3); }
+
 .active-layer-list { margin: 0; padding: 0; list-style: none; }
 
 .active-layer {
@@ -1141,6 +1191,39 @@ body.catalog-open { overflow: hidden; }
 }
 
 .active-layer-order { display: flex; flex-direction: column; flex-shrink: 0; }
+
+/* Pegangan seret untuk mengubah urutan (map-catalog.js). */
+.active-layer-drag {
+    display: grid;
+    flex-shrink: 0;
+    align-self: stretch;
+    place-items: center;
+    width: 18px;
+    margin: -4px -4px -4px -6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 15px;
+    cursor: grab;
+    touch-action: none;
+}
+
+.active-layer-drag:hover:not(:disabled) { background: #f1f5f9; color: #334155; }
+.active-layer-drag:focus-visible { outline: 2px solid #0a84ff; outline-offset: 1px; }
+.active-layer-drag:disabled { opacity: .3; cursor: default; }
+
+.active-layer-list.is-sorting .active-layer { transition: transform .16s ease; }
+.active-layer-list.is-sorting .active-layer.is-dragging {
+    position: relative;
+    z-index: 2;
+    border-color: #93c5fd;
+    box-shadow: 0 14px 30px -12px rgba(15, 23, 42, .35);
+    transition: none;
+}
+
+body.is-sorting-layers,
+body.is-sorting-layers * { cursor: grabbing !important; user-select: none; }
 
 .active-layer-order button {
     display: grid;
@@ -2036,4 +2119,159 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
     body.analysis-open .analysis-header { padding: 0 0 12px; }
     body.analysis-open .analysis-card, body.analysis-open .analysis-kpi { break-inside: avoid; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     body.analysis-open .analysis-bar-track > span, body.analysis-open .analysis-donut, body.analysis-open .analysis-inline-bar > span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+/* ==========================================================================
+   Unduh Peta (map-download.js)
+   ========================================================================== */
+
+/* Bingkai area cetak: luar bingkai diredupkan, peta tetap bisa digeser/zoom. */
+.download-frame {
+    position: absolute;
+    z-index: 640;
+    border: 2px dashed #0a84ff;
+    border-radius: 4px;
+    box-shadow: 0 0 0 9999px rgba(6, 21, 34, .35);
+    pointer-events: none;
+}
+
+.download-frame[hidden] { display: none; }
+
+.download-frame-label {
+    position: absolute;
+    top: -30px;
+    left: -2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #0a84ff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.download-form {
+    display: grid;
+    gap: 14px;
+    max-height: calc(100vh - 190px);
+    padding: 2px 4px 12px 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(10, 132, 255, .45) transparent;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.download-hint {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.download-field { display: grid; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.download-field > span, .download-field > legend { padding: 0; color: #334155; font-size: 12px; font-weight: 700; }
+
+.download-field input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.download-field input[type="text"]:focus { border-color: #0a84ff; outline: none; box-shadow: 0 0 0 3px rgba(10, 132, 255, .15); }
+
+.download-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.download-options.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.download-options.is-five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.download-options label { position: relative; cursor: pointer; }
+.download-options input { position: absolute; opacity: 0; pointer-events: none; }
+
+.download-options span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 36px;
+    padding: 6px 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #334155;
+    font-weight: 600;
+    text-align: center;
+    transition: border-color .15s, background-color .15s, color .15s;
+}
+
+.download-options span i { font-size: 15px; }
+.download-options span small { color: #94a3b8; font-size: 10.5px; font-weight: 500; }
+.download-options label:hover span { border-color: #93c5fd; }
+.download-options input:checked + span { border-color: #0a84ff; background: #0a84ff; color: #fff; }
+.download-options input:checked + span small { color: rgba(255, 255, 255, .8); }
+.download-options input:focus-visible + span { box-shadow: 0 0 0 3px rgba(10, 132, 255, .3); }
+.download-options input:disabled + span { cursor: not-allowed; opacity: .6; }
+
+.download-checks { display: grid; gap: 8px; }
+.download-check { display: flex; align-items: center; gap: 8px; color: #334155; cursor: pointer; }
+.download-check input { width: 16px; height: 16px; accent-color: #0a84ff; }
+
+.download-summary {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    background: #fff;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.download-summary b { color: #1d3557; }
+.download-summary-warn { display: flex; gap: 6px; margin-top: 4px; color: #b45309; }
+
+.download-progress[hidden] { display: none; }
+.download-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+.download-progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0a84ff, #20d9ff); transition: width .2s; }
+.download-progress p { margin: 6px 0 0; color: #475569; font-size: 12px; }
+
+.download-submit,
+.download-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.download-submit { background: #0a84ff; color: #fff; box-shadow: 0 8px 20px -10px rgba(10, 132, 255, .9); }
+.download-submit:hover { background: #0866c4; }
+.download-submit[hidden], .download-cancel[hidden], .download-status[hidden] { display: none; }
+.download-cancel { border: 1px solid #fecaca; background: #fff; color: #dc2626; }
+.download-cancel:hover { background: #fef2f2; }
+
+.download-status { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; }
+.download-status.is-success { background: #ecfdf5; color: #047857; }
+.download-status.is-warn { background: #fffbeb; color: #92400e; }
+.download-status.is-error { background: #fef2f2; color: #b91c1c; }
+.download-status.is-info { background: #f1f5f9; color: #475569; }
+
+/* Ponsel: panel jadi lembar bawah agar bingkai area cetak tetap terlihat di atasnya. */
+@media (max-width: 767px) {
+    #map-section #sidebar-download { top: auto; bottom: 12px; height: 54vh; }
+    #map-section #sidebar-download .download-form { max-height: calc(54vh - 76px); }
 }

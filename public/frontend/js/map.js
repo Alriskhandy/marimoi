@@ -567,20 +567,46 @@ function legendRow(kind, color, icon, opacity, text, isSub) {
 }
 
 /**
- * Legenda layer yang sedang tampil, urut sesuai daftar Layer Aktif (atas = paling atas
+ * Isi legenda layer yang sedang tampil, urut sesuai daftar Layer Aktif (atas = paling atas
  * di peta), memakai style dari dashboard: simbol sesuai geometri, kelas categorized/
- * graduated, dan warna per-feature (style_override).
+ * graduated, dan warna per-feature (style_override). Dipakai panel Legenda dan Unduh Peta.
+ *
+ * @returns {Array<{title: string, kind: string, icon: string|null, opacity: number, color: string,
+ *          items: Array<{color: string, label: string}>}>} items kosong = satu simbol untuk layer
  */
+function legendGroups() {
+    const entries = (window.MarimoiCatalog?.getActiveEntries() || []).filter(
+        (entry) => map.hasLayer(entry.layerGroup) && entry.layerGroup.getLayers().length > 0
+    );
+
+    return entries.map((entry) => {
+        const layerStyle = getLayerStyle(entry.leafName);
+        let items = [];
+        if (["categorized", "graduated"].includes(layerStyle.type) && layerStyle.classes?.length) {
+            items = layerStyle.classes.map((cls) => ({
+                color: cls.color,
+                label: cls.label || (layerStyle.type === "categorized" ? cls.value : `${cls.min ?? ""} – ${cls.max ?? ""}`),
+            }));
+        }
+        return {
+            title: entry.leafName,
+            kind: legendGeometryKind(entry.layerGroup),
+            icon: layerStyle.is_marker ? layerStyle.icon : null,
+            opacity: layerStyle.opacity,
+            color: layerStyle.color,
+            items: items.concat(legendOverrideItems(entry.layerGroup)),
+        };
+    });
+}
+
 function generateLegend() {
     const legendContainer = document.getElementById("legend-content");
     if (!legendContainer) return;
 
     legendContainer.innerHTML = "";
-    const entries = (window.MarimoiCatalog?.getActiveEntries() || []).filter(
-        (entry) => map.hasLayer(entry.layerGroup) && entry.layerGroup.getLayers().length > 0
-    );
+    const groups = legendGroups();
 
-    if (entries.length === 0) {
+    if (groups.length === 0) {
         legendContainer.innerHTML = `
             <div class="legend-empty">
                 <i class="bi bi-layers"></i>
@@ -592,38 +618,25 @@ function generateLegend() {
 
     const maxSubItems = 15;
 
-    entries.forEach((entry) => {
-        const layerStyle = getLayerStyle(entry.leafName);
-        const kind = legendGeometryKind(entry.layerGroup);
-        const icon = layerStyle.is_marker ? layerStyle.icon : null;
-
+    groups.forEach(({ title, kind, icon, opacity, color, items }) => {
         const group = document.createElement("section");
         group.className = "legend-group";
 
-        const title = document.createElement("h6");
-        title.className = "legend-title";
-        title.textContent = entry.leafName;
-        group.appendChild(title);
+        const heading = document.createElement("h6");
+        heading.className = "legend-title";
+        heading.textContent = title;
+        group.appendChild(heading);
 
-        let subItems = [];
-        if (["categorized", "graduated"].includes(layerStyle.type) && layerStyle.classes?.length) {
-            subItems = layerStyle.classes.map((cls) => ({
-                color: cls.color,
-                label: cls.label || (layerStyle.type === "categorized" ? cls.value : `${cls.min ?? ""} – ${cls.max ?? ""}`),
-            }));
-        }
-        subItems = subItems.concat(legendOverrideItems(entry.layerGroup));
-
-        if (subItems.length === 0) {
-            group.appendChild(legendRow(kind, layerStyle.color, icon, layerStyle.opacity, entry.leafName, false));
+        if (items.length === 0) {
+            group.appendChild(legendRow(kind, color, icon, opacity, title, false));
         } else {
-            subItems.slice(0, maxSubItems).forEach((item) => {
-                group.appendChild(legendRow(kind, item.color, icon, layerStyle.opacity, item.label, true));
+            items.slice(0, maxSubItems).forEach((item) => {
+                group.appendChild(legendRow(kind, item.color, icon, opacity, item.label, true));
             });
-            if (subItems.length > maxSubItems) {
+            if (items.length > maxSubItems) {
                 const more = document.createElement("p");
                 more.className = "legend-more";
-                more.textContent = `+${subItems.length - maxSubItems} warna lainnya`;
+                more.textContent = `+${items.length - maxSubItems} warna lainnya`;
                 group.appendChild(more);
             }
         }
@@ -1786,12 +1799,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         layer: document.getElementById("sidebar-layer"),
         basemap: document.getElementById("sidebar-basemap"),
         legend: document.getElementById("sidebar-legend"),
+        download: document.getElementById("sidebar-download"),
     };
 
     const toggleButtons = {
         layer: document.getElementById("btn-toggle-sidebar-layer"),
         basemap: document.getElementById("btn-toggle-sidebar-basemap"),
         legend: document.getElementById("btn-toggle-sidebar-legend"),
+        download: document.getElementById("btn-toggle-sidebar-download"),
     };
 
     function closeAllSidebars() {
@@ -1811,7 +1826,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    ["layer", "basemap", "legend"].forEach((type) => {
+    ["layer", "basemap", "legend", "download"].forEach((type) => {
         const closeBtn = document.getElementById(`btn-close-sidebar-${type}`);
         if (closeBtn && sidebarElements[type]) {
             closeBtn.addEventListener("click", () => {

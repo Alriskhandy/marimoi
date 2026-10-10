@@ -10,6 +10,9 @@
  * utility Tailwind, karena file di public/ tidak dipindai Tailwind.
  */
 (function () {
+    // Proses seret urutan Layer Aktif yang sedang berjalan (lihat onDragStart).
+    let drag = null;
+
     const state = {
         entries: [],
         entryByKey: new Map(),
@@ -333,12 +336,11 @@
         }
     }
 
-    // Tombol naik/turun: geser urutan di daftar sekaligus urutan gambar di peta.
-    function moveEntry(entry, direction) {
+    // Pindahkan mapset ke posisi `to` di daftar sekaligus urutan gambar di peta.
+    function reorderEntry(entry, to) {
         const from = state.activeKeys.indexOf(entry.key);
-        const to = from + direction;
-        if (from < 0 || to < 0 || to >= state.activeKeys.length) {
-            return;
+        if (from < 0 || to < 0 || to >= state.activeKeys.length || to === from) {
+            return false;
         }
         state.activeKeys.splice(from, 1);
         state.activeKeys.splice(to, 0, entry.key);
@@ -346,6 +348,146 @@
         renderActiveList();
         generateLegend();
         window.MarimoiLabels?.refresh();
+        return true;
+    }
+
+    // Tombol naik/turun & panah keyboard pada pegangan seret.
+    function moveEntry(entry, direction) {
+        return reorderEntry(entry, state.activeKeys.indexOf(entry.key) + direction);
+    }
+
+    function focusDragHandle(key) {
+        document.querySelector(`#layer-list [data-key="${CSS.escape(key)}"] [data-layer-drag]`)?.focus();
+    }
+
+    // ==================== Seret untuk mengubah urutan ====================
+    // Pegangan (⋮⋮) diseret dengan mouse/sentuh; baris lain bergeser memberi tempat, lalu
+    // urutan diterapkan saat dilepas. Dekat tepi atas/bawah, daftar ikut menggulir.
+
+    const DRAG_EDGE = 40;
+
+    function onDragStart(event) {
+        const handle = event.target.closest("[data-layer-drag]");
+        if (!handle || handle.disabled || event.button > 0) {
+            return;
+        }
+        const row = handle.closest("[data-key]");
+        const rows = [...row.parentElement.children];
+        const scroller = document.getElementById("layer-list");
+        event.preventDefault();
+        handle.setPointerCapture(event.pointerId);
+
+        const rects = rows.map((item) => item.getBoundingClientRect());
+        const from = rows.indexOf(row);
+        const gap = rows.length > 1 ? Math.abs(rects[1].top - rects[0].bottom) : 8;
+        drag = {
+            handle,
+            row,
+            rows,
+            scroller,
+            from,
+            to: from,
+            startY: event.clientY,
+            startScroll: scroller.scrollTop,
+            centers: rects.map((rect) => rect.top + rect.height / 2),
+            shift: rects[from].height + gap,
+            pointerY: event.clientY,
+            frame: null,
+        };
+        row.classList.add("is-dragging");
+        row.parentElement.classList.add("is-sorting");
+        document.body.classList.add("is-sorting-layers");
+        handle.addEventListener("pointermove", onDragMove);
+        handle.addEventListener("pointerup", onDragEnd);
+        handle.addEventListener("pointercancel", onDragEnd);
+        drag.frame = requestAnimationFrame(autoScroll);
+    }
+
+    function updateDragPositions() {
+        const offset = drag.pointerY - drag.startY + (drag.scroller.scrollTop - drag.startScroll);
+        drag.row.style.transform = `translateY(${offset}px)`;
+
+        // Posisi tujuan: jumlah baris lain yang titik tengahnya di atas titik tengah baris yang diseret.
+        const center = drag.centers[drag.from] + offset;
+        drag.to = drag.centers.filter((value, index) => index !== drag.from && value < center).length;
+
+        drag.rows.forEach((item, index) => {
+            if (index === drag.from) {
+                return;
+            }
+            let move = 0;
+            if (drag.from < drag.to && index > drag.from && index <= drag.to) {
+                move = -drag.shift;
+            } else if (drag.from > drag.to && index >= drag.to && index < drag.from) {
+                move = drag.shift;
+            }
+            item.style.transform = move ? `translateY(${move}px)` : "";
+        });
+    }
+
+    function onDragMove(event) {
+        if (!drag) {
+            return;
+        }
+        drag.pointerY = event.clientY;
+        updateDragPositions();
+    }
+
+    function autoScroll() {
+        if (!drag) {
+            return;
+        }
+        const bounds = drag.scroller.getBoundingClientRect();
+        let speed = 0;
+        if (drag.pointerY < bounds.top + DRAG_EDGE) {
+            speed = -Math.ceil((bounds.top + DRAG_EDGE - drag.pointerY) / 4);
+        } else if (drag.pointerY > bounds.bottom - DRAG_EDGE) {
+            speed = Math.ceil((drag.pointerY - (bounds.bottom - DRAG_EDGE)) / 4);
+        }
+        if (speed) {
+            drag.scroller.scrollTop += speed;
+            updateDragPositions();
+        }
+        drag.frame = requestAnimationFrame(autoScroll);
+    }
+
+    function onDragEnd() {
+        if (!drag) {
+            return;
+        }
+        const { handle, row, rows, from, to } = drag;
+        cancelAnimationFrame(drag.frame);
+        handle.removeEventListener("pointermove", onDragMove);
+        handle.removeEventListener("pointerup", onDragEnd);
+        handle.removeEventListener("pointercancel", onDragEnd);
+        rows.forEach((item) => { item.style.transform = ""; });
+        row.classList.remove("is-dragging");
+        row.parentElement.classList.remove("is-sorting");
+        document.body.classList.remove("is-sorting-layers");
+        const pendingRender = drag.pendingRender;
+        drag = null;
+
+        const entry = state.entryByKey.get(row.dataset.key);
+        if (entry && reorderEntry(entry, to)) {
+            focusDragHandle(entry.key);
+        } else {
+            if (pendingRender) {
+                renderActiveList();
+            }
+            focusDragHandle(row.dataset.key);
+        }
+    }
+
+    function onDragKeydown(event) {
+        const handle = event.target.closest("[data-layer-drag]");
+        if (!handle || handle.disabled || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) {
+            return;
+        }
+        const entry = state.entryByKey.get(handle.closest("[data-key]")?.dataset.key);
+        event.preventDefault();
+        if (entry && moveEntry(entry, event.key === "ArrowUp" ? -1 : 1)) {
+            focusDragHandle(entry.key);
+        }
     }
 
     // Opacity untuk slider: nilai pilihan pengguna, atau opacity style bila belum diubah.
@@ -409,6 +551,11 @@
     // Gambar ulang sidebar Layer Aktif (chip filter, status pemuatan, slider, tombol aksi).
     // Gambar ulang daftar Layer Aktif lalu kabari modul lain (mis. Analisis) bahwa isinya berubah.
     function renderActiveList() {
+        // Sedang diseret: gambar ulang setelah dilepas agar baris yang dipegang tidak hilang.
+        if (drag) {
+            drag.pendingRender = true;
+            return;
+        }
         drawActiveList();
         document.dispatchEvent(new CustomEvent("marimoi:active-layers-change"));
     }
@@ -494,6 +641,9 @@
             return `
                 <li class="active-layer${isHidden ? " is-hidden" : ""}${load ? " is-loading" : ""}${error ? " is-error" : ""}" data-key="${escapeHtml(entry.key)}">
                     <div class="active-layer-main">
+                        <button type="button" class="active-layer-drag" data-layer-drag title="Seret untuk mengubah urutan" aria-label="Ubah urutan ${name}: seret, atau tekan panah atas/bawah"${active.length < 2 || isBusy ? " disabled" : ""}>
+                            <i class="bi bi-grip-vertical"></i>
+                        </button>
                         <span class="active-layer-swatch" style="--layer-color:${escapeHtml(entry.color)}" aria-hidden="true"></span>
                         <span class="active-layer-text">
                             <span class="active-layer-name" title="${name}">${name}</span>
@@ -528,6 +678,11 @@
                 <span title="Layer paling atas di daftar digambar paling atas di peta">${active.length} layer aktif</span>
                 <button type="button" data-layer-action="remove-all">Hapus semua</button>
             </div>
+            <label class="active-layer-switch">
+                <span><i class="bi bi-fonts" aria-hidden="true"></i> Label fitur di peta</span>
+                <input type="checkbox" role="switch" data-toggle-labels${window.MarimoiLabels?.isEnabled?.() === false ? "" : " checked"}>
+                <span class="active-layer-switch-track" aria-hidden="true"></span>
+            </label>
             <ul class="active-layer-list">${rows.join("")}</ul>`;
     }
 
@@ -1089,6 +1244,14 @@
         const layerList = document.getElementById("layer-list");
         layerList?.addEventListener("click", onActiveListClick);
         layerList?.addEventListener("input", onActiveListInput);
+        // Sakelar label: tampilkan/sembunyikan semua label fitur di peta.
+        layerList?.addEventListener("change", (event) => {
+            if (event.target.matches("[data-toggle-labels]")) {
+                window.MarimoiLabels?.setEnabled(event.target.checked);
+            }
+        });
+        layerList?.addEventListener("pointerdown", onDragStart);
+        layerList?.addEventListener("keydown", onDragKeydown);
     });
 
     window.MarimoiCatalog = {

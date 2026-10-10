@@ -160,6 +160,31 @@ class FrontendPagesTest extends TestCase
             ->assertSee('frontend/js/map-analysis.js', false);
     }
 
+    public function test_map_page_has_download_button_and_sidebar_with_print_options(): void
+    {
+        $response = $this->get(route('tampil.interaktif'))->assertOk();
+
+        $response->assertSee('id="btn-toggle-sidebar-download"', false)
+            ->assertSee('id="sidebar-download"', false)
+            ->assertSee('id="btn-close-sidebar-download"', false)
+            ->assertSee('id="download-form"', false)
+            ->assertSee('frontend/js/map-download.js', false);
+
+        foreach (['A1', 'A2', 'A3', 'A4', 'A5'] as $paper) {
+            $response->assertSee('name="paper" value="'.$paper.'"', false);
+        }
+        foreach (['low', 'medium', 'high'] as $resolution) {
+            $response->assertSee('name="resolution" value="'.$resolution.'"', false);
+        }
+        $response->assertSee('name="format" value="png"', false)
+            ->assertSee('name="format" value="pdf"', false)
+            ->assertSee('name="orientation" value="landscape"', false)
+            ->assertSee('name="orientation" value="portrait"', false)
+            ->assertSee('name="legend" checked', false)
+            ->assertSee('name="labels" checked', false)
+            ->assertSee('Tampilkan label fitur');
+    }
+
     public function test_thematic_map_page_has_data_catalog_modal_and_active_layer_sidebar(): void
     {
         $this->get(route('tampil.interaktif'))

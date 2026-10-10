@@ -14,8 +14,28 @@
     // Teks yang sama dari layer yang sama (mis. nama kabupaten di banyak poligon) cukup sekali per radius ini.
     const SAME_TEXT_DISTANCE = 300;
 
+    const STORAGE_KEY = "marimoi.mapLabels";
+
     let labelLayer = null;
     let frame = null;
+    // Label tampil di peta? Pilihan pengguna diingat di browser (bawaan: tampil).
+    let enabled = readPreference();
+
+    function readPreference() {
+        try {
+            return window.localStorage.getItem(STORAGE_KEY) !== "off";
+        } catch (error) {
+            return true;
+        }
+    }
+
+    function savePreference() {
+        try {
+            window.localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off");
+        } catch (error) {
+            // Penyimpanan diblokir (mode privat): pilihan berlaku sampai halaman ditutup.
+        }
+    }
 
     // Zoom minimum agar label tampil: layer kecil selalu, layer besar baru saat zoom dekat.
     function minZoomFor(featureCount) {
@@ -78,12 +98,15 @@
         return placed.some((other) => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top);
     }
 
-    // Hapus lalu pasang ulang semua label untuk tampilan peta saat ini.
-    function refresh() {
-        if (!labelLayer || typeof map === "undefined" || !window.MarimoiCatalog) {
-            return;
+    /**
+     * Hitung label untuk tampilan peta saat ini (tanpa memasangnya), dipakai peta & Unduh Peta.
+     * @returns {Array<{latlng: L.LatLng, text: string, isPoint: boolean}>}
+     */
+    function computeLabels() {
+        const labels = [];
+        if (typeof map === "undefined" || !window.MarimoiCatalog) {
+            return labels;
         }
-        labelLayer.clearLayers();
 
         const zoom = map.getZoom();
         const viewBounds = map.getBounds();
@@ -137,21 +160,36 @@
                 pointsByText.set(text, sameText);
                 placed.push(box);
 
-                labelLayer.addLayer(
-                    L.marker(position.latlng, {
-                        pane: "featureLabels",
-                        interactive: false,
-                        keyboard: false,
-                        icon: L.divIcon({
-                            className: `map-feature-label${position.isPoint ? " is-point" : ""}`,
-                            html: `<span>${escapeHtml(text)}</span>`,
-                            iconSize: null,
-                        }),
-                    })
-                );
+                labels.push({ latlng: position.latlng, text, isPoint: position.isPoint });
                 count++;
             }
         }
+        return labels;
+    }
+
+    // Hapus lalu pasang ulang label di peta (kosong bila label dimatikan).
+    function refresh() {
+        if (!labelLayer) {
+            return;
+        }
+        labelLayer.clearLayers();
+        if (!enabled) {
+            return;
+        }
+        computeLabels().forEach(({ latlng, text, isPoint }) => {
+            labelLayer.addLayer(
+                L.marker(latlng, {
+                    pane: "featureLabels",
+                    interactive: false,
+                    keyboard: false,
+                    icon: L.divIcon({
+                        className: `map-feature-label${isPoint ? " is-point" : ""}`,
+                        html: `<span>${escapeHtml(text)}</span>`,
+                        iconSize: null,
+                    }),
+                })
+            );
+        });
     }
 
     // Gabungkan beberapa permintaan refresh dalam satu frame.
@@ -173,5 +211,17 @@
         map.on("moveend zoomend", scheduleRefresh);
     });
 
-    window.MarimoiLabels = { refresh: scheduleRefresh };
+    function setEnabled(value) {
+        enabled = Boolean(value);
+        savePreference();
+        refresh();
+    }
+
+    window.MarimoiLabels = {
+        refresh: scheduleRefresh,
+        // Untuk Unduh Peta: label dihitung walau sedang dimatikan di peta.
+        getLabels: computeLabels,
+        isEnabled: () => enabled,
+        setEnabled,
+    };
 })();

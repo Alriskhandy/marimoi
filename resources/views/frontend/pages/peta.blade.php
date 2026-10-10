@@ -326,7 +326,7 @@
 
                 {{-- Panel Layer Aktif: daftarnya (#layer-list) diisi map-catalog.js. --}}
                 <div id="sidebar-layer"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
+                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
                     <div
                         class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Layer Aktif</h6>
@@ -353,7 +353,7 @@
 
                 {{-- Panel Basemap: kartu pratinjau diisi setupUI() di map.js. --}}
                 <div id="sidebar-basemap"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
                     <div
                         class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
@@ -368,9 +368,88 @@
                     </div>
                 </div>
 
+                {{-- Panel Unduh Peta (map-download.js): area cetak = bingkai pratinjau di peta. --}}
+                <div id="sidebar-download"
+                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+
+                    <div
+                        class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
+                        <h6 class="text-white mb-0 text-sm font-semibold">Unduh Peta</h6>
+                        <button id="btn-close-sidebar-download" type="button" aria-label="Tutup panel unduh peta"
+                            class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
+                            <i class="bi bi-x-lg text-white"></i>
+                        </button>
+                    </div>
+
+                    <form id="download-form" class="download-form" novalidate>
+                        <p class="download-hint"><i class="bi bi-bounding-box"></i> Area di dalam bingkai pada peta yang akan diunduh. Geser atau perbesar peta untuk mengaturnya.</p>
+
+                        <label class="download-field">
+                            <span>Judul peta</span>
+                            <input type="text" name="title" maxlength="80" value="Peta Interaktif MARIMOI">
+                        </label>
+
+                        <fieldset class="download-field">
+                            <legend>Ukuran kertas</legend>
+                            <div class="download-options is-five">
+                                @foreach (['A1', 'A2', 'A3', 'A4', 'A5'] as $paper)
+                                    <label><input type="radio" name="paper" value="{{ $paper }}" @checked($paper === 'A4')><span>{{ $paper }}</span></label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="download-field">
+                            <legend>Orientasi</legend>
+                            <div class="download-options">
+                                <label><input type="radio" name="orientation" value="landscape" checked><span><i class="bi bi-file-earmark-richtext rotate-90"></i> Lanskap</span></label>
+                                <label><input type="radio" name="orientation" value="portrait"><span><i class="bi bi-file-earmark-richtext"></i> Potret</span></label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="download-field">
+                            <legend>Resolusi</legend>
+                            <div class="download-options is-three">
+                                @foreach (['low' => ['Rendah', '96 dpi'], 'medium' => ['Sedang', '150 dpi'], 'high' => ['Tinggi', '300 dpi']] as $value => [$label, $dpi])
+                                    <label><input type="radio" name="resolution" value="{{ $value }}" @checked($value === 'medium')><span>{{ $label }}<small>{{ $dpi }}</small></span></label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="download-field">
+                            <legend>Format</legend>
+                            <div class="download-options">
+                                <label><input type="radio" name="format" value="png" checked><span><i class="bi bi-filetype-png"></i> PNG</span></label>
+                                <label><input type="radio" name="format" value="pdf"><span><i class="bi bi-filetype-pdf"></i> PDF</span></label>
+                            </div>
+                        </fieldset>
+
+                        <div class="download-checks">
+                            <label class="download-check">
+                                <input type="checkbox" name="legend" checked>
+                                <span>Sertakan legenda layer aktif</span>
+                            </label>
+                            <label class="download-check">
+                                <input type="checkbox" name="labels" checked>
+                                <span>Tampilkan label fitur</span>
+                            </label>
+                        </div>
+
+                        <div class="download-summary" data-download-summary aria-live="polite"></div>
+
+                        <div class="download-progress" data-download-progress hidden>
+                            <div class="download-progress-track"><span></span></div>
+                            <p data-download-progress-text>Menyiapkan…</p>
+                        </div>
+
+                        <button type="submit" class="download-submit" data-download-submit><i class="bi bi-download"></i> Unduh Peta</button>
+                        <button type="button" class="download-cancel" data-download-cancel hidden><i class="bi bi-x-circle"></i> Batalkan</button>
+                        <p class="download-status" data-download-status role="status" hidden></p>
+                    </form>
+                </div>
+
                 {{-- Panel Legenda: diisi generateLegend() di map.js. --}}
                 <div id="sidebar-legend"
-                    class="absolute top-0 right-0 w-[280px] md:w-[300px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
 
                     <div
                         class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
@@ -459,9 +538,15 @@
 
                     {{-- Analisis layer aktif; nonaktif (aria-disabled) bila belum ada layer aktif. --}}
                     <button id="btn-open-analysis" type="button" aria-haspopup="dialog" aria-controls="analysisModal"
-                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        class="text-black border border-black/20 border-b border-gray-400 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
                         title="Analisis Peta" data-tooltip="Analisis Peta">
                         <i class="bi bi-bar-chart-line-fill"></i>
+                    </button>
+
+                    <button id="btn-toggle-sidebar-download" type="button" aria-controls="sidebar-download"
+                        class="text-black border border-black/20 rounded-none bg-white hover:bg-slate-200 px-3 py-2 text-sm transition-colors duration-200"
+                        title="Unduh Peta" data-tooltip="Unduh Peta">
+                        <i class="bi bi-download"></i>
                     </button>
                 </div>
 
@@ -535,6 +620,8 @@
     <script src="{{ asset('frontend/js/map-labels.js') }}?v={{ filemtime(public_path('frontend/js/map-labels.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map-analysis.js') }}?v={{ filemtime(public_path('frontend/js/map-analysis.js')) }}">
+    </script>
+    <script src="{{ asset('frontend/js/map-download.js') }}?v={{ filemtime(public_path('frontend/js/map-download.js')) }}">
     </script>
     <script src="{{ asset('frontend/js/map-guide.js') }}?v={{ filemtime(public_path('frontend/js/map-guide.js')) }}">
     </script>
