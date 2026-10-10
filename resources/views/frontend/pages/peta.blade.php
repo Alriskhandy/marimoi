@@ -73,7 +73,7 @@
         }
 
         .tailwind-popup a {
-            text-decoration: none !important;
+            text-decoration : none !important;
         }
 
         .tailwind-popup button:focus,
@@ -201,7 +201,16 @@
                                     <button type="button" data-analysis-scope="view" aria-pressed="true"><i class="bi bi-aspect-ratio"></i> Tampilan peta</button>
                                     <button type="button" data-analysis-scope="all" aria-pressed="false"><i class="bi bi-globe2"></i> Seluruh data</button>
                                 </div>
-                                <button type="button" class="analysis-print" data-analysis-print><i class="bi bi-printer"></i> <span>Cetak / PDF</span></button>
+                                {{-- Orientasi cetak dari template analisis yang tersedia (map-analysis.js). --}}
+                                <div class="analysis-scope analysis-orientation" role="group" aria-label="Orientasi cetak" data-analysis-orientations hidden>
+                                    <button type="button" data-analysis-orientation="portrait" aria-pressed="false"><i class="bi bi-file-earmark"></i> Potret</button>
+                                    <button type="button" data-analysis-orientation="landscape" aria-pressed="false"><i class="bi bi-file-earmark rotate-90"></i> Lanskap</button>
+                                </div>
+                                <label class="analysis-template-select" hidden>
+                                    <span class="sr-only">Template dokumen</span>
+                                    <select data-analysis-template aria-label="Template dokumen untuk orientasi terpilih"></select>
+                                </label>
+                                <button type="button" class="analysis-print" data-analysis-download title="Unduh laporan PDF A4"><i class="bi bi-file-earmark-arrow-down"></i> <span>Unduh PDF</span></button>
                                 <button type="button" class="catalog-icon-btn" data-analysis-close aria-label="Tutup analisis">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
@@ -389,6 +398,22 @@
                             <input type="text" name="title" maxlength="80" value="Peta Interaktif MARIMOI">
                         </label>
 
+                        <fieldset class="download-field" data-download-orientation>
+                            <legend>Orientasi</legend>
+                            <div class="download-options">
+                                <label><input type="radio" name="orientation" value="landscape" checked><span><i class="bi bi-file-earmark-richtext rotate-90"></i> Lanskap</span></label>
+                                <label><input type="radio" name="orientation" value="portrait"><span><i class="bi bi-file-earmark-richtext"></i> Potret</span></label>
+                            </div>
+                        </fieldset>
+
+                        {{-- Diisi map-download.js dari template aktif (dashboard › Template Dokumen). --}}
+                        <div class="download-field" hidden>
+                            <label for="download-template">Template dokumen</label>
+                            <select id="download-template" name="template" class="download-select"></select>
+                            <p class="download-template-single" data-template-single hidden><i class="bi bi-check-circle-fill"></i> Satu-satunya template untuk orientasi ini.</p>
+                            <div class="download-template-preview" data-template-preview hidden></div>
+                        </div>
+
                         <fieldset class="download-field">
                             <legend>Ukuran kertas</legend>
                             <div class="download-options is-five">
@@ -398,13 +423,6 @@
                             </div>
                         </fieldset>
 
-                        <fieldset class="download-field">
-                            <legend>Orientasi</legend>
-                            <div class="download-options">
-                                <label><input type="radio" name="orientation" value="landscape" checked><span><i class="bi bi-file-earmark-richtext rotate-90"></i> Lanskap</span></label>
-                                <label><input type="radio" name="orientation" value="portrait"><span><i class="bi bi-file-earmark-richtext"></i> Potret</span></label>
-                            </div>
-                        </fieldset>
 
                         <fieldset class="download-field">
                             <legend>Resolusi</legend>
@@ -424,7 +442,7 @@
                         </fieldset>
 
                         <div class="download-checks">
-                            <label class="download-check">
+                            <label class="download-check" data-download-legend>
                                 <input type="checkbox" name="legend" checked>
                                 <span>Sertakan legenda layer aktif</span>
                             </label>
@@ -597,6 +615,8 @@
         window.MARIMOI_SHARE_STORE_URL = @json(route('interaktif.share.store'));
         window.MARIMOI_SHARE_SHOW_URL_TEMPLATE = @json(route('interaktif.share.show', ':slug'));
         window.MARIMOI_FEATURE_DETAIL_URL_TEMPLATE = @json(route('detail.interaktif', ':uuid'));
+        // Template dokumen aktif (dikelola di dashboard) untuk Unduh Peta & cetak Analisis Peta.
+        window.MARIMOI_DOCUMENT_TEMPLATES = @json($documentTemplates ?? []);
 
         @if (isset($sharedMapState))
             window.MARIMOI_SHARED_STATE = @json($sharedMapState);

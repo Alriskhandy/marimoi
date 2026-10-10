@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\DataSpatial;
+use App\Models\DocumentTemplate;
 use App\Models\LegacyCategory;
 use App\Models\SpatialLayer;
 use App\Models\SpatialLayerFeature;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrap();
+
+        // Template dokumen aktif untuk Unduh Peta & cetak Analisis (semua rute yang merender peta).
+        View::composer('frontend.pages.peta', function ($view) {
+            $view->with('documentTemplates', DocumentTemplate::publicList());
+        });
 
         // Super Admin selalu lolos seluruh pengecekan permission.
         Gate::before(function ($user, $ability) {

@@ -118,6 +118,13 @@ class Permission extends SpatiePermission
                 'delete' => 'Hapus publikasi & data download',
             ],
         ],
+        'document-templates' => [
+            'label' => 'Template Dokumen Unduhan',
+            'actions' => [
+                'view' => 'Lihat template dokumen',
+                'manage' => 'Tambah, ubah & hapus template dokumen',
+            ],
+        ],
         'visitors' => [
             'label' => 'Analisis Pengunjung',
             'actions' => [

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
 use App\Http\Controllers\LayerImportController;
@@ -429,6 +430,21 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
             Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy')->middleware('permission:publications.delete');
             Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:publications.delete');
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Template Dokumen Unduhan (kop, footer, pilihan template di Peta Interaktif)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('document-templates')->name('document-templates.')->group(function () {
+        Route::get('/', [DocumentTemplateController::class, 'index'])->name('index')->middleware('permission:document-templates.view');
+        Route::get('/create', [DocumentTemplateController::class, 'create'])->name('create')->middleware('permission:document-templates.manage');
+        Route::post('/', [DocumentTemplateController::class, 'store'])->name('store')->middleware('permission:document-templates.manage');
+        Route::get('/{documentTemplate}/edit', [DocumentTemplateController::class, 'edit'])->name('edit')->middleware('permission:document-templates.manage');
+        Route::put('/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('update')->middleware('permission:document-templates.manage');
+        Route::delete('/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('destroy')->middleware('permission:document-templates.manage');
     });
 
     /*

@@ -30,6 +30,8 @@ class PermissionSeeder extends Seeder
             'spatial-layers.edit',
             'spatial-layers.delete',
             'spatial-layers.publish',
+            'document-templates.view',
+            'document-templates.manage',
         ],
         'admin-opd' => [
             'spatial-layers.view',

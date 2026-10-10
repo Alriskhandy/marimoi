@@ -25,3 +25,7 @@ Yang TETAP hidup dan jangan ikut dihapus: tabel `project_progress_reports`, mode
 Semua endpoint publik peta (`/geojson` metadata & feature, `/geojson/filter-options`, `/geojson/filter-categories`, `MapDataVersion`) membaca skema V3 (layers/spatial_features/categories_v3/category_nodes), bukan tabel `*_legacy_v1`. Hanya Layer `status = published` yang tampil — draft tidak boleh bocor ke publik.
 Satu mapset = satu Layer. Frontend (map.js/map-catalog.js) mengenali mapset dari NAMA, jadi nama tampilan unik dibuat di `App\Support\PublicMapCatalog` (nama kembar diberi konteks node/kategori) dan WAJIB dipakai bersama untuk metadata, properti `kategori` tiap feature, parameter `kategori[]`, dan hasil filter — jangan menghitung nama di tempat lain.
 Pohon untuk frontend dibatasi 3 level: Kategori › jalur node (digabung "A › B") › Layer.
+
+## Template Dokumen: logo lewat rute aplikasi, data ke peta lewat view composer
+Kop/footer hasil Unduh Peta & cetak Analisis diambil dari tabel `document_templates` (DocumentTemplate::publicList(), hanya is_active, bawaan dulu) dan dikirim ke `frontend.pages.peta` lewat View::composer di AppServiceProvider — jangan diteruskan per-controller (peta dirender dari 3 rute).
+Logo WAJIB disajikan lewat rute `document-templates.logo` (Storage::disk('public')->response), bukan asset('storage/...'): canvas Unduh Peta butuh gambar satu origin (kalau tidak, canvas "tainted" dan unduhan gagal) dan tidak boleh bergantung pada storage:link. Hanya satu template is_default; makeDefault() yang menjaganya.

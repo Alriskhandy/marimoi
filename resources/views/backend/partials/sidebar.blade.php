@@ -7,14 +7,14 @@
     $isPublicationActive = request()->routeIs('publications.*');
     $isMasterDataActive =
         request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('opd.*');
-    $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*');
+    $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*') || request()->routeIs('document-templates.*');
 
     $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'spatial-feedbacks.view', 'project-feedbacks.view']);
     $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
     $canPublikasi = $user?->can('publications.view');
     $canAspirasiPublikasi = $canAspirasi || $canPublikasi;
     $canMasterData = $user?->canAny(['users.view', 'roles.view', 'opd.view']);
-    $canSistem = $user?->canAny(['visitors.view', 'logs.view']);
+    $canSistem = $user?->canAny(['visitors.view', 'logs.view', 'document-templates.view']);
 
     $hasOpdLogo = $slug === 'admin-opd' && $user?->opd && $user->opd->logo;
     $logoPath = $user->opd?->logo ? storage_path('app/public/' . $user->opd->logo) : null;
@@ -178,6 +178,10 @@
                     @can('visitors.view')
                         <a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
                             href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>
+                    @endcan
+                    @can('document-templates.view')
+                        <a class="nav-link {{ request()->routeIs('document-templates.*') ? 'active' : '' }}"
+                            href="{{ route('document-templates.index') }}"><span class="nav-text">Template Dokumen</span></a>
                     @endcan
                     @can('logs.view')
                         <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"

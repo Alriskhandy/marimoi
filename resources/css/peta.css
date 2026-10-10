@@ -1909,7 +1909,7 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 #btn-open-analysis.is-disabled { color: #9ca3af; cursor: not-allowed; }
 #btn-open-analysis.is-disabled:hover { background: #fff; }
 
-.analysis-dialog { max-width: 1180px; max-height: 860px; background: var(--catalog-soft); }
+.analysis-dialog { max-width: 1240px; max-height: 880px; background: var(--catalog-soft); }
 
 .analysis-header {
     display: flex;
@@ -1917,13 +1917,13 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 16px 14px 22px;
+    padding: 10px 14px 10px 18px;
     border-bottom: 1px solid var(--catalog-line);
     background: #fff;
 }
 
-.analysis-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: var(--catalog-ink); }
-.analysis-header p { margin: 2px 0 0; font-size: 13px; color: #64748b; }
+.analysis-header h2 { margin: 0; font-size: 17px; font-weight: 800; color: var(--catalog-ink); }
+.analysis-header p { margin: 2px 0 0; font-size: 12.5px; color: #64748b; }
 .analysis-header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 .analysis-scope {
@@ -1955,13 +1955,13 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .analysis-print { height: 38px; border: 1px solid var(--catalog-line); background: #fff; color: var(--catalog-ink); }
 .analysis-print:hover { border-color: #0a84ff; color: #0a84ff; }
 
-.analysis-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px 24px; }
+.analysis-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 22px; }
 
 .analysis-notice {
     display: flex;
     gap: 8px;
     margin: 0 0 12px;
-    padding: 10px 14px;
+    padding: 9px 14px;
     border: 1px solid #fde68a;
     border-radius: 12px;
     background: #fffbeb;
@@ -1971,51 +1971,58 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 
 .analysis-notice.is-soft { border-color: #dbeafe; background: #eff6ff; color: #1e40af; }
 
-.analysis-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.analysis-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
 
 .analysis-kpi {
     position: relative;
-    padding: 16px 18px;
+    padding: 14px 16px;
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: 14px;
     background: linear-gradient(135deg, #071a2d, #0b2a45);
     color: #fff;
 }
 
-.analysis-kpi i { position: absolute; right: 14px; top: 12px; color: #20d9ff; font-size: 18px; opacity: .9; }
-.analysis-kpi b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
-.analysis-kpi span { display: block; margin-top: 2px; color: rgba(255, 255, 255, .65); font-size: 12.5px; }
+.analysis-kpi i { position: absolute; right: 14px; top: 12px; color: #20d9ff; font-size: 17px; opacity: .9; }
+.analysis-kpi b { display: block; padding-right: 22px; font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
+.analysis-kpi span { display: block; margin-top: 3px; color: rgba(255, 255, 255, .72); font-size: 12.5px; }
 
-.analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+/* Bagian (Ringkasan, Sebaran, Detail) dengan judul kecil di atas grid kartunya. */
+.analysis-group + .analysis-group { margin-top: 22px; }
+.analysis-group-title { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.analysis-group-title i { color: #0a84ff; font-size: 14px; }
+
+.analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; }
 
 .analysis-card {
     min-width: 0;
     padding: 16px 18px;
     border: 1px solid var(--catalog-line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: #fff;
 }
 
 .analysis-card.is-wide { grid-column: 1 / -1; }
-.analysis-card > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.analysis-card > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .analysis-card h3 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--catalog-ink); }
+.analysis-card > header span { text-align: right; }
 .analysis-card > header span { color: #94a3b8; font-size: 12px; }
 
-.analysis-bars { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.analysis-bars { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
 
 .analysis-bars li {
     display: grid;
-    grid-template-columns: minmax(90px, 38%) 1fr auto;
+    grid-template-columns: minmax(110px, 40%) 1fr minmax(64px, auto);
     align-items: center;
-    gap: 10px;
-    font-size: 13px;
+    gap: 12px;
+    font-size: 13.5px;
 }
 
 .analysis-bar-label { overflow: hidden; color: #334155; text-overflow: ellipsis; white-space: nowrap; }
-.analysis-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: #eef2f7; }
+.analysis-bar-track { height: 9px; overflow: hidden; border-radius: 999px; background: #eef2f7; }
 .analysis-bar-track > span { display: block; height: 100%; border-radius: inherit; }
 .analysis-bar-value { min-width: 48px; color: #0f172a; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.analysis-bar-value small { display: block; color: #94a3b8; font-size: 11px; font-weight: 500; }
+.analysis-bar-value { font-size: 13.5px; line-height: 1.2; }
+.analysis-bar-value small { display: block; margin-top: 1px; color: #64748b; font-size: 11.5px; font-weight: 500; }
 .analysis-bars.is-money li { grid-template-columns: minmax(90px, 34%) 1fr auto; }
 .analysis-bars.is-money .analysis-bar-value { min-width: 110px; font-size: 12.5px; }
 .analysis-tag { margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10.5px; font-weight: 600; }
@@ -2023,7 +2030,7 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .analysis-caption { margin: 14px 0 8px; }
 
 .analysis-table-wrap { overflow-x: auto; }
-.analysis-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.analysis-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .analysis-table th { padding: 8px 10px; border-bottom: 1px solid var(--catalog-line); color: #64748b; font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
 .analysis-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
 .analysis-table tr:last-child td { border-bottom: 0; }
@@ -2032,13 +2039,13 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .analysis-layer-name { display: flex; align-items: center; gap: 10px; min-width: 180px; }
 .analysis-layer-name > i { flex-shrink: 0; width: 10px; height: 10px; border-radius: 3px; }
 .analysis-layer-name b { display: block; font-weight: 700; }
-.analysis-layer-name small { display: block; color: #94a3b8; font-size: 11.5px; }
+.analysis-layer-name small { display: block; margin-top: 1px; color: #64748b; font-size: 12px; }
 
 .analysis-inline-bar { display: inline-block; width: 80px; height: 6px; margin-right: 10px; overflow: hidden; border-radius: 999px; background: #eef2f7; vertical-align: middle; }
 .analysis-inline-bar > span { display: block; height: 100%; border-radius: inherit; }
 
-.analysis-insights { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.analysis-insights li { display: flex; gap: 10px; color: #334155; font-size: 13.5px; line-height: 1.5; }
+.analysis-insights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+.analysis-insights li { display: flex; gap: 10px; color: #334155; font-size: 14px; line-height: 1.55; }
 .analysis-insights i { color: #f59e0b; }
 .analysis-insights b { color: #0f172a; }
 
@@ -2049,8 +2056,8 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 140px;
-    height: 140px;
+    width: 136px;
+    height: 136px;
     border-radius: 50%;
 }
 
@@ -2058,13 +2065,13 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .analysis-donut span { position: relative; z-index: 1; color: #0f172a; font-size: 20px; font-weight: 800; text-align: center; line-height: 1.1; }
 .analysis-donut small { display: block; color: #94a3b8; font-size: 11px; font-weight: 500; }
 
-.analysis-legend { display: grid; flex: 1; gap: 8px; min-width: 150px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.analysis-legend { display: grid; flex: 1; gap: 10px; min-width: 150px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
 .analysis-legend li { display: grid; grid-template-columns: 12px 1fr auto auto; align-items: center; gap: 8px; color: #334155; }
 .analysis-legend i { width: 12px; height: 12px; border-radius: 4px; }
 .analysis-legend b { color: #0f172a; }
 .analysis-legend small { min-width: 44px; color: #94a3b8; text-align: right; }
 
-.analysis-year-chart { display: block; width: 100%; height: auto; max-height: 240px; }
+.analysis-year-chart { display: block; width: 100%; height: auto; max-height: 230px; }
 .analysis-chart-base { stroke: #e2e8f0; }
 .analysis-chart-value { fill: #0f172a; font-size: 11px; font-weight: 700; text-anchor: middle; }
 .analysis-chart-axis { fill: #64748b; font-size: 11px; text-anchor: middle; }
@@ -2075,18 +2082,20 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .analysis-spatial dd { margin: 2px 0 0; color: #0f172a; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .analysis-attributes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
-.analysis-attribute h4 { margin: 0 0 10px; color: var(--catalog-ink); font-size: 13.5px; font-weight: 700; }
+.analysis-attribute h4 { margin: 0 0 6px; color: var(--catalog-ink); font-size: 13.5px; font-weight: 700; }
 .analysis-attribute h4 small { margin-left: 4px; color: #94a3b8; font-size: 11.5px; font-weight: 500; }
 
 .analysis-empty { display: grid; justify-items: center; gap: 6px; padding: 60px 20px; color: #64748b; text-align: center; }
 .analysis-empty i { color: #0a84ff; font-size: 36px; }
 .analysis-empty p { margin: 6px 0 0; color: var(--catalog-ink); font-size: 16px; font-weight: 700; }
 
-.analysis-footnote { margin: 16px 0 0; color: #94a3b8; font-size: 11.5px; text-align: center; }
+.analysis-footnote { display: flex; justify-content: space-between; gap: 24px; margin: 22px 0 0; padding-top: 12px; border-top: 1px solid var(--catalog-line); color: #64748b; font-size: 11.5px; line-height: 1.35; }
+.analysis-footer-left { white-space: pre-line; }
+.analysis-footer-right { flex-shrink: 0; text-align: right; }
 
 @media (max-width: 900px) {
     .analysis-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .analysis-grid, .analysis-attributes { grid-template-columns: 1fr; }
+    .analysis-grid, .analysis-attributes, .analysis-insights { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -2107,19 +2116,12 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
     .analysis-layer-name { min-width: 150px; }
 }
 
-/* Cetak / simpan PDF: hanya isi analisis, tanpa peta & kontrol. */
-@media print {
-    body.analysis-open * { visibility: hidden !important; }
-    body.analysis-open #analysisModal,
-    body.analysis-open #analysisModal * { visibility: visible !important; }
-    body.analysis-open #analysisModal { position: absolute; inset: 0 auto auto 0; display: block; width: 100%; padding: 0; background: #fff; backdrop-filter: none; }
-    body.analysis-open .analysis-dialog { max-width: none; max-height: none; height: auto; overflow: visible; border-radius: 0; box-shadow: none; background: #fff; }
-    body.analysis-open .analysis-body { overflow: visible; padding: 0; }
-    body.analysis-open .analysis-header-actions { display: none; }
-    body.analysis-open .analysis-header { padding: 0 0 12px; }
-    body.analysis-open .analysis-card, body.analysis-open .analysis-kpi { break-inside: avoid; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    body.analysis-open .analysis-bar-track > span, body.analysis-open .analysis-donut, body.analysis-open .analysis-inline-bar > span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-}
+/* Pilihan template dokumen di kepala modal analisis. */
+.analysis-orientation[hidden] { display: none; }
+.analysis-template-select { display: inline-flex; align-items: center; height: 38px; padding: 0 6px 0 10px; border: 1px solid var(--catalog-line); border-radius: 999px; background: #fff; }
+.analysis-template-select[hidden] { display: none; }
+.analysis-template-select select { max-width: 170px; border: 0; background: transparent; color: var(--catalog-ink); font-size: 12.5px; font-weight: 600; box-shadow: none; }
+.analysis-orientation button:disabled { cursor: not-allowed; opacity: .4; }
 
 /* ==========================================================================
    Unduh Peta (map-download.js)
@@ -2185,6 +2187,54 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     background: #fff;
+    font-size: 13px;
+}
+
+.download-field[hidden] { display: none; }
+
+/* Pratinjau template di panel Unduh Peta. */
+.download-template-single { display: flex; gap: 6px; margin: 0; color: #047857; font-size: 12px; }
+.download-template-single[hidden], .download-template-preview[hidden] { display: none; }
+.download-template-preview { display: grid; justify-items: center; gap: 6px; margin-top: 4px; padding: 10px; border: 1px solid #e3e8ef; border-radius: 10px; background: #f8fafc; }
+
+.download-preview-page {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    padding: 5%;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 6px 16px -10px rgba(15, 23, 42, .55);
+}
+
+.download-preview-page.is-landscape { aspect-ratio: 1.414 / 1; }
+.download-preview-page.is-portrait { width: 62%; aspect-ratio: 1 / 1.414; }
+.download-preview-kop { display: grid; grid-template-columns: 14% 1fr 14%; align-items: center; padding-bottom: 2px; border-bottom: 2px double #1d3557; color: #0f172a; font-size: 4.5px; font-weight: 700; line-height: 1.25; text-align: center; }
+.download-preview-kop img { max-width: 100%; max-height: 16px; margin: auto; }
+.download-preview-kop > span { display: grid; font-family: Arial, Helvetica, sans-serif; }
+.download-preview-kop > span { line-height: 1.15; }
+.download-preview-kop .is-line-1 { font-size: 4.3px; font-weight: 400; text-transform: uppercase; }
+.download-preview-kop .is-line-2 { font-size: 5px; font-weight: 700; text-transform: uppercase; }
+.download-preview-kop .is-line-3 { font-size: 3.6px; font-weight: 400; color: #475569; white-space: pre-line; }
+.download-preview-title { width: 45%; height: 4px; border-radius: 2px; opacity: .85; }
+.download-preview-content { position: relative; flex: 1; }
+.download-preview-footer { height: 2px; border-radius: 2px; background: #e2e8f0; }
+.download-preview-box { position: absolute; display: grid; place-items: center; overflow: hidden; border: 1px solid; border-radius: 2px; font-size: 7px; font-weight: 700; }
+.download-preview-box.is-map { border-color: #0a84ff; background: repeating-linear-gradient(45deg, #dbeafe, #dbeafe 4px, #eff6ff 4px, #eff6ff 8px); color: #1e40af; }
+.download-preview-box.is-legend { z-index: 1; border-color: #10b981; background: #ecfdf5; color: #047857; }
+.download-preview-box.is-inset { z-index: 1; border-color: #f59e0b; background: #fffbeb; color: #b45309; }
+.download-preview-box.is-scale { z-index: 2; border-color: #a855f7; background: #faf5ff; color: #7e22ce; }
+.download-preview-box.is-north { z-index: 2; border-color: #ef4444; background: #fef2f2; color: #b91c1c; }
+.download-preview-meta { margin: 0; color: #475569; font-size: 11.5px; text-align: center; }
+.download-field [hidden], .download-check[hidden] { display: none !important; }
+
+.download-select {
+    width: 100%;
+    padding: 8px 30px 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #fff;
     font-size: 13px;
 }
 

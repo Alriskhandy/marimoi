@@ -23,6 +23,9 @@
     const QUADRANTS = { NW: "Barat Laut", NE: "Timur Laut", SW: "Barat Daya", SE: "Tenggara" };
     const PALETTE = ["#0a84ff", "#20d9ff", "#4de1c1", "#f59e0b", "#a855f7", "#ef4444", "#10b981", "#6366f1"];
 
+    // Template dokumen aktif (dashboard › Template Dokumen) untuk cetak analisis.
+    const TEMPLATES = (window.MARIMOI_DOCUMENT_TEMPLATES || []).filter((template) => template.forAnalysis);
+
     const el = {};
     let scope = "view";
     let refreshTimer = null;
@@ -613,22 +616,30 @@
             ...(result.budget > 0 ? [["bi-cash-stack", formatRupiah(result.budget), "Total anggaran/nilai"]] : []),
         ].map(([icon, value, label]) => `<div class="analysis-kpi"><i class="bi ${icon}"></i><b>${value}</b><span>${label}</span></div>`).join("");
 
-        const insightItems = insights(result).map((text) => `<li><i class="bi bi-lightbulb"></i><span>${text}</span></li>`).join("");
-        const sections = [];
+        const insightItems = insights(result).map((text) => `<li><i class="bi bi-lightbulb-fill"></i><span>${text}</span></li>`).join("");
 
-        sections.push(card("Perbandingan Layer", layerTable(result), { wide: true }));
-        sections.push(card("Wawasan", `<ul class="analysis-insights">${insightItems}</ul>`));
-        sections.push(card("Komposisi Geometri", geometryDonut(result)));
+        // Kartu dikelompokkan per bagian; kartu setengah lebar terakhir yang tak berpasangan
+        // dibuat selebar penuh agar tidak menyisakan ruang kosong.
+        const groups = [];
+        const group = (title, icon, cards) => {
+            const list = cards.filter(Boolean);
+            if (!list.length) {
+                return;
+            }
+            const halves = list.filter((item) => !item.wide);
+            if (halves.length % 2 === 1) {
+                halves[halves.length - 1].wide = true;
+            }
+            groups.push(`<section class="analysis-group">
+                <h3 class="analysis-group-title"><i class="bi ${icon}"></i> ${title}</h3>
+                <div class="analysis-grid">${list.map((item) => card(item.title, item.body, { wide: item.wide, note: item.note })).join("")}</div>
+            </section>`);
+        };
 
-        if (result.years.length) {
-            sections.push(card("Tren per Tahun", yearChart(result.years), { wide: true, note: `${numberFormat(result.years.reduce((a, b) => a + b[1], 0))} dari ${numberFormat(result.total)} fitur memiliki tahun` }));
-        }
-
-        result.regions.slice(0, 2).forEach((level) => {
-            sections.push(card(`Sebaran per ${level.label}`, bars(level.values, { total: level.coverage }), { note: `${numberFormat(level.coverage)} dari ${numberFormat(result.total)} fitur memiliki data wilayah` }));
-        });
-
-        if (result.budgetByRegency.length) {
+        const budgetCard = (() => {
+            if (!result.budgetByRegency.length) {
+                return null;
+            }
             const rows = result.budgetByRegency.slice(0, 8);
             const top = Math.max(...rows.map((row) => row[1]));
             const items = rows.map(([name, amount], index) => `<li>
@@ -636,46 +647,803 @@
                 <span class="analysis-bar-track"><span style="width:${Math.max(2, (amount / top) * 100)}%;background:${PALETTE[index % PALETTE.length]}"></span></span>
                 <span class="analysis-bar-value">${formatRupiah(amount)}</span>
             </li>`).join("");
-            sections.push(card("Anggaran per Kabupaten/Kota", `<ul class="analysis-bars is-money">${items}</ul>`, { note: `${numberFormat(result.budgetCount)} fitur beranggaran` }));
-        }
+            return { title: "Anggaran per Kabupaten/Kota", body: `<ul class="analysis-bars is-money">${items}</ul>`, note: `${numberFormat(result.budgetCount)} fitur beranggaran` };
+        })();
 
-        if (result.opd.length) {
-            sections.push(card("OPD Pengelola", bars(result.opd, { total: result.total, limit: 6 })));
-        }
-        if (result.sources.length > 1) {
-            sections.push(card("Sumber Data", bars(result.sources, { total: result.total, limit: 6 })));
-        }
-
-        if (result.spatial) {
-            const s = result.spatial;
+        const spatialCard = (() => {
+            if (!result.spatial) {
+                return null;
+            }
+            const sp = result.spatial;
             const fmt = (value) => numberFormat(value, 5);
-            sections.push(card("Sebaran Spasial", `
-                <dl class="analysis-spatial">
-                    <div><dt>Titik pusat</dt><dd>${fmt(s.center.lat)}, ${fmt(s.center.lng)}</dd></div>
-                    <div><dt>Rentang lintang</dt><dd>${fmt(s.lat[0])} s.d. ${fmt(s.lat[1])}</dd></div>
-                    <div><dt>Rentang bujur</dt><dd>${fmt(s.lng[0])} s.d. ${fmt(s.lng[1])}</dd></div>
-                </dl>
-                <p class="analysis-caption">Kuadran terhadap titik pusat sebaran</p>
-                ${bars(s.quadrants, { total: result.total, color: "#20d9ff" })}`));
-        }
+            return {
+                title: "Sebaran Spasial",
+                body: `<dl class="analysis-spatial">
+                        <div><dt>Titik pusat</dt><dd>${fmt(sp.center.lat)}, ${fmt(sp.center.lng)}</dd></div>
+                        <div><dt>Rentang lintang</dt><dd>${fmt(sp.lat[0])} s.d. ${fmt(sp.lat[1])}</dd></div>
+                        <div><dt>Rentang bujur</dt><dd>${fmt(sp.lng[0])} s.d. ${fmt(sp.lng[1])}</dd></div>
+                    </dl>
+                    <p class="analysis-caption">Kuadran terhadap titik pusat sebaran</p>
+                    ${bars(sp.quadrants, { total: result.total, color: "#20d9ff" })}`,
+            };
+        })();
 
-        if (result.numeric.length) {
-            sections.push(card("Statistik Atribut Numerik", numericTable(result.numeric), { wide: true }));
-        }
+        group("Ringkasan", "bi-clipboard-data", [
+            insightItems && { title: "Wawasan", body: `<ul class="analysis-insights">${insightItems}</ul>`, wide: true },
+            { title: "Perbandingan Layer", body: layerTable(result), wide: true },
+            { title: "Komposisi Geometri", body: geometryDonut(result) },
+            result.years.length && { title: "Tren per Tahun", body: yearChart(result.years), note: `${numberFormat(result.years.reduce((a, b) => a + b[1], 0))} dari ${numberFormat(result.total)} fitur bertahun` },
+        ]);
 
-        if (result.categorical.length) {
-            const groups = result.categorical.map((field) => `<div class="analysis-attribute">
-                <h4>${escapeHtml(prettyField(field.key))} <small>${numberFormat(field.distinct)} nilai</small></h4>
-                ${bars(field.values, { limit: 5, total: field.count })}
-            </div>`).join("");
-            sections.push(card("Rincian Atribut", `<div class="analysis-attributes">${groups}</div>`, { wide: true }));
-        }
+        group("Sebaran Wilayah & Pengelola", "bi-geo-alt", [
+            ...result.regions.slice(0, 2).map((level) => ({ title: `Sebaran per ${level.label}`, body: bars(level.values, { total: level.coverage }), note: `${numberFormat(level.coverage)} dari ${numberFormat(result.total)} fitur berwilayah` })),
+            budgetCard,
+            result.opd.length && { title: "OPD Pengelola", body: bars(result.opd, { total: result.total, limit: 6 }) },
+            result.sources.length > 1 && { title: "Sumber Data", body: bars(result.sources, { total: result.total, limit: 6 }) },
+            spatialCard,
+        ]);
 
+        group("Detail Atribut", "bi-table", [
+            result.numeric.length && { title: "Statistik Atribut Numerik", body: numericTable(result.numeric), wide: true },
+            ...result.categorical.map((field) => ({ title: prettyField(field.key), body: bars(field.values, { limit: 5, total: field.count }), note: `${numberFormat(field.distinct)} nilai` })),
+        ]);
+
+        const template = selectedTemplate();
+        // Footer: kiri = teks template; kanan = otomatis (cakupan analisis & waktu cetak WIT).
+        const now = new Date();
+        const created = `${now.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jayapura" })}, ${now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jayapura" })} WIT`;
+        const footerLeft = template?.footer.text || "Sumber data: MARIMOI — Bappeda Provinsi Maluku Utara";
+        const footnote = `<span class="analysis-footer-left">${escapeHtml(footerLeft)}</span>
+            <span class="analysis-footer-right">${escapeHtml(scopeLabel)}<br>Dicetak ${escapeHtml(created)}</span>`;
         el.body.innerHTML = `
             ${notices.join("")}
             <div class="analysis-kpis">${kpis}</div>
-            <div class="analysis-grid">${sections.join("")}</div>
-            <p class="analysis-footnote">Sumber: data MARIMOI pada layer aktif · dibuat ${new Date().toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" })}</p>`;
+            ${groups.join("")}
+            <footer class="analysis-footnote">${footnote}</footer>`;
+    }
+
+    // Pengunjung hanya memilih orientasi; template = template analisis pertama (bawaan dulu) berorientasi itu.
+    let orientation = null;
+
+    function templateFor(value) {
+        return TEMPLATES.find((template) => template.orientation === value) || null;
+    }
+
+    // Template terpilih di antara template berorientasi sama (bawaan/urutan pertama bila belum dipilih).
+    function selectedTemplate() {
+        if (!orientation) {
+            return null;
+        }
+        const list = TEMPLATES.filter((template) => template.orientation === orientation);
+        return list.find((template) => String(template.id) === el.templateSelect?.value) || list[0] || null;
+    }
+
+    function populateTemplates() {
+        if (!el.templateSelect) {
+            return;
+        }
+        const list = TEMPLATES.filter((template) => template.orientation === orientation);
+        const keep = list.some((template) => String(template.id) === el.templateSelect.value) ? el.templateSelect.value : String(list[0]?.id ?? "");
+        el.templateSelect.innerHTML = list.map((template) => `<option value="${template.id}"${String(template.id) === keep ? " selected" : ""}>${escapeHtml(template.name)}</option>`).join("");
+        el.templateSelect.closest(".analysis-template-select").hidden = list.length <= 1;
+    }
+
+    function setOrientation(value) {
+        orientation = value;
+        populateTemplates();
+        el.orientationButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.analysisOrientation === value)));
+        render();
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Unduh PDF: laporan A4 multi-halaman digambar ke canvas (tanpa dialog cetak browser)
+    // ---------------------------------------------------------------------------------------
+
+    const REPORT_DPI = 150;
+    const A4_MM = { portrait: [210, 297], landscape: [297, 210] };
+    const REPORT_FONT = "Inter, 'Segoe UI', Arial, sans-serif";
+    const KIND_LABEL = { point: "Titik", line: "Garis", polygon: "Area" };
+    const INK = "#1d3557";
+
+    function decodeEntities(text) {
+        const area = document.createElement("textarea");
+        area.innerHTML = text;
+        return area.value;
+    }
+
+    // Teks wawasan ber-<b> → potongan teks dengan penanda tebal.
+    function richRuns(html) {
+        let bold = false;
+        return html.split(/(<b>|<\/b>)/).flatMap((part) => {
+            if (part === "<b>" || part === "</b>") {
+                bold = part === "<b>";
+                return [];
+            }
+            return part ? [{ text: decodeEntities(part), bold }] : [];
+        });
+    }
+
+    /**
+     * Kanvas laporan: halaman A4, margin, satuan mm → piksel, dan posisi tulis saat ini.
+     */
+    function createReport(orientation, template) {
+        const D = window.MarimoiDownload;
+        const [widthMm, heightMm] = A4_MM[orientation];
+        const k = REPORT_DPI / 25.4;
+        const mm = (value) => value * k;
+        const margin = { x: 14, top: 14, bottom: 12 };
+        const contentWidthMm = widthMm - margin.x * 2;
+        const footerSize = 9 * D.PT_TO_MM;
+        const footerLeft = D.wrapText(template?.footer.text || "Sumber data: MARIMOI — Bappeda Provinsi Maluku Utara", footerSize, 400, contentWidthMm * 0.58);
+        const footerHeightMm = 5 + Math.max(footerLeft.length, 3) * footerSize * D.LINE_HEIGHT;
+        const R = {
+            D, k, mm, orientation, template, widthMm, heightMm, margin, footerLeft, footerSize, footerHeightMm,
+            x: mm(margin.x),
+            width: mm(contentWidthMm),
+            top: mm(margin.top),
+            bottom: mm(heightMm - margin.bottom - footerHeightMm),
+            pages: [],
+            ctx: null,
+            y: 0,
+            newPage() {
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.round(mm(widthMm));
+                canvas.height = Math.round(mm(heightMm));
+                R.ctx = canvas.getContext("2d");
+                R.ctx.fillStyle = "#ffffff";
+                R.ctx.fillRect(0, 0, canvas.width, canvas.height);
+                R.pages.push(canvas);
+                R.y = R.top;
+            },
+        };
+        R.newPage();
+        return R;
+    }
+
+    function setFont(ctx, sizePx, weight = 400, family = REPORT_FONT) {
+        ctx.font = `${weight} ${sizePx}px ${family}`;
+    }
+
+    function ellipsis(ctx, text, maxWidth) {
+        const value = String(text ?? "");
+        if (ctx.measureText(value).width <= maxWidth) {
+            return value;
+        }
+        let cut = value;
+        while (cut.length > 1 && ctx.measureText(`${cut}…`).width > maxWidth) {
+            cut = cut.slice(0, -1);
+        }
+        return `${cut}…`;
+    }
+
+    function roundedRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+
+    // Kerangka kartu: bingkai, judul, catatan kanan. Mengembalikan y awal isi kartu.
+    function drawCard(R, x, y, w, h, title, note = "") {
+        const { ctx, mm } = R;
+        roundedRect(ctx, x, y, w, h, mm(2));
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = "#e3e8ef";
+        ctx.lineWidth = mm(0.25);
+        ctx.stroke();
+        ctx.textBaseline = "top";
+        ctx.textAlign = "left";
+        ctx.fillStyle = INK;
+        setFont(ctx, mm(3.1), 700);
+        ctx.fillText(ellipsis(ctx, title, w - mm(7) - (note ? mm(40) : 0)), x + mm(3.5), y + mm(3.2));
+        if (note) {
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#94a3b8";
+            setFont(ctx, mm(2.3));
+            ctx.fillText(ellipsis(ctx, note, mm(40)), x + w - mm(3.5), y + mm(3.6));
+        }
+        return y + mm(9.5);
+    }
+
+    const CARD_CHROME = 9.5 + 3.5; // judul + padding bawah (mm)
+
+    // Daftar batang horizontal: label · batang · nilai (opsional persentase).
+    function barsBlock(title, rows, { total = null, note = "", color = null, limit = 8, format = numberFormat, span = "half" } = {}) {
+        const visible = rows.slice(0, limit);
+        const more = rows.length - visible.length;
+        const rowMm = 5.4;
+        return {
+            span,
+            measure: (R) => R.mm(CARD_CHROME + visible.length * rowMm + (more > 0 ? 4 : 0)),
+            draw(R, x, y, w, h) {
+                const { ctx, mm } = R;
+                let top = drawCard(R, x, y, w, h, title, note);
+                const max = Math.max(1, ...visible.map((row) => row[1]));
+                const labelWidth = w * 0.38;
+                const valueWidth = mm(total ? 26 : 22);
+                const trackX = x + mm(3.5) + labelWidth + mm(2);
+                const trackWidth = w - mm(7) - labelWidth - mm(4) - valueWidth;
+                visible.forEach(([label, value], index) => {
+                    const cy = top + mm(rowMm / 2);
+                    ctx.textBaseline = "middle";
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#334155";
+                    setFont(ctx, mm(2.6));
+                    ctx.fillText(ellipsis(ctx, label, labelWidth), x + mm(3.5), cy);
+                    roundedRect(ctx, trackX, cy - mm(1), trackWidth, mm(2), mm(1));
+                    ctx.fillStyle = "#eef2f7";
+                    ctx.fill();
+                    roundedRect(ctx, trackX, cy - mm(1), Math.max(mm(0.8), (value / max) * trackWidth), mm(2), mm(1));
+                    ctx.fillStyle = color || PALETTE[index % PALETTE.length];
+                    ctx.fill();
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#0f172a";
+                    setFont(ctx, mm(2.6), 700);
+                    const valueText = total ? `${format(value)}  ${percent(value, total)}` : format(value);
+                    ctx.fillText(ellipsis(ctx, valueText, valueWidth), x + w - mm(3.5), cy);
+                    top += mm(rowMm);
+                });
+                if (more > 0) {
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#94a3b8";
+                    setFont(ctx, mm(2.3));
+                    ctx.fillText(`+${numberFormat(more)} nilai lainnya`, x + mm(3.5), top + mm(1.5));
+                }
+            },
+        };
+    }
+
+    // Kartu angka utama (satu baris penuh).
+    function kpiBlock(items) {
+        return {
+            span: "full",
+            measure: (R) => R.mm(15),
+            draw(R, x, y, w) {
+                const { ctx, mm } = R;
+                const gap = mm(2.5);
+                const cardWidth = (w - gap * (items.length - 1)) / items.length;
+                items.forEach(([value, label], index) => {
+                    const cx = x + index * (cardWidth + gap);
+                    const gradient = ctx.createLinearGradient(cx, y, cx + cardWidth, y + mm(15));
+                    gradient.addColorStop(0, "#071a2d");
+                    gradient.addColorStop(1, "#0b2a45");
+                    roundedRect(ctx, cx, y, cardWidth, mm(15), mm(2));
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.textAlign = "left";
+                    ctx.textBaseline = "top";
+                    ctx.fillStyle = "#ffffff";
+                    // Huruf nilai mengecil bila kartu sempit (mis. 5 kartu pada A4 potret).
+                    let size = mm(4.4);
+                    setFont(ctx, size, 800);
+                    while (size > mm(3) && ctx.measureText(value).width > cardWidth - mm(6)) {
+                        size -= mm(0.2);
+                        setFont(ctx, size, 800);
+                    }
+                    ctx.fillText(ellipsis(ctx, value, cardWidth - mm(6)), cx + mm(3), y + mm(2.6) + (mm(4.4) - size) / 2);
+                    ctx.fillStyle = "rgba(255,255,255,.7)";
+                    setFont(ctx, mm(2.4));
+                    ctx.fillText(ellipsis(ctx, label, cardWidth - mm(6)), cx + mm(3), y + mm(9.2));
+                });
+            },
+        };
+    }
+
+    // Wawasan: butir teks kaya (tebal) yang dibungkus mengikuti lebar kartu.
+    function insightsBlock(items, span = "full") {
+        const lineMm = 3.9;
+        const layoutLines = (R, width) => {
+            const { ctx, mm } = R;
+            const maxWidth = width - mm(7) - mm(4.5);
+            return items.map((html) => {
+                const words = richRuns(html).flatMap((run) => run.text.split(/(\s+)/).filter(Boolean).map((text) => ({ text, bold: run.bold })));
+                const lines = [[]];
+                let lineWidth = 0;
+                words.forEach((word) => {
+                    setFont(ctx, mm(2.7), word.bold ? 700 : 400);
+                    const wordWidth = ctx.measureText(word.text).width;
+                    if (/^\s+$/.test(word.text) && !lines[lines.length - 1].length) {
+                        return;
+                    }
+                    if (lineWidth + wordWidth > maxWidth && lines[lines.length - 1].length) {
+                        lines.push([]);
+                        lineWidth = 0;
+                        if (/^\s+$/.test(word.text)) {
+                            return;
+                        }
+                    }
+                    lines[lines.length - 1].push({ ...word, width: wordWidth });
+                    lineWidth += wordWidth;
+                });
+                return lines;
+            });
+        };
+        return {
+            span,
+            measure: (R, width) => R.mm(CARD_CHROME + layoutLines(R, width).reduce((sum, lines) => sum + lines.length * lineMm + 1.2, 0)),
+            draw(R, x, y, w, h) {
+                const { ctx, mm } = R;
+                let top = drawCard(R, x, y, w, h, "Wawasan");
+                layoutLines(R, w).forEach((lines) => {
+                    ctx.fillStyle = "#f59e0b";
+                    ctx.beginPath();
+                    ctx.arc(x + mm(5), top + mm(lineMm / 2), mm(0.8), 0, Math.PI * 2);
+                    ctx.fill();
+                    lines.forEach((line) => {
+                        let cursor = x + mm(3.5) + mm(4.5);
+                        line.forEach((word) => {
+                            setFont(ctx, mm(2.7), word.bold ? 700 : 400);
+                            ctx.fillStyle = word.bold ? "#0f172a" : "#334155";
+                            ctx.textAlign = "left";
+                            ctx.textBaseline = "middle";
+                            ctx.fillText(word.text, cursor, top + mm(lineMm / 2));
+                            cursor += word.width;
+                        });
+                        top += mm(lineMm);
+                    });
+                    top += mm(1.2);
+                });
+            },
+        };
+    }
+
+    // Donat komposisi geometri + legenda.
+    function donutBlock(result) {
+        const counts = { point: 0, line: 0, polygon: 0 };
+        result.perLayer.forEach((layer) => { if (layer.kind) counts[layer.kind] += layer.count; });
+        const parts = [["Titik", counts.point, "#0a84ff"], ["Garis", counts.line, "#f59e0b"], ["Area", counts.polygon, "#4de1c1"]].filter((part) => part[1] > 0);
+        return {
+            span: "half",
+            measure: (R) => R.mm(CARD_CHROME + 26),
+            draw(R, x, y, w, h) {
+                const { ctx, mm } = R;
+                const top = drawCard(R, x, y, w, h, "Komposisi Geometri");
+                const cx = x + mm(16);
+                const cy = top + mm(13);
+                let start = -Math.PI / 2;
+                parts.forEach(([, value, color]) => {
+                    const end = start + (value / result.total) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, mm(11), start, end);
+                    ctx.arc(cx, cy, mm(7), end, start, true);
+                    ctx.closePath();
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    start = end;
+                });
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#0f172a";
+                setFont(ctx, mm(3.4), 800);
+                ctx.fillText(numberFormat(result.total), cx, cy - mm(0.8));
+                ctx.fillStyle = "#94a3b8";
+                setFont(ctx, mm(2.1));
+                ctx.fillText("fitur", cx, cy + mm(2.6));
+                parts.forEach(([label, value, color], index) => {
+                    const ly = top + mm(6 + index * 6);
+                    const lx = x + mm(33);
+                    ctx.fillStyle = color;
+                    roundedRect(ctx, lx, ly - mm(1.4), mm(2.8), mm(2.8), mm(0.6));
+                    ctx.fill();
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#334155";
+                    setFont(ctx, mm(2.7));
+                    ctx.fillText(label, lx + mm(4.5), ly);
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#0f172a";
+                    setFont(ctx, mm(2.7), 700);
+                    ctx.fillText(`${numberFormat(value)}  ${percent(value, result.total)}`, x + w - mm(3.5), ly);
+                });
+            },
+        };
+    }
+
+    // Grafik kolom per tahun.
+    function yearBlock(result) {
+        const years = result.years;
+        const note = `${numberFormat(years.reduce((a, b) => a + b[1], 0))} dari ${numberFormat(result.total)} fitur memiliki tahun`;
+        return {
+            span: "full",
+            measure: (R) => R.mm(CARD_CHROME + 30),
+            draw(R, x, y, w, h) {
+                const { ctx, mm } = R;
+                const top = drawCard(R, x, y, w, h, "Tren per Tahun", note);
+                const chartHeight = mm(22);
+                const base = top + chartHeight + mm(2);
+                const max = Math.max(...years.map((year) => year[1]));
+                const slot = (w - mm(7)) / years.length;
+                const barWidth = Math.min(mm(12), slot * 0.6);
+                ctx.strokeStyle = "#e2e8f0";
+                ctx.lineWidth = mm(0.25);
+                ctx.beginPath();
+                ctx.moveTo(x + mm(3.5), base);
+                ctx.lineTo(x + w - mm(3.5), base);
+                ctx.stroke();
+                years.forEach(([year, count], index) => {
+                    const barHeight = (chartHeight - mm(4)) * (count / max);
+                    const bx = x + mm(3.5) + slot * index + (slot - barWidth) / 2;
+                    const gradient = ctx.createLinearGradient(0, base - barHeight, 0, base);
+                    gradient.addColorStop(0, "#20d9ff");
+                    gradient.addColorStop(1, "#0a84ff");
+                    roundedRect(ctx, bx, base - barHeight, barWidth, barHeight, Math.min(mm(1), barHeight / 2));
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "bottom";
+                    ctx.fillStyle = "#0f172a";
+                    setFont(ctx, mm(2.4), 700);
+                    ctx.fillText(numberFormat(count), bx + barWidth / 2, base - barHeight - mm(0.6));
+                    ctx.textBaseline = "top";
+                    ctx.fillStyle = "#64748b";
+                    setFont(ctx, mm(2.4));
+                    ctx.fillText(String(year), bx + barWidth / 2, base + mm(1));
+                });
+            },
+        };
+    }
+
+    // Sebaran spasial: titik pusat, rentang koordinat, dan kuadran.
+    function spatialBlock(result) {
+        const s = result.spatial;
+        const fmt = (value) => numberFormat(value, 5);
+        const stats = [["Titik pusat", `${fmt(s.center.lat)}, ${fmt(s.center.lng)}`], ["Rentang lintang", `${fmt(s.lat[0])} s.d. ${fmt(s.lat[1])}`], ["Rentang bujur", `${fmt(s.lng[0])} s.d. ${fmt(s.lng[1])}`]];
+        return {
+            span: "half",
+            measure: (R) => R.mm(CARD_CHROME + stats.length * 5 + 2 + s.quadrants.length * 5.4),
+            draw(R, x, y, w, h) {
+                const { ctx, mm } = R;
+                let top = drawCard(R, x, y, w, h, "Sebaran Spasial");
+                stats.forEach(([label, value]) => {
+                    ctx.textBaseline = "middle";
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#64748b";
+                    setFont(ctx, mm(2.5));
+                    ctx.fillText(label, x + mm(3.5), top + mm(2.5));
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#0f172a";
+                    setFont(ctx, mm(2.5), 700);
+                    ctx.fillText(value, x + w - mm(3.5), top + mm(2.5));
+                    top += mm(5);
+                });
+                // Kuadran terhadap titik pusat sebaran.
+                const max = Math.max(1, ...s.quadrants.map((row) => row[1]));
+                s.quadrants.forEach(([label, value], index) => {
+                    const cy = top + mm(2) + mm(2.7) + index * mm(5.4);
+                    const labelWidth = w * 0.38;
+                    const valueWidth = mm(26);
+                    const trackX = x + mm(3.5) + labelWidth + mm(2);
+                    const trackWidth = w - mm(7) - labelWidth - mm(4) - valueWidth;
+                    ctx.textAlign = "left";
+                    ctx.fillStyle = "#334155";
+                    setFont(ctx, mm(2.6));
+                    ctx.fillText(label, x + mm(3.5), cy);
+                    roundedRect(ctx, trackX, cy - mm(1), trackWidth, mm(2), mm(1));
+                    ctx.fillStyle = "#eef2f7";
+                    ctx.fill();
+                    roundedRect(ctx, trackX, cy - mm(1), Math.max(mm(0.8), (value / max) * trackWidth), mm(2), mm(1));
+                    ctx.fillStyle = "#20d9ff";
+                    ctx.fill();
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#0f172a";
+                    setFont(ctx, mm(2.6), 700);
+                    ctx.fillText(`${numberFormat(value)}  ${percent(value, result.total)}`, x + w - mm(3.5), cy);
+                });
+            },
+        };
+    }
+
+    /**
+     * Tabel yang boleh terpotong antarhalaman (kepala tabel diulang di halaman lanjutan).
+     * columns: [{ label, width (fraksi), align, value(row) → string | {text, sub} }]
+     */
+    function tableBlock(title, columns, rows, { rowMm = 5.6, note = "" } = {}) {
+        const headerMm = 6;
+        return {
+            span: "full",
+            rows,
+            headerHeight: (R) => R.mm(9.5 + headerMm),
+            rowHeight: (R) => R.mm(rowMm),
+            drawPart(R, x, y, w, from, to, continued) {
+                const { ctx, mm } = R;
+                const h = mm(9.5 + headerMm + (to - from) * rowMm + 3.5);
+                let top = drawCard(R, x, y, w, h, continued ? `${title} (lanjutan)` : title, note);
+                const inner = w - mm(7);
+                const xs = [];
+                let cursor = x + mm(3.5);
+                columns.forEach((column) => { xs.push(cursor); cursor += column.width * inner; });
+                const cellX = (index) => (columns[index].align === "right" ? xs[index] + columns[index].width * inner - mm(1) : xs[index] + mm(1));
+                ctx.textBaseline = "middle";
+                setFont(ctx, mm(2.4), 600);
+                ctx.fillStyle = "#64748b";
+                columns.forEach((column, index) => {
+                    ctx.textAlign = column.align === "right" ? "right" : "left";
+                    ctx.fillText(column.label, cellX(index), top + mm(headerMm / 2));
+                });
+                top += mm(headerMm);
+                ctx.strokeStyle = "#e3e8ef";
+                ctx.lineWidth = mm(0.25);
+                for (let index = from; index < to; index++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + mm(3.5), top);
+                    ctx.lineTo(x + w - mm(3.5), top);
+                    ctx.stroke();
+                    columns.forEach((column, columnIndex) => {
+                        const raw = column.value(rows[index]);
+                        // Sel teks biasa vs sel objek {text, sub, color} (string punya method bawaan .sub!).
+                        const cell = raw !== null && typeof raw === "object" ? raw : { text: raw };
+                        const text = cell.text;
+                        const maxWidth = column.width * inner - mm(2);
+                        ctx.textAlign = column.align === "right" ? "right" : "left";
+                        if (cell.color) {
+                            ctx.fillStyle = cell.color;
+                            roundedRect(ctx, xs[columnIndex] + mm(1), top + mm(rowMm / 2) - mm(1.2), mm(2.4), mm(2.4), mm(0.5));
+                            ctx.fill();
+                        }
+                        const textX = cell.color ? cellX(columnIndex) + mm(3.6) : cellX(columnIndex);
+                        ctx.fillStyle = "#1e293b";
+                        setFont(ctx, mm(2.6), columnIndex === 0 ? 600 : 400);
+                        if (cell.sub) {
+                            ctx.fillText(ellipsis(ctx, text, maxWidth - mm(3.6)), textX, top + mm(rowMm / 2) - mm(1.5));
+                            ctx.fillStyle = "#94a3b8";
+                            setFont(ctx, mm(2.2));
+                            ctx.fillText(ellipsis(ctx, cell.sub, maxWidth - mm(3.6)), textX, top + mm(rowMm / 2) + mm(1.6));
+                        } else {
+                            ctx.fillText(ellipsis(ctx, text, maxWidth), textX, top + mm(rowMm / 2));
+                        }
+                    });
+                    top += mm(rowMm);
+                }
+                return h;
+            },
+        };
+    }
+
+    // Susun blok ke halaman: blok "half" dipasangkan dua per baris; tabel dipotong per baris.
+    function layoutBlocks(R, input) {
+        // Pasangkan kartu setengah lebar: kartu setengah yang akan tersisa sendirian mengambil
+        // kartu setengah berikutnya sebagai pasangan agar tidak ada ruang kosong di sebelahnya.
+        const blocks = [...input];
+        for (let index = 0; index < blocks.length; index++) {
+            if (blocks[index].span !== "half") {
+                continue;
+            }
+            if (blocks[index + 1]?.span === "half") {
+                index++;
+                continue;
+            }
+            const partner = blocks.findIndex((block, other) => other > index && block.span === "half");
+            if (partner > -1) {
+                blocks.splice(index + 1, 0, ...blocks.splice(partner, 1));
+                index++;
+            }
+        }
+        const gap = R.mm(3);
+        const halfWidth = (R.width - gap) / 2;
+        let pending = null;
+
+        const ensure = (height) => {
+            if (R.y + height > R.bottom && R.y > R.top + 1) {
+                R.newPage();
+            }
+        };
+        const placeRow = (items) => {
+            const height = Math.max(...items.map((item) => item.block.measure(R, item.width)));
+            ensure(height);
+            items.forEach((item) => item.block.draw(R, item.x, R.y, item.width, height));
+            R.y += height + gap;
+        };
+        const flush = () => {
+            if (pending) {
+                placeRow([{ block: pending, x: R.x, width: halfWidth }]);
+                pending = null;
+            }
+        };
+
+        blocks.forEach((block) => {
+            if (block.span === "half") {
+                if (pending) {
+                    placeRow([{ block: pending, x: R.x, width: halfWidth }, { block, x: R.x + halfWidth + gap, width: halfWidth }]);
+                    pending = null;
+                } else {
+                    pending = block;
+                }
+                return;
+            }
+            flush();
+            if (block.rows) {
+                let from = 0;
+                let continued = false;
+                while (from < block.rows.length) {
+                    let fit = Math.floor((R.bottom - R.y - block.headerHeight(R) - R.mm(3.5)) / block.rowHeight(R));
+                    if (fit < Math.min(2, block.rows.length - from)) {
+                        R.newPage();
+                        fit = Math.floor((R.bottom - R.y - block.headerHeight(R) - R.mm(3.5)) / block.rowHeight(R));
+                    }
+                    const to = Math.min(block.rows.length, from + Math.max(1, fit));
+                    const height = block.drawPart(R, R.x, R.y, R.width, from, to, continued);
+                    R.y += height + gap;
+                    from = to;
+                    continued = true;
+                    if (from < block.rows.length) {
+                        R.newPage();
+                    }
+                }
+                return;
+            }
+            placeRow([{ block, x: R.x, width: R.width }]);
+        });
+        flush();
+    }
+
+    // Kop (halaman pertama) + judul laporan.
+    async function drawReportHeader(R, scopeLabel, entries) {
+        const { ctx, mm, D, template } = R;
+        if (template?.header) {
+            const plan = D.planKop(template, R.width / R.k, 1);
+            await D.drawKop(ctx, template, plan, { x: R.x, y: R.y, w: R.width, h: mm(plan.height) }, R.k);
+            R.y += mm(plan.height + 2);
+        }
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = template?.accentColor || INK;
+        setFont(ctx, mm(5.6), 800);
+        ctx.fillText("Analisis Peta", R.x, R.y);
+        R.y += mm(7.4);
+        ctx.fillStyle = "#64748b";
+        setFont(ctx, mm(2.7));
+        const layers = entries.map((entry) => entry.leafName).join(", ");
+        // Dibungkus dengan font yang sama dengan saat digambar.
+        const words = `${scopeLabel} · Layer: ${layers}`.split(/\s+/);
+        const lines = [""];
+        words.forEach((word) => {
+            const candidate = lines[lines.length - 1] ? `${lines[lines.length - 1]} ${word}` : word;
+            if (lines[lines.length - 1] && ctx.measureText(candidate).width > R.width) {
+                lines.push(word);
+            } else {
+                lines[lines.length - 1] = candidate;
+            }
+        });
+        if (lines.length > 3) {
+            lines.length = 3;
+            lines[2] = ellipsis(ctx, `${lines[2]} …`, R.width);
+        }
+        lines.forEach((line) => {
+            ctx.fillText(line, R.x, R.y);
+            R.y += mm(3.6);
+        });
+        R.y += mm(2.5);
+    }
+
+    // Footer tiap halaman (Arial 9pt): kiri teks template, kanan otomatis + nomor halaman.
+    function drawReportFooters(R, scopeLabel) {
+        const { mm, D } = R;
+        const right = [scopeLabel, D.printedAt()];
+        R.pages.forEach((canvas, index) => {
+            const ctx = canvas.getContext("2d");
+            const top = mm(R.heightMm - R.margin.bottom - R.footerHeightMm + 5);
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = mm(0.3);
+            ctx.beginPath();
+            ctx.moveTo(R.x, top - mm(2.2));
+            ctx.lineTo(R.x + R.width, top - mm(2.2));
+            ctx.stroke();
+            ctx.fillStyle = "#475569";
+            ctx.textBaseline = "top";
+            ctx.font = `${mm(R.footerSize)}px ${D.KOP_FONT}`;
+            const lineHeight = mm(R.footerSize * D.LINE_HEIGHT);
+            ctx.textAlign = "left";
+            R.footerLeft.forEach((line, row) => ctx.fillText(line, R.x, top + row * lineHeight));
+            ctx.textAlign = "right";
+            [...right, `Halaman ${index + 1} dari ${R.pages.length}`].forEach((line, row) => ctx.fillText(line, R.x + R.width, top + row * lineHeight));
+        });
+    }
+
+    /**
+     * Susun seluruh laporan untuk hasil analisis saat ini dan unduh sebagai PDF A4.
+     */
+    async function downloadReport() {
+        const D = window.MarimoiDownload;
+        const { ready } = readyEntries();
+        if (!D || !ready.length) {
+            return;
+        }
+        await document.fonts?.ready;
+        const result = analyse(gatherFeatures(ready));
+        const orientationValue = orientation || "portrait";
+        const template = selectedTemplate();
+        const scopeLabel = scope === "view" ? "Cakupan: tampilan peta saat ini" : "Cakupan: seluruh data layer aktif";
+        const R = createReport(orientationValue, template);
+        await drawReportHeader(R, scopeLabel, ready);
+
+        const blocks = [];
+        const kpis = [
+            [numberFormat(result.total), "Fitur dianalisis"],
+            [numberFormat(result.perLayer.filter((layer) => layer.count > 0).length), "Layer berisi data"],
+            [formatArea(result.area), "Total luas area"],
+            [formatLength(result.length), "Total panjang garis"],
+        ];
+        if (result.budget > 0) {
+            kpis.push([formatRupiah(result.budget), "Total anggaran/nilai"]);
+        }
+        blocks.push(kpiBlock(kpis));
+
+        const layerRows = [...result.perLayer].sort((a, b) => b.count - a.count);
+        blocks.push(tableBlock("Perbandingan Layer", [
+            { label: "Layer", width: 0.5, value: (layer) => ({ text: layer.entry.leafName, sub: [[layer.entry.rootName, layer.entry.secondName].filter((name, index, arr) => name && name !== layer.entry.leafName && arr.indexOf(name) === index).join(" › "), KIND_LABEL[layer.kind] || "Tanpa geometri"].filter(Boolean).join(" · "), color: layer.entry.color }) },
+            { label: "Fitur", width: 0.14, align: "right", value: (layer) => numberFormat(layer.count) },
+            { label: "Porsi", width: 0.14, align: "right", value: (layer) => percent(layer.count, result.total) },
+            { label: "Luas / Panjang", width: 0.22, align: "right", value: (layer) => (layer.kind === "polygon" ? formatArea(layer.area) : layer.kind === "line" ? formatLength(layer.length) : "–") },
+        ], layerRows, { rowMm: 8 }));
+
+        const insightItems = insights(result);
+        if (insightItems.length) {
+            blocks.push(insightsBlock(insightItems, R.orientation === "landscape" ? "half" : "full"));
+        }
+        blocks.push(donutBlock(result));
+        if (result.years.length) {
+            blocks.push(yearBlock(result));
+        }
+        result.regions.slice(0, 2).forEach((level) => {
+            blocks.push(barsBlock(`Sebaran per ${level.label}`, level.values, { total: level.coverage, note: `${numberFormat(level.coverage)} fitur berwilayah` }));
+        });
+        if (result.budgetByRegency.length) {
+            blocks.push(barsBlock("Anggaran per Kabupaten/Kota", result.budgetByRegency, { format: formatRupiah, note: `${numberFormat(result.budgetCount)} fitur beranggaran` }));
+        }
+        if (result.opd.length) {
+            blocks.push(barsBlock("OPD Pengelola", result.opd, { total: result.total, limit: 6 }));
+        }
+        if (result.sources.length > 1) {
+            blocks.push(barsBlock("Sumber Data", result.sources, { total: result.total, limit: 6 }));
+        }
+        if (result.spatial) {
+            blocks.push(spatialBlock(result));
+        }
+        if (result.numeric.length) {
+            blocks.push(tableBlock("Statistik Atribut Numerik", [
+                { label: "Atribut", width: 0.3, value: (field) => prettyField(field.key) + (field.currency ? " (Rp)" : "") },
+                ...["min", "avg", "max", "sum"].map((key, index) => ({ label: ["Min", "Rata-rata", "Maks", "Total"][index], width: 0.15, align: "right", value: (field) => (field.currency ? formatRupiah : smartNumber)(field[key]) })),
+                { label: "Jumlah", width: 0.1, align: "right", value: (field) => numberFormat(field.count) },
+            ], result.numeric));
+        }
+        result.categorical.forEach((field) => {
+            blocks.push(barsBlock(`Atribut: ${prettyField(field.key)}`, field.values, { total: field.count, limit: 5, note: `${numberFormat(field.distinct)} nilai` }));
+        });
+
+        layoutBlocks(R, blocks);
+        drawReportFooters(R, scopeLabel);
+
+        const pages = [];
+        for (const canvas of R.pages) {
+            pages.push(await D.canvasJpeg(canvas));
+        }
+        const [widthMm, heightMm] = A4_MM[orientationValue];
+        const blob = D.buildPdf(pages, widthMm, heightMm, "Analisis Peta MARIMOI");
+        D.saveBlob(blob, `analisis-peta-marimoi-${orientationValue === "portrait" ? "potret" : "lanskap"}-${new Date().toISOString().slice(0, 10)}.pdf`);
+        return pages.length;
+    }
+
+    async function onDownloadClick() {
+        const button = el.downloadButton;
+        if (button.disabled) {
+            return;
+        }
+        const label = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> <span>Menyiapkan PDF…</span>';
+        try {
+            const pages = await downloadReport();
+            button.innerHTML = `<i class="bi bi-check-lg"></i> <span>Terunduh (${pages} hlm)</span>`;
+        } catch (error) {
+            button.innerHTML = '<i class="bi bi-x-lg"></i> <span>Gagal, coba lagi</span>';
+        }
+        setTimeout(() => {
+            button.innerHTML = label;
+            button.disabled = false;
+        }, 2200);
     }
 
     // ---------------------------------------------------------------------------------------
@@ -746,12 +1514,35 @@
         el.subtitle = el.modal.querySelector("[data-analysis-subtitle]");
         el.closeButton = el.modal.querySelector("[data-analysis-close]");
         el.scopeButtons = [...el.modal.querySelectorAll("[data-analysis-scope]")];
+        el.orientationButtons = [...el.modal.querySelectorAll("[data-analysis-orientation]")];
+        el.templateSelect = el.modal.querySelector("[data-analysis-template]");
+        el.templateSelect?.addEventListener("change", render);
+        const orientationGroup = el.modal.querySelector("[data-analysis-orientations]");
+        // Tanpa template pun pengunjung tetap memilih orientasi A4 (tanpa kop).
+        if (orientationGroup && !TEMPLATES.length) {
+            orientationGroup.hidden = false;
+            el.orientationButtons.forEach((button) => button.addEventListener("click", () => setOrientation(button.dataset.analysisOrientation)));
+            setOrientation("portrait");
+        }
+        if (orientationGroup && TEMPLATES.length) {
+            orientationGroup.hidden = false;
+            el.orientationButtons.forEach((button) => {
+                const available = Boolean(templateFor(button.dataset.analysisOrientation));
+                button.disabled = !available;
+                button.title = available ? `Cetak ${button.textContent.trim().toLowerCase()} (${templateFor(button.dataset.analysisOrientation).name})` : "Belum ada template untuk orientasi ini";
+                button.addEventListener("click", () => setOrientation(button.dataset.analysisOrientation));
+            });
+            // Awal: orientasi template bawaan (urutan pertama).
+            orientation = TEMPLATES[0].orientation;
+            setOrientation(orientation);
+        }
 
         el.button.addEventListener("click", open);
         el.closeButton.addEventListener("click", close);
         el.modal.addEventListener("click", (event) => { if (event.target === el.modal) close(); });
         el.scopeButtons.forEach((button) => button.addEventListener("click", () => setScope(button.dataset.analysisScope)));
-        el.modal.querySelector("[data-analysis-print]").addEventListener("click", () => window.print());
+        el.downloadButton = el.modal.querySelector("[data-analysis-download]");
+        el.downloadButton.addEventListener("click", onDownloadClick);
         document.addEventListener("keydown", (event) => { if (event.key === "Escape" && isOpen()) close(); });
 
         document.addEventListener("marimoi:active-layers-change", () => { syncButton(); if (isOpen()) scheduleRender(); });

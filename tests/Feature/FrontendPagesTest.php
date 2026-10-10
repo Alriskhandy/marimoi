@@ -155,7 +155,9 @@ class FrontendPagesTest extends TestCase
             ->assertSee('id="analysisModal"', false)
             ->assertSee('data-analysis-scope="view"', false)
             ->assertSee('data-analysis-scope="all"', false)
-            ->assertSee('data-analysis-print', false)
+            ->assertSee('data-analysis-download', false)
+            ->assertDontSee('data-analysis-print', false)
+            ->assertSee('Unduh PDF')
             ->assertSee('data-analysis-body', false)
             ->assertSee('frontend/js/map-analysis.js', false);
     }
@@ -182,7 +184,12 @@ class FrontendPagesTest extends TestCase
             ->assertSee('name="orientation" value="portrait"', false)
             ->assertSee('name="legend" checked', false)
             ->assertSee('name="labels" checked', false)
-            ->assertSee('Tampilkan label fitur');
+            ->assertSee('Tampilkan label fitur')
+            ->assertSee('data-template-preview', false)
+            ->assertSee('data-template-single', false)
+            ->assertSee('data-download-orientation', false)
+            ->assertSee('data-analysis-orientation="portrait"', false)
+            ->assertSee('data-analysis-orientation="landscape"', false);
     }
 
     public function test_thematic_map_page_has_data_catalog_modal_and_active_layer_sidebar(): void

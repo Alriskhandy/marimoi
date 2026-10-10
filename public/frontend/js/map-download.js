@@ -16,16 +16,104 @@
     const MAX_TILES = 600;
     const TILE_CONCURRENCY = 12;
     const FONT = "Inter, 'Segoe UI', Arial, sans-serif";
+    // Kop & footer dokumen resmi memakai Arial.
+    const KOP_FONT = "Arial, Helvetica, sans-serif";
+    const PT_TO_MM = 25.4 / 72;
+    // Spasi antar baris kop & footer.
+    const LINE_HEIGHT = 1.15;
+
+    // Canvas kecil untuk mengukur & membungkus teks saat menghitung tata letak (satuan mm).
+    const measureCtx = document.createElement("canvas").getContext("2d");
+    const MEASURE_SCALE = 10;
+
+    /**
+     * Bungkus teks ke beberapa baris selebar maxWidthMm (baris baru dari Enter dipertahankan).
+     */
+    function wrapText(text, sizeMm, weight, maxWidthMm) {
+        measureCtx.font = `${weight} ${sizeMm * MEASURE_SCALE}px ${KOP_FONT}`;
+        const limit = maxWidthMm * MEASURE_SCALE;
+        const lines = [];
+        String(text || "").split("\n").forEach((paragraph) => {
+            const words = paragraph.trim().split(/\s+/).filter(Boolean);
+            let line = "";
+            words.forEach((word) => {
+                const candidate = line ? `${line} ${word}` : word;
+                if (line && measureCtx.measureText(candidate).width > limit) {
+                    lines.push(line);
+                    line = word;
+                } else {
+                    line = candidate;
+                }
+            });
+            if (line) {
+                lines.push(line);
+            }
+        });
+        return lines;
+    }
+
+    /**
+     * Rencana kop: baris 1 Arial 12pt kapital, baris 2 Arial 14pt tebal kapital,
+     * baris 3 Arial 10pt sesuai isian (boleh beberapa baris). Ukuran pt berlaku di A4 dan
+     * ikut membesar sebanding di kertas lebih besar.
+     */
+    function planKop(template, widthMm, unit) {
+        const header = template.header;
+        const hasLogo = Boolean(header.logoLeft || header.logoRight);
+        const logoSlot = hasLogo ? 26 * unit : 0;
+        const textWidth = widthMm - logoSlot * 2 - (hasLogo ? 6 * unit : 0);
+        const specs = [
+            [header.line1, 12, 400, "#0f172a"],
+            [header.line2, 14, 700, "#0f172a"],
+            [header.line3, 10, 400, "#334155"],
+        ];
+        const rows = [];
+        specs.forEach(([text, pt, weight, color]) => {
+            if (!text) {
+                return;
+            }
+            const size = pt * PT_TO_MM * unit;
+            wrapText(text, size, weight, textWidth).forEach((line) => rows.push({ text: line, size, weight, color }));
+        });
+        const textHeight = rows.reduce((sum, row) => sum + row.size * LINE_HEIGHT, 0);
+        const logoMinHeight = hasLogo ? 22 * unit : 0;
+        const ruleSpace = 5 * unit;
+        return { unit, rows, textHeight, logoSlot, logoMinHeight, ruleSpace, height: Math.max(textHeight, logoMinHeight) + ruleSpace };
+    }
+
+    // Waktu cetak dalam WIT (zona waktu Maluku Utara).
+    function printedAt() {
+        const now = new Date();
+        const date = now.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jayapura" });
+        const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jayapura" });
+        return `Dicetak ${date}, ${time} WIT`;
+    }
+
+    /**
+     * Rencana footer Arial 9pt: kiri teks template (bisa beberapa baris), kanan otomatis.
+     */
+    function planFooter(settings, widthMm, unit) {
+        const size = 9 * PT_TO_MM * unit;
+        const leftText = settings.template ? settings.template.footer.text : "Sumber data: MARIMOI — Bappeda Provinsi Maluku Utara";
+        const basemap = basemapInfo()?.label || "-";
+        const left = wrapText(leftText, size, 400, widthMm * 0.58);
+        const right = [`Basemap: ${basemap} · WGS 84 / Web Mercator`, printedAt()].flatMap((line) => wrapText(line, size, 400, widthMm * 0.4));
+        const gapTop = 5 * unit;
+        return { size, left, right, gapTop, height: gapTop + Math.max(left.length, right.length, 1) * size * LINE_HEIGHT };
+    }
 
     const el = {};
     let frameEl = null;
     let job = null;
 
+    // Template dokumen aktif dari dashboard (Template Dokumen) yang boleh dipakai Unduh Peta.
+    const TEMPLATES = (window.MARIMOI_DOCUMENT_TEMPLATES || []).filter((template) => template.forMap);
+
     // ---------------------------------------------------------------------------------------
     // Pengaturan & ukuran keluaran
     // ---------------------------------------------------------------------------------------
 
-    function readSettings() {
+    function readFormSettings() {
         const form = el.form;
         return {
             title: form.elements.title.value.trim() || "Peta Interaktif MARIMOI",
@@ -35,7 +123,20 @@
             format: form.elements.format.value,
             legend: form.elements.legend.checked,
             labels: form.elements.labels.checked,
+            template: null,
         };
+    }
+
+    // Template menentukan orientasi & elemen tata letak; pilihan manual hanya bila tanpa template.
+    function readSettings() {
+        const settings = readFormSettings();
+        const template = TEMPLATES.find((item) => String(item.id) === el.form.elements.template?.value) || null;
+        if (template) {
+            settings.template = template;
+            settings.orientation = template.orientation;
+            settings.legend = Boolean(template.layout.legend?.enabled);
+        }
+        return settings;
     }
 
     /**
@@ -68,10 +169,29 @@
     function layout(page, settings) {
         const unit = Math.min(page.widthMm, page.heightMm) / 210;
         const margin = 10 * unit;
-        const header = 17 * unit;
-        const footer = 9 * unit;
+        // Margin atas & bawah lebih lega agar kop dan footer tidak menempel ke tepi kertas.
+        const marginTop = 13 * unit;
+        const marginBottom = 13 * unit;
+        const contentWidth = page.widthMm - margin * 2;
+        // Kop (logo + baris instansi + garis) dan footer: tingginya mengikuti jumlah baris teks.
+        const kopPlan = settings.template?.header ? planKop(settings.template, contentWidth, unit) : null;
+        const kop = kopPlan ? kopPlan.height : 0;
+        const header = kop + 18 * unit;
+        const footerPlan = planFooter(settings, contentWidth, unit);
+        const footer = footerPlan.height;
         const gap = 5 * unit;
-        const content = { x: margin, y: margin + header, w: page.widthMm - margin * 2, h: page.heightMm - margin * 2 - header - footer };
+        const content = { x: margin, y: marginTop + header, w: contentWidth, h: page.heightMm - marginTop - marginBottom - header - footer };
+
+        // Template: setiap elemen ditempatkan sesuai persen area isi (diatur di dashboard).
+        if (settings.template) {
+            const boxes = settings.template.layout;
+            const place = (key) => {
+                const box = boxes[key];
+                return box?.enabled ? { x: content.x + (box.x / 100) * content.w, y: content.y + (box.y / 100) * content.h, w: (box.w / 100) * content.w, h: (box.h / 100) * content.h } : null;
+            };
+            return { unit, margin, marginTop, marginBottom, kop, kopPlan, header, footer, footerPlan, mapBox: place("map"), legendBox: place("legend"), insetBox: place("inset"), scaleBox: place("scale"), northBox: place("north") };
+        }
+
         let mapBox = { ...content };
         let legendBox = null;
         if (settings.legend) {
@@ -85,7 +205,10 @@
                 legendBox = { x: content.x, y: mapBox.y + mapBox.h + gap, w: content.w, h: legendHeight };
             }
         }
-        return { unit, margin, header, footer, mapBox, legendBox };
+        // Tanpa template: skala di kiri bawah dan arah utara di kanan atas di dalam peta.
+        const scaleBox = { x: mapBox.x + 2 * unit, y: mapBox.y + mapBox.h - 12 * unit, w: Math.min(mapBox.w * 0.3, 60 * unit), h: 10 * unit };
+        const northBox = { x: mapBox.x + mapBox.w - 17 * unit, y: mapBox.y + 3 * unit, w: 14 * unit, h: 16 * unit };
+        return { unit, margin, marginTop, marginBottom, kop, kopPlan, header, footer, footerPlan, mapBox, legendBox, insetBox: null, scaleBox, northBox };
     }
 
     function describeOutput() {
@@ -422,18 +545,27 @@
         return (fraction >= 5 ? 5 : fraction >= 2 ? 2 : 1) * power;
     }
 
-    function drawScaleBar(ctx, view, box, px) {
-        const center = map.options.crs.pointToLatLng(L.point(view.origin.x + box.w / 2, view.origin.y + box.h / 2), view.zoom);
-        const metersPerPixel = (40075016.686 * Math.cos((center.lat * Math.PI) / 180)) / (256 * Math.pow(2, view.zoom));
-        const meters = niceNumber(metersPerPixel * box.w * 0.22);
+    // Meter per piksel keluaran di titik tengah peta utama.
+    function metersPerPixelAt(view, mapBox) {
+        const center = map.options.crs.pointToLatLng(L.point(view.origin.x + mapBox.w / 2, view.origin.y + mapBox.h / 2), view.zoom);
+        return (40075016.686 * Math.cos((center.lat * Math.PI) / 180)) / (256 * Math.pow(2, view.zoom));
+    }
+
+    /**
+     * Skala batang di dalam kotaknya (panjang batang menyesuaikan lebar kotak).
+     */
+    function drawScaleBar(ctx, metersPerPixel, box, px) {
+        const pad = Math.min(px(2), box.w * 0.08);
+        const fontSize = Math.min(px(2.6), box.h * 0.3);
+        const meters = niceNumber(metersPerPixel * (box.w - pad * 2) * 0.95);
         const barWidth = meters / metersPerPixel;
         const label = meters >= 1000 ? `${(meters / 1000).toLocaleString("id-ID")} km` : `${meters.toLocaleString("id-ID")} m`;
-        const x = box.x + px(4);
-        const y = box.y + box.h - px(6);
-        const height = px(1.6);
+        const height = Math.min(px(1.6), box.h * 0.18);
+        const x = box.x + (box.w - barWidth) / 2;
+        const y = box.y + box.h - pad - height;
 
         ctx.fillStyle = "rgba(255,255,255,.88)";
-        roundRect(ctx, x - px(2), y - px(6.2), barWidth + px(4) + px(2) * 2, px(8.4), px(1.2));
+        roundRect(ctx, box.x, box.y, box.w, box.h, Math.min(px(1.2), box.h * 0.2));
         ctx.fill();
         for (let i = 0; i < 4; i++) {
             ctx.fillStyle = i % 2 ? "#ffffff" : "#1d3557";
@@ -443,21 +575,19 @@
         ctx.lineWidth = px(0.25);
         ctx.strokeRect(x, y, barWidth, height);
         ctx.fillStyle = "#1d3557";
-        ctx.font = `600 ${px(2.6)}px ${FONT}`;
+        ctx.font = `600 ${fontSize}px ${FONT}`;
         ctx.textBaseline = "bottom";
         ctx.textAlign = "left";
         ctx.fillText("0", x, y - px(0.8));
         ctx.textAlign = "right";
         ctx.fillText(label, x + barWidth, y - px(0.8));
-
-        // Skala angka (1 : n) untuk ukuran kertas cetak.
-        return Math.round((metersPerPixel * view.dpi) / 0.0254);
     }
 
+    // Arah mata angin di tengah kotaknya, ukurannya mengikuti sisi terpendek kotak.
     function drawNorthArrow(ctx, box, px) {
-        const cx = box.x + box.w - px(9);
-        const cy = box.y + px(11);
-        const size = px(5);
+        const size = Math.min(box.w, box.h * 0.82) * 0.32;
+        const cx = box.x + box.w / 2;
+        const cy = box.y + box.h * 0.42;
         ctx.fillStyle = "rgba(255,255,255,.88)";
         ctx.beginPath();
         ctx.arc(cx, cy, size * 1.25, 0, Math.PI * 2);
@@ -476,11 +606,66 @@
         ctx.closePath();
         ctx.fillStyle = "#0a84ff";
         ctx.fill();
-        ctx.font = `700 ${px(2.6)}px ${FONT}`;
+        ctx.font = `700 ${Math.max(size * 0.5, px(1.8))}px ${FONT}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillStyle = "#1d3557";
         ctx.fillText("U", cx, cy + size * 1.35);
+    }
+
+    /**
+     * Inset (peta lokasi): seluruh Provinsi Maluku Utara (diperluas bila perlu) dengan
+     * kotak merah penanda area peta utama.
+     */
+    async function drawInset(ctx, view, mapBox, box, px) {
+        const crs = map.options.crs;
+        const mainBounds = L.latLngBounds(
+            crs.pointToLatLng(L.point(view.origin.x, view.origin.y + mapBox.h), view.zoom),
+            crs.pointToLatLng(L.point(view.origin.x + mapBox.w, view.origin.y), view.zoom)
+        );
+        const extent = L.latLngBounds([[-2.6, 124.2], [2.8, 129.7]]).extend(mainBounds);
+        const nw = crs.latLngToPoint(extent.getNorthWest(), 0);
+        const se = crs.latLngToPoint(extent.getSouthEast(), 0);
+        const zoom = Math.log2(Math.min(box.w / (se.x - nw.x), box.h / (se.y - nw.y)) * 0.94);
+        const center = crs.latLngToPoint(extent.getCenter(), zoom);
+        const insetView = { zoom, dpi: view.dpi, origin: { x: center.x - box.w / 2, y: center.y - box.h / 2 } };
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(box.x, box.y, box.w, box.h);
+        ctx.clip();
+        ctx.fillStyle = "#e8eef5";
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+        await drawBasemap(ctx, insetView, box, () => {});
+
+        const project = (latlng) => {
+            const point = crs.latLngToPoint(latlng, zoom);
+            return { x: box.x + point.x - insetView.origin.x, y: box.y + point.y - insetView.origin.y };
+        };
+        const a = project(mainBounds.getNorthWest());
+        const b = project(mainBounds.getSouthEast());
+        const width = Math.max(b.x - a.x, px(1.2));
+        const height = Math.max(b.y - a.y, px(1.2));
+        ctx.fillStyle = "rgba(239, 68, 68, .15)";
+        ctx.fillRect(a.x, a.y, width, height);
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = px(0.5);
+        ctx.strokeRect(a.x, a.y, width, height);
+
+        const fontSize = Math.min(px(2.4), box.h * 0.09);
+        ctx.font = `700 ${fontSize}px ${FONT}`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        const labelWidth = ctx.measureText("Peta Lokasi").width + px(2.4);
+        ctx.fillStyle = "rgba(255,255,255,.9)";
+        ctx.fillRect(box.x, box.y, labelWidth, fontSize + px(1.6));
+        ctx.fillStyle = "#1d3557";
+        ctx.fillText("Peta Lokasi", box.x + px(1.2), box.y + px(0.8));
+        ctx.restore();
+
+        ctx.strokeStyle = "#1d3557";
+        ctx.lineWidth = px(0.3);
+        ctx.strokeRect(box.x, box.y, box.w, box.h);
     }
 
     function roundRect(ctx, x, y, w, h, r) {
@@ -639,6 +824,43 @@
         }
     }
 
+    /**
+     * Kop surat template: logo kiri & kanan, baris instansi di tengah, garis aksen di bawahnya.
+     */
+    async function drawKop(ctx, template, plan, box, pxPerMm) {
+        const [left, right] = await Promise.all([template.header.logoLeft, template.header.logoRight].map((url) => (url ? loadImage(url) : null)));
+        const logoArea = { y: box.y, h: plan.textHeight * pxPerMm };
+        const logoMax = plan.logoSlot * pxPerMm;
+        const drawLogo = (image, alignRight) => {
+            if (!image) {
+                return;
+            }
+            const scale = Math.min(logoMax / image.naturalWidth, Math.max(logoArea.h, plan.logoMinHeight * pxPerMm) / image.naturalHeight);
+            const width = image.naturalWidth * scale;
+            const height = image.naturalHeight * scale;
+            const x = alignRight ? box.x + box.w - (logoMax + width) / 2 : box.x + (logoMax - width) / 2;
+            ctx.drawImage(image, x, logoArea.y + (Math.max(logoArea.h, height) - height) / 2, width, height);
+        };
+        drawLogo(left, false);
+        drawLogo(right, true);
+
+        // Baris kop dipusatkan di antara slot logo (Arial; ukuran pt sudah dihitung planKop).
+        let y = box.y + Math.max(0, (plan.logoMinHeight - plan.textHeight) / 2) * pxPerMm;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        plan.rows.forEach((row) => {
+            ctx.fillStyle = row.color;
+            ctx.font = `${row.weight} ${row.size * pxPerMm}px ${KOP_FONT}`;
+            ctx.fillText(row.text, box.x + box.w / 2, y);
+            y += row.size * LINE_HEIGHT * pxPerMm;
+        });
+
+        const ruleY = box.y + (plan.height - plan.ruleSpace) * pxPerMm;
+        ctx.fillStyle = template.accentColor || "#1d3557";
+        ctx.fillRect(box.x, ruleY, box.w, 0.9 * plan.unit * pxPerMm);
+        ctx.fillRect(box.x, ruleY + 1.4 * plan.unit * pxPerMm, box.w, 0.3 * plan.unit * pxPerMm);
+    }
+
     // ---------------------------------------------------------------------------------------
     // Render halaman
     // ---------------------------------------------------------------------------------------
@@ -688,41 +910,67 @@
         throwIfCancelled();
         onProgress(0.82, "Menggambar layer…");
         drawFeatures(ctx, view, box, symbolScale, settings.labels);
-        drawNorthArrow(ctx, box, px);
-        const ratio = drawScaleBar(ctx, view, box, px);
         ctx.restore();
 
         ctx.strokeStyle = "#1d3557";
         ctx.lineWidth = px(0.35);
         ctx.strokeRect(box.x, box.y, box.w, box.h);
 
-        // Judul & keterangan.
+        const metersPerPixel = metersPerPixelAt(view, box);
+        // Skala angka (1 : n) untuk ukuran kertas cetak.
+        const ratio = Math.round((metersPerPixel * view.dpi) / 0.0254);
+        if (plan.insetBox) {
+            onProgress(0.86, "Menggambar inset…");
+            await drawInset(ctx, view, box, toPx(plan.insetBox), px);
+            throwIfCancelled();
+        }
+
+        // Kop template, lalu judul & keterangan.
         const marginPx = plan.margin * pxPerMm;
-        ctx.fillStyle = "#1d3557";
+        const marginTopPx = plan.marginTop * pxPerMm;
+        const template = settings.template;
+        const accent = template?.accentColor || "#1d3557";
+        if (plan.kopPlan) {
+            await drawKop(ctx, template, plan.kopPlan, { x: marginPx, y: marginTopPx, w: page.width - marginPx * 2, h: plan.kop * pxPerMm }, pxPerMm);
+        }
+        const titleY = marginTopPx + plan.kop * pxPerMm;
+        ctx.fillStyle = accent;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.font = `800 ${px(6.4)}px ${FONT}`;
-        ctx.fillText(fitText(ctx, settings.title, page.width - marginPx * 2), marginPx, marginPx);
+        ctx.fillText(fitText(ctx, settings.title, page.width - marginPx * 2), marginPx, titleY);
         ctx.fillStyle = "#64748b";
         ctx.font = `${px(3)}px ${FONT}`;
-        const printed = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-        ctx.fillText(`Provinsi Maluku Utara · Skala ±1 : ${Number(ratio.toPrecision(2)).toLocaleString("id-ID")} (pada kertas ${settings.paper}) · ${printed}`, marginPx, marginPx + px(8.2));
+        const subtitle = ["Provinsi Maluku Utara", `Skala ±1 : ${Number(ratio.toPrecision(2)).toLocaleString("id-ID")} (pada kertas ${settings.paper})`].join(" · ");
+        ctx.fillText(subtitle, marginPx, titleY + px(8.2));
 
         if (plan.legendBox) {
             drawLegend(ctx, toPx(plan.legendBox), px);
         }
+        // Skala & arah mata angin terakhir agar tetap di atas peta/inset bila bertumpuk.
+        if (plan.scaleBox) {
+            drawScaleBar(ctx, metersPerPixel, toPx(plan.scaleBox), px);
+        }
+        if (plan.northBox) {
+            drawNorthArrow(ctx, toPx(plan.northBox), px);
+        }
 
-        // Sumber & atribusi di kaki halaman.
-        ctx.fillStyle = "#64748b";
-        ctx.font = `${px(2.5)}px ${FONT}`;
-        ctx.textBaseline = "bottom";
-        const footerY = page.height - marginPx;
-        const host = window.location.host;
-        const sourceWidth = page.width - marginPx * 2 - ctx.measureText(host).width - px(6);
-        const source = `Sumber data: MARIMOI — Bappeda Provinsi Maluku Utara · Basemap: ${tiles.label || "-"} · WGS 84 / Web Mercator`;
-        ctx.fillText(fitText(ctx, source, sourceWidth), marginPx, footerY);
-        ctx.textAlign = "right";
-        ctx.fillText(host, page.width - marginPx, footerY);
+        // Footer (Arial 9pt): kiri = teks template, kanan = otomatis (basemap, sistem koordinat, waktu cetak).
+        const footerPlan = plan.footerPlan;
+        const footerTop = page.height - plan.marginBottom * pxPerMm - (footerPlan.height - footerPlan.gapTop) * pxPerMm;
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 0.3 * plan.unit * pxPerMm;
+        ctx.beginPath();
+        ctx.moveTo(marginPx, footerTop - footerPlan.gapTop * 0.45 * pxPerMm);
+        ctx.lineTo(page.width - marginPx, footerTop - footerPlan.gapTop * 0.45 * pxPerMm);
+        ctx.stroke();
+        ctx.fillStyle = "#475569";
+        ctx.font = `${footerPlan.size * pxPerMm}px ${KOP_FONT}`;
+        ctx.textBaseline = "top";
+        [["left", footerPlan.left, marginPx], ["right", footerPlan.right, page.width - marginPx]].forEach(([align, lines, x]) => {
+            ctx.textAlign = align;
+            lines.forEach((line, index) => ctx.fillText(line, x, footerTop + index * footerPlan.size * LINE_HEIGHT * pxPerMm));
+        });
 
         onProgress(0.9, settings.format === "pdf" ? "Menyusun PDF…" : "Menyimpan PNG…");
         return { canvas, page, tiles };
@@ -737,9 +985,10 @@
     });
 
     /**
-     * PDF satu halaman berisi satu gambar JPEG (DCTDecode) seukuran kertas.
+     * PDF berisi satu gambar JPEG (DCTDecode) seukuran kertas per halaman.
+     * @param {Array<{jpeg: Uint8Array, width: number, height: number}>} pages
      */
-    function buildPdf(jpeg, imageWidth, imageHeight, widthMm, heightMm, title) {
+    function buildPdf(pages, widthMm, heightMm, title) {
         const encoder = new TextEncoder();
         const chunks = [];
         const offsets = [];
@@ -760,23 +1009,35 @@
         const height = pt(heightMm);
         const content = `q ${width} 0 0 ${height} 0 0 cm /Im0 Do Q`;
         const pdfText = (text) => `(${text.replace(/[\\()]/g, "\\$&").replace(/[^\x20-\x7e]/g, "")})`;
+        // Objek: 1 katalog, 2 daftar halaman, 3 info; tiap halaman = page, gambar, isi (3 objek).
+        const pageObject = (index) => 4 + index * 3;
+        const total = 4 + pages.length * 3;
 
         push("%PDF-1.4\n");
         object(1, () => push("<< /Type /Catalog /Pages 2 0 R >>"));
-        object(2, () => push("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"));
-        object(3, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
-        object(4, () => {
-            push(`<< /Type /XObject /Subtype /Image /Width ${imageWidth} /Height ${imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);
-            push(jpeg);
-            push("\nendstream");
+        object(2, () => push(`<< /Type /Pages /Kids [${pages.map((_, index) => `${pageObject(index)} 0 R`).join(" ")}] /Count ${pages.length} >>`));
+        object(3, () => push(`<< /Title ${pdfText(title)} /Producer (MARIMOI) /Creator (MARIMOI Peta Interaktif) >>`));
+        pages.forEach((page, index) => {
+            const number = pageObject(index);
+            object(number, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /XObject << /Im0 ${number + 1} 0 R >> >> /Contents ${number + 2} 0 R >>`));
+            object(number + 1, () => {
+                push(`<< /Type /XObject /Subtype /Image /Width ${page.width} /Height ${page.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpeg.length} >>\nstream\n`);
+                push(page.jpeg);
+                push("\nendstream");
+            });
+            object(number + 2, () => push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
         });
-        object(5, () => push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
-        object(6, () => push(`<< /Title ${pdfText(title)} /Producer (MARIMOI) /Creator (MARIMOI Peta Interaktif) >>`));
 
         const xref = length;
-        push(`xref\n0 7\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}`);
-        push(`trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF`);
+        push(`xref\n0 ${total}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}`);
+        push(`trailer\n<< /Size ${total} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF`);
         return new Blob(chunks, { type: "application/pdf" });
+    }
+
+    // Canvas → byte JPEG untuk satu halaman PDF.
+    async function canvasJpeg(canvas) {
+        const blob = await canvasBlob(canvas, "image/jpeg", 0.92);
+        return { jpeg: new Uint8Array(await blob.arrayBuffer()), width: canvas.width, height: canvas.height };
     }
 
     function saveBlob(blob, filename) {
@@ -797,6 +1058,82 @@
     }
 
     // ---------------------------------------------------------------------------------------
+    // Pilihan template & pratinjaunya
+    // ---------------------------------------------------------------------------------------
+
+    const escapeText = (value) => String(value ?? "").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]));
+    const PREVIEW_LABELS = { map: "Peta", legend: "Legenda", inset: "Inset", scale: "Skala", north: "U" };
+
+    // Miniatur halaman: kop, judul, kotak elemen sesuai tata letak, dan footer.
+    function templatePreview(template) {
+        const boxes = Object.entries(template.layout).filter(([, box]) => box.enabled).map(([key, box]) =>
+            `<span class="download-preview-box is-${key}" style="left:${box.x}%;top:${box.y}%;width:${box.w}%;height:${box.h}%">${PREVIEW_LABELS[key]}</span>`).join("");
+        const kop = template.header
+            ? `<div class="download-preview-kop" style="border-color:${escapeText(template.accentColor)}">
+                    ${template.header.logoLeft ? `<img src="${escapeText(template.header.logoLeft)}" alt="">` : "<i></i>"}
+                    <span><b class="is-line-1">${escapeText(template.header.line1 || "")}</b><b class="is-line-2">${escapeText(template.header.line2 || "")}</b><span class="is-line-3">${escapeText(template.header.line3 || "")}</span></span>
+                    ${template.header.logoRight ? `<img src="${escapeText(template.header.logoRight)}" alt="">` : "<i></i>"}
+                </div>`
+            : "";
+        return `<div class="download-preview-page is-${template.orientation}">
+                ${kop}
+                <div class="download-preview-title" style="background:${escapeText(template.accentColor)}"></div>
+                <div class="download-preview-content">${boxes}</div>
+                <div class="download-preview-footer"></div>
+            </div>
+            <p class="download-preview-meta"><b>${escapeText(template.name)}</b> · ${template.orientation === "portrait" ? "Potret" : "Lanskap"}${template.description ? `<br>${escapeText(template.description)}` : ""}</p>`;
+    }
+
+    const templatesFor = (orientation) => TEMPLATES.filter((template) => template.orientation === orientation);
+
+    /**
+     * Alur pilihan: orientasi dulu, lalu template berorientasi sama. Template dari dashboard wajib
+     * dipakai bila ada; satu template untuk orientasi itu langsung terpilih tanpa perlu memilih.
+     */
+    function setupTemplates() {
+        const select = el.form.elements.template;
+        el.templatePreview = el.sidebar.querySelector("[data-template-preview]");
+        if (!select || !TEMPLATES.length) {
+            return;
+        }
+        select.closest(".download-field").hidden = false;
+        // Orientasi awal = orientasi template bawaan (urutan pertama).
+        const initial = TEMPLATES[0].orientation;
+        el.form.querySelector(`input[name="orientation"][value="${initial}"]`).checked = true;
+        populateTemplates(initial);
+        syncTemplateControls();
+    }
+
+    function populateTemplates(orientation) {
+        const select = el.form.elements.template;
+        const list = templatesFor(orientation);
+        const keep = list.some((template) => String(template.id) === select.value) ? select.value : null;
+        select.innerHTML = list.map((template, index) => {
+            const selected = keep ? String(template.id) === keep : template.isDefault || index === 0;
+            return `<option value="${template.id}"${selected ? " selected" : ""}>${escapeText(template.name)}</option>`;
+        }).join("");
+        select.hidden = list.length <= 1;
+        el.form.querySelector("[data-template-single]").hidden = list.length !== 1;
+    }
+
+    // Orientasi tanpa template dinonaktifkan; legenda mengikuti template; tampilkan pratinjau.
+    function syncTemplateControls() {
+        const template = readSettings().template;
+        if (TEMPLATES.length) {
+            el.form.querySelectorAll('input[name="orientation"]').forEach((radio) => {
+                const available = templatesFor(radio.value).length > 0;
+                radio.disabled = !available;
+                radio.closest("label").title = available ? "" : "Belum ada template untuk orientasi ini";
+            });
+        }
+        el.form.querySelector("[data-download-legend]").hidden = Boolean(template);
+        if (el.templatePreview) {
+            el.templatePreview.hidden = !template;
+            el.templatePreview.innerHTML = template ? templatePreview(template) : "";
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
     // Alur unduh & panel
     // ---------------------------------------------------------------------------------------
 
@@ -806,6 +1143,10 @@
         el.cancel.hidden = !busy;
         el.progress.hidden = !busy;
         el.form.querySelectorAll("input, select").forEach((input) => { input.disabled = busy; });
+        if (!busy) {
+            // Pulihkan orientasi yang memang tidak punya template.
+            syncTemplateControls();
+        }
     }
 
     function showProgress(ratio, message) {
@@ -835,8 +1176,7 @@
             throwIfCancelled();
             let blob;
             if (settings.format === "pdf") {
-                const jpeg = new Uint8Array(await (await canvasBlob(canvas, "image/jpeg", 0.92)).arrayBuffer());
-                blob = buildPdf(jpeg, canvas.width, canvas.height, page.widthMm, page.heightMm, settings.title);
+                blob = buildPdf([await canvasJpeg(canvas)], page.widthMm, page.heightMm, settings.title);
             } else {
                 blob = await canvasBlob(canvas, "image/png");
             }
@@ -882,8 +1222,16 @@
         frameEl.innerHTML = '<span class="download-frame-label"><i class="bi bi-printer"></i> Area cetak</span>';
         map.getContainer().appendChild(frameEl);
 
+        setupTemplates();
+
         el.form.addEventListener("submit", download);
-        el.form.addEventListener("change", describeOutput);
+        el.form.addEventListener("change", (event) => {
+            if (event.target.name === "orientation" && TEMPLATES.length) {
+                populateTemplates(event.target.value);
+            }
+            syncTemplateControls();
+            describeOutput();
+        });
         el.cancel.addEventListener("click", () => { if (job) job.cancelled = true; });
         new MutationObserver(placeFrame).observe(el.sidebar, { attributes: true, attributeFilter: ["class"] });
         map.on("resize", placeFrame);
@@ -891,5 +1239,6 @@
         describeOutput();
     });
 
-    window.MarimoiDownload = { pageSize, layout, buildPdf };
+    // Dipakai bersama Unduh Analisis (map-analysis.js): kop, footer, teks, dan penyusun PDF yang sama.
+    window.MarimoiDownload = { pageSize, layout, buildPdf, canvasJpeg, saveBlob, loadImage, planKop, drawKop, wrapText, printedAt, KOP_FONT, PT_TO_MM, LINE_HEIGHT };
 })();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
@@ -62,6 +63,11 @@ Route::get('/aspirasi-masyarakat/lacak', fn () => redirect()->to(route('tampil.a
 Route::post('/aspirasi-masyarakat/lacak', [FrontendController::class, 'aspirasiLacakCari'])
     ->name('aspirasi-masyarakat.lacak.cari')
     ->middleware('throttle:6,1');
+
+// Logo kop template dokumen untuk Unduh Peta (satu origin dengan halaman peta) //
+Route::get('/dokumen-template/{documentTemplate}/logo/{slot}', [DocumentTemplateController::class, 'logo'])
+    ->whereIn('slot', ['left', 'right'])
+    ->name('document-templates.logo');
 
 // API GEOJSON //
 Route::get('/geojson', [FrontendController::class, 'getGeojsonByDataType']);
