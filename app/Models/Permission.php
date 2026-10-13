@@ -42,14 +42,8 @@ class Permission extends SpatiePermission
                 'publish' => 'Ubah status Layer (draft/published/archived)',
             ],
         ],
-        'spatial-feedbacks' => [
-            'label' => 'Feedback Pemetaan',
-            'actions' => [
-                'view' => 'Lihat feedback Layer/Data Spasial',
-                'respond' => 'Tanggapi feedback',
-                'delete' => 'Hapus feedback',
-            ],
-        ],
+        // 'spatial-feedbacks' dihapus 2026-10-14 — fitur "Feedback Pemetaan"
+        // di-retire; feedback masyarakat satu pintu lewat 'project-feedbacks'.
         'project-feedbacks' => [
             'label' => 'Feedback Peta',
             'actions' => [

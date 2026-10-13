@@ -305,6 +305,27 @@ class FrontendPagesTest extends TestCase
             ->assertDontSee('>ID<', false);
     }
 
+    public function test_detail_page_shows_feedback_form_for_every_data_type(): void
+    {
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Feedback', 'warna' => '#123456']);
+        $user = User::factory()->create();
+
+        foreach (['tematik', 'proyek_strategis'] as $dataType) {
+            $data = DataSpatial::factory()->create([
+                'user_id' => $user->id,
+                'kategori_id' => $category->id,
+                'data_type' => $dataType,
+            ]);
+
+            $this->get(route('detail.interaktif', $data->uuid))
+                ->assertOk()
+                ->assertSee('id="feedbackForm"', false)
+                ->assertSee('name="data_spatial_id" value="'.$data->id.'"', false)
+                ->assertSee('name="jenis_tanggapan" value="keluhan"', false)
+                ->assertSee('Panduan singkat');
+        }
+    }
+
     public function test_detail_page_shows_dataset_metadata_when_present(): void
     {
         $category = Category::create(['type' => 'tematik', 'nama' => 'Fasilitas Metadata', 'warna' => '#00ff00']);

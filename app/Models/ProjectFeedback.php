@@ -170,7 +170,7 @@ class ProjectFeedback extends Model
             return null;
         }
 
-        return asset('storage/feedback_images/'.$this->laporan_gambar);
+        return asset('storage/aspirasi_lampiran/'.$this->laporan_gambar);
     }
 
     /**

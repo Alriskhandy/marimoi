@@ -16,7 +16,6 @@ use App\Http\Controllers\ProjectFeedbackController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SpatialFeedbackController;
 use App\Http\Controllers\SpatialLayerController;
 use App\Http\Controllers\SpatialLayerFeatureController;
 use App\Http\Controllers\SpatialLayerMetadataController;
@@ -256,19 +255,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Feedback Pemetaan (docs/marimoi v2/04_implementation/
-    | 12-implementasi-perbaikan-pemetaan.md Bagian 3.3)
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('spatial-feedbacks')->name('spatial-feedbacks.')->group(function () {
-        Route::get('/', [SpatialFeedbackController::class, 'index'])->name('index')->middleware('permission:spatial-feedbacks.view');
-        Route::put('/{spatialFeedback}/respond', [SpatialFeedbackController::class, 'respond'])->name('respond')->middleware('permission:spatial-feedbacks.respond');
-        Route::delete('/{spatialFeedback}', [SpatialFeedbackController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-feedbacks.delete');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
     | Project Feedback Routes
     |--------------------------------------------------------------------------
     */
@@ -276,6 +262,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     Route::prefix('project-feedbacks')->name('project-feedbacks.')->group(function () {
         Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index')->middleware('permission:project-feedbacks.view');
         Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store')->middleware('permission:project-feedbacks.respond');
+        Route::get('/data-spatial', [ProjectFeedbackController::class, 'searchDataSpatial'])->name('data-spatial')->middleware('permission:project-feedbacks.respond');
         Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show')->middleware('permission:project-feedbacks.view');
         Route::put('/{id}', [ProjectFeedbackController::class, 'update'])->name('update')->middleware('permission:project-feedbacks.respond');
         Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy')->middleware('permission:project-feedbacks.delete');

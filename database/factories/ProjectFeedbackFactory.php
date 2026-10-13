@@ -9,6 +9,25 @@ class ProjectFeedbackFactory extends Factory
 {
     protected $model = ProjectFeedback::class;
 
+    private const KABUPATEN_KOTA = [
+        'Ternate', 'Tidore Kepulauan', 'Halmahera Barat', 'Halmahera Timur',
+        'Halmahera Utara', 'Halmahera Selatan', 'Kepulauan Sula', 'Halmahera Tengah',
+        'Pulau Morotai', 'Pulau Taliabu',
+    ];
+
+    private const KECAMATAN_BY_KABUPATEN = [
+        'Ternate' => ['Ternate Tengah', 'Ternate Utara', 'Ternate Selatan', 'Pulau Ternate'],
+        'Tidore Kepulauan' => ['Tidore', 'Tidore Timur', 'Tidore Utara', 'Oba'],
+        'Halmahera Barat' => ['Jailolo', 'Jailolo Selatan', 'Sahu', 'Ibu'],
+        'Halmahera Timur' => ['Maba', 'Maba Selatan', 'Wasile', 'Wasile Timur'],
+        'Halmahera Utara' => ['Tobelo', 'Tobelo Barat', 'Tobelo Timur', 'Galela'],
+        'Halmahera Selatan' => ['Labuha', 'Bacan', 'Bacan Timur', 'Makian'],
+        'Kepulauan Sula' => ['Sanana', 'Mangole', 'Taliabu', 'Sulabesi'],
+        'Halmahera Tengah' => ['Weda', 'Patani', 'Patani Barat', 'Gane Barat'],
+        'Pulau Morotai' => ['Morotai Selatan', 'Morotai Timur', 'Morotai Utara', 'Morotai Jaya'],
+        'Pulau Taliabu' => ['Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara', 'Taliabu Selatan'],
+    ];
+
     public function definition(): array
     {
         $projects = [
@@ -21,26 +40,7 @@ class ProjectFeedbackFactory extends Factory
             'Portal Wisata Bahari',
             'Aplikasi Perizinan Tambang',
             'Sistem Keuangan Daerah',
-            'Portal Layanan Masyarakat Kepulauan'
-        ];
-
-        $kabupatenKota = [
-            'Ternate', 'Tidore Kepulauan', 'Halmahera Barat', 'Halmahera Timur',
-            'Halmahera Utara', 'Halmahera Selatan', 'Kepulauan Sula', 'Halmahera Tengah',
-            'Pulau Morotai', 'Pulau Taliabu'
-        ];
-
-        $kecamatanByKabupaten = [
-            'Ternate' => ['Ternate Tengah', 'Ternate Utara', 'Ternate Selatan', 'Pulau Ternate'],
-            'Tidore Kepulauan' => ['Tidore', 'Tidore Timur', 'Tidore Utara', 'Oba'],
-            'Halmahera Barat' => ['Jailolo', 'Jailolo Selatan', 'Sahu', 'Ibu'],
-            'Halmahera Timur' => ['Maba', 'Maba Selatan', 'Wasile', 'Wasile Timur'],
-            'Halmahera Utara' => ['Tobelo', 'Tobelo Barat', 'Tobelo Timur', 'Galela'],
-            'Halmahera Selatan' => ['Labuha', 'Bacan', 'Bacan Timur', 'Makian'],
-            'Kepulauan Sula' => ['Sanana', 'Mangole', 'Taliabu', 'Sulabesi'],
-            'Halmahera Tengah' => ['Weda', 'Patani', 'Patani Barat', 'Gane Barat'],
-            'Pulau Morotai' => ['Morotai Selatan', 'Morotai Timur', 'Morotai Utara', 'Morotai Jaya'],
-            'Pulau Taliabu' => ['Taliabu Timur', 'Taliabu Barat', 'Taliabu Utara', 'Taliabu Selatan']
+            'Portal Layanan Masyarakat Kepulauan',
         ];
 
         $tanggapanTemplates = [
@@ -53,7 +53,7 @@ class ProjectFeedbackFactory extends Factory
             'Sistem backup data bekerja baik meski ada gangguan listrik sering.',
             'Fitur mobile sangat cocok untuk kondisi geografis Maluku Utara.',
             'Integrasi dengan sistem lama perlu penyesuaian untuk kondisi daerah.',
-            'Sangat membantu pelayanan publik di wilayah kepulauan terpencil.'
+            'Sangat membantu pelayanan publik di wilayah kepulauan terpencil.',
         ];
 
         $projects = [
@@ -66,36 +66,37 @@ class ProjectFeedbackFactory extends Factory
             'Portal Wisata Bahari',
             'Aplikasi Perizinan Tambang',
             'Sistem Keuangan Daerah',
-            'Portal Layanan Masyarakat Kepulauan'
+            'Portal Layanan Masyarakat Kepulauan',
         ];
 
-        $selectedKabupaten = $this->faker->randomElement(ProjectFeedback::KABUPATEN_KOTA);
-        $selectedKecamatan = $this->faker->randomElement(ProjectFeedback::KECAMATAN_BY_KABUPATEN[$selectedKabupaten]);
-        
+        $selectedKabupaten = $this->faker->randomElement(self::KABUPATEN_KOTA);
+        $selectedKecamatan = $this->faker->randomElement(self::KECAMATAN_BY_KABUPATEN[$selectedKabupaten]);
+
         // Koordinat realistis untuk Maluku Utara
         $coordinates = $this->getMalukuUtaraCoordinates($selectedKabupaten);
-        
+
         $status = $this->faker->randomElement(['pending', 'ditinjau', 'ditindaklanjuti', 'selesai']);
         $responded = $status === 'selesai' ? $this->faker->boolean(80) : false;
 
         return [
-            'nama_proyek' => $this->faker->randomElement($projects) . ' ' . $selectedKabupaten,
+            'nama_proyek' => $this->faker->randomElement($projects).' '.$selectedKabupaten,
             'nama_pemberi_aspirasi' => $this->faker->name(),
             'kabupaten_kota' => $selectedKabupaten,
             'kecamatan' => $selectedKecamatan,
             'latitude' => $coordinates['lat'] + $this->faker->randomFloat(4, -0.1, 0.1),
             'longitude' => $coordinates['lng'] + $this->faker->randomFloat(4, -0.1, 0.1),
-            'laporan_gambar' => $this->faker->boolean(70) ? 'screenshot_' . strtolower(str_replace(' ', '_', $selectedKabupaten)) . '_' . $this->faker->uuid() . '.jpg' : null,
-            'tanggapan' => $this->faker->randomElement($tanggapanTemplates) . ' ' . $this->faker->sentence(),
+            'laporan_gambar' => $this->faker->boolean(70) ? 'screenshot_'.strtolower(str_replace(' ', '_', $selectedKabupaten)).'_'.$this->faker->uuid().'.jpg' : null,
+            'tanggapan' => $this->faker->randomElement($tanggapanTemplates).' '.$this->faker->sentence(),
             'jenis_tanggapan' => $this->faker->randomElement(['keluhan', 'saran', 'apresiasi', 'pertanyaan']),
             'status' => $status,
-            'email' => $this->faker->firstName() . '.' . $this->faker->lastName() . '@' . strtolower(str_replace(' ', '', $selectedKabupaten)) . '.go.id',
-            'phone' => '0821' . $this->faker->randomNumber(8, true),
+            'email' => $this->faker->firstName().'.'.$this->faker->lastName().'@'.strtolower(str_replace(' ', '', $selectedKabupaten)).'.go.id',
+            'phone' => '0821'.$this->faker->randomNumber(8, true),
             'response_admin' => $responded ? $this->faker->sentence() : null,
             'responded_at' => $responded ? $this->faker->dateTimeBetween('-1 month', 'now') : null,
             'created_at' => $this->faker->dateTimeBetween('-3 months', 'now'),
         ];
     }
+
     public function pending()
     {
         return $this->state([
@@ -136,7 +137,7 @@ class ProjectFeedbackFactory extends Factory
     {
         return $this->state([
             'jenis_tanggapan' => 'keluhan',
-            'tanggapan' => 'Masih ada kendala dalam sistem setelah migrasi. ' . $this->faker->sentence(),
+            'tanggapan' => 'Masih ada kendala dalam sistem setelah migrasi. '.$this->faker->sentence(),
         ]);
     }
 
@@ -144,7 +145,7 @@ class ProjectFeedbackFactory extends Factory
     {
         return $this->state([
             'jenis_tanggapan' => 'saran',
-            'tanggapan' => 'Sebaiknya ditambahkan fitur yang lebih sesuai untuk daerah kepulauan. ' . $this->faker->sentence(),
+            'tanggapan' => 'Sebaiknya ditambahkan fitur yang lebih sesuai untuk daerah kepulauan. '.$this->faker->sentence(),
         ]);
     }
 
@@ -152,7 +153,7 @@ class ProjectFeedbackFactory extends Factory
     {
         return $this->state([
             'jenis_tanggapan' => 'apresiasi',
-            'tanggapan' => 'Sistem berjalan dengan baik dan sangat membantu pelayanan masyarakat. ' . $this->faker->sentence(),
+            'tanggapan' => 'Sistem berjalan dengan baik dan sangat membantu pelayanan masyarakat. '.$this->faker->sentence(),
         ]);
     }
 
@@ -160,32 +161,32 @@ class ProjectFeedbackFactory extends Factory
     {
         return $this->state([
             'jenis_tanggapan' => 'pertanyaan',
-            'tanggapan' => 'Apakah ada rencana pengembangan fitur tambahan? ' . $this->faker->sentence(),
+            'tanggapan' => 'Apakah ada rencana pengembangan fitur tambahan? '.$this->faker->sentence(),
         ]);
     }
 
     public function forKabupaten($kabupaten)
     {
-        if (!in_array($kabupaten, ProjectFeedback::KABUPATEN_KOTA)) {
+        if (! in_array($kabupaten, self::KABUPATEN_KOTA)) {
             throw new \InvalidArgumentException("Kabupaten '$kabupaten' tidak valid untuk Maluku Utara");
         }
 
         $coordinates = $this->getMalukuUtaraCoordinates($kabupaten);
-        $selectedKecamatan = $this->faker->randomElement(ProjectFeedback::KECAMATAN_BY_KABUPATEN[$kabupaten]);
+        $selectedKecamatan = $this->faker->randomElement(self::KECAMATAN_BY_KABUPATEN[$kabupaten]);
 
         return $this->state([
             'kabupaten_kota' => $kabupaten,
             'kecamatan' => $selectedKecamatan,
             'latitude' => $coordinates['lat'] + $this->faker->randomFloat(4, -0.05, 0.05),
             'longitude' => $coordinates['lng'] + $this->faker->randomFloat(4, -0.05, 0.05),
-            'email' => $this->faker->firstName() . '.' . $this->faker->lastName() . '@' . strtolower(str_replace(' ', '', $kabupaten)) . '.go.id',
+            'email' => $this->faker->firstName().'.'.$this->faker->lastName().'@'.strtolower(str_replace(' ', '', $kabupaten)).'.go.id',
         ]);
     }
 
     public function withImage()
     {
         return $this->state([
-            'laporan_gambar' => 'screenshot_' . $this->faker->uuid() . '.jpg',
+            'laporan_gambar' => 'screenshot_'.$this->faker->uuid().'.jpg',
         ]);
     }
 
@@ -222,10 +223,9 @@ class ProjectFeedbackFactory extends Factory
             'Kepulauan Sula' => ['lat' => -1.9833, 'lng' => 125.9667],
             'Halmahera Tengah' => ['lat' => -0.2167, 'lng' => 127.8833],
             'Pulau Morotai' => ['lat' => 2.3167, 'lng' => 128.4167],
-            'Pulau Taliabu' => ['lat' => -1.8333, 'lng' => 124.7833]
+            'Pulau Taliabu' => ['lat' => -1.8333, 'lng' => 124.7833],
         ];
 
         return $coordinates[$kabupaten] ?? ['lat' => 0.7881, 'lng' => 127.3781];
     }
-           
 }

@@ -838,20 +838,13 @@ class FrontendController extends Controller
         return view('frontend.pages.detail', compact('project', 'projectType'));
     }
 
+    /**
+     * Detail fitur dari Peta Interaktif. Semua data spasial memakai halaman detail yang
+     * sama, termasuk form feedback masyarakat.
+     */
     public function detailPetaTematik(Request $request, $uuid)
     {
-        $project = DataSpatial::select('*', DB::raw($this->geojsonSelectSql()))
-            ->with('opdPengelola')
-            ->where('uuid', $uuid)
-            ->firstOrFail();
-
-        $project->increment('views');
-
-        $project->geojson = json_decode($project->geojson);
-
-        $projectType = $this->getProjectTypeFromRequest($request);
-
-        return view('frontend.pages.detailTematik', compact('project', 'projectType'));
+        return $this->detailPeta($request, $uuid);
     }
 
     /**
@@ -939,7 +932,7 @@ class FrontendController extends Controller
 
             // Tambahkan data status = pending (default);
             $data['status'] = 'pending';
-            $data['opd_id'] = $user->opd_id;
+            $data['opd_id'] = $user?->opd_id;
 
             // Handle single file upload langsung
             if ($request->hasFile('laporan_gambar')) {

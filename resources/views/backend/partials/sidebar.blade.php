@@ -9,7 +9,7 @@
         request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('opd.*');
     $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*') || request()->routeIs('document-templates.*');
 
-    $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'spatial-feedbacks.view', 'project-feedbacks.view']);
+    $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'project-feedbacks.view']);
     $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
     $canPublikasi = $user?->can('publications.view');
     $canAspirasiPublikasi = $canAspirasi || $canPublikasi;
@@ -65,18 +65,11 @@
                 <span class="nav-text">Kategori Peta</span>
             </a>
         @endcan
-        @can('spatial-feedbacks.view')
-            <a class="nav-link {{ request()->routeIs('spatial-feedbacks.*') ? 'active' : '' }}"
-                href="{{ route('spatial-feedbacks.index') }}">
-                <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
-                <span class="nav-text">Feedback Pemetaan</span>
-            </a>
-        @endcan
         @can('project-feedbacks.view')
-            <a class="nav-link {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}"
-                href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
+            <a class="nav-link {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}"
+                href="{{ route('project-feedbacks.index') }}">
                 <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
-                <span class="nav-text">Feedback Peta Tematik</span>
+                <span class="nav-text">Feedback Peta</span>
             </a>
         @endcan
 

@@ -85,7 +85,7 @@ class PermissionSeeder extends Seeder
      *
      * @var array<int, string>
      */
-    private const RETIRED_PREFIXES = ['data-spatial.', 'map-types.', 'project-progress.'];
+    private const RETIRED_PREFIXES = ['data-spatial.', 'map-types.', 'project-progress.', 'spatial-feedbacks.'];
 
     public function run(): void
     {
