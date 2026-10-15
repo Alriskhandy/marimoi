@@ -85,22 +85,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the OAuth identities linked to the user (e.g. Google).
-     */
-    public function identities()
-    {
-        return $this->hasMany(UserIdentity::class);
-    }
-
-    /**
-     * Get the history of role/OPD assignments received by the user.
-     */
-    public function roleAssignments()
-    {
-        return $this->hasMany(UserRoleAssignment::class);
-    }
-
-    /**
      * Get the authentication log entries recorded for the user.
      */
     public function authenticationLogs()

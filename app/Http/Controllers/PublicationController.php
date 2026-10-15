@@ -49,11 +49,6 @@ class PublicationController extends Controller
      */
     public function show(Publication $publication)
     {
-        // Load related data
-        $publication->load(['surveys' => function ($query) {
-            $query->latest()->take(5);
-        }]);
-
         return view('publications.show', compact('publication'));
     }
 

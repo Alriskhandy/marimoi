@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * adalah kolom tambahan non-dokumen (lihat migration
  * add_gambar_and_created_by_to_spatial_features_v3_table) — fitur foto
  * per-fitur yang sudah berjalan di admin UI, dipertahankan.
- *
- * Relasi ke SpatialLayerFeatureIntervention (v2) SENGAJA dihapus di sini —
- * tabel itu belum punya rekan v3 dan tidak dipakai di mana pun selain
- * definisi relasinya sendiri (dead code).
  */
 class SpatialLayerFeature extends Model
 {

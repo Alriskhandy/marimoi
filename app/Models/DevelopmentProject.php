@@ -55,11 +55,6 @@ class DevelopmentProject extends Model
         return $this->belongsTo(Sector::class);
     }
 
-    public function locations(): HasMany
-    {
-        return $this->hasMany(ProjectLocation::class);
-    }
-
     public function regions(): BelongsToMany
     {
         return $this->belongsToMany(AdministrativeRegion::class, 'project_regions', 'development_project_id', 'region_id');

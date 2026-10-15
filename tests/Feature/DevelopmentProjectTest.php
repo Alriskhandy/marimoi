@@ -12,7 +12,6 @@ use App\Models\ProjectProgressReport;
 use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DevelopmentProjectTest extends TestCase
@@ -51,18 +50,13 @@ class DevelopmentProjectTest extends TestCase
         $this->assertFalse($result->contains('Aman'));
     }
 
-    public function test_project_has_many_locations_and_regions(): void
+    public function test_project_belongs_to_many_regions(): void
     {
         $project = DevelopmentProject::create(['project_code' => 'UJI-005', 'name' => 'Proyek Lokasi', 'fiscal_year' => 2026]);
         $region = AdministrativeRegion::create(['code_kemendagri' => '82.01', 'name' => 'Halmahera Barat', 'level' => 'kabupaten_kota']);
 
-        $project->locations()->create([
-            'geometry_type' => 'ST_Point',
-            'geometry' => DB::raw('ST_SetSRID(ST_MakePoint(127.5, 0.8), 4326)'),
-        ]);
         $project->regions()->attach($region->id);
 
-        $this->assertCount(1, $project->fresh()->locations);
         $this->assertTrue($project->fresh()->regions->first()->is($region));
     }
 

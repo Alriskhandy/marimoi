@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
@@ -41,11 +40,6 @@ class AdministrativeRegion extends Model
     public function features(): HasMany
     {
         return $this->hasMany(SpatialLayerFeature::class, 'region_id');
-    }
-
-    public function spatialLayers(): BelongsToMany
-    {
-        return $this->belongsToMany(SpatialLayer::class, 'spatial_layer_regions', 'region_id', 'spatial_layer_id');
     }
 
     public function scopeLevel(Builder $query, string $level): Builder

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProjectProgressReport extends Model
 {
@@ -85,10 +84,5 @@ class ProjectProgressReport extends Model
     public function pelapor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'dilaporkan_oleh');
-    }
-
-    public function revisions(): HasMany
-    {
-        return $this->hasMany(ProjectProgressReportRevision::class)->latest();
     }
 }

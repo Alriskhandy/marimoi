@@ -1,4 +1,5 @@
 <?php
+
 // app/Models/Publication.php
 
 namespace App\Models;
@@ -32,27 +33,27 @@ class Publication extends Model
     // Fixed: File URL untuk dokumen_files
     public function getFileUrlAttribute()
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return null;
         }
 
-        return asset('storage/' . $this->file_path);
+        return asset('storage/'.$this->file_path);
     }
 
     // Asset URL untuk dokumen_files
     public function getAssetUrlAttribute()
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return null;
         }
 
-        return asset('storage/' . $this->file_path);
+        return asset('storage/'.$this->file_path);
     }
 
     // Check if file exists
     public function fileExists(): bool
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return false;
         }
 
@@ -62,11 +63,6 @@ class Publication extends Model
     public function downloads(): HasMany
     {
         return $this->hasMany(PublicationDownload::class);
-    }
-
-    public function surveys(): HasMany
-    {
-        return $this->hasMany(Survey::class);
     }
 
     public function incrementDownloadCount(): void
@@ -83,16 +79,6 @@ class Publication extends Model
             $size /= 1024;
         }
 
-        return round($size, 2) . ' ' . $units[$i];
-    }
-
-    public function getAverageRating(): float
-    {
-        return $this->surveys()->avg('rating') ?: 0;
-    }
-
-    public function getTotalSurveys(): int
-    {
-        return $this->surveys()->count();
+        return round($size, 2).' '.$units[$i];
     }
 }

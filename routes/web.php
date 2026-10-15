@@ -5,7 +5,6 @@ use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
 use App\Http\Controllers\SpatialMapController;
-use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VisitorController;
 use Illuminate\Support\Facades\Route;
 
@@ -87,13 +86,6 @@ Route::prefix('dokumen-publikasi')->group(function () {
     Route::get('/', [PublicationController::class, 'index'])->name('tampil.publikasi');
     Route::post('/{publication}/download', [PublicationDownloadController::class, 'processSurveyAndDownload'])->name('download.publikasi');
 });
-
-// Public routes - Survey (untuk guest)
-// Route::prefix('survey')->name('survey.')->group(function () {
-//     Route::get('/', [SurveyController::class, 'showGeneralSurveyForm'])->name('form');
-//     Route::post('/', [SurveyController::class, 'submitGeneralSurvey'])->name('submit');
-//     Route::get('/thank-you', [SurveyController::class, 'thankYou'])->name('thank-you');
-// });
 
 require __DIR__.'/auth.php';
 require __DIR__.'/backend.php';
