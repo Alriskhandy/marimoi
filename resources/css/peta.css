@@ -2158,7 +2158,7 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 .download-form {
     display: grid;
     gap: 14px;
-    max-height: calc(100vh - 190px);
+    align-content: start;
     padding: 2px 4px 12px 2px;
     scrollbar-width: thin;
     scrollbar-color: rgba(10, 132, 255, .45) transparent;
@@ -2323,5 +2323,4 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 /* Ponsel: panel jadi lembar bawah agar bingkai area cetak tetap terlihat di atasnya. */
 @media (max-width: 767px) {
     #map-section #sidebar-download { top: auto; bottom: 12px; height: 54vh; }
-    #map-section #sidebar-download .download-form { max-height: calc(54vh - 76px); }
 }

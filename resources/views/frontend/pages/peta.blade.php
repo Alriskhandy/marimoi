@@ -379,10 +379,10 @@
 
                 {{-- Panel Unduh Peta (map-download.js): area cetak = bingkai pratinjau di peta. --}}
                 <div id="sidebar-download"
-                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden">
+                    class="absolute top-0 right-0 w-[320px] md:w-[340px] h-screen bg-slate-50 border border-gray-300 p-4 shadow-lg z-[101] transition-all duration-300 ease-in-out text-gray-900 hidden flex flex-col">
 
                     <div
-                        class="flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
+                        class="shrink-0 flex justify-between items-center mb-3 bg-gradient-to-br from-[#007fff] to-[#0066cc] text-white py-1 px-2 rounded w-full">
                         <h6 class="text-white mb-0 text-sm font-semibold">Unduh Peta</h6>
                         <button id="btn-close-sidebar-download" type="button" aria-label="Tutup panel unduh peta"
                             class="text-sm p-1 hover:bg-white/20 rounded transition-colors">
@@ -390,7 +390,7 @@
                         </button>
                     </div>
 
-                    <form id="download-form" class="download-form" novalidate>
+                    <form id="download-form" class="download-form flex-1 min-h-0" novalidate>
                         <p class="download-hint"><i class="bi bi-bounding-box"></i> Area di dalam bingkai pada peta yang akan diunduh. Geser atau perbesar peta untuk mengaturnya.</p>
 
                         <label class="download-field">
