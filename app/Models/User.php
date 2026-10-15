@@ -163,7 +163,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is a public user (Google login)
+     * Check if user is a public user
      */
     public function isPublik()
     {

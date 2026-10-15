@@ -17,7 +17,7 @@ class LoginPageTest extends TestCase
         $response->assertSee('name="email"', false);
         $response->assertSee('name="password"', false);
         $response->assertSee('name="remember"', false);
-        $response->assertSee(route('login.google'), false);
+        $response->assertDontSee('/login/google', false);
         $response->assertSee('h-captcha', false);
         $response->assertDontSee('bootstrap', false);
     }

@@ -41,10 +41,4 @@ return [
         'secret' => env('H_CAPTCHA_SECRET'),
     ],
 
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => '/login/google/callback',
-    ],
-
 ];

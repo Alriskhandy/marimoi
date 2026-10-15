@@ -11,8 +11,8 @@ use Illuminate\Validation\Rule;
 class RoleController extends Controller
 {
     /**
-     * Slug yang menjadi ketergantungan langsung kode aplikasi (middleware,
-     * pengecekan role, dan provisioning login Google) sehingga tidak boleh
+     * Slug yang menjadi ketergantungan langsung kode aplikasi (middleware
+     * dan pengecekan role) sehingga tidak boleh
      * dihapus atau diubah melalui menu manajemen role.
      */
     private const RESERVED_SLUGS = ['super-admin', 'admin-bappeda', 'admin-opd', 'user'];
