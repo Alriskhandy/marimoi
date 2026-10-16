@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Existing routes (non-versioned)
-Route::apiResource('project-feedbacks', ProjectFeedbackController::class);
+// index() renders the authenticated backend dashboard view, not a public JSON listing
+Route::apiResource('project-feedbacks', ProjectFeedbackController::class)->except('index');
 Route::post('project-feedbacks/{feedback}/respond', [ProjectFeedbackController::class, 'respond']);
 Route::get('project-feedbacks-statistics', [ProjectFeedbackController::class, 'statistics']);
 Route::get('project-feedbacks-location', [ProjectFeedbackController::class, 'byLocation']);
@@ -39,4 +40,3 @@ Route::prefix('v1')
 
         Route::get('web-statistics', [WebStatisticController::class, 'index']);
     });
-

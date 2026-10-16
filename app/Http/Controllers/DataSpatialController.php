@@ -2,29 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\DataSpatial;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\File;
-use Shapefile\ShapefileReader;
-use Illuminate\Support\Facades\Validator;
-use ZipArchive;
+use App\Models\LegacyCategory as Category;
+use App\Models\Opd;
+use App\Support\MapDataVersion;
 use DOMDocument;
 use DOMXPath;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Shapefile\ShapefileReader;
+use ZipArchive;
 
 class DataSpatialController extends Controller
 {
-
     protected function isAdminOPD()
     {
         return Auth::user()?->role?->slug === 'admin-opd';
     }
+
+    private function metadataWajib(): bool
+    {
+        return now()->greaterThanOrEqualTo(Carbon::parse(config('marimoi.metadata_wajib_sejak')));
+    }
+
     public function index(Request $request)
     {
         // Increase memory limit temporarily
@@ -41,12 +50,7 @@ class DataSpatialController extends Controller
         $perPage = min($perPage, 500);
 
         // Validate type
-        if (!in_array($type, ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'proyek_strategis'])) {
-            return redirect()->back();
-        }
-
-        // Validate sub_type for proyek strategis
-        if ($type === 'proyek_strategis' && !in_array($subType, ['psd', 'psn'])) {
+        if ($type !== 'tematik') {
             return redirect()->back();
         }
 
@@ -59,6 +63,9 @@ class DataSpatialController extends Controller
                 'sub_type',
                 'tahun',
                 'deskripsi',
+                'sumber_data',
+                'opd_pengelola_id',
+                'tanggal_data',
                 'kategori_id',
                 'user_id',
                 'created_at',
@@ -67,11 +74,6 @@ class DataSpatialController extends Controller
         // Filter by data type
         $query->where('data_type', $type);
 
-        // Filter by sub type for proyek strategis
-        if ($subType && $type === 'proyek_strategis') {
-            $query->where('sub_type', $subType);
-        }
-
         // Filter by year if provided
         if ($year) {
             $query->where('tahun', $year);
@@ -79,7 +81,7 @@ class DataSpatialController extends Controller
 
         // Filter by category if provided
         if ($categoryId) {
-            $query->where('kategori_id', $categoryId);
+            $query->whereIn('kategori_id', Category::selfAndDescendantIds((int) $categoryId));
         }
 
         // Search functionality
@@ -97,7 +99,7 @@ class DataSpatialController extends Controller
         $user = Auth::user();
         $userRole = $user->role->slug ?? null;
 
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda'])) {
             $query->where('user_id', $user->id);
         }
 
@@ -114,12 +116,7 @@ class DataSpatialController extends Controller
             ])
             ->roots();
 
-        if ($type === 'proyek_strategis') {
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            $categoryType = $this->getCategoryTypeByDataType($type, $subType);
-            $categories = $categoriesQuery->where('type', $categoryType)->get();
-        }
+        $categories = $categoriesQuery->where('type', 'tematik')->get();
 
         return view('backend.pages.data_spatial.index', compact(
             'data',
@@ -131,37 +128,32 @@ class DataSpatialController extends Controller
         ));
     }
 
+    public function map(Request $request)
+    {
+        $categories = Category::with(['children.children.children'])
+            ->roots()
+            ->where('type', 'tematik')
+            ->orderBy('nama')
+            ->get();
+
+        return view('backend.pages.data_spatial.map', compact('categories'));
+    }
 
     public function create(Request $request)
     {
-        $dataType = $request->get('type');
-        $subType = $request->get('sub_type');
+        $dataType = 'tematik';
+        $subType = null;
         $year = $request->get('year');
 
-        // Tentukan kategori berdasarkan data type dan sub type
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-        // Query kategori
-        $categoriesQuery = Category::with('children')->roots();
-
-        // Logika untuk menentukan filter kategori
-        if ($dataType === 'proyek_strategis' && in_array($subType, ['psd', 'psn'])) {
-            // Untuk proyek strategis, gunakan sub_type sebagai type
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            // Untuk data type lain, gunakan category type
-            if ($subType) {
-                $categories = $categoriesQuery->where('sub_type', $categoryType)->get();
-            } else {
-                $categories = $categoriesQuery->where('type', $categoryType)->get();
-            }
-        }
+        $categories = Category::with('children')->roots()->where('type', 'tematik')->get();
+        $opdList = Opd::orderBy('name')->get();
 
         return view('backend.pages.data_spatial.create', compact(
             'categories',
             'dataType',
             'subType',
-            'year'
+            'year',
+            'opdList'
         ));
     }
 
@@ -169,18 +161,26 @@ class DataSpatialController extends Controller
     {
         // dd($request->all());
         // Validasi dasar
+        $wajibMetadata = $this->metadataWajib();
+
         $rules = [
-            'data_type' => 'required|in:tematik,usulan_musrenbang,pokir_dprd,proyek_strategis',
+            // Dulu `exists:map_types,slug`. Tabel itu di-drop 2026-10-10
+            // bersama modul "Jenis Peta" (migration drop_map_types_tables),
+            // jadi rule-nya diturunkan ke validasi string biasa. Controller
+            // ini sendiri sudah tidak diroutekan sejak modul Data Spasial
+            // lama di-retire (lihat routes/backend lama.txt) — diubah di sini
+            // semata agar tidak ada lagi acuan ke tabel yang sudah hilang.
+            'data_type' => 'required|string|max:50',
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',
+            'sumber_data' => [$wajibMetadata ? 'required' : 'nullable', 'string', 'max:255'],
+            'opd_pengelola_id' => [
+                ($wajibMetadata && ! $this->isAdminOPD()) ? 'required' : 'nullable',
+                'exists:opd,id',
+            ],
+            'tanggal_data' => [$wajibMetadata ? 'required' : 'nullable', 'date'],
         ];
-
-        // Validasi tambahan untuk proyek strategis
-        if ($request->data_type === 'proyek_strategis') {
-            $rules['sub_type'] = 'required|in:psn,psd';
-            $rules['tahun'] = 'required|integer|min:2000|max:2050';
-        }
 
         $request->validate($rules);
 
@@ -215,10 +215,12 @@ class DataSpatialController extends Controller
             return $this->getRedirectAfterStore($request, $message);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error storing data spatial: ' . $e->getMessage());
-            return back()->withErrors(['Gagal menyimpan data: ' . $e->getMessage()])->withInput();
+            Log::error('Error storing data spatial: '.$e->getMessage());
+
+            return back()->withErrors(['Gagal menyimpan data: '.$e->getMessage()])->withInput();
         }
     }
+
     public function edit($uuid)
     {
         // Ambil data dengan relasi kategori
@@ -226,52 +228,56 @@ class DataSpatialController extends Controller
             ->where('uuid', $uuid)
             ->firstOrFail();
 
-
         // Ambil data type dan sub type dari data yang ada
         $dataType = $data->data_type;
         $subType = $data->sub_type;
         $year = $data->tahun;
 
-        // Tentukan kategori berdasarkan data type dan sub type
-        $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-
-        // Get categories
-        $categoriesQuery = Category::select(['id', 'nama', 'type', 'parent_id'])
+        $categories = Category::select(['id', 'nama', 'type', 'parent_id'])
             ->with(['children:id,nama,parent_id'])
-            ->roots();
-
-        if ($dataType === 'proyek_strategis') {
-            $categories = $categoriesQuery->where('type', $subType)->get();
-        } else {
-            $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
-            $categories = $categoriesQuery->where('type', $categoryType)->get();
-        }
+            ->roots()
+            ->where('type', 'tematik')
+            ->get();
+        $opdList = Opd::orderBy('name')->get();
 
         return view('backend.pages.data_spatial.edit', compact(
             'data',
             'categories',
             'dataType',
             'subType',
-            'year'
+            'year',
+            'opdList'
         ));
     }
-
 
     public function update(Request $request, $id)
     {
         // dd($request->kategori_id);
+        $wajibMetadata = $this->metadataWajib();
+
         $validator = Validator::make($request->all(), [
             'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string|max:255',
             'dbf_attributes' => 'nullable|string',
-            'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048' // Validasi gambar
+            'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048', // Validasi gambar
+            'sumber_data' => [$wajibMetadata ? 'required' : 'nullable', 'string', 'max:255'],
+            'opd_pengelola_id' => [
+                ($wajibMetadata && ! $this->isAdminOPD()) ? 'required' : 'nullable',
+                'exists:opd,id',
+            ],
+            'tanggal_data' => [$wajibMetadata ? 'required' : 'nullable', 'date'],
         ], [
             'kategori_id.required' => 'Kategori harus dipilih',
             'kategori_id.exists' => 'Kategori tidak valid',
             'deskripsi.max' => 'Deskripsi maksimal 255 karakter',
             'gambar.image' => 'File harus berupa gambar',
             'gambar.mimes' => 'Format gambar harus jpeg, jpg, png, atau gif',
-            'gambar.max' => 'Ukuran gambar maksimal 2MB'
+            'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            'sumber_data.required' => 'Sumber data wajib diisi.',
+            'opd_pengelola_id.required' => 'OPD pengelola wajib dipilih.',
+            'opd_pengelola_id.exists' => 'OPD pengelola tidak valid.',
+            'tanggal_data.required' => 'Tanggal data wajib diisi.',
+            'tanggal_data.date' => 'Tanggal data tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -282,7 +288,7 @@ class DataSpatialController extends Controller
 
         try {
             $data = DataSpatial::find($id);
-            if (!$data) {
+            if (! $data) {
                 return redirect()->route('data-spatial.index')
                     ->with('error', 'Data tidak ditemukan');
             }
@@ -294,7 +300,7 @@ class DataSpatialController extends Controller
                 $dbfAttributes = json_decode($json, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     return redirect()->back()
-                        ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: ' . json_last_error_msg()])
+                        ->withErrors(['dbf_attributes' => 'Format JSON atribut tidak valid: '.json_last_error_msg()])
                         ->withInput();
                 }
             }
@@ -310,7 +316,7 @@ class DataSpatialController extends Controller
 
                 // Store new image
                 $file = $request->file('gambar');
-                $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                $fileName = time().'_'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
                 $imagePath = $file->storeAs('images/spatial', $fileName, 'public');
             }
 
@@ -319,6 +325,11 @@ class DataSpatialController extends Controller
             $data->deskripsi = $request->deskripsi;
             $data->dbf_attributes = $dbfAttributes;
             $data->gambar = $imagePath;
+            $data->sumber_data = $request->sumber_data;
+            $data->opd_pengelola_id = $this->isAdminOPD()
+                ? Auth::user()->opd_id
+                : $request->opd_pengelola_id;
+            $data->tanggal_data = $request->tanggal_data;
             $data->save();
 
             Log::info('Data spatial updated successfully', [
@@ -326,7 +337,7 @@ class DataSpatialController extends Controller
                 'data_type' => $data->data_type,
                 'kategori_id' => $request->kategori_id,
                 'attributes_count' => count($dbfAttributes),
-                'image_uploaded' => $request->hasFile('gambar')
+                'image_uploaded' => $request->hasFile('gambar'),
             ]);
 
             return $this->getRedirectAfterUpdate($data)
@@ -337,18 +348,16 @@ class DataSpatialController extends Controller
                 Storage::disk('public')->delete($imagePath);
             }
 
-            Log::error('Error updating data spatial: ' . $e->getMessage(), [
+            Log::error('Error updating data spatial: '.$e->getMessage(), [
                 'id' => $id,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->back()
-                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()])
+                ->withErrors(['error' => 'Terjadi kesalahan saat memperbarui data: '.$e->getMessage()])
                 ->withInput();
         }
     }
-
-
 
     // === METHODS KHUSUS BERDASARKAN DATA TYPE ===
 
@@ -372,96 +381,156 @@ class DataSpatialController extends Controller
         return view('backend.pages.data_spatial.index', compact('data', 'categories'));
     }
 
-
-    public function indexUsulanMusrenbang(Request $request)
+    /**
+     * Unduh hasil gambar/ukur di peta sebagai KMZ atau KML.
+     */
+    public function exportDrawings(Request $request)
     {
-        if ($request->get('type') !== 'usulan_musrenbang') {
-            return redirect()->back();
+        $validated = $request->validate([
+            'format' => 'required|in:kmz,kml',
+            'features' => 'required|array|min:1',
+            'features.*.type' => 'required|in:Point,LineString,Polygon',
+            'features.*.name' => 'nullable|string|max:255',
+            'features.*.coordinates' => 'required|array',
+        ]);
+
+        $placemarks = '';
+
+        foreach ($validated['features'] as $index => $feature) {
+            $geometry = $this->drawingGeometryToKml($feature['type'], $feature['coordinates']);
+
+            if ($geometry === null) {
+                throw ValidationException::withMessages([
+                    "features.{$index}.coordinates" => 'Koordinat tidak valid.',
+                ]);
+            }
+
+            $name = htmlspecialchars($feature['name'] ?? 'Objek '.($index + 1), ENT_XML1);
+            $placemarks .= "    <Placemark>\n      <name>{$name}</name>\n      <styleUrl>#gambar</styleUrl>\n      {$geometry}\n    </Placemark>\n";
         }
 
-        $query = DataSpatial::with('kategori')
-            ->where('data_type', 'usulan_musrenbang');
+        $kml = <<<KML
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Gambar Peta MARIMOI</name>
+    <Style id="gambar">
+      <LineStyle><color>fffd6e0d</color><width>4</width></LineStyle>
+      <PolyStyle><color>66fd6e0d</color></PolyStyle>
+    </Style>
+{$placemarks}  </Document>
+</kml>
+KML;
 
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
+        if ($validated['format'] === 'kml') {
+            return response($kml, 200, [
+                'Content-Type' => 'application/vnd.google-earth.kml+xml',
+                'Content-Disposition' => 'attachment; filename="gambar-peta.kml"',
+            ]);
         }
 
-        $data = $query->get();
+        $path = tempnam(sys_get_temp_dir(), 'kmz');
+        $zip = new ZipArchive;
 
-        $categories = Category::musenbangs()->with('children')->roots()->get();
+        if ($zip->open($path, ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Gagal membuat file KMZ.');
+        }
 
-        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
+        $zip->addFromString('doc.kml', $kml);
+        $zip->close();
+
+        return response()->download($path, 'gambar-peta.kmz', [
+            'Content-Type' => 'application/vnd.google-earth.kmz',
+        ])->deleteFileAfterSend(true);
     }
 
-    public function indexPokirDprd(Request $request)
+    /**
+     * @param  array<int, mixed>  $coordinates  Koordinat GeoJSON ([lng, lat]).
+     */
+    private function drawingGeometryToKml(string $type, array $coordinates): ?string
     {
-        if ($request->get('type') !== 'pokir_dprd') {
-            return redirect()->back();
+        $toPosition = function ($position): ?string {
+            if (! is_array($position) || count($position) < 2 || ! is_numeric($position[0]) || ! is_numeric($position[1])) {
+                return null;
+            }
+
+            $lng = (float) $position[0];
+            $lat = (float) $position[1];
+
+            if (abs($lng) > 180 || abs($lat) > 90) {
+                return null;
+            }
+
+            return "{$lng},{$lat},0";
+        };
+
+        $toList = function (array $positions) use ($toPosition): ?string {
+            $converted = array_map($toPosition, $positions);
+
+            return in_array(null, $converted, true) ? null : implode(' ', $converted);
+        };
+
+        if ($type === 'Point') {
+            $position = $toPosition($coordinates);
+
+            return $position === null ? null : "<Point><coordinates>{$position}</coordinates></Point>";
         }
 
-        $query = DataSpatial::with('kategori')
-            ->where('data_type', 'pokir_dprd');
+        if ($type === 'LineString') {
+            $list = count($coordinates) >= 2 ? $toList($coordinates) : null;
 
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
+            return $list === null ? null : "<LineString><tessellate>1</tessellate><coordinates>{$list}</coordinates></LineString>";
         }
 
-        $data = $query->get();
+        $ring = $coordinates[0] ?? null;
+        $list = is_array($ring) && count($ring) >= 4 ? $toList($ring) : null;
 
-        $categories = Category::pokirDprds()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories'));
+        return $list === null
+            ? null
+            : "<Polygon><outerBoundaryIs><LinearRing><coordinates>{$list}</coordinates></LinearRing></outerBoundaryIs></Polygon>";
     }
-
-    public function indexProyekStrategisDaerah($year = null)
-    {
-        $query = DataSpatial::where('sub_type', 'psd');
-
-        if ($year) {
-            $query->where('tahun', $year);
-        }
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->paginate(100);
-
-        $categories = Category::psd()->with('children')->roots()->get();
-
-        $statistics = null;
-        if ($year) {
-            $statistics = [
-                'total' => $data->count(),
-                'categories' => $data->groupBy('kategori_id')->map->count(),
-                'year' => $year
-            ];
-        }
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year', 'statistics'));
-    }
-
-    public function indexProyekStrategisNasional($year = null)
-    {
-        $query = DataSpatial::where('sub_type', 'psn');
-
-        if ($year) {
-            $query->where('tahun', $year);
-        }
-
-        if ($this->isAdminOPD()) {
-            $query->where('user_id', Auth::user()->id);
-        }
-
-        $data = $query->paginate(100);
-
-        $categories = Category::psn()->with('children')->roots()->get();
-
-        return view('backend.pages.data_spatial.index', compact('data', 'categories', 'year'));
-    }
-
 
     // === GEOJSON METHODS ===
+
+    /**
+     * Versi data sebuah layer peta. Berubah setiap kali ada data yang ditambah, diubah, dihapus,
+     * dipindah kategori, atau kategorinya diubah (nama/warna/ikon), sehingga klien dapat memakai
+     * cache dengan aman: cache hanya dipakai bila versinya masih sama.
+     */
+    public function geojsonVersion(Request $request)
+    {
+        $user = Auth::user();
+
+        $query = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
+            ->whereNotNull('data_spatial.geom');
+
+        // Cakupan yang sama dengan geojson(): selain admin, hanya data milik sendiri.
+        if (! in_array($user->role->slug ?? null, ['super-admin', 'admin-bappeda'])) {
+            $query->where('data_spatial.user_id', $user->id);
+        }
+
+        if ($request->filled('data_type')) {
+            $query->where('data_spatial.data_type', $request->get('data_type'));
+        }
+
+        if ($request->filled('category_id')) {
+            $query->whereIn('data_spatial.kategori_id', Category::selfAndDescendantIds((int) $request->get('category_id')));
+        }
+
+        $row = $query->selectRaw(
+            'count(data_spatial.id) as total,
+             max(data_spatial.updated_at) as data_updated,
+             max(categories.updated_at) as category_updated,
+             coalesce(sum(data_spatial.kategori_id), 0) as category_sum'
+        )->first();
+
+        return response()->json([
+            'user' => $user->id,
+            'total' => (int) $row->total,
+            'version' => md5(json_encode($row)),
+        ]);
+    }
 
     public function geojson(Request $request)
     {
@@ -473,6 +542,7 @@ class DataSpatialController extends Controller
             ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->select(
                 'data_spatial.id',
+                'data_spatial.uuid',
                 'data_spatial.data_type',
                 'data_spatial.sub_type',
                 'data_spatial.kategori_id',
@@ -483,8 +553,16 @@ class DataSpatialController extends Controller
                 'categories.icon',
                 'categories.warna',
                 'categories.is_marker',
-                DB::raw('ST_AsGeoJSON(data_spatial.geom) as geojson')
-            );
+                DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Force2D(data_spatial.geom), 0.0001), 6) as geojson')
+            )
+            ->whereNotNull('data_spatial.geom');
+
+        // Filter berdasarkan role pengguna, sama seperti index()
+        $user = Auth::user();
+        $userRole = $user->role->slug ?? null;
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            $query->where('data_spatial.user_id', $user->id);
+        }
 
         // Filter berdasarkan data type
         if ($dataType) {
@@ -501,38 +579,50 @@ class DataSpatialController extends Controller
             $query->where('data_spatial.tahun', $year);
         }
 
-        // Filter kategori
-        if ($request->has('kategori') && !empty($request->kategori)) {
+        // Filter kategori (berdasarkan nama)
+        if ($request->has('kategori') && ! empty($request->kategori)) {
             $categories = is_array($request->kategori) ? $request->kategori : [$request->kategori];
             $query->whereIn('categories.nama', $categories);
         }
 
+        // Filter kategori (berdasarkan id), konsisten dengan filter di index()
+        if ($request->filled('category_id')) {
+            $query->whereIn('data_spatial.kategori_id', Category::selfAndDescendantIds((int) $request->category_id));
+        }
+
         // Filter atribut DBF
-        if ($request->has('dbf_filter') && !empty($request->dbf_filter)) {
+        if ($request->has('dbf_filter') && ! empty($request->dbf_filter)) {
             foreach ($request->dbf_filter as $attribute => $value) {
-                $query->whereRaw("dbf_attributes->? = ?", [$attribute, json_encode($value)]);
+                $query->whereRaw('dbf_attributes->? = ?', [$attribute, json_encode($value)]);
             }
         }
 
         // Search
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->has('search') && ! empty($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('categories.nama', 'ILIKE', "%{$search}%")
                     ->orWhere('data_spatial.deskripsi', 'ILIKE', "%{$search}%")
-                    ->orWhereRaw("dbf_attributes::text ILIKE ?", ["%{$search}%"]);
+                    ->orWhereRaw('dbf_attributes::text ILIKE ?', ["%{$search}%"]);
             });
         }
 
         // BBOX
-        if ($request->has('bbox') && !empty($request->bbox)) {
+        if ($request->has('bbox') && ! empty($request->bbox)) {
             $bbox = explode(',', $request->bbox);
             if (count($bbox) === 4) {
-                $query->whereRaw("ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))", $bbox);
+                $query->whereRaw('ST_Intersects(data_spatial.geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))', $bbox);
             }
         }
 
-        $data = $query->get();
+        // Batasi jumlah fitur yang dikembalikan agar tidak menghabiskan memori
+        // saat data sangat banyak (mis. ribuan poligon tematik).
+        $totalMatching = (clone $query)->count();
+        $limit = min((int) $request->get('limit', 500), 2000);
+        $offset = max((int) $request->get('offset', 0), 0);
+
+        // Urutan stabil agar pemuatan bertahap (offset) tidak menggandakan/melewatkan data.
+        $data = $query->orderBy('data_spatial.id')->offset($offset)->limit($limit)->get();
 
         $features = $data->map(function ($item) {
             $dbfAttributes = json_decode($item->dbf_attributes, true) ?? [];
@@ -541,6 +631,7 @@ class DataSpatialController extends Controller
                 'type' => 'Feature',
                 'properties' => array_merge([
                     'id' => $item->id,
+                    'uuid' => $item->uuid,
                     'data_type' => $item->data_type,
                     'sub_type' => $item->sub_type,
                     'kategori_id' => $item->kategori_id,
@@ -580,10 +671,14 @@ class DataSpatialController extends Controller
                 'sub_type' => $subType,
                 'year' => $year,
                 'total_features' => $features->count(),
+                'total_matching' => $totalMatching,
+                'truncated' => $totalMatching > $limit,
+                'offset' => $offset,
+                'has_more' => $offset + $features->count() < $totalMatching,
                 'total_root_categories' => $rootCategories->count(),
                 'total_categories' => $allCategories->count(),
-                'generated_at' => now()->toISOString()
-            ]
+                'generated_at' => now()->toISOString(),
+            ],
         ]);
     }
 
@@ -598,7 +693,7 @@ class DataSpatialController extends Controller
         ]);
 
         $folder = storage_path('app/shapefiles');
-        if (!file_exists($folder)) {
+        if (! file_exists($folder)) {
             mkdir($folder, 0755, true);
         }
         File::cleanDirectory($folder);
@@ -610,7 +705,7 @@ class DataSpatialController extends Controller
 
         $shpPath = "$folder/data.shp";
 
-        if (!file_exists($shpPath)) {
+        if (! file_exists($shpPath)) {
             throw new \Exception('Gagal menyimpan file shapefile.');
         }
 
@@ -618,7 +713,9 @@ class DataSpatialController extends Controller
         $recordCount = 0;
 
         while ($geometry = $reader->fetchRecord()) {
-            if ($geometry->isDeleted()) continue;
+            if ($geometry->isDeleted()) {
+                continue;
+            }
 
             $wkt = $geometry->getWKT();
             $dbfData = $geometry->getDataArray();
@@ -675,7 +772,7 @@ class DataSpatialController extends Controller
                 'NAMA' => $name,
                 'LATITUDE' => $lat,
                 'LONGITUDE' => $lng,
-                'INPUT_TYPE' => 'manual_coordinates'
+                'INPUT_TYPE' => 'manual_coordinates',
             ];
 
             // Tentukan deskripsi
@@ -705,7 +802,7 @@ class DataSpatialController extends Controller
         $extension = $file->getClientOriginalExtension();
 
         $tempDir = storage_path('app/temp_kmz');
-        if (!file_exists($tempDir)) {
+        if (! file_exists($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
         File::cleanDirectory($tempDir);
@@ -714,11 +811,11 @@ class DataSpatialController extends Controller
 
         if ($extension === 'kmz') {
             // Extract KMZ file
-            $kmzPath = $tempDir . '/temp.kmz';
+            $kmzPath = $tempDir.'/temp.kmz';
             $file->move($tempDir, 'temp.kmz');
 
             $zip = new ZipArchive;
-            if ($zip->open($kmzPath) === TRUE) {
+            if ($zip->open($kmzPath) === true) {
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     $filename = $zip->getNameIndex($i);
                     if (pathinfo($filename, PATHINFO_EXTENSION) === 'kml') {
@@ -735,7 +832,7 @@ class DataSpatialController extends Controller
             $kmlContent = file_get_contents($file->getRealPath());
         }
 
-        if (!$kmlContent) {
+        if (! $kmlContent) {
             throw new \Exception('Tidak dapat menemukan file KML dalam arsip.');
         }
 
@@ -744,7 +841,7 @@ class DataSpatialController extends Controller
 
     private function parseKmlContent($kmlContent, $request)
     {
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($kmlContent);
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('kml', 'http://www.opengis.net/kml/2.2');
@@ -767,7 +864,7 @@ class DataSpatialController extends Controller
                     'NAMA' => $nameText,
                     'DESCRIPTION' => $descText,
                     'INPUT_TYPE' => 'kmz_import',
-                    'ORIGINAL_FILE' => $request->file('kmz_file')->getClientOriginalName()
+                    'ORIGINAL_FILE' => $request->file('kmz_file')->getClientOriginalName(),
                 ];
 
                 $finalDescription = $request->deskripsi ?: $nameText;
@@ -796,7 +893,7 @@ class DataSpatialController extends Controller
                 'deskripsi' => $description,
                 'dbf_attributes' => $dbfAttributes,
 
-                'geom' => DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$wkt}'), 4326), 4326)")
+                'geom' => DB::raw("ST_Transform(ST_SetSRID(ST_GeomFromText('{$wkt}'), 4326), 4326)"),
             ];
 
             // Tambahkan sub_type dan tahun jika ada
@@ -808,10 +905,22 @@ class DataSpatialController extends Controller
                 $data['tahun'] = $request->tahun;
             }
 
+            if ($request->filled('sumber_data')) {
+                $data['sumber_data'] = $request->sumber_data;
+            }
+
+            $data['opd_pengelola_id'] = $this->isAdminOPD()
+                ? Auth::user()->opd_id
+                : $request->opd_pengelola_id;
+
+            if ($request->filled('tanggal_data')) {
+                $data['tanggal_data'] = $request->tanggal_data;
+            }
+
             $data['user_id'] = Auth::user()->id;
             DataSpatial::create($data);
         } catch (\Exception $e) {
-            Log::error('Failed to save DataSpatial: ' . $e->getMessage());
+            Log::error('Failed to save DataSpatial: '.$e->getMessage());
             throw $e;
         }
     }
@@ -820,8 +929,8 @@ class DataSpatialController extends Controller
     {
         $category = Category::find($request->kategori_id);
 
-        if (!$category) {
-            throw new \Exception("Kategori tidak ditemukan.");
+        if (! $category) {
+            throw new \Exception('Kategori tidak ditemukan.');
         }
 
         $expectedType = $this->getCategoryTypeByDataType(
@@ -836,40 +945,19 @@ class DataSpatialController extends Controller
 
     private function getCategoryTypeByDataType($dataType, $subType = null)
     {
-        return match ($dataType) {
-            'tematik' => 'tematik',
-            'usulan_musrenbang' => 'usulan_musrenbang',
-            'pokir_dprd' => 'pokir_dprd',
-            'proyek_strategis' => in_array($subType, ['psn', 'psd']) ? $subType : 'psd',
-            default => 'tematik',
-        };
+        return 'tematik';
     }
-
 
     private function getDefaultNameByDataType($dataType, $index)
     {
         return match ($dataType) {
             'tematik' => "Tematik {$index}",
-            'usulan_musrenbang' => "Usulan Musrenbang {$index}",
-            'pokir_dprd' => "Pokir DPRD {$index}",
-            'proyek_strategis' => "Proyek Strategis {$index}",
             default => "Data {$index}"
         };
     }
 
     private function getRedirectAfterStore(Request $request, $message)
     {
-        if ($request->data_type === 'proyek_strategis') {
-            if ($request->has('tahun')) {
-                $routeName = $request->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-                return redirect()->route($routeName, ['year' => $request->tahun])
-                    ->with('success', $message);
-            }
-
-            $routeName = $request->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-            return redirect()->route($routeName)->with('success', $message);
-        }
-
         // Redirect dinamis ke data-spatial.index dengan query string
         return redirect()->route('data-spatial.index', array_filter([
             'type' => $request->data_type,
@@ -877,39 +965,14 @@ class DataSpatialController extends Controller
         ]))->with('success', $message);
     }
 
-
-    // private function getRedirectAfterUpdate(DataSpatial $data)
-    // {
-    //     return match($data->data_type) {
-    //         'lokasi' => redirect()->route('lokasi.index'),
-    //         'usulan_musrenbang' => redirect()->route('usulan-musrenbang.index'),
-    //         'pokir_dprd' => redirect()->route('pokir-dprd.index'),
-    //         'proyek_strategis' => $data->tahun 
-    //             ? redirect()->route($data->sub_type === 'nasional' ? 'psn.tahun.show' : 'psd.tahun.show', ['year' => $data->tahun])
-    //             : redirect()->route($data->sub_type === 'nasional' ? 'psn.index' : 'psd.index'),
-    //         default => redirect()->route('data-spatial.index')
-    //     };
-    // }
     private function getRedirectAfterUpdate(DataSpatial $data)
     {
-        if ($data->data_type === 'proyek_strategis') {
-            if ($data->tahun) {
-                $routeName = $data->sub_type === 'psn' ? 'psn.tahun.show' : 'psd.tahun.show';
-                return redirect()->route($routeName, ['year' => $data->tahun]);
-            }
-
-            $routeName = $data->sub_type === 'psn' ? 'psn.index' : 'psd.index';
-            return redirect()->route($routeName);
-        }
-
         // Redirect dinamis ke data-spatial.index
         return redirect()->route('data-spatial.index', array_filter([
             'type' => $data->data_type,
             'sub_type' => $data->sub_type ?? null,
         ]));
     }
-
-
 
     private function parseKmlGeometry($xpath, $placemark)
     {
@@ -972,7 +1035,7 @@ class DataSpatialController extends Controller
         }
 
         if (count($wktPoints) >= 2) {
-            return "LINESTRING(" . implode(',', $wktPoints) . ")";
+            return 'LINESTRING('.implode(',', $wktPoints).')';
         }
 
         return null;
@@ -999,7 +1062,8 @@ class DataSpatialController extends Controller
             if ($wktPoints[0] !== $wktPoints[count($wktPoints) - 1]) {
                 $wktPoints[] = $wktPoints[0];
             }
-            return "POLYGON((" . implode(',', $wktPoints) . "))";
+
+            return 'POLYGON(('.implode(',', $wktPoints).'))';
         }
 
         return null;
@@ -1012,12 +1076,13 @@ class DataSpatialController extends Controller
             $cleanKey = trim($key);
             $cleanValue = is_string($value) ? trim($value) : $value;
 
-            if (is_string($cleanValue) && !mb_check_encoding($cleanValue, 'UTF-8')) {
+            if (is_string($cleanValue) && ! mb_check_encoding($cleanValue, 'UTF-8')) {
                 $cleanValue = mb_convert_encoding($cleanValue, 'UTF-8', 'auto');
             }
 
             $cleanDbfData[$cleanKey] = $cleanValue;
         }
+
         return $cleanDbfData;
     }
 
@@ -1029,7 +1094,7 @@ class DataSpatialController extends Controller
 
         $possibleDescFields = ['NAMA_OBJEK', 'NAMOBJ', 'NAMA', 'NAME'];
         foreach ($possibleDescFields as $field) {
-            if (isset($dbfData[$field]) && !empty($dbfData[$field])) {
+            if (isset($dbfData[$field]) && ! empty($dbfData[$field])) {
                 return $dbfData[$field];
             }
         }
@@ -1060,7 +1125,8 @@ class DataSpatialController extends Controller
 
             return $this->stripGeometryDimensions($wkt);
         } catch (\Exception $e) {
-            Log::warning("Gagal memproses geometri: " . $e->getMessage());
+            Log::warning('Gagal memproses geometri: '.$e->getMessage());
+
             return $this->stripGeometryDimensions($wkt);
         }
     }
@@ -1072,11 +1138,11 @@ class DataSpatialController extends Controller
 
         // Hapus koordinat Z dan M
         $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)/', function ($matches) {
-            return $matches[1] . ' ' . $matches[2];
+            return $matches[1].' '.$matches[2];
         }, $wkt);
 
         $wkt = preg_replace_callback('/(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)\s+(\-?\d+\.?\d*)(?!\s+\-?\d)/', function ($matches) {
-            return $matches[1] . ' ' . $matches[2];
+            return $matches[1].' '.$matches[2];
         }, $wkt);
 
         return $wkt;
@@ -1093,7 +1159,9 @@ class DataSpatialController extends Controller
         ]);
 
         $folder = storage_path('app/shapefiles');
-        if (!file_exists($folder)) mkdir($folder, 0755, true);
+        if (! file_exists($folder)) {
+            mkdir($folder, 0755, true);
+        }
         File::cleanDirectory($folder);
 
         $request->file('shp_file')->move($folder, 'data.shp');
@@ -1109,8 +1177,12 @@ class DataSpatialController extends Controller
             $i = 0;
 
             while ($feature = $reader->fetchRecord()) {
-                if (++$i > 5) break;
-                if ($feature->isDeleted()) continue;
+                if (++$i > 5) {
+                    break;
+                }
+                if ($feature->isDeleted()) {
+                    continue;
+                }
 
                 $dbfData = $feature->getDataArray();
 
@@ -1128,7 +1200,7 @@ class DataSpatialController extends Controller
                 'success' => true,
                 'sample' => $data,
                 'dbf_columns' => $dbfColumns,
-                'total_columns' => count($dbfColumns)
+                'total_columns' => count($dbfColumns),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -1150,7 +1222,7 @@ class DataSpatialController extends Controller
 
             // Create temp directory with proper permissions
             $tempDir = storage_path('app/temp_kmz');
-            if (!file_exists($tempDir)) {
+            if (! file_exists($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
 
@@ -1163,11 +1235,11 @@ class DataSpatialController extends Controller
 
             if ($extension === 'kmz') {
                 // Save uploaded file to temp directory
-                $kmzPath = $tempDir . '/temp.kmz';
+                $kmzPath = $tempDir.'/temp.kmz';
                 $file->move($tempDir, 'temp.kmz');
 
                 // Check if file was moved successfully
-                if (!file_exists($kmzPath)) {
+                if (! file_exists($kmzPath)) {
                     throw new \Exception('Failed to save KMZ file to temporary directory.');
                 }
 
@@ -1175,7 +1247,7 @@ class DataSpatialController extends Controller
                 $zip = new ZipArchive;
                 $result = $zip->open($kmzPath);
 
-                if ($result === TRUE) {
+                if ($result === true) {
                     $kmlFound = false;
 
                     // Look for KML files in the archive
@@ -1184,9 +1256,9 @@ class DataSpatialController extends Controller
                         $fileExtension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
                         // Check for both .kml files and files without extension (some KMZ have KML without extension)
-                        if ($fileExtension === 'kml' || (empty($fileExtension) && !str_contains($filename, '/'))) {
+                        if ($fileExtension === 'kml' || (empty($fileExtension) && ! str_contains($filename, '/'))) {
                             $kmlContent = $zip->getFromIndex($i);
-                            if (!empty($kmlContent)) {
+                            if (! empty($kmlContent)) {
                                 $kmlFound = true;
                                 break;
                             }
@@ -1195,7 +1267,7 @@ class DataSpatialController extends Controller
 
                     $zip->close();
 
-                    if (!$kmlFound) {
+                    if (! $kmlFound) {
                         // List all files in the archive for debugging
                         $zip->open($kmzPath);
                         $files = [];
@@ -1204,7 +1276,7 @@ class DataSpatialController extends Controller
                         }
                         $zip->close();
 
-                        throw new \Exception('No KML file found in KMZ archive. Files found: ' . implode(', ', $files));
+                        throw new \Exception('No KML file found in KMZ archive. Files found: '.implode(', ', $files));
                     }
                 } else {
                     // Provide more specific error messages
@@ -1249,17 +1321,17 @@ class DataSpatialController extends Controller
 
             // Validate XML content
             libxml_use_internal_errors(true);
-            $dom = new DOMDocument();
+            $dom = new DOMDocument;
             $dom->formatOutput = true;
 
             // Try to load XML with error handling
-            if (!$dom->loadXML($kmlContent)) {
+            if (! $dom->loadXML($kmlContent)) {
                 $errors = libxml_get_errors();
                 $errorMessages = [];
                 foreach ($errors as $error) {
                     $errorMessages[] = trim($error->message);
                 }
-                throw new \Exception('Invalid XML in KML file: ' . implode(', ', $errorMessages));
+                throw new \Exception('Invalid XML in KML file: '.implode(', ', $errorMessages));
             }
 
             libxml_clear_errors();
@@ -1289,11 +1361,13 @@ class DataSpatialController extends Controller
                 }
                 $uniqueElements = array_unique($elementNames);
 
-                throw new \Exception('No Placemark elements found in KML. Elements found: ' . implode(', ', $uniqueElements));
+                throw new \Exception('No Placemark elements found in KML. Elements found: '.implode(', ', $uniqueElements));
             }
 
             foreach ($placemarks as $index => $placemark) {
-                if ($index >= 10) break; // Limit preview
+                if ($index >= 10) {
+                    break;
+                } // Limit preview
 
                 // Try multiple namespace prefixes for child elements
                 $name = $xpath->query('.//kml:name | .//kml21:name | .//kml20:name | .//name', $placemark)->item(0);
@@ -1325,8 +1399,8 @@ class DataSpatialController extends Controller
                     'name' => $nameText,
                     'description' => $descText,
                     'geometry_type' => $geometryType,
-                    'has_coordinates' => !empty($coordinates),
-                    'coordinate_preview' => substr($coordinates, 0, 100) . (strlen($coordinates) > 100 ? '...' : '')
+                    'has_coordinates' => ! empty($coordinates),
+                    'coordinate_preview' => substr($coordinates, 0, 100).(strlen($coordinates) > 100 ? '...' : ''),
                 ];
             }
 
@@ -1343,8 +1417,8 @@ class DataSpatialController extends Controller
                     'original_name' => $file->getClientOriginalName(),
                     'size' => $file->getSize(),
                     'extension' => $extension,
-                    'kml_size' => strlen($kmlContent)
-                ]
+                    'kml_size' => strlen($kmlContent),
+                ],
             ]);
         } catch (\Exception $e) {
             // Clean up temp files on error
@@ -1362,7 +1436,7 @@ class DataSpatialController extends Controller
                 'file_info' => [
                     'original_name' => $request->file('kmz_file') ? $request->file('kmz_file')->getClientOriginalName() : 'Unknown',
                     'size' => $request->file('kmz_file') ? $request->file('kmz_file')->getSize() : 0,
-                ]
+                ],
             ]);
         }
     }
@@ -1393,22 +1467,22 @@ class DataSpatialController extends Controller
             'total_data' => $query->count(),
             'categories_count' => $query->distinct('kategori_id')->count(),
             'by_data_type' => DataSpatial::select('data_type', 'sub_type', DB::raw('count(*) as total'))
-                ->when($dataType, fn($q) => $q->where('data_type', $dataType))
-                ->when($subType, fn($q) => $q->where('sub_type', $subType))
-                ->when($year, fn($q) => $q->where('tahun', $year))
+                ->when($dataType, fn ($q) => $q->where('data_type', $dataType))
+                ->when($subType, fn ($q) => $q->where('sub_type', $subType))
+                ->when($year, fn ($q) => $q->where('tahun', $year))
                 ->groupBy('data_type', 'sub_type')
                 ->get(),
             'by_year' => DataSpatial::select('tahun', DB::raw('count(*) as total'))
                 ->whereNotNull('tahun')
-                ->when($dataType, fn($q) => $q->where('data_type', $dataType))
-                ->when($subType, fn($q) => $q->where('sub_type', $subType))
+                ->when($dataType, fn ($q) => $q->where('data_type', $dataType))
+                ->when($subType, fn ($q) => $q->where('sub_type', $subType))
                 ->groupBy('tahun')
                 ->orderBy('tahun', 'desc')
                 ->get(),
             'geometry_stats' => [
                 'with_geometry' => $query->whereNotNull('geom')->count(),
-                'without_geometry' => $query->whereNull('geom')->count()
-            ]
+                'without_geometry' => $query->whereNull('geom')->count(),
+            ],
         ];
 
         // Bounds calculation
@@ -1431,8 +1505,8 @@ class DataSpatialController extends Controller
             'filters' => [
                 'data_type' => $dataType,
                 'sub_type' => $subType,
-                'year' => $year
-            ]
+                'year' => $year,
+            ],
         ]);
     }
 
@@ -1441,25 +1515,25 @@ class DataSpatialController extends Controller
         $dataType = $request->get('data_type');
         $subType = $request->get('sub_type');
 
-        $query = "
+        $query = '
             SELECT DISTINCT jsonb_object_keys(dbf_attributes) as column_name 
             FROM data_spatial 
             WHERE dbf_attributes IS NOT NULL
-        ";
+        ';
 
         $params = [];
 
         if ($dataType) {
-            $query .= " AND data_type = ?";
+            $query .= ' AND data_type = ?';
             $params[] = $dataType;
         }
 
         if ($subType) {
-            $query .= " AND sub_type = ?";
+            $query .= ' AND sub_type = ?';
             $params[] = $subType;
         }
 
-        $query .= " ORDER BY column_name";
+        $query .= ' ORDER BY column_name';
 
         $columns = DB::select($query, $params);
 
@@ -1472,8 +1546,8 @@ class DataSpatialController extends Controller
             'columns' => $columnNames,
             'filters' => [
                 'data_type' => $dataType,
-                'sub_type' => $subType
-            ]
+                'sub_type' => $subType,
+            ],
         ]);
     }
 
@@ -1483,7 +1557,7 @@ class DataSpatialController extends Controller
         $subType = $request->get('sub_type');
 
         $query = DataSpatial::whereNotNull('dbf_attributes')
-            ->whereRaw("dbf_attributes ? ?", [$column]);
+            ->whereRaw('dbf_attributes ? ?', [$column]);
 
         if ($dataType) {
             $query->where('data_type', $dataType);
@@ -1495,7 +1569,7 @@ class DataSpatialController extends Controller
 
         $values = $query->pluck(DB::raw("DISTINCT dbf_attributes->>'{$column}'"))
             ->filter(function ($value) {
-                return !is_null($value) && $value !== '';
+                return ! is_null($value) && $value !== '';
             })
             ->values();
 
@@ -1505,8 +1579,8 @@ class DataSpatialController extends Controller
             'values' => $values,
             'filters' => [
                 'data_type' => $dataType,
-                'sub_type' => $subType
-            ]
+                'sub_type' => $subType,
+            ],
         ]);
     }
 
@@ -1520,9 +1594,9 @@ class DataSpatialController extends Controller
         $categories = DB::table('data_spatial')
             ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->select('categories.id as kategori_id', 'categories.nama as kategori', DB::raw('COUNT(*) as count'))
-            ->when($dataType, fn($q) => $q->where('data_spatial.data_type', $dataType))
-            ->when($subType, fn($q) => $q->where('data_spatial.sub_type', $subType))
-            ->when($categoryType, fn($q) => $q->where('categories.type', $categoryType))
+            ->when($dataType, fn ($q) => $q->where('data_spatial.data_type', $dataType))
+            ->when($subType, fn ($q) => $q->where('data_spatial.sub_type', $subType))
+            ->when($categoryType, fn ($q) => $q->where('categories.type', $categoryType))
             ->groupBy('categories.id', 'categories.nama')
             ->orderBy('categories.nama')
             ->get();
@@ -1533,8 +1607,8 @@ class DataSpatialController extends Controller
             'filters' => [
                 'data_type' => $dataType,
                 'sub_type' => $subType,
-                'category_type' => $categoryType
-            ]
+                'category_type' => $categoryType,
+            ],
         ]);
     }
 
@@ -1548,7 +1622,7 @@ class DataSpatialController extends Controller
                 'uuid' => $uuid,
                 'user_id' => auth()->id(),
                 'request_method' => request()->method(),
-                'all_request_data' => request()->all()
+                'all_request_data' => request()->all(),
             ]);
 
             // Check if this is a bulk delete request
@@ -1559,10 +1633,10 @@ class DataSpatialController extends Controller
             // Regular single delete
             $data = DataSpatial::where('uuid', $uuid)->first();
 
-            if (!$data) {
+            if (! $data) {
                 Log::warning('Data not found for deletion', [
                     'uuid' => $uuid,
-                    'user_id' => auth()->id()
+                    'user_id' => auth()->id(),
                 ]);
 
                 return redirect()
@@ -1574,7 +1648,7 @@ class DataSpatialController extends Controller
             $user = auth()->user();
             $userRole = $user->role->slug ?? null;
 
-            if (!in_array($userRole, ['super-admin', 'admin-bappeda']) && $data->user_id !== $user->id) {
+            if (! in_array($userRole, ['super-admin', 'admin-bappeda']) && $data->user_id !== $user->id) {
                 return redirect()
                     ->back()
                     ->with('error', 'Anda tidak memiliki izin untuk menghapus data ini.');
@@ -1585,17 +1659,17 @@ class DataSpatialController extends Controller
 
             Log::info('Single delete completed', [
                 'uuid' => $uuid,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()
                 ->route($redirectRoute['route'], $redirectRoute['params'] ?? [])
                 ->with('success', 'Data berhasil dihapus.');
         } catch (\Exception $e) {
-            Log::error('Delete error: ' . $e->getMessage(), [
+            Log::error('Delete error: '.$e->getMessage(), [
                 'uuid' => $uuid,
                 'user_id' => auth()->id(),
-                'error' => $e->getTraceAsString()
+                'error' => $e->getTraceAsString(),
             ]);
 
             return redirect()
@@ -1615,16 +1689,17 @@ class DataSpatialController extends Controller
                 'user_id' => auth()->id(),
                 'has_ids' => $request->has('ids'),
                 'ids_value' => $request->input('ids'),
-                'request_method' => $request->method()
+                'request_method' => $request->method(),
             ]);
 
             // Validasi input yang lebih fleksibel
-            if (!$request->has('ids') || empty($request->ids)) {
+            if (! $request->has('ids') || empty($request->ids)) {
                 Log::error('No IDs provided in bulk delete', [
                     'request_all' => $request->all(),
                     'has_ids' => $request->has('ids'),
-                    'ids_empty' => empty($request->ids)
+                    'ids_empty' => empty($request->ids),
                 ]);
+
                 return redirect()
                     ->back()
                     ->with('error', 'Tidak ada data yang dipilih untuk dihapus.');
@@ -1633,7 +1708,7 @@ class DataSpatialController extends Controller
             // Validasi tanpa exists rule dulu untuk debugging
             $validatedData = $request->validate([
                 'ids' => 'required|array|min:1',
-                'ids.*' => 'required' // Hapus |integer|exists dulu
+                'ids.*' => 'required', // Hapus |integer|exists dulu
             ]);
 
             Log::info('Validation passed', ['validated_data' => $validatedData]);
@@ -1644,8 +1719,9 @@ class DataSpatialController extends Controller
             if (empty($ids)) {
                 Log::error('No valid IDs after conversion', [
                     'original_ids' => $request->ids,
-                    'converted_ids' => $ids
+                    'converted_ids' => $ids,
                 ]);
+
                 return redirect()
                     ->back()
                     ->with('error', 'ID yang dipilih tidak valid.');
@@ -1654,14 +1730,14 @@ class DataSpatialController extends Controller
             Log::info('Processing bulk delete for IDs', [
                 'original_ids' => $request->ids,
                 'converted_ids' => $ids,
-                'ids_count' => count($ids)
+                'ids_count' => count($ids),
             ]);
 
             // Cek apakah tabel data_spatials ada dan memiliki data
             $totalRecords = DataSpatial::count();
             Log::info('Database check', [
                 'total_records_in_table' => $totalRecords,
-                'table_exists' => \Schema::hasTable('data_spatials')
+                'table_exists' => \Schema::hasTable('data_spatials'),
             ]);
 
             // Get data to delete dengan debugging
@@ -1671,19 +1747,19 @@ class DataSpatialController extends Controller
                 'requested_ids' => $ids,
                 'found_count' => $dataToDelete->count(),
                 'found_ids' => $dataToDelete->pluck('id')->toArray(),
-                'sample_all_ids' => DataSpatial::pluck('id')->take(10)->toArray()
+                'sample_all_ids' => DataSpatial::pluck('id')->take(10)->toArray(),
             ]);
 
             if ($dataToDelete->isEmpty()) {
                 Log::warning('No data found for bulk delete', [
                     'ids' => $ids,
                     'total_in_db' => $totalRecords,
-                    'sample_records' => DataSpatial::select('id', 'uuid', 'deskripsi')->take(5)->get()->toArray()
+                    'sample_records' => DataSpatial::select('id', 'uuid', 'deskripsi')->take(5)->get()->toArray(),
                 ]);
 
                 return redirect()
                     ->back()
-                    ->with('error', 'Data yang dipilih tidak ditemukan dalam database. IDs: ' . implode(', ', $ids));
+                    ->with('error', 'Data yang dipilih tidak ditemukan dalam database. IDs: '.implode(', ', $ids));
             }
 
             // Security check
@@ -1693,17 +1769,17 @@ class DataSpatialController extends Controller
             Log::info('Security check', [
                 'user_id' => $user->id,
                 'user_role' => $userRole,
-                'is_admin' => in_array($userRole, ['super-admin', 'admin-bappeda'])
+                'is_admin' => in_array($userRole, ['super-admin', 'admin-bappeda']),
             ]);
 
-            if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+            if (! in_array($userRole, ['super-admin', 'admin-bappeda'])) {
                 $originalCount = $dataToDelete->count();
                 $dataToDelete = $dataToDelete->where('user_id', $user->id);
 
                 Log::info('User permission filter applied', [
                     'original_count' => $originalCount,
                     'after_filter_count' => $dataToDelete->count(),
-                    'user_owned_ids' => $dataToDelete->pluck('id')->toArray()
+                    'user_owned_ids' => $dataToDelete->pluck('id')->toArray(),
                 ]);
 
                 if ($dataToDelete->isEmpty()) {
@@ -1724,14 +1800,15 @@ class DataSpatialController extends Controller
 
             Log::info('About to delete', [
                 'ids_to_delete' => $idsToDelete,
-                'count' => count($idsToDelete)
+                'count' => count($idsToDelete),
             ]);
 
             $deletedCount = DataSpatial::whereIn('id', $idsToDelete)->delete();
+            MapDataVersion::forget();
 
             Log::info('Bulk delete completed', [
                 'deleted_count' => $deletedCount,
-                'deleted_ids' => $idsToDelete
+                'deleted_ids' => $idsToDelete,
             ]);
 
             $message = $deletedCount === 1
@@ -1746,29 +1823,30 @@ class DataSpatialController extends Controller
         } catch (ValidationException $e) {
             Log::error('Bulk delete validation error', [
                 'errors' => $e->errors(),
-                'request_data' => $request->all()
-            ]);
-            return redirect()
-                ->back()
-                ->with('error', 'Data yang dipilih tidak valid: ' . implode(', ', array_flatten($e->errors())));
-        } catch (\Exception $e) {
-            Log::error('Bulk delete error: ' . $e->getMessage(), [
-                'error_message' => $e->getMessage(),
-                'error_file' => $e->getFile(),
-                'error_line' => $e->getLine(),
                 'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
             ]);
 
             return redirect()
                 ->back()
-                ->with('error', 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage());
+                ->with('error', 'Data yang dipilih tidak valid: '.implode(', ', array_flatten($e->errors())));
+        } catch (\Exception $e) {
+            Log::error('Bulk delete error: '.$e->getMessage(), [
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus data: '.$e->getMessage());
         }
     }
+
     /**
      * Determine the appropriate redirect route after deletion
-     * 
-     * @param DataSpatial $data
+     *
      * @return array
      */
     private function getRedirectAfterDestroy(DataSpatial $data)
@@ -1787,17 +1865,11 @@ class DataSpatialController extends Controller
             'data_type' => $data->data_type,
             'data_sub_type' => $data->sub_type,
             'final_type' => $dataType,
-            'final_sub_type' => $subType
+            'final_sub_type' => $subType,
         ]);
 
         // Route mapping sesuai dengan controller yang ada
         $routeMap = [
-            'proyek_strategis' => [
-                'psn' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psn']],
-                'psd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'proyek_strategis', 'sub_type' => 'psd']],
-            ],
-            'pokir_dprd' => ['route' => 'data-spatial.index', 'params' => ['type' => 'pokir_dprd']],
-            'usulan_musrenbang' => ['route' => 'data-spatial.index', 'params' => ['type' => 'usulan_musrenbang']],
             'tematik' => ['route' => 'data-spatial.index', 'params' => ['type' => 'tematik']],
         ];
 
@@ -1813,12 +1885,12 @@ class DataSpatialController extends Controller
         // Default ke data-spatial.index dengan parameter
         $params = array_filter([
             'type' => $dataType,
-            'sub_type' => $subType
+            'sub_type' => $subType,
         ]);
 
         return [
             'route' => 'data-spatial.index',
-            'params' => $params
+            'params' => $params,
         ];
     }
 
@@ -1844,7 +1916,7 @@ class DataSpatialController extends Controller
         $user = Auth::user();
         $userRole = $user->role->slug ?? null;
 
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda'])) {
             $query->where('user_id', $user->id);
         }
 
@@ -1866,6 +1938,9 @@ class DataSpatialController extends Controller
 
         $updatedCount = DataSpatial::whereIn('id', $items->pluck('id'))
             ->update(['kategori_id' => $category->id]);
+
+        // Query massal tidak memicu event model: buang versi peta secara eksplisit.
+        MapDataVersion::forget();
 
         Log::info('Bulk category update completed', [
             'ids' => $items->pluck('id')->toArray(),
@@ -1901,7 +1976,7 @@ class DataSpatialController extends Controller
         $user = Auth::user();
         $userRole = $user->role->slug ?? null;
 
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
+        if (! in_array($userRole, ['super-admin', 'admin-bappeda'])) {
             $query->where('user_id', $user->id);
         }
 
@@ -1943,8 +2018,8 @@ class DataSpatialController extends Controller
     /**
      * Show details for a specific data spatial item (for AJAX)
      *
-     * @param string $uuid
-     * @return \Illuminate\Http\JsonResponse
+     * @param  string  $uuid
+     * @return JsonResponse
      */
     public function details($uuid)
     {
@@ -1953,10 +2028,10 @@ class DataSpatialController extends Controller
                 ->where('uuid', $uuid)
                 ->first();
 
-            if (!$data) {
+            if (! $data) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data tidak ditemukan.'
+                    'message' => 'Data tidak ditemukan.',
                 ], 404);
             }
 
@@ -1971,21 +2046,21 @@ class DataSpatialController extends Controller
                     'title' => $data->title ?? $data->deskripsi,
                     'dbf_attributes' => $data->dbf_attributes,
                     'kategori' => $data->kategori ? [
-                        'nama' => $data->kategori->nama
+                        'nama' => $data->kategori->nama,
                     ] : null,
                     'created_at' => $data->created_at?->format('d M Y H:i'),
-                    'updated_at' => $data->updated_at?->format('d M Y H:i')
-                ]
+                    'updated_at' => $data->updated_at?->format('d M Y H:i'),
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Details fetch error: ' . $e->getMessage(), [
+            Log::error('Details fetch error: '.$e->getMessage(), [
                 'uuid' => $uuid,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil detail data.'
+                'message' => 'Terjadi kesalahan saat mengambil detail data.',
             ], 500);
         }
     }

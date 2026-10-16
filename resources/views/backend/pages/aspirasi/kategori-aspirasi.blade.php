@@ -83,10 +83,12 @@
                             Daftar Kategori Aspirasi
                         </h4>
                         <div>
+@can('kategori-aspirasi.create')
                             <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                 data-bs-target="#addModal">
                                 <i class="mdi mdi-plus"></i> Tambah Kategori
                             </button>
+@endcan
                         </div>
                     </div>
 
@@ -192,6 +194,7 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 @if ($kategori->id != 1)
+@can('kategori-aspirasi.edit')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-success btn-edit me-1"
                                                         data-id="{{ $kategori->id }}"
@@ -204,12 +207,15 @@
                                                         title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
+@endcan
+@can('kategori-aspirasi.delete')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-danger btn-delete"
                                                         data-id="{{ $kategori->id }}"
                                                         onclick="deleteKategori({{ $kategori->id }})" title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
+@endcan
                                                 @endif
                                             </div>
                                         </td>
@@ -220,10 +226,12 @@
                                             <div class="py-4">
                                                 <i class="mdi mdi-tag-multiple-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada kategori aspirasi</p>
+@can('kategori-aspirasi.create')
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                     data-bs-target="#addModal">
                                                     <i class="mdi mdi-plus"></i> Tambah Kategori Pertama
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -447,6 +455,7 @@
             $('#addModal').on('show.bs.modal', function() {
                 const form = $('#addForm');
                 form[0].reset();
+                form.find('#add_opd_id').trigger('change.select2');
                 clearFormErrors(form);
             });
 
@@ -520,7 +529,7 @@
 
                 $('#edit_id').val(id);
                 $('#edit_nama_kategori').val($(this).data('nama'));
-                $('#edit_opd_id').val($(this).data('opd-id'));
+                $('#edit_opd_id').val($(this).data('opd-id')).trigger('change.select2');
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
 
                 clearFormErrors(form);
@@ -789,7 +798,7 @@
 
             function resetAllFilters() {
                 $('#searchInput').val('');
-                $('#filterOPD').val('');
+                $('#filterOPD').val('').trigger('change.select2');
                 $('#filterDeskripsi').val('');
                 performSearch();
             }
@@ -1606,3 +1615,26 @@
         }
     </style>
 @endsection
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
+@endpush
+
+@push('scripts')
+    <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
+    <script>
+        $(function() {
+            const opdSelect2 = {
+                width: '100%',
+                language: {
+                    noResults: () => 'OPD tidak ditemukan',
+                    searching: () => 'Mencari...'
+                }
+            };
+
+            $('#filterOPD').select2(opdSelect2);
+            $('#add_opd_id').select2({ ...opdSelect2, dropdownParent: $('#addModal') });
+            $('#edit_opd_id').select2({ ...opdSelect2, dropdownParent: $('#editModal') });
+        });
+    </script>
+@endpush

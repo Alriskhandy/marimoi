@@ -102,18 +102,22 @@
                         </div>
                         <div class="d-flex gap-2">
                             {{-- Quick Export Button --}}
+@can('aspirasi.export')
                             <a href="{{ route('aspirasi.export') }}" class="btn btn-outline-success btn-sm"
                                 title="Export Semua Data">
                                 <i class="mdi mdi-file-excel"></i>
                                 <span class="d-none d-md-inline">Quick Export</span>
                             </a>
+@endcan
 
                             {{-- Advanced Export Button --}}
+@can('aspirasi.export')
                             <button type="button" class="btn btn-gradient-success btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#exportModal" title="Export dengan Filter">
                                 <i class="mdi mdi-file-excel"></i>
                                 <span class="d-none d-md-inline">Export Excel</span>
                             </button>
+@endcan
                         </div>
                     </div>
 
@@ -125,10 +129,12 @@
                                 <span id="selectedCount">0</span> aspirasi dipilih
                             </div>
                             <div>
+@can('aspirasi.delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
                                     <i class="mdi mdi-trash-can-outline me-1"></i>
                                     Hapus Terpilih
                                 </button>
+@endcan
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
                                     <i class="mdi mdi-close me-1"></i>
                                     Batal
@@ -638,9 +644,11 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="mdi mdi-close"></i> Tutup
                     </button>
+@can('aspirasi.edit')
                     <button type="button" class="btn btn-gradient-primary btn-status" id="btnUpdateStatus">
                         <i class="mdi mdi-send"></i> Kirim Respons
                     </button>
+@endcan
                 </div>
             </div>
         </div>
@@ -1458,7 +1466,7 @@
                 $btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
 
                 $.ajax({
-                    url: `{{ route('aspirasi.show', '') }}/${id}`,
+                    url: "{{ route('aspirasi.show', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                     type: 'GET',
                     headers: {
                         'Accept': 'application/json',
@@ -2001,7 +2009,7 @@
                 };
 
                 $.ajax({
-                    url: `{{ route('aspirasi.updateStatus', '') }}/${id}`,
+                    url: "{{ route('aspirasi.updateStatus', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                     type: 'POST',
                     data: formData,
                     headers: {
@@ -2063,7 +2071,7 @@
                         });
 
                         $.ajax({
-                            url: `{{ route('aspirasi.destroy', '') }}/${id}`,
+                            url: "{{ route('aspirasi.destroy', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
                             type: 'POST',
                             data: {
                                 _method: 'DELETE',

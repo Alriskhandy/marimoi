@@ -86,6 +86,7 @@
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-3 gap-2">
                         <h4 class="card-title mb-0">Daftar Log</h4>
 
+@can('logs.manage')
                         <div class="d-flex flex-wrap gap-2">
                             @if ($selectedFile)
                                 <a href="{{ route('logs.download', ['file' => $selectedFile]) }}"
@@ -126,6 +127,7 @@
                                 </button>
                             </form>
                         </div>
+@endcan
                     </div>
 
                     @if ($files->isEmpty())

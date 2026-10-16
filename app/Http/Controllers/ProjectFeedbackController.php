@@ -5,20 +5,26 @@
 namespace App\Http\Controllers;
 
 use App\Mail\TanggapanMail;
+use App\Models\DataSpatial;
 use App\Models\Opd;
 use App\Models\ProjectFeedback;
-use App\Models\DataSpatial;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ProjectFeedbackController extends Controller
 {
+    /**
+     * Folder lampiran di disk public — sama dengan form publik (FrontendController::store).
+     */
+    private const IMAGE_DIRECTORY = 'aspirasi_lampiran';
 
     public function index(Request $request)
     {
@@ -40,53 +46,7 @@ class ProjectFeedbackController extends Controller
                 ->get();
         }
 
-        $type = $request->get('type');
-        $subType = $request->get('sub_type');
-
-        // Validasi type yang diizinkan
-        $allowedTypes = ['pokir_dprd', 'usulan_musrenbang', 'proyek_strategis'];
-
-        // Jika type tidak ada atau tidak valid, redirect back dengan error
-        if (!$type || !in_array($type, $allowedTypes)) {
-            return redirect()->back()->with('error', 'Halaman tidak ditemukan. Tipe proyek tidak valid.');
-        }
-
-        // Validasi sub_type untuk proyek_strategis
-        if ($type === 'proyek_strategis') {
-            $allowedSubTypes = ['psn', 'psd'];
-            if ($subType && !in_array($subType, $allowedSubTypes)) {
-                return redirect()->back()->with('error', 'Sub-tipe proyek strategis tidak valid.');
-            }
-        }
-
-        // Build query based on type and sub_type
-        $query = ProjectFeedback::with(['dataSpatial', 'opd:id,name,singkatan,logo']);
-
-        // Filter berdasarkan type yang sudah divalidasi
-        $query->whereHas('dataSpatial', function ($q) use ($type, $subType, $user, $userRole) {
-            if ($type === 'proyek_strategis') {
-                $q->where('data_type', 'proyek_strategis');
-                if ($subType === 'psn') {
-                    $q->where('sub_type', 'psn');
-                } elseif ($subType === 'psd') {
-                    $q->where('sub_type', 'psd');
-                }
-            } else {
-                $q->where('data_type', $type);
-            }
-
-            // ✅ Filter berdasarkan role pengguna untuk dataSpatial
-            if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
-                // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan user_id di dataSpatial
-                $q->where('user_id', $user->id);
-            }
-        });
-
-        // ✅ Filter berdasarkan opd_id untuk ProjectFeedback
-        if (!in_array($userRole, ['super-admin', 'admin-bappeda'])) {
-            // Jika bukan Super Admin atau Admin Bappeda, filter berdasarkan opd_id
-            $query->where('opd_id', $user->opd_id);
-        }
+        $query = $this->accessibleFeedbacks()->with(['dataSpatial', 'opd:id,name,singkatan,logo']);
 
         // Filter tambahan berdasarkan request parameters
         if ($request->filled('status')) {
@@ -105,10 +65,10 @@ class ProjectFeedbackController extends Controller
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('nama_pemberi_aspirasi', 'like', "%{$searchTerm}%")
-                    ->orWhere('email', 'like', "%{$searchTerm}%")
-                    ->orWhere('nama_proyek', 'like', "%{$searchTerm}%")
-                    ->orWhere('tanggapan', 'like', "%{$searchTerm}%");
+                $q->where('nama_pemberi_aspirasi', 'ilike', "%{$searchTerm}%")
+                    ->orWhere('email', 'ilike', "%{$searchTerm}%")
+                    ->orWhere('nama_proyek', 'ilike', "%{$searchTerm}%")
+                    ->orWhere('tanggapan', 'ilike', "%{$searchTerm}%");
             });
         }
 
@@ -116,27 +76,17 @@ class ProjectFeedbackController extends Controller
             $query->where('kabupaten_kota', $request->kabupaten_kota);
         }
 
-        $feedbacks = $query->orderBy('created_at', 'desc')->paginate(10);
+        $perPage = in_array((int) $request->get('per_page'), [10, 25, 50, 100]) ? (int) $request->get('per_page') : 10;
+        $feedbacks = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-        // Get statistics untuk type yang dipilih dengan filter role
-        $stats = $this->getFilteredStatistics($type, $subType, $user, $userRole);
+        $stats = $this->getFilteredStatistics();
         $kabupaten_list = $this->getKabupatenList();
-
-        // Get project type info
-        $projectTypeInfo = $this->getProjectTypeInfo($type, $subType);
-
-        // Get available projects untuk dropdown di form dengan filter role
-        $availableProjects = $this->getAvailableProjects($type, $subType, $user, $userRole);
 
         return view('backend.pages.feedback.project_feedback', compact(
             'feedbacks',
             'stats',
             'kabupaten_list',
-            'projectTypeInfo',
-            'type',
-            'subType',
             'opd',
-            'availableProjects',
             'userRole' // Kirim userRole ke view untuk conditional rendering
         ));
     }
@@ -149,19 +99,19 @@ class ProjectFeedbackController extends Controller
         if (Auth::user()->role->slug !== 'super-admin') {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized'
+                'message' => 'Unauthorized',
             ], 403);
         }
         try {
             // Validasi input
             $validated = $request->validate([
-                'opd_id' => 'required|exists:opd,id'
+                'opd_id' => 'required|exists:opd,id',
             ]);
 
             // Update feedback dengan OPD baru
             $feedback->update([
                 'opd_id' => $validated['opd_id'],
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             // Load relasi OPD untuk response
@@ -176,109 +126,69 @@ class ProjectFeedbackController extends Controller
                         'id' => $feedback->opd->id,
                         'name' => $feedback->opd->name,
                         'singkatan' => $feedback->opd->singkatan,
-                        'logo' => $feedback->opd->logo
-                    ]
-                ]
+                        'logo' => $feedback->opd->logo,
+                    ],
+                ],
             ]);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid',
-                'errors' => $e->validator->errors()
+                'errors' => $e->validator->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error updating OPD for feedback: ' . $e->getMessage(), [
+            Log::error('Error updating OPD for feedback: '.$e->getMessage(), [
                 'feedback_id' => $feedback->id,
-                'opd_id' => $request->opd_id
+                'opd_id' => $request->opd_id,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui OPD. Silakan coba lagi.'
+                'message' => 'Terjadi kesalahan saat memperbarui OPD. Silakan coba lagi.',
             ], 500);
         }
     }
 
-
     /**
-     * Get project type information based on type and sub_type
+     * Query feedback yang boleh diakses user login.
+     *
+     * Super Admin & Admin Bappeda melihat semua feedback. Role lain hanya feedback yang
+     * ditujukan ke OPD-nya, atau feedback pada data spasial miliknya sendiri.
      */
-    private function getProjectTypeInfo($type, $subType = null)
+    private function accessibleFeedbacks(): Builder
     {
-        $typeInfo = [
-            // 'lokasi' => [
-            //     'name' => 'RPJMD',
-            //     'color' => 'danger',
-            //     'icon' => 'mdi-map',
-            //     'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
-            // ],
-            'pokir_dprd' => [
-                'name' => 'Pokir DPRD',
-                'color' => 'warning',
-                'icon' => 'mdi-gavel',
-                'description' => 'Feedback untuk Pokok Pikiran DPRD'
-            ],
-            'usulan_musrenbang' => [
-                'name' => 'Usulan Musrenbang',
-                'color' => 'success',
-                'icon' => 'mdi-account-group',
-                'description' => 'Feedback untuk Usulan Musyawarah Perencanaan Pembangunan'
-            ],
-            'proyek_strategis' => [
-                'name' => 'Proyek Strategis',
-                'color' => 'info',
-                'icon' => 'mdi-flag',
-                'description' => 'Feedback untuk Proyek Strategis'
-            ]
-        ];
+        $user = Auth::user();
+        $query = ProjectFeedback::query();
 
-        // Handle proyek strategis sub-types
-        if ($type === 'proyek_strategis' && $subType) {
-            if ($subType === 'psn') {
-                return [
-                    'name' => 'Proyek Strategis Nasional',
-                    'color' => 'primary',
-                    'icon' => 'mdi-flag',
-                    'description' => 'Feedback untuk Proyek Strategis Nasional'
-                ];
-            } elseif ($subType === 'psd') {
-                return [
-                    'name' => 'Proyek Strategis Daerah',
-                    'color' => 'info',
-                    'icon' => 'mdi-map-marker',
-                    'description' => 'Feedback untuk Proyek Strategis Daerah'
-                ];
-            }
+        if ($this->canSeeAllFeedback()) {
+            return $query;
         }
 
-        return $typeInfo[$type] ?? [
-            'name' => 'Unknown Type',
-            'color' => 'secondary',
-            'icon' => 'mdi-help-circle',
-            'description' => 'Tipe proyek tidak dikenal'
-        ];
+        return $query->where(function (Builder $scoped) use ($user) {
+            $scoped->whereHas('dataSpatial', fn (Builder $dataSpatial) => $dataSpatial->where('user_id', $user->id));
+
+            if ($user->opd_id) {
+                $scoped->orWhere('opd_id', $user->opd_id);
+            }
+        });
+    }
+
+    private function canSeeAllFeedback(): bool
+    {
+        return in_array(Auth::user()->role->slug ?? null, ['super-admin', 'admin-bappeda']);
     }
 
     /**
-     * Get filtered statistics based on type and sub_type
+     * Statistik feedback, mengikuti cakupan akses user yang sama dengan daftar.
+     *
+     * @return array<string, int>
      */
-    private function getFilteredStatistics($type, $subType = null)
+    private function getFilteredStatistics(): array
     {
-        $query = ProjectFeedback::whereHas('dataSpatial', function ($q) use ($type, $subType) {
-            if ($type === 'proyek_strategis') {
-                $q->where('data_type', 'proyek_strategis');
-                if ($subType === 'psn') {
-                    $q->where('sub_type', 'psn');
-                } elseif ($subType === 'psd') {
-                    $q->where('sub_type', 'psd');
-                }
-            } else {
-                $q->where('data_type', $type);
-            }
-        });
+        $query = $this->accessibleFeedbacks();
 
         return [
-            'total' => $query->count(),
+            'total' => (clone $query)->count(),
             'pending' => (clone $query)->where('status', 'pending')->count(),
             'ditinjau' => (clone $query)->where('status', 'ditinjau')->count(),
             'ditindaklanjuti' => (clone $query)->where('status', 'ditindaklanjuti')->count(),
@@ -291,26 +201,39 @@ class ProjectFeedbackController extends Controller
     }
 
     /**
-     * Get available projects based on type and sub_type
+     * Pencarian data spasial untuk dropdown Select2 di form tambah feedback.
+     * Semua jenis data spasial bisa menerima feedback; role non-admin hanya datanya sendiri.
      */
-    private function getAvailableProjects($type, $subType = null)
+    public function searchDataSpatial(Request $request): JsonResponse
     {
-        $query = DataSpatial::whereNotNull('deskripsi')
+        $perPage = 20;
+        $search = trim((string) $request->get('search'));
+
+        $query = DataSpatial::select('id', 'uuid', 'deskripsi')
+            ->whereNotNull('deskripsi')
             ->where('deskripsi', '!=', '');
 
-        if ($type === 'proyek_strategis') {
-            $query->where('data_type', 'proyek_strategis');
-            if ($subType === 'psn') {
-                $query->where('sub_type', 'psn');
-            } elseif ($subType === 'psd') {
-                $query->where('sub_type', 'psd');
-            }
-        } else {
-            $query->where('data_type', $type);
+        if ($search !== '') {
+            $query->where(fn (Builder $matches) => $matches->where('deskripsi', 'ilike', "%{$search}%")
+                ->orWhere('uuid', 'ilike', "%{$search}%"));
         }
 
-        return $query->orderBy('deskripsi')->get();
+        if (! $this->canSeeAllFeedback()) {
+            $query->where('user_id', Auth::id());
+        }
+
+        $page = $query->orderBy('deskripsi')->simplePaginate($perPage);
+
+        return response()->json([
+            'results' => $page->getCollection()->map(fn (DataSpatial $dataSpatial) => [
+                'id' => $dataSpatial->id,
+                'text' => "{$dataSpatial->deskripsi} ({$dataSpatial->uuid})",
+                'nama_proyek' => $dataSpatial->deskripsi,
+            ])->values(),
+            'pagination' => ['more' => $page->hasMorePages()],
+        ]);
     }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -334,7 +257,7 @@ class ProjectFeedbackController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -344,9 +267,15 @@ class ProjectFeedbackController extends Controller
             // Handle file upload
             if ($request->hasFile('laporan_gambar')) {
                 $file = $request->file('laporan_gambar');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/feedback_images', $filename);
+                $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                $file->storeAs(self::IMAGE_DIRECTORY, $filename, 'public');
                 $data['laporan_gambar'] = $filename;
+            }
+
+            // OPD tujuan mengikuti pemilik data spasial, sama seperti form publik.
+            if (! empty($data['data_spatial_id'])) {
+                $ownerId = DataSpatial::whereKey($data['data_spatial_id'])->value('user_id');
+                $data['opd_id'] = User::whereKey($ownerId)->value('opd_id');
             }
 
             $feedback = ProjectFeedback::create($data);
@@ -354,12 +283,12 @@ class ProjectFeedbackController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Feedback berhasil ditambahkan',
-                'data' => $feedback
+                'data' => $feedback,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -370,16 +299,16 @@ class ProjectFeedbackController extends Controller
     public function show($id)
     {
         try {
-            $feedback = ProjectFeedback::with('dataSpatial')->findOrFail($id);
+            $feedback = $this->accessibleFeedbacks()->with('dataSpatial')->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
-                'data' => $feedback
+                'data' => $feedback,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Data tidak ditemukan'
+                'message' => 'Data tidak ditemukan',
             ], 404);
         }
     }
@@ -407,24 +336,25 @@ class ProjectFeedbackController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
+        $feedback = $this->accessibleFeedbacks()->findOrFail($id);
+
         try {
-            $feedback = ProjectFeedback::findOrFail($id);
             $data = $validator->validated();
 
             // Handle file upload
             if ($request->hasFile('laporan_gambar')) {
                 // Delete old image
                 if ($feedback->laporan_gambar) {
-                    Storage::delete('public/feedback_images/' . $feedback->laporan_gambar);
+                    Storage::disk('public')->delete(self::IMAGE_DIRECTORY.'/'.$feedback->laporan_gambar);
                 }
 
                 $file = $request->file('laporan_gambar');
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/feedback_images', $filename);
+                $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                $file->storeAs(self::IMAGE_DIRECTORY, $filename, 'public');
                 $data['laporan_gambar'] = $filename;
             }
 
@@ -433,12 +363,12 @@ class ProjectFeedbackController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Feedback berhasil diupdate',
-                'data' => $feedback
+                'data' => $feedback,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -448,24 +378,24 @@ class ProjectFeedbackController extends Controller
      */
     public function destroy($id)
     {
-        try {
-            $feedback = ProjectFeedback::findOrFail($id);
+        $feedback = $this->accessibleFeedbacks()->findOrFail($id);
 
+        try {
             // Delete image file if exists
             if ($feedback->laporan_gambar) {
-                Storage::delete('public/feedback_images/' . $feedback->laporan_gambar);
+                Storage::disk('public')->delete(self::IMAGE_DIRECTORY.'/'.$feedback->laporan_gambar);
             }
 
             $feedback->delete();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Feedback berhasil dihapus'
+                'message' => 'Feedback berhasil dihapus',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -477,33 +407,33 @@ class ProjectFeedbackController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:ditinjau,ditindaklanjuti,selesai',
-            'response_admin' => 'required|string|min:10'
+            'response_admin' => 'required|string|min:10',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        try {
-            $feedback = ProjectFeedback::findOrFail($id);
+        $feedback = $this->accessibleFeedbacks()->findOrFail($id);
 
+        try {
             $feedback->update([
                 'status' => $request->status,
                 'response_admin' => $request->response_admin,
-                'responded_at' => now()
+                'responded_at' => now(),
             ]);
 
             // === Kirim Email ke User berdasarkan status ===
-            if (!empty($feedback->email)) {
+            if (! empty($feedback->email)) {
                 $data = [
-                    'nama'      => $feedback->nama_pemberi_aspirasi,
-                    'email'     => $feedback->email,
-                    'kode'      => 'MARIMOI-FDB-' . now()->format('Ymd') . '-' . str_pad($feedback->id, 4, '0', STR_PAD_LEFT),
+                    'nama' => $feedback->nama_pemberi_aspirasi,
+                    'email' => $feedback->email,
+                    'kode' => 'MARIMOI-FDB-'.$feedback->created_at->format('Ymd').'-'.str_pad($feedback->id, 4, '0', STR_PAD_LEFT),
                     'tanggapan' => $feedback->tanggapan,
-                    'tanggal'   => now()->format('d-m-Y H:i'),
+                    'tanggal' => now()->format('d-m-Y H:i'),
                     'response_admin' => $request->response_admin,
                 ];
 
@@ -525,76 +455,15 @@ class ProjectFeedbackController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Response berhasil dikirim',
-                'data' => $feedback
+                'data' => $feedback,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
-
-    // /**
-    //  * Get project type information based on type and sub_type
-    //  */
-    // private function getProjectTypeInfo($type, $subType = null)
-    // {
-    //     $typeInfo = [
-    //         'all' => [
-    //             'name' => 'Semua Tanggapan Masyarakat',
-    //             'color' => 'primary',
-    //             'icon' => 'mdi-comment-multiple-outline',
-    //             'description' => 'Menampilkan semua feedback dari berbagai jenis proyek'
-    //         ],
-    //         'lokasi' => [
-    //             'name' => 'RPJMD',
-    //             'color' => 'danger',
-    //             'icon' => 'mdi-map',
-    //             'description' => 'Feedback untuk Rencana Pembangunan Jangka Menengah Daerah'
-    //         ],
-    //         'pokir_dprd' => [
-    //             'name' => 'Pokir DPRD',
-    //             'color' => 'warning',
-    //             'icon' => 'mdi-gavel',
-    //             'description' => 'Feedback untuk Pokok Pikiran DPRD'
-    //         ],
-    //         'usulan_musrenbang' => [
-    //             'name' => 'Usulan Musrenbang',
-    //             'color' => 'success',
-    //             'icon' => 'mdi-account-group',
-    //             'description' => 'Feedback untuk Usulan Musyawarah Perencanaan Pembangunan'
-    //         ],
-    //         'proyek_strategis' => [
-    //             'name' => 'Proyek Strategis',
-    //             'color' => 'info',
-    //             'icon' => 'mdi-flag',
-    //             'description' => 'Feedback untuk Proyek Strategis'
-    //         ]
-    //     ];
-
-    //     // Handle proyek strategis sub-types
-    //     if ($type === 'proyek_strategis' && $subType) {
-    //         if ($subType === 'psn') {
-    //             return [
-    //                 'name' => 'Proyek Strategis Nasional',
-    //                 'color' => 'primary',
-    //                 'icon' => 'mdi-flag',
-    //                 'description' => 'Feedback untuk Proyek Strategis Nasional'
-    //             ];
-    //         } elseif ($subType === 'psd') {
-    //             return [
-    //                 'name' => 'Proyek Strategis Daerah',
-    //                 'color' => 'info',
-    //                 'icon' => 'mdi-map-marker',
-    //                 'description' => 'Feedback untuk Proyek Strategis Daerah'
-    //             ];
-    //         }
-    //     }
-
-    //     return $typeInfo[$type] ?? $typeInfo['all'];
-    // }
-
 
     /**
      * Get list of kabupaten for dropdown
@@ -610,7 +479,7 @@ class ProjectFeedbackController extends Controller
             'Kepulauan Sula',
             'Pulau Morotai',
             'Ternate',
-            'Tidore Kepulauan'
+            'Tidore Kepulauan',
         ];
     }
 }

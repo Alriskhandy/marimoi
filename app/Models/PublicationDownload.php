@@ -1,4 +1,5 @@
 <?php
+
 // app/Models/PublicationDownload.php
 
 namespace App\Models;
@@ -6,7 +7,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PublicationDownload extends Model
 {
@@ -32,11 +32,6 @@ class PublicationDownload extends Model
     public function publication(): BelongsTo
     {
         return $this->belongsTo(Publication::class);
-    }
-
-    public function survey(): HasOne
-    {
-        return $this->hasOne(Survey::class);
     }
 
     // Scope untuk filter berdasarkan tanggal

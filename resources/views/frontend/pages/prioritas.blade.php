@@ -1,4 +1,4 @@
-@extends('frontend.layouts.dark', ['title' => 'Prioritas Daerah 2025-2029 - MARIMOI'])
+@extends('frontend.layouts.spatial', ['title' => 'Prioritas Daerah 2025-2029 - MARIMOI'])
 
 @push('styles')
     @vite(['resources/css/app.css'])
@@ -149,6 +149,8 @@
     </style>
 @endpush
 
+@section('no-hero', '1')
+
 @section('main')
     <!-- Document Section -->
     <section class="section min-h-auto mt-[76px] pt-6 pb-8 bg-slate-100" style="background: url('{{ asset('frontend/img/cv/bg.svg') }}') repeat;">
@@ -193,7 +195,6 @@
     </section><!-- /Document Section -->
 
     <!-- Footer Section -->
-    @include('frontend.partials.footer-dark-tailwind')
 @endsection
 
 @push('scripts')

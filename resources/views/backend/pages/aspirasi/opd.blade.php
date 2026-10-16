@@ -98,10 +98,12 @@
                             Daftar Organisasi Perangkat Daerah
                         </h4>
                         <div>
+@can('opd.create')
                             <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
                                 data-bs-target="#addModal">
                                 <i class="mdi mdi-plus"></i> Tambah OPD
                             </button>
+@endcan
                         </div>
                     </div>
 
@@ -236,6 +238,7 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 <div class="btn-group" role="group">
+@can('opd.edit')
                                                     <button type="button" class="btn btn-sm btn-outline-success btn-edit"
                                                         data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
                                                         data-singkatan="{{ $opd->singkatan }}"
@@ -245,12 +248,15 @@
                                                         title="Edit">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
+@endcan
+@can('opd.delete')
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-danger btn-delete"
                                                         data-id="{{ $opd->id }}"
                                                         onclick="deleteOpd({{ $opd->id }})" title="Hapus">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>
+@endcan
                                                 </div>
                                             </div>
 
@@ -259,6 +265,7 @@
                                                     data-id="{{ $opd->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
+@can('opd.edit')
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-success btn-edit me-1"
                                                     data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
@@ -268,11 +275,14 @@
                                                     data-bs-target="#editModal" title="Edit">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </button>
+@endcan
+@can('opd.delete')
                                                 <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
                                                     data-id="{{ $opd->id }}"
                                                     onclick="deleteOpd({{ $opd->id }})" title="Hapus">
                                                     <i class="mdi mdi-delete"></i>
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -282,10 +292,12 @@
                                             <div class="py-4">
                                                 <i class="mdi mdi-office-building-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada data OPD</p>
+@can('opd.create')
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                     data-bs-target="#addModal">
                                                     <i class="mdi mdi-plus"></i> Tambah OPD Pertama
                                                 </button>
+@endcan
                                             </div>
                                         </td>
                                     </tr>

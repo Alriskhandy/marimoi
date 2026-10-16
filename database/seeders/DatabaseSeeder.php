@@ -18,7 +18,9 @@ class DatabaseSeeder extends Seeder
             KategoriLayerSeeder::class,
             // ProjectFeedbackSeeder::class,
             RoleSeeder::class,
+            PermissionSeeder::class,
             OpdSeeder::class,
+            AdministrativeRegionSeeder::class,
             // KategoriAspirasiSeeder::class,
             // AspirasiSeeder::class,
             PublicationSeeder::class,
@@ -28,9 +30,9 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Super Admin',
             'role_id' => 1,
-            'opd_id' => 1, //bisa null
+            'opd_id' => 1, // bisa null
             'email' => 'admin@gmail.com',
-            'password' => bcrypt('admin123')
+            'password' => bcrypt('admin123'),
         ]);
 
         // User::create([
@@ -51,7 +53,6 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'opd@gmail.com',
         //     'password' => bcrypt('admin123')
         // ]);
-
 
     }
 }

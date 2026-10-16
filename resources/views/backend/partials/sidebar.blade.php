@@ -1,753 +1,201 @@
-<nav class="sidebar sidebar-offcanvas" id="sidebar">
-    <ul class="nav">
-        <!-- User Profile -->
-        <li class="nav-item nav-profile">
-            <a href="#!" class="nav-link">
-                @php
-                    $user = auth()->user();
-                    $slug = $user->role->slug;
-                @endphp
+@php
+    $user = auth()->user();
+    $slug = $user?->role?->slug;
+    $isSuperAdmin = $slug === 'super-admin';
 
-                @if (auth()->check() && $user->role)
-                    <div class="nav-profile-image">
-                        @if ($slug === 'admin-opd' && $user->opd && $user->opd->logo)
-                            <img src="{{ asset('storage/' . $user->opd->logo) }}" alt="Logo {{ $user->opd->singkatan }}"
-                                class="rounded logo-img" style="width: 40px; height: 40px; object-fit: contain; ">
-                        @else
-                            <img src="{{ asset('backend/assets/images/faces/profile.png') }}" alt="profile"
-                                class="img-fluid rounded-circle"
-                                style="width: 50px; height: 50px; object-fit: cover;" />
-                        @endif
+    $isAspirasiMenuActive = request()->routeIs('aspirasi.*') || request()->routeIs('kategori-aspirasi.*');
+    $isPublicationActive = request()->routeIs('publications.*');
+    $isMasterDataActive =
+        request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('opd.*');
+    $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*') || request()->routeIs('document-templates.*');
 
-                        <span class="login-status online"></span>
-                    </div>
+    $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'project-feedbacks.view']);
+    $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
+    $canPublikasi = $user?->can('publications.view');
+    $canAspirasiPublikasi = $canAspirasi || $canPublikasi;
+    $canMasterData = $user?->canAny(['users.view', 'roles.view', 'opd.view']);
+    $canSistem = $user?->canAny(['visitors.view', 'logs.view', 'document-templates.view']);
 
-                    <div class="nav-profile-text d-flex flex-column">
-                        @if ($slug === 'admin-opd' && $user->opd)
-                            <span class="font-weight-bold mb-2">{{ $user->opd->singkatan }}</span>
-                        @endif
-                        <span class="text-secondary text-small">{{ $user->role->name }}</span>
-                    </div>
-                @endif
+    $hasOpdLogo = $slug === 'admin-opd' && $user?->opd && $user->opd->logo;
+    $logoPath = $user->opd?->logo ? storage_path('app/public/' . $user->opd->logo) : null;
 
-                <i class="mdi mdi-map-marker text-success nav-profile-badge"></i>
-            </a>
-        </li>
-
-        <!-- Dashboard -->
-        <li class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('dashboard') }}">
-                <span class="menu-title">Dashboard</span>
-                <i class="mdi mdi-view-dashboard menu-icon"></i>
-            </a>
-        </li>
-
-        <!-- Divider -->
-        <li class="nav-item nav-category">
-            <span
-                class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
-                style="cursor: default;">
-                <i class="mdi mdi-database-outline me-2 fs-5 opacity-50"></i>
-                Master Data
+    $sidebarAvatar =
+        $hasOpdLogo && $logoPath && file_exists($logoPath) && is_readable($logoPath)
+            ? asset('storage/' . $user->opd->logo)
+            : asset('backend_baru/assets/images/avatar/avatar-fallback.jpg');
+@endphp
+<aside class="admin-sidebar" id="adminSidebar" aria-label="Navigasi utama">
+    <div class="sidebar-header">
+        <a class="brand-mark" href="{{ route('dashboard') }}" aria-label="MARIMOI dashboard">
+            <img width="40" class="brand-logo brand-logo-light" src="{{ asset('frontend/img/logo/logo-dark.png') }}"
+                alt="">
+            <img width="40" class="brand-logo brand-logo-dark" src="{{ asset('frontend/img/logo/logo-white.png') }}"
+                alt="">
+            <span class="brand-copy">
+                <span class="brand-title">MARIMOI</span>
+                <span class="brand-subtitle">Bappeda Maluku Utara</span>
             </span>
-        </li>
+        </a>
+    </div>
 
-        <!-- Data Peta Tematik -->
-        @php
-            $isPetaTematikActive =
-                request()->routeIs('tematik.*') ||
-                (request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'tematik') ||
-                request()->routeIs('kategori-tematik.*') ||
-                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik');
-        @endphp
-        <li class="nav-item {{ $isPetaTematikActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#petaTematikMenu"
-                aria-expanded="{{ $isPetaTematikActive ? 'true' : 'false' }}" aria-controls="petaTematikMenu">
-                <span class="menu-title">Peta Tematik</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-tematik menu-icon"></i>
+    <nav class="sidebar-nav">
+        @can('dashboard.view')
+            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                <span class="nav-text">Dashboard</span>
             </a>
-            <div class="collapse {{ $isPetaTematikActive ? 'show' : '' }}" id="petaTematikMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'tematik' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('data-spatial.index', ['type' => 'tematik']) }}">
-                            <i class="mdi mdi-map-outline me-2"></i>Data Peta Tematik
-                        </a>
-                    </li>
+        @endcan
 
-                    <!-- Kategori Peta Tematik -->
-                    <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'tematik') || request()->routeIs('kategori-tematik.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'tematik']) }}">
-                            <i class="mdi mdi-format-list-bulleted me-2"></i>Kategori Peta Tematik
-                        </a>
-                    </li>
-
-                    <!-- Feedback RPJMD -->
-                    {{-- <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'tematik' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'tematik']) }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback RPJMD
-                            <span class="badge badge-sm bg-danger ms-auto">
-                                @php
-                                    try {
-                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('data_type', 'tematik');
-                                        })->count();
-                                    } catch (Exception $e) {
-                                        echo '0';
-                                    }
-                                @endphp
-                            </span>
-                        </a>
-                    </li> --}}
-
-
-                </ul>
-            </div>
-        </li>
-
-        <!-- Proyek Strategis Daerah -->
-        @php
-            try {
-                $query = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                    ->where('sub_type', 'psd')
-                    ->select('tahun')
-                    ->distinct()
-                    ->whereNotNull('tahun');
-
-                // Filter khusus jika user adalah admin OPD
-                if (auth()->user()?->role?->slug === 'admin-opd') {
-                    $query->where('user_id', auth()->id());
-                }
-
-                $availableYears = $query->orderBy('tahun', 'desc')->pluck('tahun');
-            } catch (Exception $e) {
-                $availableYears = collect();
-            }
-
-            $isPSDActive =
-                request()->routeIs('psd.*') ||
-                (request()->routeIs('data-spatial.*') &&
-                    request()->get('type') === 'proyek_strategis' &&
-                    request()->get('sub_type') === 'psd') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'psd') ||
-                (request()->routeIs('project-feedbacks.*') &&
-                    request()->get('type') === 'proyek_strategis' &&
-                    request()->get('sub_type') === 'psd');
-            $currentYear = request()->route('year') ?? date('Y');
-        @endphp
-        <li class="nav-item {{ $isPSDActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#psdMenu"
-                aria-expanded="{{ $isPSDActive ? 'true' : 'false' }}" aria-controls="psdMenu">
-                <span class="menu-title">Proyek Strategis Daerah</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-city menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isPSDActive ? 'show' : '' }}" id="psdMenu">
-                <ul class="nav flex-column sub-menu">
-                    <!-- Semua Data PSD -->
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psd' && !request()->route('year') ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('data-spatial.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']) }}">
-                            <i class="mdi mdi-map-marker-path me-2"></i> Semua Data PSD
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <h6 class="sub-menu-header">Data per Tahun</h6>
-                    </li>
-
-                    @if ($availableYears->count() > 0)
-                        @foreach ($availableYears as $year)
-                            <li
-                                class="nav-item {{ request()->routeIs('psd.tahun.show') && request()->route('year') == $year ? 'active' : '' }}">
-                                @if (Route::has('psd.tahun.show'))
-                                    <a class="nav-link" href="{{ route('psd.tahun.show', $year) }}">
-                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                        <span class="badge badge-sm bg-primary ms-auto"
-                                            data-year-count="{{ $year }}">
-                                            @php
-                                                try {
-                                                    echo \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                                                        ->where('sub_type', 'psd')
-                                                        ->where('tahun', $year)
-                                                        ->count();
-                                                } catch (Exception $e) {
-                                                    echo '0';
-                                                }
-                                            @endphp
-                                        </span>
-                                    </a>
-                                @else
-                                    <span class="nav-link">
-                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                        <span class="badge badge-sm bg-secondary ms-auto">
-                                            @php
-                                                try {
-                                                    echo \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                                                        ->where('sub_type', 'psd')
-                                                        ->where('tahun', $year)
-                                                        ->count();
-                                                } catch (Exception $e) {
-                                                    echo '0';
-                                                }
-                                            @endphp
-                                        </span>
-                                    </span>
-                                @endif
-                            </li>
-                        @endforeach
-                    @else
-                        <li class="nav-item">
-                            <span class="nav-link text-muted">
-                                <i class="mdi mdi-information me-2"></i>Belum ada data tahunan
-                            </span>
-                        </li>
-                    @endif
-
-                    <li class="nav-item">
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <!-- Menu kategori PSD -->
-                    <li
-                        class="nav-item {{ request()->routeIs('categories.*') && request()->get('type') == 'psd' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'psd']) }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Daerah
-                        </a>
-                    </li>
-
-                    <!-- Feedback Proyek Strategis Daerah -->
-                    <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psd' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psd']) }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Daerah
-                            {{-- <span class="badge badge-sm bg-info ms-auto">
-                                @php
-                                    try {
-                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('type', 'proyek_strategis_daerah');
-                                        })->count();
-                                    } catch (Exception $e) {
-                                        echo '0';
-                                    }
-                                @endphp
-                            </span> --}}
-                        </a>
-                    </li>
-
-                    <!-- Menu tambah data baru -->
-                    <li class="nav-item">
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.create') && request()->get('type') == 'proyek_strategis' && request()->get('sub_type') == 'psd' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('data-spatial.create') }}?type=proyek_strategis&sub_type=psd">
-                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-
-        <!-- Proyek Strategis Nasional -->
-        @php
-            try {
-                $query = \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                    ->where('sub_type', 'psn')
-                    ->select('tahun')
-                    ->distinct()
-                    ->whereNotNull('tahun');
-
-                // Filter berdasarkan user_id jika role adalah admin-opd
-                if (auth()->user()?->role?->slug === 'admin-opd') {
-                    $query->where('user_id', auth()->id());
-                }
-
-                $availableYearsNasional = $query->orderBy('tahun', 'desc')->pluck('tahun');
-            } catch (Exception $e) {
-                $availableYearsNasional = collect();
-            }
-
-            $isPSNActive =
-                request()->routeIs('psn.*') ||
-                (request()->routeIs('data-spatial.*') &&
-                    request()->get('type') === 'proyek_strategis' &&
-                    request()->get('sub_type') === 'psn') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'psn') ||
-                (request()->routeIs('project-feedbacks.*') &&
-                    request()->get('type') === 'proyek_strategis' &&
-                    request()->get('sub_type') === 'psn');
-        @endphp
-        <li class="nav-item {{ $isPSNActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#psnMenu"
-                aria-expanded="{{ $isPSNActive ? 'true' : 'false' }}" aria-controls="psnMenu">
-                <span class="menu-title">Proyek Strategis Nasional</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-flag menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isPSNActive ? 'show' : '' }}" id="psnMenu">
-                <ul class="nav flex-column sub-menu">
-                    <!-- Semua Data PSN -->
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psn' && !request()->route('year') ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('data-spatial.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']) }}">
-                            <i class="mdi mdi-domain me-2"></i> Semua Data PSN
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <h6 class="sub-menu-header">Data per Tahun</h6>
-                    </li>
-
-                    @if ($availableYearsNasional->count() > 0)
-                        @foreach ($availableYearsNasional as $year)
-                            <li
-                                class="nav-item {{ request()->routeIs('psn.tahun.show') && request()->route('year') == $year ? 'active' : '' }}">
-                                @if (Route::has('psn.tahun.show'))
-                                    <a class="nav-link" href="{{ route('psn.tahun.show', $year) }}">
-                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                        <span class="badge badge-sm bg-primary ms-auto">
-                                            @php
-                                                try {
-                                                    echo \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                                                        ->where('sub_type', 'psn')
-                                                        ->where('tahun', $year)
-                                                        ->count();
-                                                } catch (Exception $e) {
-                                                    echo '0';
-                                                }
-                                            @endphp
-                                        </span>
-                                    </a>
-                                @else
-                                    <span class="nav-link">
-                                        <i class="mdi mdi-calendar me-2"></i>Tahun {{ $year }}
-                                        <span class="badge badge-sm bg-secondary ms-auto">
-                                            @php
-                                                try {
-                                                    echo \App\Models\DataSpatial::where('data_type', 'proyek_strategis')
-                                                        ->where('sub_type', 'psn')
-                                                        ->where('tahun', $year)
-                                                        ->count();
-                                                } catch (Exception $e) {
-                                                    echo '0';
-                                                }
-                                            @endphp
-                                        </span>
-                                    </span>
-                                @endif
-                            </li>
-                        @endforeach
-                    @else
-                        <li class="nav-item">
-                            <span class="nav-link text-muted">
-                                <i class="mdi mdi-information me-2"></i>Belum ada data tahunan
-                            </span>
-                        </li>
-                    @endif
-
-                    <li class="nav-item">
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <!-- Menu kategori PSN -->
-                    <li
-                        class="nav-item {{ request()->routeIs('categories.*') && request()->get('type') == 'psn' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'psn']) }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Proyek Nasional
-                        </a>
-                    </li>
-
-                    <!-- Feedback Proyek Strategis Nasional -->
-                    <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'proyek_strategis' && request()->get('sub_type') === 'psn' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('project-feedbacks.index', ['type' => 'proyek_strategis', 'sub_type' => 'psn']) }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Proyek Nasional
-                            {{-- <span class="badge badge-sm bg-primary ms-auto">
-                                @php
-                                    try {
-                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('type', 'proyek_strategis_nasional');
-                                        })->count();
-                                    } catch (Exception $e) {
-                                        echo '0';
-                                    }
-                                @endphp
-                            </span> --}}
-                        </a>
-                    </li>
-
-                    <!-- Menu tambah data baru -->
-                    <li class="nav-item">
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.create') && request()->get('type') == 'proyek_strategis' && request()->get('sub_type') == 'psn' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('data-spatial.create') }}?type=proyek_strategis&sub_type=psn">
-                            <i class="mdi mdi-plus-circle me-2"></i>Tambah Data Baru
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-
-        <!-- POKIR DPRD -->
-        @php
-            $isPOKIRActive =
-                request()->routeIs('pokir-dprd.*') ||
-                (request()->routeIs('data-spatial.*') && request()->get('type') === 'pokir_dprd') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprd') ||
-                request()->routeIs('kategori-pokir-dprd.*') ||
-                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'pokir_dprd');
-        @endphp
-        <li class="nav-item {{ $isPOKIRActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#pokirMenu"
-                aria-expanded="{{ $isPOKIRActive ? 'true' : 'false' }}" aria-controls="pokirMenu">
-                <span class="menu-title">Pokir DPRD</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-gavel menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isPOKIRActive ? 'show' : '' }}" id="pokirMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'pokir_dprd' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('data-spatial.index', ['type' => 'pokir_dprd']) }}">
-                            <i class="mdi mdi-database me-2"></i>Data Pokir DPRD
-                        </a>
-                    </li>
-
-                    <!-- Kategori Pokir DPRD -->
-                    <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'pokir_dprd') || request()->routeIs('kategori-pokir-dprd.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'pokir_dprd']) }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Pokir
-                        </a>
-                    </li>
-
-                    <!-- Feedback Pokir DPRD -->
-                    <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'pokir_dprd' ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('project-feedbacks.index', ['type' => 'pokir_dprd']) }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Pokir DPRD
-                            {{-- <span class="badge badge-sm bg-warning ms-auto">
-                                @php
-                                    try {
-                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('type', 'pokir_dprd');
-                                        })->count();
-                                    } catch (Exception $e) {
-                                        echo '0';
-                                    }
-                                @endphp
-                            </span> --}}
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-
-        <!-- Usulan Musrenbang -->
-        @php
-            $isMUSRENBANGActive =
-                request()->routeIs('usulan-musrenbang.*') ||
-                (request()->routeIs('data-spatial.*') && request()->get('type') === 'usulan_musrenbang') ||
-                (request()->routeIs('categories.*') && request()->get('type') == 'usulan_musrenbang') ||
-                request()->routeIs('kategori-usulan-musrenbang.*') ||
-                (request()->routeIs('project-feedbacks.*') && request()->get('type') === 'usulan_musrenbang');
-        @endphp
-        <li class="nav-item {{ $isMUSRENBANGActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#usulanmusrenbang"
-                aria-expanded="{{ $isMUSRENBANGActive ? 'true' : 'false' }}" aria-controls="usulanmusrenbang">
-                <span class="menu-title">Usulan Musrenbang</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-forum menu-icon"></i>
-            </a>
-            <div class="collapse {{ $isMUSRENBANGActive ? 'show' : '' }}" id="usulanmusrenbang">
-                <ul class="nav flex-column sub-menu">
-                    <li
-                        class="nav-item {{ request()->routeIs('data-spatial.*') && request()->get('type') === 'usulan_musrenbang' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('data-spatial.index', ['type' => 'usulan_musrenbang']) }}">
-                            <i class="mdi mdi-database me-2"></i>Data Usulan Musrenbang
-                        </a>
-                    </li>
-
-                    <!-- Kategori Usulan Musrenbang -->
-                    <li
-                        class="nav-item {{ (request()->routeIs('categories.*') && request()->get('type') == 'usulan_musrenbang') || request()->routeIs('kategori-usulan-musrenbang.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('categories.index', ['type' => 'usulan_musrenbang']) }}">
-                            <i class="mdi mdi-tag-multiple me-2"></i>Kategori Musrenbang
-                        </a>
-                    </li>
-
-                    <!-- Feedback Usulan Musrenbang -->
-                    <li
-                        class="nav-item {{ request()->routeIs('project-feedbacks.*') && request()->get('type') === 'usulan_musrenbang' ? 'active' : '' }}">
-                        <a class="nav-link"
-                            href="{{ route('project-feedbacks.index', ['type' => 'usulan_musrenbang']) }}">
-                            <i class="mdi mdi-comment-multiple me-2"></i>Feedback Usulan Musrenbang
-                            {{-- <span class="badge badge-sm bg-success ms-auto">
-                                @php
-                                    try {
-                                        echo \App\Models\ProjectFeedback::whereHas('dataSpatial', function ($q) {
-                                            $q->where('type', 'usulan_musrenbang');
-                                        })->count();
-                                    } catch (Exception $e) {
-                                        echo '0';
-                                    }
-                                @endphp
-                            </span> --}}
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </li>
-
-        @if ($slug != 'admin-opd')
-
-            <!-- Upload Dokumen -->
-            @php
-                $isDokumenActive = request()->routeIs('dokumen.*');
-            @endphp
-            @if (Route::has('dokumen.index'))
-                <li class="nav-item {{ $isDokumenActive ? 'active' : '' }}">
-                    <a class="nav-link" data-bs-toggle="collapse" href="#dokumenMenu"
-                        aria-expanded="{{ $isDokumenActive ? 'true' : 'false' }}" aria-controls="dokumenMenu">
-                        <span class="menu-title">Upload Dokumen</span>
-                        <i class="menu-arrow"></i>
-                        <i class="mdi mdi-file-document-multiple menu-icon"></i>
-                    </a>
-                    <div class="collapse {{ $isDokumenActive ? 'show' : '' }}" id="dokumenMenu">
-                        <ul class="nav flex-column sub-menu">
-                            <li class="nav-item {{ request()->routeIs('dokumen.*') ? 'active' : '' }}">
-                                <a class="nav-link" href="{{ route('dokumen.index') }}">
-                                    <i class="mdi mdi-file-document me-2"></i>Upload Dokumen
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
+        @if ($canPetaTematik)
+            <div class="nav-section-label">Pemetaan</div>
         @endif
 
-        @php
-            $isAspirasiMenuActive =
-                request()->routeIs('aspirasi.*') ||
-                request()->routeIs('opd.*') ||
-                request()->routeIs('kategori-aspirasi.*');
+        {{-- Peta Tematik --}}
+        @can('spatial-layers.view')
+            <a class="nav-link {{ request()->routeIs('spatial-layers.*') ? 'active' : '' }}"
+                href="{{ route('spatial-layers.index') }}">
+                <span class="nav-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
+                <span class="nav-text">Layer & Data</span>
+            </a>
+        @endcan
+        @can('categories.view')
+            <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
+                href="{{ route('categories.index') }}">
+                <span class="nav-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                <span class="nav-text">Kategori Peta</span>
+            </a>
+        @endcan
+        @can('project-feedbacks.view')
+            <a class="nav-link {{ request()->routeIs('project-feedbacks.*') ? 'active' : '' }}"
+                href="{{ route('project-feedbacks.index') }}">
+                <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
+                <span class="nav-text">Feedback Peta</span>
+            </a>
+        @endcan
 
-            $isSuperAdmin = auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'super-admin';
-        @endphp
+        @if ($canAspirasiPublikasi)
+            <div class="nav-section-label">Aspirasi & Publikasi</div>
+        @endif
 
-        <li class="nav-item {{ $isAspirasiMenuActive ? 'active' : '' }}">
-            <a class="nav-link" data-bs-toggle="collapse" href="#aspirasiMenu"
-                aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}" aria-controls="aspirasiMenu">
-                <span class="menu-title">Aspirasi</span>
-                <i class="menu-arrow"></i>
-                <i class="mdi mdi-shield-account menu-icon"></i>
+        {{-- Aspirasi --}}
+        @if ($canAspirasi)
+            <a class="nav-link {{ $isAspirasiMenuActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                href="#aspirasiMenu" role="button" aria-expanded="{{ $isAspirasiMenuActive ? 'true' : 'false' }}"
+                aria-controls="aspirasiMenu">
+                <span class="nav-icon"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
+                <span class="nav-text">Aspirasi</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
             </a>
             <div class="collapse {{ $isAspirasiMenuActive ? 'show' : '' }}" id="aspirasiMenu">
-                <ul class="nav flex-column sub-menu">
-                    <li class="nav-item {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('aspirasi.index') }}">
-                            <i class="mdi mdi-shield-account me-2"></i>Data Aspirasi
+                <div class="sidebar-submenu">
+                    @can('aspirasi.view')
+                        <a class="nav-link {{ request()->routeIs('aspirasi.*') ? 'active' : '' }}"
+                            href="{{ route('aspirasi.index') }}">
+                            <span class="nav-text">Data Aspirasi</span>
                         </a>
-                    </li>
-
-                    @if ($isSuperAdmin)
-                        <li class="nav-item {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('kategori-aspirasi.index') }}">
-                                <i class="mdi mdi-tag-multiple me-2"></i>Kategori Aspirasi
-                            </a>
-                        </li>
-                    @endif
-                </ul>
+                    @endcan
+                    @can('kategori-aspirasi.view')
+                        <a class="nav-link {{ request()->routeIs('kategori-aspirasi.*') ? 'active' : '' }}"
+                            href="{{ route('kategori-aspirasi.index') }}">
+                            <span class="nav-text">Kategori Aspirasi</span>
+                        </a>
+                    @endcan
+                </div>
             </div>
-        </li>
-
-        <!-- Coming Soon -->
-        <li class="nav-item {{ request()->routeIs('coming_soon') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('coming_soon') }}">
-                <span class="menu-title">Musrenbang Digital</span>
-                <i class="mdi mdi-laptop menu-icon"></i>
-            </a>
-        </li>
-
-
-        @if (auth()->check() && auth()->user()->role && auth()->user()->role->slug === 'super-admin')
-            <li class="nav-item nav-category">
-                <span
-                    class="nav-link d-flex align-items-center text-uppercase fw-semibold text-secondary opacity-75 border-bottom pb-1 mb-2"
-                    style="cursor: default;">
-                    <i class="mdi mdi-lan me-2 fs-5 opacity-50"></i>
-                    Sistem
-                </span>
-            </li>
-
-            @php
-                $isPublicationActive = request()->routeIs('publications.*');
-            @endphp
-            <!-- Manajemen Publikasi -->
-            <li class="nav-item {{ $isPublicationActive ? 'active' : '' }}">
-                <a class="nav-link" data-bs-toggle="collapse" href="#publicationMenu"
-                    aria-expanded="{{ $isPublicationActive ? 'true' : 'false' }}" aria-controls="publicationMenu">
-                    <span class="menu-title">Manajemen Publikasi</span>
-                    <i class="menu-arrow"></i>
-                    <i class="mdi mdi-book-open-page-variant menu-icon"></i>
-                </a>
-
-                <div class="collapse {{ $isPublicationActive ? 'show' : '' }}" id="publicationMenu">
-                    <ul class="nav flex-column sub-menu">
-                        <li class="nav-item {{ request()->routeIs('publications.index') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('publications.index') }}">
-                                <i class="mdi mdi-format-list-bulleted me-2"></i>Daftar Publikasi
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('publications.downloads.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('publications.downloads.index') }}">
-                                <i class="mdi mdi-account-group me-2"></i>Data Download
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-
-            @php
-                $isSystemActive = request()->routeIs('users.*') || request()->routeIs('settings.*');
-            @endphp
-            <!-- Sistem & Pengguna -->
-            <li class="nav-item {{ $isSystemActive ? 'active' : '' }}">
-                <a class="nav-link" data-bs-toggle="collapse" href="#systemMenu"
-                    aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
-                    <span class="menu-title">Sistem & Pengguna</span>
-                    <i class="menu-arrow"></i>
-                    <i class="mdi mdi-cog-outline menu-icon"></i>
-                </a>
-
-                <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
-                    <ul class="nav flex-column sub-menu">
-                        <li class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('users.index') }}">
-                                <i class="mdi mdi-account-multiple me-2"></i>Manajemen Pengguna
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('opd.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('opd.index') }}">
-                                <i class="mdi mdi-office-building me-2"></i>Manajemen OPD
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('visitors.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('visitors.index') }}">
-                                <i class="mdi mdi-chart-line me-2"></i>Anlisis Pengunjung
-                            </a>
-                        </li>
-                        <li class="nav-item {{ request()->routeIs('logs.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('logs.index') }}">
-                                <i class="mdi mdi-file-document-outline me-2"></i>Log Sistem
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
         @endif
 
-    </ul>
+        @if ($canPublikasi)
+            {{-- Publikasi --}}
+            <a class="nav-link {{ $isPublicationActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                href="#publicationMenu" role="button" aria-expanded="{{ $isPublicationActive ? 'true' : 'false' }}"
+                aria-controls="publicationMenu">
+                <span class="nav-icon"><i class="bi bi-book" aria-hidden="true"></i></span>
+                <span class="nav-text">Manajemen Publikasi</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+            </a>
+            <div class="collapse {{ $isPublicationActive ? 'show' : '' }}" id="publicationMenu">
+                <div class="sidebar-submenu">
+                    <a class="nav-link {{ request()->routeIs('publications.index') ? 'active' : '' }}"
+                        href="{{ route('publications.index') }}">
+                        <span class="nav-text">Daftar Publikasi</span>
+                    </a>
+                    <a class="nav-link {{ request()->routeIs('publications.downloads.*') ? 'active' : '' }}"
+                        href="{{ route('publications.downloads.index') }}">
+                        <span class="nav-text">Data Download</span>
+                    </a>
+                </div>
+            </div>
+        @endif
 
-    <style>
-        .nav-section-divider {
-            height: 1px;
-            background-color: #bdbdbd;
-            margin: 0.75rem 1rem;
-            border: none;
-        }
+        @if ($canMasterData)
+            <div class="nav-section-label">Master Data</div>
 
-        .nav-category .nav-link {
-            pointer-events: none;
-            cursor: default;
-            color: #6c757d !important;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
+            {{-- Master Data --}}
+            <a class="nav-link {{ $isMasterDataActive ? 'active' : '' }}" data-bs-toggle="collapse"
+                href="#masterDataMenu" role="button" aria-expanded="{{ $isMasterDataActive ? 'true' : 'false' }}"
+                aria-controls="masterDataMenu">
+                <span class="nav-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                <span class="nav-text">Master Data</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+            </a>
+            <div class="collapse {{ $isMasterDataActive ? 'show' : '' }}" id="masterDataMenu">
+                <div class="sidebar-submenu">
+                    @can('users.view')
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                            href="{{ route('users.index') }}"><span class="nav-text">Manajemen Pengguna</span></a>
+                    @endcan
+                    @can('opd.view')
+                        <a class="nav-link {{ request()->routeIs('opd.*') ? 'active' : '' }}"
+                            href="{{ route('opd.index') }}"><span class="nav-text">Manajemen OPD</span></a>
+                    @endcan
+                    @can('roles.view')
+                        <a class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
+                            href="{{ route('roles.index') }}"><span class="nav-text">Manajemen Role</span></a>
+                    @endcan
+                </div>
+            </div>
+        @endif
 
-        .nav-category .mdi {
-            opacity: 0.5;
-            font-size: 1.1rem;
-        }
+        @if ($canSistem)
+            <div class="nav-section-label">Sistem</div>
 
-        .sub-menu-header {
-            font-size: 11px;
-            color: #6c757d;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0.5rem 1rem 0.25rem 1rem;
-            font-weight: 600;
-        }
+            {{-- Sistem --}}
+            <a class="nav-link {{ $isSystemActive ? 'active' : '' }}" data-bs-toggle="collapse" href="#systemMenu"
+                role="button" aria-expanded="{{ $isSystemActive ? 'true' : 'false' }}" aria-controls="systemMenu">
+                <span class="nav-icon"><i class="bi bi-gear" aria-hidden="true"></i></span>
+                <span class="nav-text">Sistem</span>
+                <i class="bi bi-chevron-down nav-caret" aria-hidden="true"></i>
+            </a>
+            <div class="collapse {{ $isSystemActive ? 'show' : '' }}" id="systemMenu">
+                <div class="sidebar-submenu">
+                    @can('visitors.view')
+                        <a class="nav-link {{ request()->routeIs('visitors.*') ? 'active' : '' }}"
+                            href="{{ route('visitors.index') }}"><span class="nav-text">Analisis Pengunjung</span></a>
+                    @endcan
+                    @can('document-templates.view')
+                        <a class="nav-link {{ request()->routeIs('document-templates.*') ? 'active' : '' }}"
+                            href="{{ route('document-templates.index') }}"><span class="nav-text">Template Dokumen</span></a>
+                    @endcan
+                    @can('logs.view')
+                        <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
+                            href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>
+                    @endcan
+                </div>
+            </div>
+        @endif
+    </nav>
 
-        .badge-sm {
-            font-size: 0.65rem;
-            padding: 0.2rem 0.4rem;
-        }
+    @if ($user)
+        <div class="sidebar-user">
+            <img class="avatar-img avatar-md sidebar-user-avatar" src="{{ $sidebarAvatar }}"
+                alt="{{ $user->name }}">
+            <strong>{{ $slug === 'admin-opd' && $user->opd ? $user->opd->singkatan : $user->name }}</strong>
+            <small>{{ $user->role?->name }}</small>
+        </div>
+    @endif
 
-        .dropdown-divider {
-            border-top: 1px solid #e3e6f0;
-            margin: 0.5rem 1rem;
-        }
-
-        /* Enhanced styling for feedback menu items */
-        .nav-item .nav-link:hover .badge {
-            background-color: rgba(255, 255, 255, 0.2) !important;
-        }
-
-        /* Active state for nested items */
-        .nav-item.active>.nav-link .badge {
-            background-color: rgba(255, 255, 255, 0.3) !important;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        /* Feedback menu styling */
-        .nav-item .nav-link .badge {
-            transition: all 0.3s ease;
-        }
-
-        .nav-item:hover .nav-link .badge {
-            transform: scale(1.1);
-        }
-
-        /* Color coding for different feedback types */
-        .badge.bg-danger {
-            background-color: #dc3545 !important;
-        }
-
-        /* RPJMD */
-        .badge.bg-warning {
-            background-color: #ffc107 !important;
-        }
-
-        /* Pokir DPRD */
-        .badge.bg-success {
-            background-color: #28a745 !important;
-        }
-
-        /* Usulan Musrenbang */
-        .badge.bg-primary {
-            background-color: #007bff !important;
-        }
-
-        /* PSN */
-        .badge.bg-info {
-            background-color: #17a2b8 !important;
-        }
-
-        /* PSD & Semua */
-    </style>
-</nav>
+    <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span class="sidebar-footer-text">Sistem berjalan normal</span>
+    </div>
+</aside>

@@ -1,4 +1,4 @@
-@extends('backend.partials.main')
+@extends('backend.partials.main', ['title' => 'Feedback Peta'])
 
 @section('main')
     <!-- Add CSRF token to meta for AJAX requests -->
@@ -6,187 +6,198 @@
 
     <div class="page-header">
         <h3 class="page-title">
-            <span class="page-title-icon bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white me-2">
-                <!-- Icon Marker -->
-                <i class="fa fa-map-marker"></i>
-            </span> {{ $projectTypeInfo['name'] ?? 'Tanggapan Masyarakat' }}
+            <span class="page-title-icon bg-gradient-primary text-white me-2">
+                <i class="mdi mdi-comment-text-multiple"></i>
+            </span>
+            Feedback Peta
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
                 <li class="breadcrumb-item">
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ route('project-feedbacks.index') }}">Feedback</a>
-                </li>
-                @if ($type !== 'all')
-                    <li class="breadcrumb-item active" aria-current="page">
-                        {{ $projectTypeInfo['name'] }}
-                    </li>
-                @else
-                    <li class="breadcrumb-item active" aria-current="page">
-                        Semua
-                    </li>
-                @endif
+                <li class="breadcrumb-item active" aria-current="page">Feedback Peta</li>
             </ul>
         </nav>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-warning card-img-holder text-white">
+    <div class="row g-3 stats-row-compact">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-primary text-white">
                 <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Pending
-                        <i class="mdi mdi-clock-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['pending'] ?? 0 }}</h2>
-                    <h6 class="card-text">Menunggu proses lanjutan</h6>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Total Feedback</p>
+                            <h3 class="stat-value">{{ $stats['total'] ?? 0 }}</h3>
+                        </div>
+                        <i class="mdi mdi-comment-text-multiple stat-icon"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-info card-img-holder text-white">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-warning text-white">
                 <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Ditinjau
-                        <i class="mdi mdi-eye-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['ditinjau'] ?? 0 }}</h2>
-                    <h6 class="card-text">Sedang dalam peninjauan</h6>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Pending</p>
+                            <h3 class="stat-value">{{ $stats['pending'] ?? 0 }}</h3>
+                        </div>
+                        <i class="mdi mdi-clock-outline stat-icon"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-primary card-img-holder text-white">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-info text-white">
                 <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Ditindaklanjuti
-                        <i class="mdi mdi-cog-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['ditindaklanjuti'] ?? 0 }}</h2>
-                    <h6 class="card-text">Dalam proses tindak lanjut</h6>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Dalam Proses</p>
+                            <h3 class="stat-value">{{ ($stats['ditinjau'] ?? 0) + ($stats['ditindaklanjuti'] ?? 0) }}</h3>
+                        </div>
+                        <i class="mdi mdi-cog-outline stat-icon"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-success card-img-holder text-white">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card-compact bg-gradient-success text-white">
                 <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Selesai
-                        <i class="mdi mdi-check-circle-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['selesai'] ?? 0 }}</h2>
-                    <h6 class="card-text">Telah diselesaikan</h6>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label">Selesai</p>
+                            <h3 class="stat-value">{{ $stats['selesai'] ?? 0 }}</h3>
+                        </div>
+                        <i class="mdi mdi-check-circle stat-icon"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="row">
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title">
-                            <!-- Icon Marker -->
-                            <i class="fa fa-map-marker"></i>
-                            Daftar {{ $projectTypeInfo['name'] }}
-                        </h4>
-                        <div class="d-flex gap-2">
-                            <!-- Filter Dropdown -->
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown"
-                                    data-bs-toggle="dropdown">
-                                    <i class="mdi mdi-filter"></i> Filter
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="all">Semua</a>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <h6 class="dropdown-header">Status</h6>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="pending">Pending</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="ditinjau">Ditinjau</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="ditindaklanjuti">Ditindaklanjuti</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="selesai">Selesai</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <h6 class="dropdown-header">Jenis</h6>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="keluhan">Keluhan</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#" data-filter="saran">Saran</a>
-                                    </li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="apresiasi">Apresiasi</a></li>
-                                    <li><a class="dropdown-item filter-item" href="#"
-                                            data-filter="pertanyaan">Pertanyaan</a></li>
-                                </ul>
-                            </div>
-                            <button type="button" class="btn btn-warning w-100" id="resetFilter">
-                                <i class="mdi mdi-refresh"></i> Reset Filter
+                        <h4 class="card-title">Daftar Feedback</h4>
+                        @can('project-feedbacks.respond')
+                            <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
+                                data-bs-target="#addModal">
+                                <i class="mdi mdi-plus"></i> Tambah Feedback
                             </button>
-                        </div>
+                        @endcan
                     </div>
 
-                    <!-- Search Box -->
-                    <div class="row mb-3">
-                        <div class="col-lg-6 col-md-12 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
-                                <input type="text" class="form-control" id="searchInput"
-                                    placeholder="Cari berdasarkan nama, proyek, atau tanggapan...">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 col-md-6 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-map-marker"></i></span>
-                                <select class="form-control" id="kabupatenFilter">
-                                    <option value="">Semua Kabupaten</option>
-                                    @foreach ($kabupaten_list as $kab)
-                                        <option value="{{ $kab }}">{{ $kab }}</option>
+                    <!-- Filter: dikirim ke server supaya berlaku untuk semua halaman, bukan cuma baris yang tampil -->
+                    <form method="GET" action="{{ route('project-feedbacks.index') }}" id="feedbackFilterForm"
+                        class="mb-4">
+                        <div class="row g-3 align-items-end filter-toolbar mb-3">
+                            <div class="col-lg-3 col-md-4">
+                                <label for="statusFilter" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-flag me-1"></i>Status
+                                </label>
+                                <select class="form-select filter-control auto-submit" id="statusFilter" name="status">
+                                    <option value="">Semua Status</option>
+                                    @foreach (['pending' => 'Pending', 'ditinjau' => 'Ditinjau', 'ditindaklanjuti' => 'Ditindaklanjuti', 'selesai' => 'Selesai'] as $value => $label)
+                                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                        </div>
-                    </div>
 
+                            <div class="col-lg-3 col-md-4">
+                                <label for="jenisFilter" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-shape-outline me-1"></i>Jenis
+                                </label>
+                                <select class="form-select filter-control auto-submit" id="jenisFilter" name="jenis">
+                                    <option value="">Semua Jenis</option>
+                                    @foreach (['keluhan' => 'Keluhan', 'saran' => 'Saran', 'apresiasi' => 'Apresiasi', 'pertanyaan' => 'Pertanyaan'] as $value => $label)
+                                        <option value="{{ $value }}" @selected(request('jenis') === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-lg-3 col-md-4">
+                                <label for="kabupatenFilter" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-map-marker me-1"></i>Kabupaten/Kota
+                                </label>
+                                <select class="form-select filter-control auto-submit" id="kabupatenFilter"
+                                    name="kabupaten_kota">
+                                    <option value="">Semua Kabupaten/Kota</option>
+                                    @foreach ($kabupaten_list as $kab)
+                                        <option value="{{ $kab }}" @selected(request('kabupaten_kota') === $kab)>{{ $kab }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            @if (in_array($userRole, ['super-admin', 'admin-bappeda']))
+                                <div class="col-lg-3 col-md-4">
+                                    <label for="opdFilter" class="form-label fw-semibold mb-1">
+                                        <i class="mdi mdi-domain me-1"></i>OPD
+                                    </label>
+                                    <select class="form-select filter-control auto-submit" id="opdFilter" name="opd_id">
+                                        <option value="">Semua OPD</option>
+                                        @foreach ($opd as $opdItem)
+                                            <option value="{{ $opdItem->id }}" @selected((string) request('opd_id') === (string) $opdItem->id)>
+                                                {{ $opdItem->singkatan ?: $opdItem->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="row g-3 align-items-end justify-content-between filter-toolbar">
+                            <div class="col-lg-6 col-md-6">
+                                <label for="searchInput" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-magnify me-1"></i>Cari Feedback
+                                </label>
+                                <div class="input-group filter-input-group">
+                                    <input type="text" class="form-control filter-control" id="searchInput"
+                                        name="search" value="{{ request('search') }}"
+                                        placeholder="Nama, email, proyek, atau isi tanggapan...">
+                                    <button class="btn btn-md btn-primary filter-btn" type="submit">
+                                        <i class="mdi mdi-magnify"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-3 col-md-3">
+                                <label for="per_page" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-table-row me-1"></i>Per halaman
+                                </label>
+                                <select class="form-select filter-control auto-submit" id="per_page" name="per_page">
+                                    @foreach ([10, 25, 50, 100] as $size)
+                                        <option value="{{ $size }}" @selected($feedbacks->perPage() === $size)>{{ $size }} data</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-lg-2 col-md-3">
+                                <a href="{{ route('project-feedbacks.index') }}" class="btn btn-outline-secondary w-100"
+                                    title="Reset semua filter">
+                                    <i class="mdi mdi-filter-remove"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
 
                     <!-- Alert Container -->
                     <div id="alertContainer"></div>
 
-                    <!-- Ganti bagian table-responsive dengan ini -->
-                    <div class="table-responsive" style="overflow-x: auto;">
-                        <table class="table table-hover" id="feedbackTable" style="min-width: 1000px;">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="feedbackTable" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th class="text-center">No</th>
-                                    <th>Nama Pemberi</th>
+                                    <th class="text-center" style="width: 40px;">No</th>
+                                    <th>Pemberi</th>
                                     <th class="d-none d-md-table-cell">Proyek Terkait</th>
-                                    <th class="d-none d-lg-table-cell">OPD Yang Bertanggung Jawab</th>
+                                    <th class="d-none d-lg-table-cell">OPD Penanggung Jawab</th>
                                     <th class="text-center">Jenis</th>
                                     <th class="text-center">Status</th>
                                     <th class="d-none d-md-table-cell text-center">Tanggal</th>
@@ -195,219 +206,120 @@
                             </thead>
                             <tbody>
                                 @forelse($feedbacks as $index => $feedback)
-                                    <tr data-id="{{ $feedback->id }}" data-status="{{ $feedback->status }}"
-                                        data-jenis="{{ $feedback->jenis_tanggapan }}"
-                                        data-kabupaten="{{ $feedback->kabupaten_kota }}"
-                                        data-opd="{{ $feedback->opd_id }}"
-                                        data-search="{{ strtolower($feedback->nama_pemberi_aspirasi . ' ' . $feedback->nama_proyek . ' ' . $feedback->tanggapan) }}">
+                                    @php
+                                        $jenisBadge = match (strtolower($feedback->jenis_tanggapan)) {
+                                            'keluhan' => 'danger',
+                                            'saran' => 'info',
+                                            'apresiasi' => 'success',
+                                            'pertanyaan' => 'warning',
+                                            default => 'secondary',
+                                        };
+                                        $statusBadge = match (strtolower($feedback->status)) {
+                                            'pending' => 'warning',
+                                            'ditinjau' => 'info',
+                                            'ditindaklanjuti' => 'primary',
+                                            'selesai' => 'success',
+                                            default => 'secondary',
+                                        };
+                                    @endphp
+                                    <tr data-id="{{ $feedback->id }}">
                                         <td class="text-center">{{ $feedbacks->firstItem() + $index }}</td>
                                         <td>
-                                            <div class="d-flex flex-column">
-                                                <strong class="text-truncate"
-                                                    style="max-width: 150px;">{{ $feedback->nama_pemberi_aspirasi }}</strong>
-                                                @if ($feedback->email)
-                                                    <small class="text-muted text-truncate"
-                                                        style="max-width: 150px;">{{ $feedback->email }}</small>
-                                                @endif
-                                                <!-- Mobile view: Show project, OPD and tanggapan on small screens -->
-                                                <div class="d-md-none mt-1">
-                                                    <small class="text-muted">
-                                                        <strong>Proyek:</strong>
-                                                        {{ Str::limit($feedback->nama_proyek, 30) }}
-                                                    </small>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        <strong>OPD:</strong>
-                                                        {{ $feedback->opd ? Str::limit($feedback->opd->name, 25) : 'Belum dipilih' }}
-                                                    </small>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        <strong>Tanggapan:</strong>
-                                                        {{ Str::limit($feedback->tanggapan, 50) }}
-                                                    </small>
-                                                </div>
+                                            <span class="text-dark fw-bold">{{ $feedback->nama_pemberi_aspirasi }}</span>
+                                            @if ($feedback->email)
+                                                <br><small class="text-muted">{{ $feedback->email }}</small>
+                                            @endif
+                                            <div class="d-md-none mt-1">
+                                                <small class="text-muted">{{ Str::limit($feedback->nama_proyek, 40) }}</small>
                                             </div>
                                         </td>
                                         <td class="d-none d-md-table-cell">
-                                            <div class="d-flex flex-column">
-                                                <strong class="text-truncate"
-                                                    style="max-width: 200px;">{{ $feedback->nama_proyek }}</strong>
-                                            </div>
+                                            <span class="text-dark">{{ Str::limit($feedback->nama_proyek, 60) }}</span>
+                                            <br><small class="text-muted">{{ Str::limit($feedback->tanggapan, 60) }}</small>
                                         </td>
                                         <td class="d-none d-lg-table-cell">
-                                            <div class="d-flex align-items-center">
-                                                @if ($feedback->opd)
-                                                    <div class="flex-grow-1">
-                                                        <div class="d-flex align-items-center">
-                                                            @if ($feedback->opd->logo)
-                                                                <img src="{{ asset('storage/opd-logos/' . $feedback->opd->logo) }}"
-                                                                    alt="Logo {{ $feedback->opd->singkatan }}"
-                                                                    class="rounded me-2"
-                                                                    style="width: 24px; height: 24px; object-fit: cover;">
-                                                            @endif
-                                                            <div>
-                                                                <strong class="text-truncate d-block"
-                                                                    style="max-width: 150px;">
-                                                                    {{ $feedback->opd->name }}
-                                                                </strong>
-                                                                @if ($feedback->opd->singkatan)
-                                                                    <small class="text-muted">
-                                                                        <i
-                                                                            class="mdi mdi-tag-outline me-1"></i>{{ $feedback->opd->singkatan }}
-                                                                    </small>
-                                                                @endif
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    @if (in_array($userRole, ['super-admin', 'admin-bappeda']))
-                                                        <button type="button"
-                                                            class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
+                                            @if ($feedback->opd)
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <small class="text-muted" title="{{ $feedback->opd->name }}">
+                                                        {{ $feedback->opd->singkatan ?: Str::limit($feedback->opd->name, 30) }}
+                                                    </small>
+                                                    @if (in_array($userRole, ['super-admin', 'admin-bappeda']) && auth()->user()->can('project-feedbacks.respond'))
+                                                        <button type="button" class="btn btn-sm btn-outline-primary btn-change-opd"
                                                             data-id="{{ $feedback->id }}"
                                                             data-current-opd="{{ $feedback->opd_id }}" title="Ubah OPD">
                                                             <i class="mdi mdi-pencil"></i>
                                                         </button>
                                                     @endif
-                                                @else
-                                                    <div class="flex-grow-1">
-                                                        <select class="form-select form-select-sm opd-select"
-                                                            data-feedback-id="{{ $feedback->id }}"
-                                                            onchange="updateOpdFeedback({{ $feedback->id }}, this.value)">
-                                                            <option value="">Pilih OPD Yang Bertanggung Jawab
-                                                            </option>
-                                                            @foreach ($opd as $opdItem)
-                                                                <option value="{{ $opdItem->id }}">
-                                                                    {{ $opdItem->name }}
-                                                                    @if ($opdItem->singkatan)
-                                                                        ({{ $opdItem->singkatan }})
-                                                                    @endif
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                @endif
-                                            </div>
+                                                </div>
+                                            @else
+                                                <select class="form-select form-select-sm opd-select"
+                                                    data-feedback-id="{{ $feedback->id }}"
+                                                    onchange="updateOpdFeedback({{ $feedback->id }}, this.value)">
+                                                    <option value="">Pilih OPD</option>
+                                                    @foreach ($opd as $opdItem)
+                                                        <option value="{{ $opdItem->id }}">
+                                                            {{ $opdItem->singkatan ?: $opdItem->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
                                         </td>
                                         <td class="text-center">
-                                            @php
-                                                $jenis = strtolower($feedback->jenis_tanggapan);
-                                                $jenisBadge = match ($jenis) {
-                                                    'keluhan' => 'danger',
-                                                    'saran' => 'info',
-                                                    'apresiasi' => 'success',
-                                                    'pertanyaan' => 'warning',
-                                                    default => 'secondary',
-                                                };
-                                            @endphp
-                                            <span class="badge bg-{{ $jenisBadge }} d-none d-sm-inline">
-                                                {{ ucfirst($feedback->jenis_tanggapan) }}
-                                            </span>
-                                            <!-- Mobile badge with shorter text -->
-                                            <span class="badge bg-{{ $jenisBadge }} d-sm-none">
-                                                {{ substr(ucfirst($feedback->jenis_tanggapan), 0, 1) }}
-                                            </span>
+                                            <span class="badge bg-{{ $jenisBadge }} text-white">{{ ucfirst($feedback->jenis_tanggapan) }}</span>
                                         </td>
                                         <td class="text-center">
-                                            @php
-                                                $statusBadge = match (strtolower($feedback->status)) {
-                                                    'pending' => 'warning',
-                                                    'ditinjau' => 'info',
-                                                    'ditindaklanjuti' => 'primary',
-                                                    'selesai' => 'success',
-                                                    default => 'light',
-                                                };
-                                            @endphp
-                                            <span class="badge bg-{{ $statusBadge }} d-none d-sm-inline">
-                                                {{ ucfirst($feedback->status) }}
-                                            </span>
-                                            <!-- Mobile badge with icon -->
-                                            <span class="badge bg-{{ $statusBadge }} d-sm-none">
-                                                @switch($feedback->status)
-                                                    @case('pending')
-                                                        <i class="mdi mdi-clock-outline"></i>
-                                                    @break
-
-                                                    @case('ditinjau')
-                                                        <i class="mdi mdi-eye-outline"></i>
-                                                    @break
-
-                                                    @case('ditindaklanjuti')
-                                                        <i class="mdi mdi-cog-outline"></i>
-                                                    @break
-
-                                                    @case('selesai')
-                                                        <i class="mdi mdi-check-circle-outline"></i>
-                                                    @break
-                                                @endswitch
-                                            </span>
+                                            <span class="badge bg-{{ $statusBadge }} text-white">{{ ucfirst($feedback->status) }}</span>
                                         </td>
                                         <td class="d-none d-md-table-cell text-center">
-                                            <small>{{ $feedback->created_at->format('d/m/Y') }}</small>
+                                            <small class="text-muted">{{ $feedback->created_at->format('d/m/Y') }}</small>
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-show"
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-show"
                                                     data-id="{{ $feedback->id }}" data-bs-toggle="modal"
-                                                    data-bs-target="#showModal" title="Lihat Detail">
+                                                    data-bs-target="#showModal" title="Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                                                    data-id="{{ $feedback->id }}"
-                                                    onclick="deleteFeedback({{ $feedback->id }})" title="Hapus">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
+                                                @can('project-feedbacks.delete')
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
+                                                        style="margin-left:-1px;" data-id="{{ $feedback->id }}"
+                                                        onclick="deleteFeedback({{ $feedback->id }})" title="Hapus">
+                                                        <i class="mdi mdi-delete"></i>
+                                                    </button>
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>
-                                    @empty
-                                        <tr id="no-data-row">
-                                            <td colspan="8" class="text-center">
-                                                <div class="py-4">
-                                                    <!-- Icon Marker -->
-                                                    <i class="fa fa-map-marker"></i>
-                                                    <p class="text-muted mt-2">
-                                                        Tidak ada feedback untuk {{ $projectTypeInfo['name'] }}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Tambahkan CSS minimal ini saja -->
-                        <style>
-                            /* Horizontal scroll untuk tabel */
-                            .table-responsive {
-                                -webkit-overflow-scrolling: touch;
-                                /* Smooth scrolling di mobile */
-                            }
-
-                            /* Pastikan tabel memiliki lebar minimum untuk memaksa scroll */
-                            #feedbackTable {
-                                white-space: nowrap;
-                                /* Mencegah text wrapping yang berlebihan */
-                            }
-
-                            #feedbackTable th,
-                            #feedbackTable td {
-                                white-space: normal;
-                                /* Reset untuk konten sel */
-                            }
-                        </style>
+                                @empty
+                                    <tr id="no-data-row">
+                                        <td colspan="8" class="text-center py-4">
+                                            <i class="mdi mdi-comment-off-outline mdi-48px text-muted"></i>
+                                            @if (request()->hasAny(['status', 'jenis', 'kabupaten_kota', 'opd_id', 'search']))
+                                                <h5 class="text-muted mt-2">Tidak ada feedback yang cocok dengan filter</h5>
+                                                <p class="text-muted">Ubah atau reset filter untuk melihat data lain</p>
+                                            @else
+                                                <h5 class="text-muted mt-2">Belum ada feedback</h5>
+                                                <p class="text-muted">Feedback masyarakat dari halaman detail peta akan muncul di sini</p>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
                         <!-- Pagination -->
-                        @if ($feedbacks->hasPages())
-                            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-                                <div class="mb-2 mb-md-0">
-                                    <span class="text-muted">
-                                        Menampilkan {{ $feedbacks->firstItem() ?? 0 }} - {{ $feedbacks->lastItem() ?? 0 }}
-                                        dari {{ $feedbacks->total() }} data
-                                    </span>
+                        @if ($feedbacks->total() > 0)
+                            <div class="row mt-3 align-items-center">
+                                <div class="col-sm-12 col-md-5">
+                                    <small class="text-muted">
+                                        Menampilkan {{ $feedbacks->firstItem() }} sampai {{ $feedbacks->lastItem() }}
+                                        dari {{ $feedbacks->total() }} Feedback
+                                    </small>
                                 </div>
-                                <nav>
-                                    {{ $feedbacks->appends(request()->query())->links('pagination::bootstrap-4', ['class' => 'pagination-sm']) }}
-                                </nav>
+                                <div class="col-sm-12 col-md-7 d-flex justify-content-md-end">
+                                    {{ $feedbacks->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -454,43 +366,30 @@
         <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                    <div class="modal-header">
                         <h5 class="modal-title" id="addModalLabel">
-                            <i class="mdi-plus me-2"></i>
-                            Tambah Feedback {{ $projectTypeInfo['name'] }}
+                            <i class="mdi mdi-plus"></i>
+                            Tambah Feedback
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
                     <form id="addForm" action="{{ route('project-feedbacks.store') }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
-                        <input type="hidden" name="filter_type" value="{{ $type }}">
-                        <input type="hidden" name="filter_sub_type" value="{{ $subType }}">
                         <div class="modal-body">
-                            @if ($type !== 'all' && !empty($availableProjects) && $availableProjects->count() > 0)
-                                <div class="row">
+                            <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-group mb-3">
-                                            <label for="data_spatial_id" class="form-label">Pilih
-                                                {{ $projectTypeInfo['name'] }} <span class="text-danger">*</span></label>
+                                            <label for="data_spatial_id" class="form-label">Pilih Data Spasial
+                                                <span class="text-danger">*</span></label>
                                             <select class="form-control" id="data_spatial_id" name="data_spatial_id"
-                                                required>
-                                                <option value="">-- Pilih {{ $projectTypeInfo['name'] }} --</option>
-                                                @foreach ($availableProjects as $project)
-                                                    <option value="{{ $project->id }}">
-                                                        {{ $project->deskripsi ?? 'Tanpa Deskripsi' }}
-                                                        @if ($project->uuid)
-                                                            ({{ Str::limit($project->uuid, 8) }}...)
-                                                        @endif
-                                                    </option>
-                                                @endforeach
+                                                data-search-url="{{ route('project-feedbacks.data-spatial') }}" required>
                                             </select>
                                             <div class="invalid-feedback"></div>
                                         </div>
                                     </div>
                                 </div>
-                            @endif
 
                             <div class="row">
                                 <div class="col-md-6">
@@ -610,7 +509,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}">
+                            <button type="submit" class="btn btn-gradient-primary">
                                 <i class="mdi mdi-content-save"></i> Simpan
                             </button>
                         </div>
@@ -623,12 +522,12 @@
         <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
-                    <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                    <div class="modal-header">
                         <h5 class="modal-title" id="showModalLabel">
-                            <i class="mdi-eye me-2"></i>
-                            Detail {{ $projectTypeInfo['name'] }}
+                            <i class="mdi mdi-eye"></i>
+                            Detail Feedback
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -805,11 +704,13 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="mdi mdi-close"></i> Tutup
                         </button>
+@can('project-feedbacks.respond')
                         <button type="button"
-                            class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} btn-respond"
+                            class="btn btn-gradient-primary btn-respond"
                             id="btnRespond">
                             <i class="mdi mdi-reply"></i> Beri Response
                         </button>
+@endcan
                     </div>
                 </div>
             </div>
@@ -819,11 +720,11 @@
         <div class="modal fade" id="responseModal" tabindex="-1" aria-labelledby="responseModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header bg-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }} text-white">
+                    <div class="modal-header">
                         <h5 class="modal-title" id="responseModalLabel">
                             <i class="mdi mdi-reply me-2"></i> Beri Response Admin
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
                     <form id="responseForm" method="POST">
@@ -851,7 +752,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-gradient-{{ $projectTypeInfo['color'] ?? 'primary' }}">
+                            <button type="submit" class="btn btn-gradient-primary">
                                 <i class="mdi mdi-send"></i> Kirim Response
                             </button>
                         </div>
@@ -862,10 +763,10 @@
     @endsection
 
     @section('scripts')
+        <link rel="stylesheet" href="{{ asset('backend/assets/vendors/select2/select2.min.css') }}">
+        <script src="{{ asset('backend/assets/vendors/select2/select2.min.js') }}"></script>
         <script>
             $(document).ready(function() {
-                const currentType = '{{ $type }}';
-                const currentSubType = '{{ $subType }}';
 
                 // Data kecamatan untuk setiap kabupaten di Maluku Utara
                 const kecamatanData = {
@@ -1006,93 +907,9 @@
                     }
                 });
 
-                // Client-side filtering functionality
-                function filterTable() {
-                    const searchTerm = $('#searchInput').val().toLowerCase();
-                    const kabupatenFilter = $('#kabupatenFilter').val();
-                    const activeFilter = $('.filter-item.active').data('filter') || 'all';
-
-                    let visibleCount = 0;
-
-                    $('#feedbackTable tbody tr').each(function() {
-                        const $row = $(this);
-
-                        if ($row.attr('id') === 'no-data-row') {
-                            return;
-                        }
-
-                        let showRow = true;
-
-                        // Search filter
-                        if (searchTerm) {
-                            const searchData = $row.data('search') || '';
-                            if (!searchData.includes(searchTerm)) {
-                                showRow = false;
-                            }
-                        }
-
-                        // Kabupaten filter
-                        if (kabupatenFilter) {
-                            const rowKabupaten = $row.data('kabupaten');
-                            if (rowKabupaten !== kabupatenFilter) {
-                                showRow = false;
-                            }
-                        }
-
-                        // Status/Jenis filter
-                        if (activeFilter !== 'all') {
-                            const rowStatus = $row.data('status');
-                            const rowJenis = $row.data('jenis');
-
-                            if (rowStatus !== activeFilter && rowJenis !== activeFilter) {
-                                showRow = false;
-                            }
-                        }
-
-                        if (showRow) {
-                            $row.show();
-                            visibleCount++;
-                            $row.find('td:first').text(visibleCount);
-                        } else {
-                            $row.hide();
-                        }
-                    });
-
-                    // Show/hide no data message
-                    const $noDataRow = $('#no-data-row');
-                    if (visibleCount === 0 && $noDataRow.length === 0) {
-                        $('#feedbackTable tbody').append(`
-                <tr id="no-data-row">
-                    <td colspan="8" class="text-center">
-                        <div class="py-4">
-                        <i class="mdi mdi-map-marker me-2"></i>
-                            <p class="text-muted mt-2">Tidak ada data yang cocok dengan filter</p>
-                        </div>
-                    </td>
-                </tr>
-            `);
-                    } else if (visibleCount > 0) {
-                        $noDataRow.remove();
-                    }
-                }
-
-                // Event Handlers
-                $('.filter-item').on('click', function(e) {
-                    e.preventDefault();
-                    $('.filter-item').removeClass('active');
-                    $(this).addClass('active');
-                    filterTable();
-                });
-
-                $('#searchInput').on('input', filterTable);
-                $('#kabupatenFilter').on('change', filterTable);
-
-                $('#resetFilter').on('click', function() {
-                    $('.filter-item').removeClass('active');
-                    $('.filter-item[data-filter="all"]').addClass('active');
-                    $('#searchInput').val('');
-                    $('#kabupatenFilter').val('');
-                    filterTable();
+                // Filter dikirim ke server; select langsung menerapkan filter saat berubah.
+                $('#feedbackFilterForm .auto-submit').on('change', function() {
+                    $('#feedbackFilterForm').trigger('submit');
                 });
 
                 // Add Modal
@@ -1101,6 +918,31 @@
                     form[0].reset();
                     clearFormErrors(form);
                     $('#add_kecamatan').empty().append('<option value="">-- Pilih Kecamatan --</option>');
+                    $('#data_spatial_id').val(null).trigger('change');
+                });
+
+                // Pilih data spasial lewat pencarian (jumlahnya puluhan ribu, tidak dimuat sekaligus)
+                const dataSpatialSelect = $('#data_spatial_id');
+                dataSpatialSelect.select2({
+                    width: '100%',
+                    dropdownParent: $('#addModal'),
+                    placeholder: '-- Cari data spasial --',
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: dataSpatialSelect.data('search-url'),
+                        dataType: 'json',
+                        delay: 300,
+                        data: params => ({ search: params.term, page: params.page || 1 }),
+                    },
+                    language: {
+                        inputTooShort: () => 'Ketik minimal 2 huruf',
+                        noResults: () => 'Data spasial tidak ditemukan',
+                        searching: () => 'Mencari...',
+                    },
+                });
+
+                dataSpatialSelect.on('select2:select', function(e) {
+                    $('#add_nama_proyek').val(e.params.data.nama_proyek || e.params.data.text);
                 });
 
                 // Add Form Submit
@@ -1149,15 +991,7 @@
                 $(document).on('click', '.btn-show', function() {
                     const id = $(this).data('id');
 
-                    // Build the correct URL based on current context
-                    let showUrl = '';
-                    if (currentType !== 'all') {
-                        // If we're in a filtered view, maintain the URL structure
-                        const currentParams = new URLSearchParams(window.location.search);
-                        showUrl = `${window.location.pathname}/${id}?${currentParams.toString()}`;
-                    } else {
-                        showUrl = `{{ route('project-feedbacks.index') }}/${id}`;
-                    }
+                    const showUrl = `{{ route('project-feedbacks.index') }}/${id}`;
 
                     $.ajax({
                         url: showUrl,
@@ -1488,14 +1322,7 @@
                         _token: $('meta[name="csrf-token"]').attr('content')
                     };
 
-                    // Build the correct respond URL
-                    let respondUrl = '';
-                    if (currentType !== 'all') {
-                        const currentParams = new URLSearchParams(window.location.search);
-                        respondUrl = `${window.location.pathname}/${id}/respond?${currentParams.toString()}`;
-                    } else {
-                        respondUrl = `{{ route('project-feedbacks.index') }}/${id}/respond`;
-                    }
+                    const respondUrl = `{{ route('project-feedbacks.index') }}/${id}/respond`;
 
                     $.ajax({
                         url: respondUrl,
@@ -1563,13 +1390,7 @@
                                 }
                             });
 
-                            let deleteUrl = '';
-                            if (currentType !== 'all') {
-                                const currentParams = new URLSearchParams(window.location.search);
-                                deleteUrl = `${window.location.pathname}/${id}?${currentParams.toString()}`;
-                            } else {
-                                deleteUrl = `{{ route('project-feedbacks.index') }}/${id}`;
-                            }
+                            const deleteUrl = `{{ route('project-feedbacks.index') }}/${id}`;
 
                             $.ajax({
                                 url: deleteUrl,
@@ -1588,10 +1409,8 @@
                                             showConfirmButton: false
                                         });
 
-                                        $(`tr[data-id="${id}"]`).fadeOut(function() {
-                                            $(this).remove();
-                                            filterTable();
-                                        });
+                                        // Muat ulang supaya nomor urut, statistik, dan pagination ikut terbarui.
+                                        setTimeout(() => location.reload(), 1500);
                                     }
                                 },
                                 error: function(xhr) {
@@ -1687,12 +1506,14 @@
                         </div>
                     </div>
                 </div>
+@can('project-feedbacks.respond')
                 <button type="button" class="btn btn-sm btn-outline-primary ms-2 btn-change-opd"
                         data-id="${feedbackId}" 
                         data-current-opd="${opdData.id}" 
                         title="Ubah OPD">
                     <i class="mdi mdi-pencil"></i>
                 </button>
+@endcan
             </div>
         `;
                 }
@@ -1883,368 +1704,77 @@
             }
         </script>
         <style>
-            .input-group .form-control,
-            .input-group .form-select {
-                height: calc(1.5em + .75rem + 2px);
-                /* Atur sesuai kebutuhan */
-            }
-
-            /* Responsive Table Styles */
-            .table-responsive {
-                border-radius: 10px;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            }
-
+            /* Disamakan dengan halaman Daftar Layer & Data (spatial-layers/index) */
             .table th {
-                color: #000000;
-                border: none;
+                background-color: #f8f9fa;
+                border-bottom: 2px solid #dee2e6;
                 font-weight: 600;
-                white-space: nowrap;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+                color: #495057;
+                padding: 10px 8px;
             }
 
             .table td {
-                border-color: #e9ecef;
                 vertical-align: middle;
+                padding: 10px 8px;
+                border-bottom: 1px solid #eef2f7;
+                font-size: 0.85rem;
             }
 
             .table tbody tr:hover {
-                background-color: #f9f8fa;
+                background-color: rgba(0, 123, 255, 0.05);
             }
 
-            /* Mobile Responsive Adjustments */
-            @media (max-width: 767px) {
-
-                .table th,
-                .table td {
-                    padding: 0.5rem 0.25rem;
-                    font-size: 0.875rem;
-                }
-
-                .btn-group .btn {
-                    padding: 0.25rem 0.5rem;
-                    font-size: 0.75rem;
-                }
-
-                .badge {
-                    font-size: 0.65rem;
-                    padding: 0.2rem 0.4rem;
-                }
-            }
-
-            @media (max-width: 575px) {
-
-                .table th,
-                .table td {
-                    padding: 0.4rem 0.2rem;
-                    font-size: 0.8rem;
-                }
-            }
-
-            /* Enhanced Modal Styles */
-            .modal-content {
-                border: none;
-                border-radius: 15px;
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            }
-
-            .modal-xl {
-                max-width: 95%;
-            }
-
-            @media (max-width: 991px) {
-                .modal-xl {
-                    max-width: 98%;
-                    margin: 0.5rem;
-                }
-            }
-
-            /* Project Info Styling */
-            .font-monospace {
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-                font-size: 0.875rem;
-            }
-
-            /* Form and Button Styles */
-            .form-control:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            }
-
-            .filter-item.active {
-                background-color: #667eea;
-                color: white;
-            }
-
-            .btn-gradient-primary {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                color: white;
-            }
-
-            .btn-gradient-success {
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                border: none;
-                color: white;
-            }
-
-            .btn-gradient-info {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                color: white;
-            }
-
-            .btn-gradient-warning {
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                border: none;
-                color: white;
-            }
-
-            .btn-gradient-danger {
-                background: linear-gradient(135deg, #ff6b6b 0%, #ee4757 100%);
-                border: none;
-                color: white;
-            }
-
-            /* Badge Improvements */
             .badge {
-                font-size: 0.75em;
-                padding: 0.375rem 0.75rem;
-                border-radius: 0.375rem;
+                font-size: 0.75rem;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-weight: 500;
             }
 
-            .badge-outline-primary {
-                border: 1px solid #007bff;
-                color: #007bff;
-                background-color: transparent;
+            .stats-row-compact {
+                margin-bottom: 1rem;
             }
 
-            .badge-outline-info {
-                border: 1px solid #17a2b8;
-                color: #17a2b8;
-                background-color: transparent;
-            }
-
-            .badge-outline-success {
-                border: 1px solid #28a745;
-                color: #28a745;
-                background-color: transparent;
-            }
-
-            .badge-outline-warning {
-                border: 1px solid #ffc107;
-                color: #ffc107;
-                background-color: transparent;
-            }
-
-            .badge-outline-danger {
-                border: 1px solid #dc3545;
-                color: #dc3545;
-                background-color: transparent;
-            }
-
-            /* Card and Alert Styles */
-            .alert {
-                border-radius: 10px;
-            }
-
-            .card {
-                border-radius: 15px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            .stat-card-compact {
                 border: none;
-            }
-
-            .card-header {
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-                background-color: rgba(0, 0, 0, 0.02);
-            }
-
-            /* Text Truncation */
-            .text-truncate {
+                border-radius: 10px;
                 overflow: hidden;
-                text-overflow: ellipsis;
+                height: 100%;
+            }
+
+            .stat-card-compact .card-body {
+                padding: 0.85rem 1rem;
+            }
+
+            .stat-card-compact .stat-label {
+                margin: 0 0 2px;
+                font-size: 0.75rem;
+                font-weight: 500;
+                opacity: 0.9;
                 white-space: nowrap;
             }
 
-            /* Hover Effects */
-            .btn-group .btn:hover {
-                transform: translateY(-1px);
-                transition: all 0.2s ease;
+            .stat-card-compact .stat-value {
+                margin: 0;
+                font-size: 1.5rem;
+                font-weight: 700;
+                line-height: 1.1;
             }
 
-            /* Coordinate Copy Cursor */
-            [style*="cursor: pointer"]:hover {
-                background-color: rgba(0, 123, 255, 0.1);
-                border-radius: 4px;
-                padding: 2px 4px;
-                transition: all 0.2s ease;
+            .stat-card-compact .stat-icon {
+                font-size: 2rem;
+                opacity: 0.5;
             }
 
-            /* Image Container */
+            .opd-select {
+                min-width: 140px;
+            }
+
             #show_gambar_container img {
                 border: 2px solid #e9ecef;
-                transition: all 0.3s ease;
-            }
-
-            #show_gambar_container img:hover {
-                border-color: #007bff;
-                transform: scale(1.02);
-            }
-
-            /* Status Badge Animation */
-            .badge {
-                transition: all 0.2s ease;
-            }
-
-            .badge:hover {
-                transform: scale(1.05);
-            }
-
-            /* Responsive Improvements */
-            @media (max-width: 767px) {
-                .modal-dialog {
-                    margin: 0.5rem;
-                }
-
-                .card-body {
-                    padding: 1rem;
-                }
-
-                .btn-group {
-                    display: flex;
-                    flex-direction: column;
-                    width: 100%;
-                }
-
-                .btn-group .btn {
-                    margin-bottom: 0.25rem;
-                    border-radius: 0.375rem !important;
-                }
-            }
-
-            /* Loading States */
-            .btn:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-
-            /* Enhanced Form Styling */
-            .form-control {
-                border-radius: 0.5rem;
-                border: 1px solid #e3e6f0;
-                transition: all 0.2s ease;
-            }
-
-            .form-control:focus {
-                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-                border-color: #667eea;
-            }
-
-            .form-label {
-                font-weight: 600;
-                color: #5a5c69;
-                margin-bottom: 0.5rem;
-            }
-
-            /* Search Box Enhancement */
-            .input-group .form-control {
-                border-right: none;
-            }
-
-            .input-group-text {
-                border-left: none;
-                background-color: #f8f9fc;
-                border-color: #e3e6f0;
-            }
-
-            /* Statistics Cards */
-            .card-img-holder {
-                position: relative;
-                overflow: hidden;
-            }
-
-            .card-img-absolute {
-                position: absolute;
-                top: 0;
-                right: 0;
-                opacity: 0.1;
-            }
-
-            /* Dropdown Menu */
-            .dropdown-menu {
-                border-radius: 0.5rem;
-                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-                border: none;
-            }
-
-            .dropdown-item:hover {
-                background-color: #f8f9fc;
-                color: #5a5c69;
-            }
-
-            .dropdown-header {
-                font-weight: 600;
-                color: #5a5c69;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-
-            /* Page Header */
-            .page-title-icon {
-                width: 50px;
-                height: 50px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-            }
-
-            .breadcrumb {
-                background-color: transparent;
-                margin-bottom: 0;
-            }
-
-            .breadcrumb-item a {
-                color: #858796;
-                text-decoration: none;
-            }
-
-            .breadcrumb-item a:hover {
-                color: #5a5c69;
-            }
-
-            .breadcrumb-item.active {
-                color: #5a5c69;
-            }
-
-            /* Utility Classes */
-            .shadow-sm {
-                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-            }
-
-            .bg-light {
-                background-color: #f8f9fc !important;
-            }
-
-            /* Print Styles */
-            @media print {
-
-                .btn,
-                .dropdown,
-                .modal,
-                .alert {
-                    display: none !important;
-                }
-
-                .table {
-                    font-size: 0.8rem;
-                }
-
-                .card {
-                    box-shadow: none;
-                    border: 1px solid #000;
-                }
             }
         </style>
     @endsection

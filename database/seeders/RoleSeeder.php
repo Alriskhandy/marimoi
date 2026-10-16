@@ -15,15 +15,25 @@ class RoleSeeder extends Seeder
                 'slug' => 'super-admin',
                 'description' => 'Administrator dengan akses penuh ke sistem',
             ],
-              [
+            [
                 'name' => 'Admin Bappeda',
-                 'slug' => 'admin-bappeda',
+                'slug' => 'admin-bappeda',
                 'description' => 'Administrator dengan akses tertentu ke sistem',
             ],
             [
                 'name' => 'Admin OPD',
                 'slug' => 'admin-opd',
                 'description' => 'Administrator untuk OPD tertentu',
+            ],
+            [
+                'name' => 'Pimpinan',
+                'slug' => 'pimpinan',
+                'description' => 'Pimpinan daerah/Bappeda: ringkasan eksekutif dashboard',
+            ],
+            [
+                'name' => 'User',
+                'slug' => 'user',
+                'description' => 'Pengguna publik hasil login Google',
             ],
         ];
 

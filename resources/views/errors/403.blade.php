@@ -2,5 +2,10 @@
 
 @php
     $code = 403;
-    $message = 'Akses ditolak. Kamu tidak punya izin untuk halaman ini.';
+    $icon = 'lock';
+    $accent = 'red';
+    $title = 'Akses Ditolak';
+    $message = 'Kamu tidak punya izin untuk membuka halaman ini.';
+    $description = 'Hubungi administrator jika kamu merasa seharusnya memiliki akses.';
+    $canReload = false;
 @endphp

@@ -7,10 +7,12 @@
 # Environment
 .env*
 !.env.example
+!.env.testing.example
 
-# Storage (runtime files)
-/storage/*
-!/storage/app/public/.gitignore
+# Storage: isi runtime dijaga .gitignore bawaan Laravel di dalam storage/
+/storage/*.key
+/storage/pail
+/storage/api-docs
 
 # Cache & test
 /.phpunit.cache
@@ -34,13 +36,10 @@ Homestead.yaml
 /.zed
 /.nova
 /.claudeignore
+/.claude/settings.local.json
 
 # macOS
 .DS_Store
-**/.DS_Store
 
-# api docs
+# API docs hasil generate lokal
 /api docs
-
-# dokumen analisis
-/docs

@@ -2,18 +2,24 @@
 
 use App\Http\Controllers\AspirasiController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\DataSpatialController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentTemplateController;
+use App\Http\Controllers\ExecutiveDashboardController;
 use App\Http\Controllers\KategoriAspirasiController;
+use App\Http\Controllers\LayerImportController;
+use App\Http\Controllers\LayerStyleController;
+use App\Http\Controllers\LayerWizardController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\ProjectFeedbackController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LogController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PublicationDownloadController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SpatialLayerController;
+use App\Http\Controllers\SpatialLayerFeatureController;
+use App\Http\Controllers\SpatialLayerMetadataController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VisitorsController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,23 +42,31 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-
-
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'permission:dashboard.view'])
     ->name('dashboard');
 // Dashboard API routes untuk AJAX calls
 Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
-    Route::get('/years', [DashboardController::class, 'getAvailableYears'])->name('years');
-    Route::get('/categories', [DashboardController::class, 'getCategories'])->name('categories');
-    Route::get('/statistics', [DashboardController::class, 'getStatistics'])->name('statistics');
-    Route::get('/top-categories', [DashboardController::class, 'getTopCategories'])->name('top-categories');
-    Route::get('/response-time', [DashboardController::class, 'getResponseTimeAnalytics'])->name('response-time');
-    Route::get('/stats', [DashboardController::class, 'getDashboardStats'])->name('stats');
+    Route::get('/years', [DashboardController::class, 'getAvailableYears'])->name('years')->middleware('permission:dashboard.view');
+    Route::get('/categories', [DashboardController::class, 'getCategories'])->name('categories')->middleware('permission:dashboard.view');
+    Route::get('/statistics', [DashboardController::class, 'getStatistics'])->name('statistics')->middleware('permission:dashboard.view');
+    Route::get('/top-categories', [DashboardController::class, 'getTopCategories'])->name('top-categories')->middleware('permission:dashboard.view');
+    Route::get('/response-time', [DashboardController::class, 'getResponseTimeAnalytics'])->name('response-time')->middleware('permission:dashboard.view');
+    Route::get('/stats', [DashboardController::class, 'getDashboardStats'])->name('stats')->middleware('permission:dashboard.view');
 });
 
 // Statistics page route
-Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics');
+Route::get('/dashboard/statistics', [DashboardController::class, 'statistics'])->name('dashboard.statistics')->middleware('permission:dashboard.view');
+
+// Dashboard eksekutif berbasis development_projects (Prioritas 6 database V2) — endpoint
+// data JSON. Dulu hidup berdampingan dengan halaman dashboard/pembangunan (berbasis
+// data_spatial); halaman itu dihapus 2026-10-10, endpoint ini tidak terpengaruh.
+Route::prefix('dashboard/api/eksekutif')->name('dashboard.api.eksekutif.')->middleware('permission:dashboard.view')->group(function () {
+    Route::get('/summary', [ExecutiveDashboardController::class, 'summary'])->name('summary');
+    Route::get('/sektor', [ExecutiveDashboardController::class, 'bySector'])->name('sektor');
+    Route::get('/wilayah', [ExecutiveDashboardController::class, 'byRegion'])->name('wilayah');
+    Route::get('/tren', [ExecutiveDashboardController::class, 'trend'])->name('tren');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -66,7 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Add this to your routes file
-    Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisitorStatistics'])->name('dashboard.visitor.statistics');
+    Route::get('dashboard/visitor-statistics', [DashboardController::class, 'getVisitorStatistics'])->name('dashboard.visitor.statistics')->middleware('permission:dashboard.view');
 });
 
 /*
@@ -77,54 +91,49 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     // Visitor Analytics routes
-    Route::get('/visitors/export', [VisitorsController::class, 'export'])->name('visitors.export');
-    Route::post('/visitors/analytics', [VisitorsController::class, 'analytics'])->name('visitors.analytics');
-    Route::delete('/visitors/bulk-destroy', [VisitorsController::class, 'bulkDestroy'])->name('visitors.bulk-destroy');
+    Route::get('/visitors/export', [VisitorsController::class, 'export'])->name('visitors.export')->middleware('permission:visitors.view');
+    Route::post('/visitors/analytics', [VisitorsController::class, 'analytics'])->name('visitors.analytics')->middleware('permission:visitors.view');
+    Route::delete('/visitors/bulk-destroy', [VisitorsController::class, 'bulkDestroy'])->name('visitors.bulk-destroy')->middleware('permission:visitors.delete');
 
     // Resource routes for visitors
-    Route::resource('visitors', VisitorsController::class)->only(['index', 'show', 'destroy']);
+    Route::resource('visitors', VisitorsController::class)->only(['index', 'show'])->middleware('permission:visitors.view');
+    Route::resource('visitors', VisitorsController::class)->only(['destroy'])->middleware('permission:visitors.delete');
     /*
     |--------------------------------------------------------------------------
-    | Unified Data Spatial Management
+    | Data Spatial (RETIRED — D13/§5.9, plan mellow-weaving-eclipse Fase I)
     |--------------------------------------------------------------------------
+    | Modul ini digantikan "Daftar Layer & Data" (spatial-layers.*). Rute di
+    | bawah DIPERTAHANKAN (bukan dihapus) sebagai redirect murni supaya
+    | bookmark admin lama tidak langsung 404 — tidak ada lagi jalur yang
+    | menulis ke data_spatial lewat sini (lihat juga penghapusan
+    | App\Support\SpatialFeaturesV3Sync di AppServiceProvider).
     */
 
     Route::prefix('data-spatial')->name('data-spatial.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'index'])->name('index');
-        Route::get('/create', [DataSpatialController::class, 'create'])->name('create');
-        Route::post('/store', [DataSpatialController::class, 'store'])->name('store');
-        Route::get('/{uuid}/edit', [DataSpatialController::class, 'edit'])->name('edit');
-        Route::put('/{uuid}', [DataSpatialController::class, 'update'])->name('update');
-        Route::delete('/{uuid}', [DataSpatialController::class, 'destroy'])->name('destroy');
-        Route::post('/bulk-update-category', [DataSpatialController::class, 'bulkUpdateCategory'])->name('bulk-update-category');
-        Route::post('/bulk-update-attribute', [DataSpatialController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute');
+        $retired = fn () => redirect()->route('spatial-layers.index')
+            ->with('info', 'Modul "Data Spasial" sudah digantikan "Daftar Layer & Data".');
 
-
-        // Debug routes for file uploads
-        Route::post('/debug/shapefile', [DataSpatialController::class, 'debugShapefile'])->name('debug.shapefile');
-        Route::post('/debug/kmz', [DataSpatialController::class, 'debugKmz'])->name('debug.kmz');
-
-        // Detail endpoint for modal
-        Route::get('/{uuid}/details', function ($uuid) {
-            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
-            return response()->json([
-                'success' => $data ? true : false,
-                'data' => $data,
-                'message' => $data ? 'Data found' : 'Data not found'
-            ]);
-        })->name('details');
+        Route::get('/', $retired)->name('index')->middleware('permission:spatial-layers.view');
+        Route::get('/peta', $retired)->name('map')->middleware('permission:spatial-layers.view');
+        Route::get('/geojson', $retired)->name('geojson')->middleware('permission:spatial-layers.view');
+        Route::get('/geojson-version', $retired)->name('geojson-version')->middleware('permission:spatial-layers.view');
+        Route::post('/export-drawings', $retired)->name('export-drawings')->middleware('permission:spatial-layers.view');
+        Route::get('/create', $retired)->name('create')->middleware('permission:spatial-layers.view');
+        Route::post('/store', $retired)->name('store')->middleware('permission:spatial-layers.view');
+        Route::get('/{uuid}/edit', $retired)->name('edit')->middleware('permission:spatial-layers.view');
+        Route::put('/{uuid}', $retired)->name('update')->middleware('permission:spatial-layers.view');
+        Route::delete('/{uuid}', $retired)->name('destroy')->middleware('permission:spatial-layers.view');
+        Route::post('/bulk-update-category', $retired)->name('bulk-update-category')->middleware('permission:spatial-layers.view');
+        Route::post('/bulk-update-attribute', $retired)->name('bulk-update-attribute')->middleware('permission:spatial-layers.view');
+        Route::get('/{uuid}/details', $retired)->name('details')->middleware('permission:spatial-layers.view');
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Peta RPJMD (Tematik) Routes
-    |--------------------------------------------------------------------------
-    */
 
     Route::prefix('tematik')->name('tematik.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indextematik'])->name('index');
+        Route::get('/', fn () => redirect()->route('spatial-layers.index')
+            ->with('info', 'Modul "Data Spasial" sudah digantikan "Daftar Layer & Data".'))
+            ->name('index')->middleware('permission:spatial-layers.view');
         Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=tematik';
+            return redirect()->route('data-spatial.create').'?type=tematik';
         })->name('create');
         Route::get('/{uuid}/edit', function ($id) {
             return redirect()->route('data-spatial.edit', $id);
@@ -135,88 +144,6 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/{uuid}', function ($id) {
             return redirect()->route('data-spatial.destroy', $id);
         })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Usulan Musrenbang Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('usulan-musrenbang')->name('usulan-musrenbang.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexUsulanmusrenbang'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=usulan_musrenbang';
-        })->name('create');
-        Route::get('/{uuid}/edit', function ($id) {
-            return redirect()->route('data-spatial.edit', $id);
-        })->name('edit');
-        Route::put('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.update', $id);
-        })->name('update');
-        Route::delete('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.destroy', $id);
-        })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pokir DPRD Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('pokir-dprd')->name('pokir-dprd.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexPokirDprd'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=pokir_dprd';
-        })->name('create');
-        Route::get('/{uuid}/edit', function ($id) {
-            return redirect()->route('data-spatial.edit', $id);
-        })->name('edit');
-        Route::put('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.update', $id);
-        })->name('update');
-        Route::delete('/{uuid}', function ($id) {
-            return redirect()->route('data-spatial.destroy', $id);
-        })->name('destroy');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Proyek Strategis Daerah Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('proyek-strategis-daerah')->name('psd.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psd';
-        })->name('create');
-
-        // Routes berdasarkan tahun
-        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisDaerah'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psd&year={$year}";
-        })->name('tahun.create');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Proyek Strategis Nasional Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('proyek-strategis-nasional')->name('psn.')->group(function () {
-        Route::get('/', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('index');
-        Route::get('/create', function () {
-            return redirect()->route('data-spatial.create') . '?type=proyek_strategis&sub_type=psn';
-        })->name('create');
-
-        // Routes berdasarkan tahun
-        Route::get('/tahun/{year}', [DataSpatialController::class, 'indexProyekStrategisNasional'])->name('tahun.show');
-        Route::get('/tahun/{year}/create', function ($year) {
-            return redirect()->route('data-spatial.create') . "?type=proyek_strategis&sub_type=psn&year={$year}";
-        })->name('tahun.create');
     });
 
     /*
@@ -226,31 +153,104 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     Route::prefix('categories')->name('categories.')->group(function () {
-        Route::get('/', [CategoryController::class, 'index'])->name('index');
-        Route::get('/create', [CategoryController::class, 'create'])->name('create');
-        Route::post('/store', [CategoryController::class, 'store'])->name('store');
-        Route::get('/{id}', [CategoryController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
-        Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::get('/', [CategoryController::class, 'index'])->name('index')->middleware('permission:categories.view');
+        Route::post('/store', [CategoryController::class, 'store'])->name('store')->middleware('permission:categories.create');
+        Route::post('/bulk-destroy', [CategoryController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:categories.delete');
+        Route::put('/{id}', [CategoryController::class, 'update'])->name('update')->middleware('permission:categories.edit');
+        Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy')->middleware('permission:categories.delete');
 
-        // API routes untuk categories
-        Route::get('/api/by-type/{type}', [CategoryController::class, 'getByType'])->name('api.by-type');
-        Route::get('/api/tree/{type?}', [CategoryController::class, 'getTree'])->name('api.tree');
-        Route::get('/api/options/{type}', [CategoryController::class, 'getOptions'])->name('api.options');
+        // Metadata layer PINDAH ke konteks Layer sejak Fase C (plan
+        // mellow-weaving-eclipse, implementasi spec-admin-manajemen-peta.md
+        // §5.3) — rute ini dipertahankan HANYA sebagai redirect ke
+        // spatial-layers.metadata.* supaya bookmark admin lama tidak mati.
+        Route::get('/{id}/metadata', [SpatialLayerMetadataController::class, 'editByCategory'])->name('metadata.edit')->middleware('permission:categories.edit');
+        Route::put('/{id}/metadata', [SpatialLayerMetadataController::class, 'updateByCategory'])->name('metadata.update')->middleware('permission:categories.edit');
+
+        // API cascading select (3 level) dipakai index.blade.php — satu-satunya
+        // endpoint API Category yang benar-benar dikonsumsi JS (lihat Category
+        // model/controller untuk method lain yang sudah tidak diroutekan: sempat
+        // ada getByType/getTree tapi tidak dipanggil di mana pun). Sejak kategori
+        // tidak lagi punya `type`, endpoint ini tidak lagi difilter per tipe.
+        Route::get('/api/options', [CategoryController::class, 'getOptions'])->name('api.options')->middleware('permission:categories.view');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Document Upload Routes
+    | Modul "Jenis Peta" (map-types.*) DIHAPUS 2026-10-10
+    |--------------------------------------------------------------------------
+    |
+    | Tabel `map_types`/`map_type_dynamic_attributes`, controller, model, view,
+    | dan permission `map-types.manage` dihapus — lihat migration
+    | drop_map_types_tables. Jenis Peta sudah tidak punya konsumen sejak kolom
+    | `layers.map_type_id` dilepas (migration
+    | drop_map_type_id_and_visibility_from_layers_table): tidak ada Layer yang
+    | bisa dikaitkan ke Jenis, jadi Metadata Dinamis selalu kosong.
+    |
+    | Endpoint `metadata-definitions.search` ikut dihapus karena satu-satunya
+    | konsumennya adalah form Jenis Peta. Katalog `metadata_definitions`
+    | SENDIRI tetap hidup — masih dipakai `layer_attribute_mappings` dan
+    | command marimoi:migrate-metadata-definitions.
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->prefix('upload-dokumen')->name('dokumen.')->group(function () {
-        Route::get('/', [DokumenController::class, 'index'])->name('index');
-        Route::post('/', [DokumenController::class, 'store'])->name('store');
-        Route::put('/{id}', [DokumenController::class, 'update'])->where('id', '[0-9]+')->name('update');
-        Route::delete('/{id}', [DokumenController::class, 'destroy'])->where('id', '[0-9]+')->name('destroy');
+    /*
+    |--------------------------------------------------------------------------
+    | Daftar Layer & Data (docs/marimoi v2/04_implementation/
+    | 12-implementasi-perbaikan-pemetaan.md Bagian 3.2)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('spatial-layers')->name('spatial-layers.')->group(function () {
+        Route::get('/', [SpatialLayerController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+        Route::get('/create', [LayerWizardController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
+        Route::post('/', [LayerWizardController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+        Route::get('/{spatialLayer}', [SpatialLayerController::class, 'show'])->name('show')->middleware('permission:spatial-layers.view');
+        Route::put('/{spatialLayer}', [SpatialLayerController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+        Route::patch('/{spatialLayer}/status', [SpatialLayerController::class, 'updateStatus'])->name('update-status')->middleware('permission:spatial-layers.publish');
+        Route::delete('/{spatialLayer}', [SpatialLayerController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+        Route::post('/bulk-destroy', [SpatialLayerController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
+        Route::post('/bulk-update-category', [SpatialLayerController::class, 'bulkUpdateCategory'])->name('bulk-update-category')->middleware('permission:spatial-layers.edit');
+        Route::post('/bulk-update-status', [SpatialLayerController::class, 'bulkUpdateStatus'])->name('bulk-update-status')->middleware('permission:spatial-layers.publish');
+
+        // Wizard "Tambah Layer" 4 tahap (plan rippling-frolicking-ladybug) —
+        // /create dan POST / di atas SENGAJA tetap dipakai ulang (bukan rute
+        // baru) supaya nama rute lama & test yang sudah ada tidak mati.
+        Route::get('/{spatialLayer}/wizard', [LayerWizardController::class, 'wizard'])->name('wizard')->middleware('permission:spatial-layers.create');
+        Route::put('/{spatialLayer}/wizard/info', [LayerWizardController::class, 'saveInfo'])->name('wizard.info')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/import', [LayerWizardController::class, 'saveImport'])->name('wizard.import')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/mapping', [LayerWizardController::class, 'saveMapping'])->name('wizard.mapping')->middleware('permission:spatial-layers.create');
+        Route::post('/{spatialLayer}/wizard/finish', [LayerWizardController::class, 'finish'])->name('wizard.finish')->middleware('permission:spatial-layers.create');
+
+        Route::get('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'edit'])->name('metadata.edit')->middleware('permission:spatial-layers.edit');
+        Route::put('/{spatialLayer}/metadata', [SpatialLayerMetadataController::class, 'update'])->name('metadata.update')->middleware('permission:spatial-layers.edit');
+
+        Route::prefix('{spatialLayer}/styles')->name('styles.')->group(function () {
+            Route::get('/', [LayerStyleController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+            Route::post('/', [LayerStyleController::class, 'store'])->name('store')->middleware('permission:spatial-layers.edit');
+            Route::put('/{style}', [LayerStyleController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::delete('/{style}', [LayerStyleController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.edit');
+        });
+
+        Route::prefix('{spatialLayer}/imports')->name('imports.')->group(function () {
+            Route::get('/', [LayerImportController::class, 'index'])->name('index')->middleware('permission:spatial-layers.view');
+            Route::get('/{import}/log', [LayerImportController::class, 'downloadLog'])->name('log')->middleware('permission:spatial-layers.view');
+            Route::post('/', [LayerImportController::class, 'upload'])->name('upload')->middleware('permission:spatial-layers.create');
+            Route::get('/{import}/mapping', [LayerImportController::class, 'editMapping'])->name('mapping.edit')->middleware('permission:spatial-layers.create');
+            Route::post('/{import}/mapping', [LayerImportController::class, 'processMapping'])->name('mapping.process')->middleware('permission:spatial-layers.create');
+        });
+
+        Route::prefix('{spatialLayer}/features')->name('features.')->group(function () {
+            Route::get('/create', [SpatialLayerFeatureController::class, 'create'])->name('create')->middleware('permission:spatial-layers.create');
+            Route::post('/', [SpatialLayerFeatureController::class, 'store'])->name('store')->middleware('permission:spatial-layers.create');
+            Route::post('/bulk-update-attribute', [SpatialLayerFeatureController::class, 'bulkUpdateAttribute'])->name('bulk-update-attribute')->middleware('permission:spatial-layers.edit');
+            Route::post('/bulk-destroy', [SpatialLayerFeatureController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:spatial-layers.delete');
+            Route::post('/bulk-move', [SpatialLayerFeatureController::class, 'bulkMoveToLayer'])->name('bulk-move')->middleware('permission:spatial-layers.edit');
+            Route::post('/move-all', [SpatialLayerFeatureController::class, 'moveAllFeatures'])->name('move-all')->middleware('permission:spatial-layers.edit');
+            Route::get('/{feature}/edit', [SpatialLayerFeatureController::class, 'edit'])->name('edit')->middleware('permission:spatial-layers.edit');
+            Route::put('/{feature}', [SpatialLayerFeatureController::class, 'update'])->name('update')->middleware('permission:spatial-layers.edit');
+            Route::put('/{feature}/style', [SpatialLayerFeatureController::class, 'updateStyle'])->name('update-style')->middleware('permission:spatial-layers.edit');
+            Route::delete('/{feature}', [SpatialLayerFeatureController::class, 'destroy'])->name('destroy')->middleware('permission:spatial-layers.delete');
+        });
     });
 
     /*
@@ -260,18 +260,31 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     Route::prefix('project-feedbacks')->name('project-feedbacks.')->group(function () {
-        Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index');
-        Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store');
-        Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show');
-        Route::put('/{id}', [ProjectFeedbackController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy');
+        Route::get('/', [ProjectFeedbackController::class, 'index'])->name('index')->middleware('permission:project-feedbacks.view');
+        Route::post('/', [ProjectFeedbackController::class, 'store'])->name('store')->middleware('permission:project-feedbacks.respond');
+        Route::get('/data-spatial', [ProjectFeedbackController::class, 'searchDataSpatial'])->name('data-spatial')->middleware('permission:project-feedbacks.respond');
+        Route::get('/{id}', [ProjectFeedbackController::class, 'show'])->name('show')->middleware('permission:project-feedbacks.view');
+        Route::put('/{id}', [ProjectFeedbackController::class, 'update'])->name('update')->middleware('permission:project-feedbacks.respond');
+        Route::delete('/{id}', [ProjectFeedbackController::class, 'destroy'])->name('destroy')->middleware('permission:project-feedbacks.delete');
 
         // Admin Response
-        Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond');
-        Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post');
+        Route::put('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond')->middleware('permission:project-feedbacks.respond');
+        Route::post('/{id}/respond', [ProjectFeedbackController::class, 'respond'])->name('respond.post')->middleware('permission:project-feedbacks.respond');
         // Route untuk update OPD feedback
-        Route::put('/feedback/{feedback}/update-opd', [ProjectFeedbackController::class, 'updateOpd'])->name('update-opd');
+        Route::put('/feedback/{feedback}/update-opd', [ProjectFeedbackController::class, 'updateOpd'])->name('update-opd')->middleware('permission:project-feedbacks.respond');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Halaman "Dashboard Pembangunan" (dashboard.pembangunan) DIHAPUS 2026-10-10
+    |--------------------------------------------------------------------------
+    |
+    | Controller, view, dan permission `project-progress.view` ikut dihapus.
+    | Tabel `project_progress_reports` beserta ProjectProgressReport TETAP ADA
+    | — masih dipakai ExecutiveDashboardController (endpoint /dashboard/api/*)
+    | dan DevelopmentProject, jadi jangan ikut di-drop.
+    |--------------------------------------------------------------------------
+    */
 
     /*
     |--------------------------------------------------------------------------
@@ -280,53 +293,75 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     // Aspirasi Management
-    Route::resource('aspirasi', AspirasiController::class);
-    Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus');
+    Route::resource('aspirasi', AspirasiController::class)->only(['index', 'show'])->middleware('permission:aspirasi.view');
+    Route::resource('aspirasi', AspirasiController::class)->only(['create', 'store'])->middleware('permission:aspirasi.create');
+    Route::resource('aspirasi', AspirasiController::class)->only(['edit', 'update'])->middleware('permission:aspirasi.edit');
+    Route::resource('aspirasi', AspirasiController::class)->only(['destroy'])->middleware('permission:aspirasi.delete');
+    Route::put('aspirasi/{aspirasi}', [AspirasiController::class, 'updateStatus'])->name('aspirasi.updateStatus')->middleware('permission:aspirasi.edit');
     // Routes untuk lampiran
     Route::get('/aspirasi/{aspirasi}/lampiran/{index}/download', [AspirasiController::class, 'downloadLampiran'])
         ->name('aspirasi.downloadLampiran')
-        ->where('index', '[0-9]+');
+        ->where('index', '[0-9]+')
+        ->middleware('permission:aspirasi.view');
 
     Route::get('/aspirasi/{aspirasi}/lampiran/{index}/preview', [AspirasiController::class, 'previewLampiran'])
         ->name('aspirasi.previewLampiran')
-        ->where('index', '[0-9]+');
+        ->where('index', '[0-9]+')
+        ->middleware('permission:aspirasi.view');
 
     Route::get('/aspirasi/{aspirasi}/lampiran/{index}/info', [AspirasiController::class, 'getFileInfo'])
         ->name('aspirasi.getFileInfo')
-        ->where('index', '[0-9]+');
+        ->where('index', '[0-9]+')
+        ->middleware('permission:aspirasi.view');
 
-    Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export');
-    Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered');
-    Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export');
-
+    Route::get('/aspirasi/quick-export/data', [AspirasiController::class, 'export'])->name('aspirasi.export')->middleware('permission:aspirasi.export');
+    Route::post('/aspirasi/export-filtered', [AspirasiController::class, 'exportFiltered'])->name('aspirasi.export-filtered')->middleware('permission:aspirasi.export');
+    Route::post('/aspirasi/preview-export', [AspirasiController::class, 'previewExport'])->name('aspirasi.preview-export')->middleware('permission:aspirasi.export');
 
     // Bulk operations - also before resource routes
-    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy');
-
-
+    Route::delete('/bulk-aspirasi-destroy', [AspirasiController::class, 'bulkDestroy'])->name('aspirasi.bulk-destroy')->middleware('permission:aspirasi.delete');
 
     // Kategori Aspirasi Management
-    Route::middleware(['auth', 'role:super-admin,admin-bappeda'])->group(function () {
+    Route::middleware(['auth'])->group(function () {
 
         // Kategori Aspirasi Management
-        Route::resource('kategori-aspirasi', KategoriAspirasiController::class);
-        Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode');
-        Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions');
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class)->only(['index', 'show'])->middleware('permission:kategori-aspirasi.view');
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class)->only(['create', 'store'])->middleware('permission:kategori-aspirasi.create');
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class)->only(['edit', 'update'])->middleware('permission:kategori-aspirasi.edit');
+        Route::resource('kategori-aspirasi', KategoriAspirasiController::class)->only(['destroy'])->middleware('permission:kategori-aspirasi.delete');
+        Route::get('kategori-aspirasi-generate-kode', [KategoriAspirasiController::class, 'generateKode'])->name('kategori-aspirasi.generateKode')->middleware('permission:kategori-aspirasi.create');
+        Route::get('kategori-aspirasi-api-options', [KategoriAspirasiController::class, 'apiOptions'])->name('kategori-aspirasi.apiOptions')->middleware('permission:kategori-aspirasi.view');
 
         // OPD Management
-        Route::resource('opd', OpdController::class);
-        Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list');
-        Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search');
-        Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats');
+        Route::resource('opd', OpdController::class)->only(['index', 'show'])->middleware('permission:opd.view');
+        Route::resource('opd', OpdController::class)->only(['create', 'store'])->middleware('permission:opd.create');
+        Route::resource('opd', OpdController::class)->only(['edit', 'update'])->middleware('permission:opd.edit');
+        Route::resource('opd', OpdController::class)->only(['destroy'])->middleware('permission:opd.delete');
+        Route::get('/opd/list', [OpdController::class, 'getOpdList'])->name('opd.list')->middleware('permission:opd.view');
+        Route::get('/opd/search', [OpdController::class, 'search'])->name('opd.search')->middleware('permission:opd.view');
+        Route::get('/opd/stats', [OpdController::class, 'getStats'])->name('opd.stats')->middleware('permission:opd.view');
 
         // User Management
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::post('/users', [UserController::class, 'store'])->name('users.store');
-        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
-        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index')->middleware('permission:users.view');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store')->middleware('permission:users.create');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show')->middleware('permission:users.view');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('permission:users.edit');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('permission:users.delete');
     });
 
+    // Role Management - hanya Super Admin
+    Route::middleware(['auth'])->group(function () {
+        Route::resource('roles', RoleController::class)->only(['index', 'show'])->middleware('permission:roles.view');
+        Route::resource('roles', RoleController::class)->only(['store'])->middleware('permission:roles.create');
+        Route::resource('roles', RoleController::class)->only(['update'])->middleware('permission:roles.edit');
+        Route::resource('roles', RoleController::class)->only(['destroy'])->middleware('permission:roles.delete');
+        Route::get('roles/{role}/permissions', [RoleController::class, 'permissions'])
+            ->name('roles.permissions')
+            ->middleware('permission:roles.view');
+        Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])
+            ->name('roles.permissions.sync')
+            ->middleware('permission:roles.edit');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -335,25 +370,11 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     */
 
     Route::prefix('api')->name('api.')->group(function () {
-
-        // Categories
-        Route::get('/categories', [DataSpatialController::class, 'getCategories'])->name('categories');
-
-        // DBF attribute columns (for bulk attribute editor autocomplete)
-        Route::get('/dbf-columns', [DataSpatialController::class, 'getDbfColumns'])->name('dbf-columns');
-        Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd');
-
-        // Data Spatial Details
-        Route::get('/data-spatial/{uuid}/details', function ($uuid) {
-            $data = \App\Models\DataSpatial::with('kategori')->where('uuid', $uuid)->first();
-            return response()->json([
-                'success' => $data ? true : false,
-                'data' => $data,
-                'message' => $data ? 'Data ditemukan' : 'Data tidak ditemukan'
-            ]);
-        })->name('data-spatial.details');
+        // categories/dbf-columns/data-spatial.details (modul Data Spasial
+        // lama) dihapus di sini — Fase I/D13, hanya dikonsumsi JS halaman
+        // yang sudah di-retire, tidak ada pemanggil lain yang tersisa.
+        Route::get('/categories-by-opd/{opd}', [KategoriAspirasiController::class, 'getByOpd'])->name('categories-by-opd')->middleware('permission:aspirasi.view');
     });
-
 
     /*
     |--------------------------------------------------------------------------
@@ -364,38 +385,53 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
 
     Route::prefix('publications')->name('publications.')->group(function () {
         // List all publications for admin
-        Route::get('/', [PublicationController::class, 'adminIndex'])->name('index');
+        Route::get('/', [PublicationController::class, 'adminIndex'])->name('index')->middleware('permission:publications.view');
 
         // Create new publication
-        Route::get('/create', [PublicationController::class, 'create'])->name('create');
-        Route::post('/', [PublicationController::class, 'store'])->name('store');
+        Route::get('/create', [PublicationController::class, 'create'])->name('create')->middleware('permission:publications.create');
+        Route::post('/', [PublicationController::class, 'store'])->name('store')->middleware('permission:publications.create');
 
         // Edit publication
-        Route::get('/{publication}/edit', [PublicationController::class, 'edit'])->name('edit');
-        Route::put('/{publication}', [PublicationController::class, 'update'])->name('update');
+        Route::get('/{publication}/edit', [PublicationController::class, 'edit'])->name('edit')->middleware('permission:publications.edit');
+        Route::put('/{publication}', [PublicationController::class, 'update'])->name('update')->middleware('permission:publications.edit');
 
         // Delete publication
-        Route::delete('/{publication}', [PublicationController::class, 'destroy'])->name('destroy');
+        Route::delete('/{publication}', [PublicationController::class, 'destroy'])->name('destroy')->middleware('permission:publications.delete');
 
         // Download and Preview - FIXED
-        Route::get('/{publication}/download', [PublicationController::class, 'download'])->name('download');
-        Route::get('/{publication}/preview', [PublicationController::class, 'preview'])->name('preview');
+        Route::get('/{publication}/download', [PublicationController::class, 'download'])->name('download')->middleware('permission:publications.view');
+        Route::get('/{publication}/preview', [PublicationController::class, 'preview'])->name('preview')->middleware('permission:publications.view');
 
         // Toggle publication status
-        Route::patch('/{publication}/toggle-status', [PublicationController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/{publication}/toggle-status', [PublicationController::class, 'toggleStatus'])->name('toggle-status')->middleware('permission:publications.edit');
 
         // Bulk actions
-        Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete');
-        Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status');
+        Route::post('/bulk-delete', [PublicationController::class, 'bulkDelete'])->name('bulk-delete')->middleware('permission:publications.delete');
+        Route::post('/bulk-toggle-status', [PublicationController::class, 'bulkToggleStatus'])->name('bulk-toggle-status')->middleware('permission:publications.edit');
 
         Route::prefix('downloads')->name('downloads.')->group(function () {
-            Route::get('/', [PublicationDownloadController::class, 'index'])->name('index');
-            Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show');
-            Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics');
-            Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export');
-            Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy');
-            Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy');
+            Route::get('/', [PublicationDownloadController::class, 'index'])->name('index')->middleware('permission:publications.view');
+            Route::get('/publication/{publication}', [PublicationDownloadController::class, 'show'])->name('show')->middleware('permission:publications.view');
+            Route::get('/analytics', [PublicationDownloadController::class, 'analytics'])->name('analytics')->middleware('permission:publications.view');
+            Route::get('/export', [PublicationDownloadController::class, 'export'])->name('export')->middleware('permission:publications.view');
+            Route::delete('/{download}', [PublicationDownloadController::class, 'destroy'])->name('destroy')->middleware('permission:publications.delete');
+            Route::post('/bulk-destroy', [PublicationDownloadController::class, 'bulkDestroy'])->name('bulk-destroy')->middleware('permission:publications.delete');
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Template Dokumen Unduhan (kop, footer, pilihan template di Peta Interaktif)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('document-templates')->name('document-templates.')->group(function () {
+        Route::get('/', [DocumentTemplateController::class, 'index'])->name('index')->middleware('permission:document-templates.view');
+        Route::get('/create', [DocumentTemplateController::class, 'create'])->name('create')->middleware('permission:document-templates.manage');
+        Route::post('/', [DocumentTemplateController::class, 'store'])->name('store')->middleware('permission:document-templates.manage');
+        Route::get('/{documentTemplate}/edit', [DocumentTemplateController::class, 'edit'])->name('edit')->middleware('permission:document-templates.manage');
+        Route::put('/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('update')->middleware('permission:document-templates.manage');
+        Route::delete('/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('destroy')->middleware('permission:document-templates.manage');
     });
 
     /*
@@ -404,23 +440,14 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:super-admin'])->prefix('logs')->name('logs.')->group(function () {
-        Route::get('/', [LogController::class, 'index'])->name('index');
-        Route::get('/download', [LogController::class, 'download'])->name('download');
-        Route::post('/clear', [LogController::class, 'clear'])->name('clear');
-        Route::delete('/destroy', [LogController::class, 'destroy'])->name('destroy');
-        Route::delete('/prune-old', [LogController::class, 'pruneOld'])->name('prune-old');
+    Route::prefix('logs')->name('logs.')->group(function () {
+        Route::get('/', [LogController::class, 'index'])->name('index')->middleware('permission:logs.view');
+        Route::get('/download', [LogController::class, 'download'])->name('download')->middleware('permission:logs.manage');
+        Route::post('/clear', [LogController::class, 'clear'])->name('clear')->middleware('permission:logs.manage');
+        Route::delete('/destroy', [LogController::class, 'destroy'])->name('destroy')->middleware('permission:logs.manage');
+        Route::delete('/prune-old', [LogController::class, 'pruneOld'])->name('prune-old')->middleware('permission:logs.manage');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Utility Routes
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/coming-soon', function () {
-        return view('backend.cooming_soon');
-    })->name('coming_soon');
 });
 // Route::get('/coming-soon', function () {
 //     return view('coming_soon');

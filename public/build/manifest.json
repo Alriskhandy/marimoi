@@ -1,13 +1,29 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-Cp7XSPcA.css",
+    "file": "assets/app-Dl32TqwG.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/peta.css": {
+    "file": "assets/peta-jPfFQt-r.css",
+    "src": "resources/css/peta.css",
+    "isEntry": true
+  },
+  "resources/css/spatial.css": {
+    "file": "assets/spatial-CV2XSIu1.css",
+    "src": "resources/css/spatial.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-DxuHltQx.js",
+    "file": "assets/app-DaBYqt0m.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/spatial.js": {
+    "file": "assets/spatial-DXKiWhC4.js",
+    "name": "spatial",
+    "src": "resources/js/spatial.js",
     "isEntry": true
   }
 }

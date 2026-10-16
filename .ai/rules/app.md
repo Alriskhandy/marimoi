@@ -1,0 +1,36 @@
+---
+paths:
+  - 'app/**'
+---
+
+# App
+
+## Modul "Jenis Peta" sudah dihapus — jangan dibangkitkan
+Tabel `map_types` + `map_type_dynamic_attributes`, MapType/MapTypeDynamicAttribute, MapTypeController, MetadataDefinitionController, route `map-types.*` + `metadata-definitions.search`, permission `map-types.manage`, dan command `marimoi:granularize-map-types` dihapus 2026-10-10 (migration `drop_map_types_tables`). Pemicunya: kolom `layers.map_type_id` sudah dilepas 2026-10-06, jadi tidak ada Layer yang bisa dikaitkan ke sebuah Jenis.
+
+Konsekuensi yang harus diingat: "Metadata Dinamis" SELALU kosong. Empat method ini sengaja dipertahankan sebagai titik sambung tunggal yang `return collect()`/`return []` — jangan dihapus, jangan dianggap bug:
+- `LayerImportPipeline::activeDynamicAttributesFor()`
+- `SpatialLayerFeatureController::activeDynamicAttributesFor()`
+- `LayerStyleController::classificationFieldsFor()` (akibatnya style categorized/graduated tak punya kandidat field)
+- `SpatialMapController::labeledMetadataDinamis()`
+
+Yang TETAP hidup: katalog `metadata_definitions` (target `layer_attribute_mappings.attribute_definition_id` + command `marimoi:migrate-metadata-definitions`), dan kolom inert `spatial_layers_legacy_v2.map_type_id` (FK-nya dilepas, nilai historis dibiarkan; tak ada kode yang membacanya).
+
+## Halaman "Dashboard Pembangunan" sudah dihapus — data progres tetap ada
+Route `dashboard.pembangunan`, `PembangunanDashboardController`, view `backend/pages/dashboard-pembangunan`, dan permission `project-progress.view` dihapus 2026-10-10 (migration `drop_project_progress_view_permission`, plus prefix `project-progress.` di `PermissionSeeder::RETIRED_PREFIXES`). Sidebar "Dashboard" kembali jadi satu link tunggal — grup collapse Ringkasan/Pembangunan hilang bersamanya.
+
+Yang TETAP hidup dan jangan ikut dihapus: tabel `project_progress_reports`, model `ProjectProgressReport` + factory-nya, `ProjectProgressReportRevision`, dan `DataSpatial::proyekStrategis()`. Semuanya masih dipakai `ExecutiveDashboardController` (endpoint `dashboard/api/eksekutif/*`) dan `DevelopmentProject`, teruji lewat ExecutiveDashboardTest + DevelopmentProjectTest.
+
+## Peta Tematik publik membaca V3 lewat PublicMapCatalog
+Semua endpoint publik peta (`/geojson` metadata & feature, `/geojson/filter-options`, `/geojson/filter-categories`, `MapDataVersion`) membaca skema V3 (layers/spatial_features/categories_v3/category_nodes), bukan tabel kompatibilitas v1 `categories`/`data_spatial`. Hanya Layer `status = published` yang tampil — draft tidak boleh bocor ke publik.
+Satu mapset = satu Layer. Frontend (map.js/map-catalog.js) mengenali mapset dari NAMA, jadi nama tampilan unik dibuat di `App\Support\PublicMapCatalog` (nama kembar diberi konteks node/kategori) dan WAJIB dipakai bersama untuk metadata, properti `kategori` tiap feature, parameter `kategori[]`, dan hasil filter — jangan menghitung nama di tempat lain.
+Pohon untuk frontend dibatasi 3 level: Kategori › jalur node (digabung "A › B") › Layer.
+
+## Template Dokumen: logo lewat rute aplikasi, data ke peta lewat view composer
+Kop/footer hasil Unduh Peta & cetak Analisis diambil dari tabel `document_templates` (DocumentTemplate::publicList(), hanya is_active, bawaan dulu) dan dikirim ke `frontend.pages.peta` lewat View::composer di AppServiceProvider — jangan diteruskan per-controller (peta dirender dari 3 rute).
+Logo WAJIB disajikan lewat rute `document-templates.logo` (Storage::disk('public')->response), bukan asset('storage/...'): canvas Unduh Peta butuh gambar satu origin (kalau tidak, canvas "tainted" dan unduhan gagal) dan tidak boleh bergantung pada storage:link. Hanya satu template is_default; makeDefault() yang menjaganya.
+
+## Feedback masyarakat satu pintu: project_feedbacks untuk semua data spasial
+"Feedback Pemetaan" (SpatialFeedbackController, model SpatialFeedback, route/permission `spatial-feedbacks.*`, tabel `spatial_feedbacks`) dihapus 2026-10-14 (migration `drop_spatial_feedbacks_feature`, prefix ada di PermissionSeeder::RETIRED_PREFIXES) — jangan dibangkitkan.
+Feedback berlaku untuk SEMUA data spasial, tanpa konsep type (tematik/psd/psn/pokir/musrenbang): ProjectFeedbackController tidak memfilter data_type, menu sidebar tanpa `?type`. Halaman publik `detail.interaktif` memakai view `frontend.pages.detail` yang sama (form feedback selalu tampil).
+Cakupan akses lewat ProjectFeedbackController::accessibleFeedbacks() (super-admin/admin-bappeda semua; role lain: opd_id miliknya ATAU data spasial miliknya) — pakai untuk list, statistik, show/update/respond/destroy. Dropdown data spasial di form admin WAJIB via AJAX (`project-feedbacks.data-spatial`), jumlahnya ±12 ribu. Lampiran gambar di disk public folder `aspirasi_lampiran`.

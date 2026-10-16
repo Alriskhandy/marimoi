@@ -33,7 +33,7 @@ class LayerController extends ApiController
     use ApiResponse;
 
     // Tipe layer yang valid
-    private const VALID_TYPES = ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'psd', 'psn'];
+    private const VALID_TYPES = ['tematik'];
 
     public function __construct(private LayerService $service) {}
 
@@ -47,10 +47,10 @@ class LayerController extends ApiController
                 name: 'type',
                 in: 'query',
                 required: false,
-                description: 'Filter berdasarkan tipe layer. Nilai yang valid: tematik, usulan_musrenbang, pokir_dprd, psd, psn',
+                description: 'Filter berdasarkan tipe layer. Nilai yang valid: tematik',
                 schema: new OA\Schema(
                     type: 'string',
-                    enum: ['tematik', 'usulan_musrenbang', 'pokir_dprd', 'psd', 'psn'],
+                    enum: ['tematik'],
                     example: 'tematik'
                 )
             ),
@@ -75,9 +75,9 @@ class LayerController extends ApiController
     {
         $type = $request->query('type');
 
-        if ($type && !in_array($type, self::VALID_TYPES)) {
+        if ($type && ! in_array($type, self::VALID_TYPES)) {
             return $this->error(
-                'Tipe tidak valid. Gunakan salah satu: ' . implode(', ', self::VALID_TYPES),
+                'Tipe tidak valid. Gunakan salah satu: '.implode(', ', self::VALID_TYPES),
                 422
             );
         }
