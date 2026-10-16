@@ -34,7 +34,7 @@ class DataSpatial extends Model
         });
     }
 
-    protected $table = 'data_spatial_legacy_v1';
+    protected $table = 'data_spatial';
 
     protected $fillable = [
         'data_type',

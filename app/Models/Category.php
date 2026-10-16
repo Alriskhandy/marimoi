@@ -28,9 +28,9 @@ use Illuminate\Support\Str;
  * memakai `source_table` (kolom tambahan di view) untuk tahu asal baris saat
  * update/delete instance existing.
  *
- * `data_spatial_legacy_v1.kategori_id` adalah FK bigint ke tabel v1/v2
- * `categories_legacy_v1` (bukan ke sini) — lihat DataSpatial::kategori(),
- * yang sengaja query langsung DB::table('categories_legacy_v1'), bukan
+ * `data_spatial.kategori_id` adalah FK bigint ke tabel v1/v2
+ * `categories` (bukan ke sini) — lihat DataSpatial::kategori(),
+ * yang sengaja query langsung DB::table('categories'), bukan
  * kelas ini.
  *
  * Sejak 2026-10-06, kategori HANYA punya nama/deskripsi/hirarki/urutan —
@@ -259,8 +259,8 @@ class Category extends Model
     }
 
     /**
-     * `data_spatial_legacy_v1.kategori_id` adalah FK bigint ke tabel v1/v2
-     * `categories_legacy_v1` (lihat DataSpatial::kategori()) — bukan ke sini,
+     * `data_spatial.kategori_id` adalah FK bigint ke tabel v1/v2
+     * `categories` (lihat DataSpatial::kategori()) — bukan ke sini,
      * jadi tidak bisa jadi relasi Eloquent biasa (tipe kolom beda, uuid vs
      * bigint). Data nyata kategori v3 ada di `layers` (lewat category_id
      * ATAU category_node_id) sejak Fase 2 migrasi.

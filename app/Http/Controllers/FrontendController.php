@@ -142,7 +142,7 @@ class FrontendController extends Controller
                  select ST_SimplifyPreserveTopology(p.geom, 0.02) as g
                  from (
                      select (ST_Dump(ST_Force2D(geom))).geom as geom
-                     from data_spatial_legacy_v1
+                     from data_spatial
                      where kategori_id in ({$ids})
                        and GeometryType(geom) in ('POLYGON', 'MULTIPOLYGON')
                        and ST_XMin(geom) > ? and ST_XMax(geom) < ? and ST_YMin(geom) > ? and ST_YMax(geom) < ?
@@ -174,7 +174,7 @@ class FrontendController extends Controller
         return Cache::remember('home.spatial-summary', 3600, function () {
             $top = DB::select(
                 'select c.nama, c.warna, count(d.id) as total
-                 from data_spatial_legacy_v1 d join categories_legacy_v1 c on c.id = d.kategori_id
+                 from data_spatial d join categories c on c.id = d.kategori_id
                  group by c.id, c.nama, c.warna order by total desc limit 7'
             );
 
@@ -187,14 +187,14 @@ class FrontendController extends Controller
                         d.sumber_data, o.name as opd_pengelola, d.tanggal_data,
                         case when GeometryType(d.geom) = 'POINT' then ST_X(d.geom) end as px,
                         case when GeometryType(d.geom) = 'POINT' then ST_Y(d.geom) end as py
-                 from data_spatial_legacy_v1 d
+                 from data_spatial d
                  left join opd o on o.id = d.opd_pengelola_id";
             $pointBindings = [self::HOME_LON_MIN, self::HOME_LON_MAX, self::HOME_LAT_MIN, self::HOME_LAT_MAX];
             $inRange = 'p.px between ? and ? and p.py between ? and ?';
 
             $layers = DB::select(
                 'select c.id, c.nama, c.warna, count(p.id) as total
-                 from ('.$pointSource.') p join categories_legacy_v1 c on c.id = p.kategori_id
+                 from ('.$pointSource.') p join categories c on c.id = p.kategori_id
                  where '.$inRange.' group by c.id, c.nama, c.warna order by total desc',
                 $pointBindings
             );
@@ -218,7 +218,7 @@ class FrontendController extends Controller
             ])->all();
 
             return [
-                'total' => DB::table('data_spatial_legacy_v1')->count(),
+                'total' => DB::table('data_spatial')->count(),
                 'categories' => Category::where('is_active', true)->count(),
                 'top' => $top,
                 'layers' => $layers,
@@ -427,7 +427,7 @@ class FrontendController extends Controller
      *   `kategori[]` (nama mapset), `year`, `bbox`, `search`, dan `dbf_filter`.
      *
      * Hanya Layer berstatus published yang dikirim. Deskripsi, sumber data, tanggal, tahun,
-     * OPD, dan gambar dari data lama dibaca lewat LEFT JOIN ke data_spatial_legacy_v1
+     * OPD, dan gambar dari data lama dibaca lewat LEFT JOIN ke data_spatial
      * (`legacy_data_spatial_id`), karena belum semuanya ada di `properties` V3.
      */
     public function getGeojsonByDataType(Request $request)
@@ -446,7 +446,7 @@ class FrontendController extends Controller
                 ->join('layers as l', 'l.id', '=', 'sf.layer_id')
                 ->join('categories_v3 as cat_root', 'cat_root.id', '=', 'l.category_id')
                 ->leftJoin('layer_styles as ls', 'ls.id', '=', 'l.default_style_id')
-                ->leftJoin('data_spatial_legacy_v1 as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
+                ->leftJoin('data_spatial as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
                 ->leftJoin('opd', 'opd.id', '=', 'ds.opd_pengelola_id')
                 ->select(
                     'sf.id',
@@ -757,7 +757,7 @@ class FrontendController extends Controller
     {
         $query = DB::table('spatial_features as sf')
             ->join('layers as l', 'l.id', '=', 'sf.layer_id')
-            ->leftJoin('data_spatial_legacy_v1 as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
+            ->leftJoin('data_spatial as ds', 'ds.id', '=', 'sf.legacy_data_spatial_id')
             ->leftJoin('opd', 'opd.id', '=', 'ds.opd_pengelola_id')
             ->where('l.status', 'published')
             ->whereNull('l.deleted_at');

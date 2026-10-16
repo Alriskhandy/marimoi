@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class LegacyCategory extends Model
 {
-    protected $table = 'categories_legacy_v1';
+    protected $table = 'categories';
 
     protected $fillable = [
         'type',

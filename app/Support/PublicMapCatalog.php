@@ -186,7 +186,7 @@ class PublicMapCatalog
 
     /**
      * Nama mapset/kelompok V3 untuk kategori lama (tautan "Lihat peta" dari beranda masih
-     * memakai ID `categories_legacy_v1`): Layer hasil migrasi kategori itu bila ada,
+     * memakai ID `categories`): Layer hasil migrasi kategori itu bila ada,
      * kalau tidak nama kategori/node V3 yang memetakan kategori tersebut.
      */
     public static function nameForLegacyCategory(int $legacyCategoryId): ?string

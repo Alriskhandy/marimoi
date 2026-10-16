@@ -22,7 +22,7 @@ Route `dashboard.pembangunan`, `PembangunanDashboardController`, view `backend/p
 Yang TETAP hidup dan jangan ikut dihapus: tabel `project_progress_reports`, model `ProjectProgressReport` + factory-nya, `ProjectProgressReportRevision`, dan `DataSpatial::proyekStrategis()`. Semuanya masih dipakai `ExecutiveDashboardController` (endpoint `dashboard/api/eksekutif/*`) dan `DevelopmentProject`, teruji lewat ExecutiveDashboardTest + DevelopmentProjectTest.
 
 ## Peta Tematik publik membaca V3 lewat PublicMapCatalog
-Semua endpoint publik peta (`/geojson` metadata & feature, `/geojson/filter-options`, `/geojson/filter-categories`, `MapDataVersion`) membaca skema V3 (layers/spatial_features/categories_v3/category_nodes), bukan tabel `*_legacy_v1`. Hanya Layer `status = published` yang tampil — draft tidak boleh bocor ke publik.
+Semua endpoint publik peta (`/geojson` metadata & feature, `/geojson/filter-options`, `/geojson/filter-categories`, `MapDataVersion`) membaca skema V3 (layers/spatial_features/categories_v3/category_nodes), bukan tabel kompatibilitas v1 `categories`/`data_spatial`. Hanya Layer `status = published` yang tampil — draft tidak boleh bocor ke publik.
 Satu mapset = satu Layer. Frontend (map.js/map-catalog.js) mengenali mapset dari NAMA, jadi nama tampilan unik dibuat di `App\Support\PublicMapCatalog` (nama kembar diberi konteks node/kategori) dan WAJIB dipakai bersama untuk metadata, properti `kategori` tiap feature, parameter `kategori[]`, dan hasil filter — jangan menghitung nama di tempat lain.
 Pohon untuk frontend dibatasi 3 level: Kategori › jalur node (digabung "A › B") › Layer.
 

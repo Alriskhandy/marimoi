@@ -105,7 +105,7 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
     | Modul ini digantikan "Daftar Layer & Data" (spatial-layers.*). Rute di
     | bawah DIPERTAHANKAN (bukan dihapus) sebagai redirect murni supaya
     | bookmark admin lama tidak langsung 404 — tidak ada lagi jalur yang
-    | menulis ke data_spatial_legacy_v1 lewat sini (lihat juga penghapusan
+    | menulis ke data_spatial lewat sini (lihat juga penghapusan
     | App\Support\SpatialFeaturesV3Sync di AppServiceProvider).
     */
 

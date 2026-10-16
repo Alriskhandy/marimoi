@@ -171,7 +171,7 @@ class DataSpatialController extends Controller
             // lama di-retire (lihat routes/backend lama.txt) — diubah di sini
             // semata agar tidak ada lagi acuan ke tabel yang sudah hilang.
             'data_type' => 'required|string|max:50',
-            'kategori_id' => 'required|exists:categories_legacy_v1,id',
+            'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string',
             'input_type' => 'required|in:shapefile,coordinates,kmz',
             'sumber_data' => [$wajibMetadata ? 'required' : 'nullable', 'string', 'max:255'],
@@ -256,7 +256,7 @@ class DataSpatialController extends Controller
         $wajibMetadata = $this->metadataWajib();
 
         $validator = Validator::make($request->all(), [
-            'kategori_id' => 'required|exists:categories_legacy_v1,id',
+            'kategori_id' => 'required|exists:categories,id',
             'deskripsi' => 'nullable|string|max:255',
             'dbf_attributes' => 'nullable|string',
             'gambar' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048', // Validasi gambar
@@ -501,8 +501,8 @@ KML;
     {
         $user = Auth::user();
 
-        $query = DB::table('data_spatial_legacy_v1 as data_spatial')
-            ->join('categories_legacy_v1 as categories', 'data_spatial.kategori_id', '=', 'categories.id')
+        $query = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->whereNotNull('data_spatial.geom');
 
         // Cakupan yang sama dengan geojson(): selain admin, hanya data milik sendiri.
@@ -538,8 +538,8 @@ KML;
         $subType = $request->get('sub_type');
         $year = $request->get('year');
 
-        $query = DB::table('data_spatial_legacy_v1 as data_spatial')
-            ->join('categories_legacy_v1 as categories', 'data_spatial.kategori_id', '=', 'categories.id')
+        $query = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->select(
                 'data_spatial.id',
                 'data_spatial.uuid',
@@ -1591,8 +1591,8 @@ KML;
 
         $categoryType = $this->getCategoryTypeByDataType($dataType, $subType);
 
-        $categories = DB::table('data_spatial_legacy_v1 as data_spatial')
-            ->join('categories_legacy_v1 as categories', 'data_spatial.kategori_id', '=', 'categories.id')
+        $categories = DB::table('data_spatial')
+            ->join('categories', 'data_spatial.kategori_id', '=', 'categories.id')
             ->select('categories.id as kategori_id', 'categories.nama as kategori', DB::raw('COUNT(*) as count'))
             ->when($dataType, fn ($q) => $q->where('data_spatial.data_type', $dataType))
             ->when($subType, fn ($q) => $q->where('data_spatial.sub_type', $subType))
@@ -1902,7 +1902,7 @@ KML;
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'required|integer',
-            'kategori_id' => 'required|exists:categories_legacy_v1,id',
+            'kategori_id' => 'required|exists:categories,id',
         ], [
             'ids.required' => 'Tidak ada data yang dipilih.',
             'kategori_id.required' => 'Kategori/layer tujuan harus dipilih.',
