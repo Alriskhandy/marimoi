@@ -98,12 +98,12 @@
                             Daftar Organisasi Perangkat Daerah
                         </h4>
                         <div>
-@can('opd.create')
-                            <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
-                                data-bs-target="#addModal">
-                                <i class="mdi mdi-plus"></i> Tambah OPD
-                            </button>
-@endcan
+                            @can('opd.create')
+                                <button type="button" class="btn btn-gradient-primary" data-bs-toggle="modal"
+                                    data-bs-target="#addModal">
+                                    <i class="mdi mdi-plus"></i> Tambah OPD
+                                </button>
+                            @endcan
                         </div>
                     </div>
 
@@ -181,8 +181,8 @@
                                         <td class="text-center d-none d-md-table-cell">{{ $index + 1 }}</td>
                                         <td class="text-center">
                                             @if ($opd->logo_url)
-                                                <img src="{{ $opd->logo_url }}"
-                                                    alt="Logo {{ $opd->singkatan }}" class="rounded logo-img"
+                                                <img src="{{ $opd->logo_url }}" alt="Logo {{ $opd->singkatan }}"
+                                                    class="rounded logo-img"
                                                     style="width: 40px; height: 40px; object-fit: contain; background-color: #f8f9fa; border: 1px solid #dee2e6;">
                                             @else
                                                 <div class="bg-light rounded d-flex align-items-center justify-content-center logo-placeholder"
@@ -238,25 +238,25 @@
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                                 <div class="btn-group" role="group">
-@can('opd.edit')
-                                                    <button type="button" class="btn btn-sm btn-outline-success btn-edit"
-                                                        data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
-                                                        data-singkatan="{{ $opd->singkatan }}"
-                                                        data-telepon="{{ $opd->telepon }}"
-                                                        data-email="{{ $opd->email }}" data-logo-url="{{ $opd->logo_url }}"
-                                                        data-bs-toggle="modal" data-bs-target="#editModal"
-                                                        title="Edit">
-                                                        <i class="mdi mdi-pencil"></i>
-                                                    </button>
-@endcan
-@can('opd.delete')
-                                                    <button type="button"
-                                                        class="btn btn-sm btn-outline-danger btn-delete"
-                                                        data-id="{{ $opd->id }}"
-                                                        onclick="deleteOpd({{ $opd->id }})" title="Hapus">
-                                                        <i class="mdi mdi-delete"></i>
-                                                    </button>
-@endcan
+                                                    @can('opd.edit')
+                                                        <button type="button" class="btn btn-sm btn-outline-success btn-edit"
+                                                            data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
+                                                            data-singkatan="{{ $opd->singkatan }}"
+                                                            data-telepon="{{ $opd->telepon }}"
+                                                            data-email="{{ $opd->email }}"
+                                                            data-logo-url="{{ $opd->logo_url }}" data-bs-toggle="modal"
+                                                            data-bs-target="#editModal" title="Edit">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </button>
+                                                    @endcan
+                                                    @can('opd.delete')
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-danger btn-delete"
+                                                            data-id="{{ $opd->id }}"
+                                                            onclick="deleteOpd({{ $opd->id }})" title="Hapus">
+                                                            <i class="mdi mdi-delete"></i>
+                                                        </button>
+                                                    @endcan
                                                 </div>
                                             </div>
 
@@ -265,24 +265,24 @@
                                                     data-id="{{ $opd->id }}" title="Lihat Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
-@can('opd.edit')
-                                                <button type="button"
-                                                    class="btn btn-sm btn-outline-success btn-edit me-1"
-                                                    data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
-                                                    data-singkatan="{{ $opd->singkatan }}"
-                                                    data-telepon="{{ $opd->telepon }}" data-email="{{ $opd->email }}"
-                                                    data-logo-url="{{ $opd->logo_url }}" data-bs-toggle="modal"
-                                                    data-bs-target="#editModal" title="Edit">
-                                                    <i class="mdi mdi-pencil"></i>
-                                                </button>
-@endcan
-@can('opd.delete')
-                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                                                    data-id="{{ $opd->id }}"
-                                                    onclick="deleteOpd({{ $opd->id }})" title="Hapus">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
-@endcan
+                                                @can('opd.edit')
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-success btn-edit me-1"
+                                                        data-id="{{ $opd->id }}" data-name="{{ $opd->name }}"
+                                                        data-singkatan="{{ $opd->singkatan }}"
+                                                        data-telepon="{{ $opd->telepon }}" data-email="{{ $opd->email }}"
+                                                        data-logo-url="{{ $opd->logo_url }}" data-bs-toggle="modal"
+                                                        data-bs-target="#editModal" title="Edit">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </button>
+                                                @endcan
+                                                @can('opd.delete')
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
+                                                        data-id="{{ $opd->id }}"
+                                                        onclick="deleteOpd({{ $opd->id }})" title="Hapus">
+                                                        <i class="mdi mdi-delete"></i>
+                                                    </button>
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -292,12 +292,12 @@
                                             <div class="py-4">
                                                 <i class="mdi mdi-office-building-outline mdi-48px text-muted"></i>
                                                 <p class="text-muted mt-2">Belum ada data OPD</p>
-@can('opd.create')
-                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                                    data-bs-target="#addModal">
-                                                    <i class="mdi mdi-plus"></i> Tambah OPD Pertama
-                                                </button>
-@endcan
+                                                @can('opd.create')
+                                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                        data-bs-target="#addModal">
+                                                        <i class="mdi mdi-plus"></i> Tambah OPD Pertama
+                                                    </button>
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>

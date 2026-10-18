@@ -55,10 +55,13 @@
             ],
         ],
     ];
+    $captchaRequired = \App\Rules\ValidHCaptcha::isRequired();
 @endphp
 
 @push('styles')
-    <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
+    @if ($captchaRequired)
+        <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
+    @endif
     <style>
         /* Status validasi di-toggle oleh skrip formulir. */
         #feedbackForm .is-invalid {
@@ -159,9 +162,9 @@
                     <fieldset>
                         <legend class="{{ $legend }}"><span class="{{ $badge }}">3</span> Isi tanggapan</legend>
                         <div data-field>
-                            <label for="tanggapan" class="{{ $label }}">Pesan <span
+                            <label for="isi_tanggapan" class="{{ $label }}">Pesan <span
                                     class="text-red-500">*</span></label>
-                            <textarea name="tanggapan" id="tanggapan" rows="4" class="{{ $input }}" required minlength="10"
+                            <textarea name="tanggapan" id="isi_tanggapan" rows="4" class="{{ $input }}" required minlength="10"
                                 maxlength="1000" placeholder="Jelaskan kondisi, masukan, atau pertanyaan Anda selengkap mungkin."></textarea>
                             <div class="mt-1 flex items-start justify-between gap-4">
                                 <p class="{{ $feedback }} !mt-0"></p>
@@ -200,7 +203,13 @@
                     <fieldset>
                         <legend class="{{ $legend }}"><span class="{{ $badge }}">5</span> Kirim</legend>
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                            @if ($captchaRequired)
+                                <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                            @else
+                                <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    <i class="bi bi-cone-striped"></i> Mode development: hCaptcha dinonaktifkan.
+                                </p>
+                            @endif
                             <button type="submit" id="submitBtn" class="{{ $btnPrimary }} w-full sm:w-auto">
                                 <i class="bi bi-send-fill"></i> <span id="submitText">Kirim Tanggapan</span>
                             </button>
@@ -267,7 +276,7 @@
                 this.el = {
                     form: byId('feedbackForm'),
                     jenisRadios: document.querySelectorAll('input[name="jenis_tanggapan"]'),
-                    tanggapan: byId('tanggapan'),
+                    tanggapan: byId('isi_tanggapan'),
                     charCount: byId('charCount'),
                     lampiran: byId('laporan_gambar'),
                     lampiranWajib: byId('lampiranWajib'),
@@ -335,7 +344,7 @@
                 });
 
                 Object.entries(this.rules).forEach(([name, rule]) => {
-                    const field = document.getElementById(name);
+                    const field = this.el.form.elements[name];
                     // Kolom baru divalidasi setelah ditinggalkan, lalu diperbarui saat diketik.
                     field.addEventListener('blur', () => field.value && this.validateField(field, rule.validate(field
                         .value.trim()), rule.message));
@@ -422,7 +431,7 @@
                     problems.push([this.el.jenisRadios[0], 'Pilih jenis tanggapan terlebih dahulu.']);
                 }
                 Object.entries(this.rules).forEach(([name, rule]) => {
-                    const field = document.getElementById(name);
+                    const field = this.el.form.elements[name];
                     const value = field.value.trim();
                     if (!this.validateField(field, rule.validate(value), value ? rule.message : 'Kolom ini wajib diisi')) {
                         problems.push([field, 'Periksa kembali kolom yang ditandai merah.']);
@@ -508,8 +517,10 @@
                     const data = await response.json();
 
                     if (data.status === 'success') {
-                        this.showModal('success', 'Tanggapan berhasil dikirim', data.message ||
-                            'Terima kasih, tanggapan Anda sudah kami terima.');
+                        const ticket = data.data?.kode;
+                        this.showModal('success', 'Tanggapan berhasil dikirim', ticket ?
+                            `Nomor tiket Anda: ${ticket}. Salinannya beserta panduan melacak status telah dikirim ke email Anda.` :
+                            (data.message || 'Terima kasih, tanggapan Anda sudah kami terima.'));
                         this.resetForm();
                     } else {
                         this.handleSubmitError(data);

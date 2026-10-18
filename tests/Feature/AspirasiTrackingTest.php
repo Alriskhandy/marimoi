@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
+use App\Models\ProjectFeedback;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -208,5 +209,74 @@ class AspirasiTrackingTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonStructure(['data' => ['nomor_tiket']]);
         $this->assertNotEmpty($response->json('data.nomor_tiket'));
+    }
+
+    private function feedback(array $overrides = []): ProjectFeedback
+    {
+        return ProjectFeedback::factory()->create(array_merge([
+            'nama_proyek' => 'Jalan Lingkar Ternate',
+            'email' => 'rahmat@example.com',
+            'phone' => '081233334444',
+            'status' => 'ditindaklanjuti',
+            'response_admin' => 'Tim lapangan sudah dijadwalkan.',
+            'responded_at' => '2026-10-10 09:00:00',
+            'laporan_gambar' => null,
+        ], $overrides));
+    }
+
+    public function test_feedback_ticket_can_be_tracked_with_email(): void
+    {
+        $feedback = $this->feedback();
+
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
+            'nomor_tiket' => strtolower($feedback->ticketCode()),
+            'kontak' => 'RAHMAT@example.com',
+        ])
+            ->assertOk()
+            ->assertSee('Jalan Lingkar Ternate')
+            ->assertSee($feedback->ticketCode())
+            ->assertSee('Diproses')
+            ->assertSee('Tim lapangan sudah dijadwalkan.')
+            ->assertDontSee('Nomor tiket tidak ditemukan', false);
+    }
+
+    public function test_feedback_ticket_can_be_tracked_with_phone(): void
+    {
+        $feedback = $this->feedback(['email' => 'lain@example.com', 'status' => 'selesai']);
+
+        $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
+            'nomor_tiket' => $feedback->ticketCode(),
+            'kontak' => '+62 812-3333-4444',
+        ])
+            ->assertOk()
+            ->assertSee('Jalan Lingkar Ternate')
+            ->assertSee('Selesai');
+    }
+
+    public function test_feedback_ticket_with_wrong_contact_or_date_is_not_found(): void
+    {
+        $feedback = $this->feedback();
+        $wrongDate = preg_replace('/-\d{8}-/', '-19990101-', $feedback->ticketCode());
+
+        foreach ([[$feedback->ticketCode(), 'orang.lain@example.com'], [$wrongDate, 'rahmat@example.com']] as [$tiket, $kontak]) {
+            $this->followingRedirects()->post(route('aspirasi-masyarakat.lacak.cari'), [
+                'nomor_tiket' => $tiket,
+                'kontak' => $kontak,
+            ])
+                ->assertOk()
+                ->assertSee('Nomor tiket tidak ditemukan, atau email/nomor WhatsApp tidak cocok', false)
+                ->assertDontSee('Jalan Lingkar Ternate');
+        }
+    }
+
+    public function test_tracking_link_from_email_prefills_ticket_and_opens_tracking_tab(): void
+    {
+        $html = $this->get(route('tampil.aspirasi', ['tiket' => 'marimoi-fdb-20261018-0007']))
+            ->assertOk()
+            ->assertSee('value="MARIMOI-FDB-20261018-0007"', false)
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/id="tab-lacak"[^>]*aria-selected="true"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/id="panel-lacak" role="tabpanel"[^>]*hidden/', $html);
     }
 }

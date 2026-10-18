@@ -40,6 +40,14 @@ class ProjectFeedback extends Model
     ];
 
     /**
+     * Nomor tiket feedback yang stabil, mis. MARIMOI-FDB-20260115-0042 (dipakai di semua email).
+     */
+    public function ticketCode(): string
+    {
+        return 'MARIMOI-FDB-'.($this->created_at ?? now())->format('Ymd').'-'.str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Relationship ke data_spatial
      */
     public function dataSpatial()

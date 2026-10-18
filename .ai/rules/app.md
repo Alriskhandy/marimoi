@@ -34,3 +34,19 @@ Logo WAJIB disajikan lewat rute `document-templates.logo` (Storage::disk('public
 "Feedback Pemetaan" (SpatialFeedbackController, model SpatialFeedback, route/permission `spatial-feedbacks.*`, tabel `spatial_feedbacks`) dihapus 2026-10-14 (migration `drop_spatial_feedbacks_feature`, prefix ada di PermissionSeeder::RETIRED_PREFIXES) — jangan dibangkitkan.
 Feedback berlaku untuk SEMUA data spasial, tanpa konsep type (tematik/psd/psn/pokir/musrenbang): ProjectFeedbackController tidak memfilter data_type, menu sidebar tanpa `?type`. Halaman publik `detail.interaktif` memakai view `frontend.pages.detail` yang sama (form feedback selalu tampil).
 Cakupan akses lewat ProjectFeedbackController::accessibleFeedbacks() (super-admin/admin-bappeda semua; role lain: opd_id miliknya ATAU data spasial miliknya) — pakai untuk list, statistik, show/update/respond/destroy. Dropdown data spasial di form admin WAJIB via AJAX (`project-feedbacks.data-spatial`), jumlahnya ±12 ribu. Lampiran gambar di disk public folder `aspirasi_lampiran`.
+
+## Email aspirasi & feedback lewat AspirasiMailer
+Semua email Aspirasi/Feedback dikirim via App\Support\AspirasiMailer::queue() (per penerima, clone mailable, error hanya di-log — submit warga tidak boleh 500 karena mailer). Penerima admin = AspirasiMailer::adminRecipients(): config mail.admin_addresses (env MAIL_ADMIN_ADDRESS, koma), fallback super-admin aktif — jangan pakai role_id=1 atau mail.from.address sebagai penerima.
+AspirasiMail/TanggapanMail: ShouldQueue + afterCommit + tries/backoff, isi disusun di method message() dan dirender view bersama emails.notification (+ emails.notification-text). TanggapanMail::CONTEXT_ASPIRASI untuk email status aspirasi. Nomor tiket feedback = ProjectFeedback::ticketCode().
+Email perubahan status hanya dikirim bila wasChanged(status/tanggapan). aspirasi.admin_id adalah FK users — jangan isi ID OPD (OPD tujuan lewat kategori_aspirasi.opd_id). POST publik pakai rate limiter `public-submissions` (5/menit/IP).
+
+## hCaptcha dilewati hanya di APP_ENV=local
+Pakai ValidHCaptcha::isRequired() (false hanya saat APP_ENV=local) untuk menentukan apakah rule `h-captcha-response` dipasang DAN apakah script/widget hCaptcha dirender — keduanya harus sinkron (contoh: aspirasiStore + view frontend.pages.aspirasi). Env testing/production tetap wajib captcha. Test yang mengganti `$this->app['env']` harus withoutMiddleware(ValidateCsrfToken::class), karena CSRF hanya otomatis dilewati di env testing.
+
+## Lacak tiket aspirasi & feedback lewat TicketLookup
+Form #lacak di halaman Aspirasi melacak DUA jenis tiket: MARIMOI-ASP-* (Aspirasi.nomor_tiket) dan MARIMOI-FDB-* (ProjectFeedback::ticketCode(), tidak disimpan di DB — di-parse dari id lalu dicocokkan ulang termasuk tanggal). Semua pencarian/ringkasan lewat App\Support\TicketLookup (find/summary, kontak email ATAU WhatsApp wajib cocok); session menyimpan `lacakTiket` = {type,id}. Status feedback dipetakan ke tahapan aspirasi (ditinjau/ditindaklanjuti → diproses).
+Email konfirmasi ke warga wajib memuat nomor tiket + TicketLookup::trackingSteps() + tombol TicketLookup::trackingUrl($tiket) (?tiket= mengisi form & membuka tab Lacak). Email notifikasi admin/OPD tidak memuat panduan lacak.
+
+## Log Email: khusus super-admin via role, dicatat otomatis oleh listener
+Menu Sistem › Log Email (route `mail-logs.index`, MailLogController) dikunci middleware `role:super-admin` + sidebar `$isSuperAdmin` — sengaja BUKAN permission, agar tidak bisa didelegasikan lewat Manajemen Role. Jangan ganti ke `permission:`.
+Tabel mail_logs diisi otomatis oleh App\Listeners\RecordMailLog (auto-discovered): MessageSent → sent, JobFailed untuk SendQueuedMailable → failed (setelah retry habis). Hanya metadata (penerima, subjek, jenis, error) — isi email tidak disimpan. Retensi MailLog::RETENTION_DAYS (90) via MassPrunable + `model:prune` terjadwal harian di routes/console.php. Test yang memakai Mail::fake() tidak menghasilkan log.

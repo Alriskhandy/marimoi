@@ -6,17 +6,17 @@ use App\Exports\AspirasiExport;
 use App\Mail\TanggapanMail;
 use App\Models\Aspirasi;
 use App\Models\KategoriAspirasi;
+use App\Models\Opd;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Support\AspirasiMailer;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AspirasiController extends Controller
@@ -30,7 +30,7 @@ class AspirasiController extends Controller
         $query = Aspirasi::with(['kategoriAspirasi.opd', 'admin']);
 
         // 🔒 Filter hanya jika bukan super-admin atau admin-bappeda
-        if (!in_array($user->role->slug, ['super-admin', 'admin-bappeda'])) {
+        if (! in_array($user->role->slug, ['super-admin', 'admin-bappeda'])) {
             $userOpdId = $user->opd_id;
 
             // Filter berdasarkan relasi ke OPD melalui kategoriAspirasi
@@ -73,7 +73,9 @@ class AspirasiController extends Controller
             $query->whereDate('created_at', '<=', $request->tanggal_akhir);
         }
 
-        $aspirasi = $query->latest()->paginate(15);
+        // Semua baris dikirim ke DataTables (filter/paging di sisi klien) — dulu paginate(15)
+        // tanpa link halaman, sehingga aspirasi di luar 15 terbaru tidak pernah terlihat.
+        $aspirasi = $query->latest()->get();
         $kategoriAspirasi = KategoriAspirasi::all();
 
         // Statistik
@@ -99,13 +101,12 @@ class AspirasiController extends Controller
         if (request()->ajax()) {
             return response()->json([
                 'status' => 'success',
-                'data' => $aspirasi
+                'data' => $aspirasi,
             ]);
         }
 
         return view('backend.pages.aspirasi.show', compact('aspirasi'));
     }
-
 
     /**
      * Remove the specified aspirasi from storage.
@@ -139,14 +140,13 @@ class AspirasiController extends Controller
         if (request()->ajax()) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Aspirasi berhasil dihapus.'
+                'message' => 'Aspirasi berhasil dihapus.',
             ]);
         }
 
         return redirect()->route('aspirasi.index')
             ->with('success', 'Aspirasi berhasil dihapus.');
     }
-
 
     /**
      * Update status aspirasi
@@ -176,51 +176,31 @@ class AspirasiController extends Controller
         $validated['tanggal_respon'] = now();
         $validated['admin_id'] = Auth::id();
 
-        // Data untuk user
-        $data = [
-            'nama'      => $aspirasi->nama_pengirim,
-            'kode'      => $aspirasi->nomor_tiket,
-            'email'     => $aspirasi->email,
-            'tanggapan_admin' => $request->tanggapan_admin,
-            'tanggal'   => now()->format('d-m-Y H:i'),
-        ];
-
-
-
-        // Tentukan tipe email berdasarkan status
-        $emailType = null;
-
-        switch ($validated['status']) {
-            case 'diproses':
-                $emailType = 'diproses';
-                break;
-            case 'selesai':
-                $emailType = 'selesai';
-                break;
-            case 'ditolak':
-                $emailType = 'ditolak';
-                break;
-        }
-
-        // Kirim email jika ada alamat email pengguna & tipe email ditentukan
-        if (!empty($aspirasi->email) && $emailType) {
-            Mail::to($aspirasi->email)->queue(new TanggapanMail($data, $emailType));
-        }
-
         $aspirasi->update($validated);
+
+        // Email ke warga hanya bila status/tanggapan benar-benar berubah (bukan simpan ulang)
+        if (in_array($aspirasi->status, ['diproses', 'selesai', 'ditolak'], true)
+            && $aspirasi->wasChanged(['status', 'tanggapan_admin'])) {
+            AspirasiMailer::queue($aspirasi->email, new TanggapanMail([
+                'nama' => $aspirasi->nama_pengirim,
+                'kode' => $aspirasi->nomor_tiket,
+                'email' => $aspirasi->email,
+                'tanggapan_admin' => $aspirasi->tanggapan_admin,
+                'tanggal' => now()->format('d-m-Y H:i'),
+            ], $aspirasi->status, TanggapanMail::CONTEXT_ASPIRASI));
+        }
 
         // Return JSON response for AJAX requests
         if ($request->ajax()) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Status aspirasi berhasil diperbarui.'
+                'message' => 'Status aspirasi berhasil diperbarui.',
             ]);
         }
 
         return redirect()->back()
             ->with('success', 'Status aspirasi berhasil diperbarui.');
     }
-
 
     /**
      * Download lampiran berdasarkan index
@@ -229,10 +209,10 @@ class AspirasiController extends Controller
     {
         try {
             // Validasi apakah aspirasi memiliki lampiran
-            if (!$aspirasi->lampiran) {
+            if (! $aspirasi->lampiran) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Aspirasi tidak memiliki lampiran'
+                    'message' => 'Aspirasi tidak memiliki lampiran',
                 ], 404);
             }
 
@@ -240,10 +220,10 @@ class AspirasiController extends Controller
             $lampiran = json_decode($aspirasi->lampiran, true);
 
             // Validasi apakah lampiran adalah array dan index valid
-            if (!is_array($lampiran) || !isset($lampiran[$index])) {
+            if (! is_array($lampiran) || ! isset($lampiran[$index])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File lampiran tidak ditemukan'
+                    'message' => 'File lampiran tidak ditemukan',
                 ], 404);
             }
 
@@ -251,25 +231,23 @@ class AspirasiController extends Controller
 
             // PERBAIKAN: Path yang benar untuk Laravel storage
             // URL /storage/ berarti file ada di storage/app/public/
-            $filePath = storage_path('app/public/aspirasi_lampiran/' . $filename);
-
+            $filePath = storage_path('app/public/aspirasi_lampiran/'.$filename);
 
             // Validasi file exist
-            if (!file_exists($filePath)) {
+            if (! file_exists($filePath)) {
 
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File tidak ditemukan di server'
+                    'message' => 'File tidak ditemukan di server',
                 ], 404);
             }
 
             // Validasi readable
-            if (!is_readable($filePath)) {
-
+            if (! is_readable($filePath)) {
 
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File tidak dapat diakses'
+                    'message' => 'File tidak dapat diakses',
                 ], 403);
             }
 
@@ -278,13 +256,13 @@ class AspirasiController extends Controller
             if ($fileSize === false || $fileSize > 50 * 1024 * 1024) { // Max 50MB
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File terlalu besar atau corrupt'
+                    'message' => 'File terlalu besar atau corrupt',
                 ], 400);
             }
 
             // Tentukan MIME type
             $mimeType = mime_content_type($filePath);
-            if (!$mimeType) {
+            if (! $mimeType) {
                 $mimeType = 'application/octet-stream';
             }
 
@@ -295,17 +273,16 @@ class AspirasiController extends Controller
             // Return file download response
             return response()->download($filePath, $safeFilename, [
                 'Content-Type' => $mimeType,
-                'Content-Disposition' => 'attachment; filename="' . $safeFilename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$safeFilename.'"',
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
                 'Pragma' => 'no-cache',
-                'Expires' => '0'
+                'Expires' => '0',
             ]);
         } catch (\Exception $e) {
 
-
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat mengunduh file'
+                'message' => 'Terjadi kesalahan saat mengunduh file',
             ], 500);
         }
     }
@@ -316,36 +293,36 @@ class AspirasiController extends Controller
     public function previewLampiran(Aspirasi $aspirasi, $index)
     {
         try {
-            if (!$aspirasi->lampiran) {
+            if (! $aspirasi->lampiran) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Lampiran tidak ditemukan'
+                    'message' => 'Lampiran tidak ditemukan',
                 ], 404);
             }
 
             $lampiran = json_decode($aspirasi->lampiran, true);
 
-            if (!is_array($lampiran) || !isset($lampiran[$index])) {
+            if (! is_array($lampiran) || ! isset($lampiran[$index])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File tidak ditemukan'
+                    'message' => 'File tidak ditemukan',
                 ], 404);
             }
 
             $filename = $lampiran[$index];
-            $filePath = storage_path('app/public/aspirasi_lampiran/' . $filename);
+            $filePath = storage_path('app/public/aspirasi_lampiran/'.$filename);
 
-            if (!file_exists($filePath)) {
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File tidak ditemukan di server'
+                    'message' => 'File tidak ditemukan di server',
                 ], 404);
             }
 
-            if (!is_readable($filePath)) {
+            if (! is_readable($filePath)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'File tidak dapat diakses'
+                    'message' => 'File tidak dapat diakses',
                 ], 403);
             }
 
@@ -356,7 +333,7 @@ class AspirasiController extends Controller
                 return response()->file($filePath, [
                     'Content-Type' => $mimeType,
                     'Cache-Control' => 'public, max-age=3600',
-                    'Content-Disposition' => 'inline; filename="' . basename($filename) . '"',
+                    'Content-Disposition' => 'inline; filename="'.basename($filename).'"',
                 ]);
             }
 
@@ -364,10 +341,9 @@ class AspirasiController extends Controller
             return $this->downloadLampiran($aspirasi, $index);
         } catch (\Exception $e) {
 
-
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat preview file'
+                'message' => 'Terjadi kesalahan saat preview file',
             ], 500);
         }
     }
@@ -382,13 +358,13 @@ class AspirasiController extends Controller
             'aspirasi_id' => $aspirasi->id,
             'lampiran_raw' => $aspirasi->lampiran,
             'lampiran_parsed' => $lampiran,
-            'files' => []
+            'files' => [],
         ];
 
         if (is_array($lampiran)) {
             foreach ($lampiran as $index => $filename) {
-                $filePath = storage_path('app/public/aspirasi_lampiran/' . $filename);
-                $publicUrl = asset('storage/aspirasi_lampiran/' . $filename);
+                $filePath = storage_path('app/public/aspirasi_lampiran/'.$filename);
+                $publicUrl = asset('storage/aspirasi_lampiran/'.$filename);
 
                 $result['files'][$index] = [
                     'filename' => $filename,
@@ -398,7 +374,7 @@ class AspirasiController extends Controller
                     'readable' => file_exists($filePath) ? is_readable($filePath) : false,
                     'size' => file_exists($filePath) ? filesize($filePath) : 0,
                     'permissions' => file_exists($filePath) ? substr(sprintf('%o', fileperms($filePath)), -4) : null,
-                    'mime_type' => file_exists($filePath) ? mime_content_type($filePath) : null
+                    'mime_type' => file_exists($filePath) ? mime_content_type($filePath) : null,
                 ];
             }
         }
@@ -410,7 +386,7 @@ class AspirasiController extends Controller
             'exists' => is_dir($storageDir),
             'readable' => is_dir($storageDir) ? is_readable($storageDir) : false,
             'writable' => is_dir($storageDir) ? is_writable($storageDir) : false,
-            'permissions' => is_dir($storageDir) ? substr(sprintf('%o', fileperms($storageDir)), -4) : null
+            'permissions' => is_dir($storageDir) ? substr(sprintf('%o', fileperms($storageDir)), -4) : null,
         ];
 
         // Cek symbolic link
@@ -420,7 +396,7 @@ class AspirasiController extends Controller
             'exists' => file_exists($symlinkPath),
             'is_link' => is_link($symlinkPath),
             'target' => is_link($symlinkPath) ? readlink($symlinkPath) : null,
-            'target_exists' => is_link($symlinkPath) ? file_exists(readlink($symlinkPath)) : false
+            'target_exists' => is_link($symlinkPath) ? file_exists(readlink($symlinkPath)) : false,
         ];
 
         return response()->json($result, 200, [], JSON_PRETTY_PRINT);
@@ -428,21 +404,18 @@ class AspirasiController extends Controller
 
     /**
      * Bulk delete aspirasi
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         // Validasi input
         $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:aspirasi,id'
+            'ids.*' => 'required|integer|exists:aspirasi,id',
         ], [
             'ids.required' => 'Tidak ada aspirasi yang dipilih untuk dihapus',
             'ids.array' => 'Format data tidak valid',
             'ids.min' => 'Pilih minimal 1 aspirasi untuk dihapus',
-            'ids.*.exists' => 'Salah satu aspirasi yang dipilih tidak ditemukan'
+            'ids.*.exists' => 'Salah satu aspirasi yang dipilih tidak ditemukan',
         ]);
 
         $ids = $request->ids;
@@ -450,7 +423,7 @@ class AspirasiController extends Controller
 
         try {
             // Cek authorization berdasarkan role
-            if (!in_array($user->role->slug, ['super-admin', 'admin-bappeda'])) {
+            if (! in_array($user->role->slug, ['super-admin', 'admin-bappeda'])) {
                 // Admin OPD hanya bisa hapus aspirasi yang sesuai dengan OPD mereka
                 if ($user->role->slug === 'admin-opd') {
                     $validIds = Aspirasi::whereIn('id', $ids)
@@ -489,7 +462,7 @@ class AspirasiController extends Controller
                     // Additional safety check
                     if (is_array($lampiranData)) {
                         foreach ($lampiranData as $file) {
-                            if (isset($file['path']) && !empty($file['path'])) {
+                            if (isset($file['path']) && ! empty($file['path'])) {
                                 Storage::disk('public')->delete($file['path']);
                             }
                         }
@@ -501,26 +474,27 @@ class AspirasiController extends Controller
             $deletedCount = Aspirasi::whereIn('id', $ids)->delete();
 
             return redirect()->back()->with('success', "Berhasil menghapus {$deletedCount} aspirasi");
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->errors())
                 ->with('error', 'Terjadi kesalahan validasi data');
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan database. Silakan coba lagi.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
         }
     }
+
     public function export(Request $request) // No $id parameter
     {
         try {
             $filters = $request->only(['kategori', 'opd', 'status', 'jenis', 'start_date', 'end_date']);
 
-            $fileName = 'aspirasi_masyarakat_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+            $fileName = 'aspirasi_masyarakat_'.Carbon::now()->format('Y-m-d_H-i-s').'.xlsx';
 
             return (new AspirasiExport($filters))->download($fileName);
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+            return back()->with('error', 'Gagal mengekspor data: '.$e->getMessage());
         }
     }
 
@@ -533,20 +507,19 @@ class AspirasiController extends Controller
                 'status' => 'nullable|in:pending,diproses,selesai,ditolak',
                 'jenis' => 'nullable|in:usulan,kritik & saran',
                 'start_date' => 'nullable|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date'
+                'end_date' => 'nullable|date|after_or_equal:start_date',
             ]);
 
-            $fileName = 'aspirasi_filtered_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+            $fileName = 'aspirasi_filtered_'.Carbon::now()->format('Y-m-d_H-i-s').'.xlsx';
 
             return (new AspirasiExport($validated))->download($fileName);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+                'message' => 'Gagal mengekspor data: '.$e->getMessage(),
             ], 500);
         }
     }
-
 
     public function previewExport(Request $request)
     {
@@ -558,38 +531,38 @@ class AspirasiController extends Controller
             $appliedFilters = [];
 
             // Apply filters and track what's being filtered
-            if (!empty($filters['kategori'])) {
+            if (! empty($filters['kategori'])) {
                 $query->where('kategori_aspirasi_id', $filters['kategori']);
-                $kategori = \App\Models\KategoriAspirasi::find($filters['kategori']);
-                $appliedFilters[] = 'Kategori: ' . ($kategori->nama_kategori ?? 'Unknown');
+                $kategori = KategoriAspirasi::find($filters['kategori']);
+                $appliedFilters[] = 'Kategori: '.($kategori->nama_kategori ?? 'Unknown');
             }
 
-            if (!empty($filters['opd'])) {
+            if (! empty($filters['opd'])) {
                 $query->whereHas('kategoriAspirasi', function ($q) use ($filters) {
                     $q->where('opd_id', $filters['opd']);
                 });
-                $opd = \App\Models\Opd::find($filters['opd']);
-                $appliedFilters[] = 'OPD: ' . ($opd->name ?? 'Unknown');
+                $opd = Opd::find($filters['opd']);
+                $appliedFilters[] = 'OPD: '.($opd->name ?? 'Unknown');
             }
 
-            if (!empty($filters['status'])) {
+            if (! empty($filters['status'])) {
                 $query->where('status', $filters['status']);
-                $appliedFilters[] = 'Status: ' . ucfirst($filters['status']);
+                $appliedFilters[] = 'Status: '.ucfirst($filters['status']);
             }
 
-            if (!empty($filters['jenis'])) {
+            if (! empty($filters['jenis'])) {
                 $query->where('jenis_aspirasi', $filters['jenis']);
-                $appliedFilters[] = 'Jenis: ' . ucfirst($filters['jenis']);
+                $appliedFilters[] = 'Jenis: '.ucfirst($filters['jenis']);
             }
 
-            if (!empty($filters['start_date'])) {
+            if (! empty($filters['start_date'])) {
                 $query->whereDate('created_at', '>=', $filters['start_date']);
-                $appliedFilters[] = 'Mulai: ' . Carbon::parse($filters['start_date'])->format('d/m/Y');
+                $appliedFilters[] = 'Mulai: '.Carbon::parse($filters['start_date'])->format('d/m/Y');
             }
 
-            if (!empty($filters['end_date'])) {
+            if (! empty($filters['end_date'])) {
                 $query->whereDate('created_at', '<=', $filters['end_date']);
-                $appliedFilters[] = 'Sampai: ' . Carbon::parse($filters['end_date'])->format('d/m/Y');
+                $appliedFilters[] = 'Sampai: '.Carbon::parse($filters['end_date'])->format('d/m/Y');
             }
 
             $count = $query->count();
@@ -598,23 +571,24 @@ class AspirasiController extends Controller
                 'status' => 'success',
                 'count' => $count,
                 'applied_filters' => $appliedFilters,
-                'message' => $count > 0 ? "Ditemukan {$count} data aspirasi" : 'Tidak ada data yang sesuai filter'
+                'message' => $count > 0 ? "Ditemukan {$count} data aspirasi" : 'Tidak ada data yang sesuai filter',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memuat preview: ' . $e->getMessage()
+                'message' => 'Gagal memuat preview: '.$e->getMessage(),
             ], 500);
         }
     }
+
     public function quickExport()
     {
         try {
-            $fileName = 'aspirasi_masyarakat_' . Carbon::now()->format('Y-m-d_H-i-s') . '.xlsx';
+            $fileName = 'aspirasi_masyarakat_'.Carbon::now()->format('Y-m-d_H-i-s').'.xlsx';
 
-            return Excel::download(new AspirasiExport(), $fileName);
+            return Excel::download(new AspirasiExport, $fileName);
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+            return back()->with('error', 'Gagal mengekspor data: '.$e->getMessage());
         }
     }
 }

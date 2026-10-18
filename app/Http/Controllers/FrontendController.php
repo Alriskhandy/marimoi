@@ -14,15 +14,16 @@ use App\Models\SharedMap;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Rules\ValidHCaptcha;
+use App\Support\AspirasiMailer;
 use App\Support\MapDataVersion;
 use App\Support\PublicMapCatalog;
+use App\Support\TicketLookup;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -282,11 +283,10 @@ class FrontendController extends Controller
     public function aspirasi()
     {
         $aspirasi = KategoriAspirasi::where('nama_kategori', '!=', self::KATEGORI_KRITIK_SARAN)->get();
-        $lacakId = session('lacakAspirasiId');
 
         return view('frontend.pages.aspirasi', [
             'aspirasi' => $aspirasi,
-            'hasilLacak' => $lacakId ? Aspirasi::find($lacakId) : null,
+            'hasilLacak' => TicketLookup::summary(session('lacakTiket')),
             'lacakTidakDitemukan' => (bool) session('lacakTidakDitemukan'),
         ]);
     }
@@ -865,8 +865,11 @@ class FrontendController extends Controller
             'tanggapan' => 'required|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'h-captcha-response' => ['required', new ValidHCaptcha],
         ];
+
+        if (ValidHCaptcha::isRequired()) {
+            $rules['h-captcha-response'] = ['required', new ValidHCaptcha];
+        }
 
         // Cek Jenis Tanggapan, jika pengaduan maka wajib ada file
         if ($request->jenis_tanggapan === 'keluhan') {
@@ -960,40 +963,34 @@ class FrontendController extends Controller
                 }
             }
 
-            ProjectFeedback::create($data);
+            $feedback = ProjectFeedback::create($data);
 
-            // Data untuk user
-            $userData = [
+            $mailData = [
+                'kode' => $feedback->ticketCode(),
                 'nama' => $request->nama_pemberi_aspirasi,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'tanggapan' => $request->tanggapan,
-                'tanggal' => now()->format('d-m-Y H:i'),
-            ];
-
-            // Data untuk admin
-            $adminData = [
-                'nama' => $request->nama_pemberi_aspirasi,
-                'email' => $request->email,
-                'tanggapan' => $request->tanggapan,
-                'tanggal' => now()->format('d-m-Y H:i'),
+                'tanggal' => $feedback->created_at->format('d-m-Y H:i'),
                 'nama_proyek' => $request->nama_proyek,
                 'kabupaten_kota' => $request->kabupaten_kota,
                 'kecamatan' => $request->kecamatan,
                 'jenis_tanggapan' => $request->jenis_tanggapan,
             ];
 
-            // Kirim email penerimaan ke pengguna jika ada email
-            if ($request->filled('email')) {
-                Mail::to($request->email)->queue(new TanggapanMail($userData, 'penerimaan'));
-            }
+            // Email penerimaan ke warga
+            AspirasiMailer::queue($request->email, new TanggapanMail($mailData, 'penerimaan'));
 
-            // Kirim notifikasi ke admin (gunakan email admin dari user/project terkait)
-            $adminEmail = $user->email ?? config('mail.from.address');
-            Mail::to($adminEmail)->queue(new TanggapanMail($adminData, 'admin'));
+            // Notifikasi ke pemilik data spasial; bila tidak punya email, ke admin sistem
+            AspirasiMailer::queue(
+                filled($user?->email) ? $user->email : AspirasiMailer::adminRecipients(),
+                new TanggapanMail($mailData, 'admin')
+            );
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Tanggapan berhasil ditambahkan',
+                'data' => ['kode' => $feedback->ticketCode()],
             ]);
         } catch (\Exception $e) {
             Log::error('Error storing feedback: '.$e->getMessage());
@@ -1017,8 +1014,11 @@ class FrontendController extends Controller
             'judul_aspirasi' => 'required|string|min:5|max:150',
             'isi_aspirasi' => 'required|string|min:10|max:1000',
             'agreement' => 'required|accepted',
-            'h-captcha-response' => ['required', new ValidHCaptcha],
         ];
+
+        if (ValidHCaptcha::isRequired()) {
+            $rules['h-captcha-response'] = ['required', new ValidHCaptcha];
+        }
 
         // Validasi berdasarkan jenis aspirasi
         if ($request->jenis_aspirasi === 'usulan') {
@@ -1096,8 +1096,8 @@ class FrontendController extends Controller
             // Set default status ke pending;
             $data['status'] = 'pending';
 
-            // Ambil data admin dan OPD di awal untuk memastikan ketersediaan data
-            $adminData = User::where('role_id', 1)->first();
+            // admin_id = FK ke users (super-admin); OPD tujuan tercatat lewat kategori_aspirasi.opd_id
+            $adminData = User::whereHas('role', fn ($query) => $query->where('slug', 'super-admin'))->orderBy('id')->first();
             $opdData = null;
 
             if ($request->jenis_aspirasi === 'usulan' && $request->kategori_aspirasi_id) {
@@ -1106,7 +1106,7 @@ class FrontendController extends Controller
 
             // Handle data berdasarkan jenis aspirasi
             if ($request->jenis_aspirasi === 'usulan') {
-                $data['admin_id'] = $opdData && $opdData->opd ? $opdData->opd->id : ($adminData ? $adminData->id : null);
+                $data['admin_id'] = $adminData?->id;
                 $data['kategori_aspirasi_id'] = $request->kategori_aspirasi_id;
                 $data['latitude'] = $request->latitude;
                 $data['longitude'] = $request->longitude;
@@ -1178,34 +1178,13 @@ class FrontendController extends Controller
                 'opd_terkait' => ($opdData && $opdData->opd) ? $opdData->opd->singkatan : 'N/A',
             ];
 
-            // 1. Kirim email konfirmasi ke user (masyarakat)
-            if ($request->filled('email')) {
-                try {
-                    Mail::to($request->email)->queue(new AspirasiMail($userData, 'penerimaan'));
-                    Log::info('Confirmation email queued for user: '.$request->email);
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue user email: '.$e->getMessage());
-                }
-            }
+            // 1. Email konfirmasi ke warga, 2. notifikasi admin sistem
+            AspirasiMailer::queue($request->email, new AspirasiMail($userData, AspirasiMail::TYPE_PENERIMAAN));
+            AspirasiMailer::queue(AspirasiMailer::adminRecipients(), new AspirasiMail($userData, AspirasiMail::TYPE_ADMIN));
 
-            // 2. Kirim email notifikasi ke admin sistem
-            if ($adminData && ! empty($adminData->email)) {
-                try {
-                    Mail::to($adminData->email)->queue(new AspirasiMail($userData, 'admin'));
-                    Log::info('Admin notification email queued for: '.$adminData->email);
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue admin email: '.$e->getMessage());
-                }
-            }
-
-            // 3. Kirim email notifikasi ke OPD terkait (hanya untuk usulan)
-            if ($request->jenis_aspirasi === 'usulan' && $opdData && $opdData->opd && ! empty($opdData->opd->email)) {
-                try {
-                    Mail::to($opdData->opd->email)->queue(new AspirasiMail($userData, 'opd'));
-                    Log::info('OPD notification email queued for: '.$opdData->opd->email);
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue OPD email: '.$e->getMessage());
-                }
+            // 3. Notifikasi ke OPD tujuan (hanya untuk usulan)
+            if ($request->jenis_aspirasi === 'usulan') {
+                AspirasiMailer::queue($opdData?->opd?->email, new AspirasiMail($userData, AspirasiMail::TYPE_OPD));
             }
 
             // Log successful creation
@@ -1262,29 +1241,14 @@ class FrontendController extends Controller
 
         $validated = $validator->validated();
 
-        $aspirasi = Aspirasi::where('nomor_tiket', trim($validated['nomor_tiket']))->first();
+        // Tiket aspirasi (MARIMOI-ASP-...) maupun feedback data spasial (MARIMOI-FDB-...)
+        $tiket = TicketLookup::find($validated['nomor_tiket'], $validated['kontak']);
 
-        $cocok = $aspirasi && (
-            ($aspirasi->email && Str::lower($aspirasi->email) === Str::lower(trim($validated['kontak'])))
-            || ($aspirasi->phone && $this->normalizeTelepon($aspirasi->phone) === $this->normalizeTelepon($validated['kontak']))
-        );
-
-        if (! $cocok) {
+        if (! $tiket) {
             return $kembali->with('lacakTidakDitemukan', true)->withInput($request->only('nomor_tiket', 'kontak'));
         }
 
-        return $kembali->with('lacakAspirasiId', $aspirasi->id)->withInput($request->only('nomor_tiket', 'kontak'));
-    }
-
-    /**
-     * Normalisasi nomor telepon untuk pencocokan: buang karakter non-digit,
-     * lalu samakan prefix 0/62 supaya "0812...", "62812...", "+62812..." dianggap sama.
-     */
-    private function normalizeTelepon(string $value): string
-    {
-        $digits = preg_replace('/\D+/', '', $value) ?? '';
-
-        return preg_replace('/^(0|62)/', '', $digits) ?? $digits;
+        return $kembali->with('lacakTiket', $tiket)->withInput($request->only('nomor_tiket', 'kontak'));
     }
 
     /**

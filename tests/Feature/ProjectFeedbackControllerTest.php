@@ -282,4 +282,32 @@ class ProjectFeedbackControllerTest extends TestCase
             ->assertSee('id="feedbackFilterForm"', false)
             ->assertSee('Belum ada feedback');
     }
+
+    public function test_show_returns_ticket_code_and_opd_for_detail_modal(): void
+    {
+        $opd = $this->opd('PUPR');
+        $admin = $this->userWithRole('super-admin', $opd->id);
+        $feedback = $this->feedbackFor($admin, ['opd_id' => $opd->id, 'created_at' => '2026-01-15 08:00:00']);
+
+        $this->actingAs($admin)
+            ->getJson(route('project-feedbacks.show', $feedback->id))
+            ->assertOk()
+            ->assertJsonPath('kode', $feedback->ticketCode())
+            ->assertJsonPath('data.opd.singkatan', 'PUPR');
+    }
+
+    public function test_index_renders_redesigned_feedback_modals(): void
+    {
+        $admin = $this->userWithRole('super-admin');
+        $this->feedbackFor($admin);
+
+        $this->actingAs($admin)
+            ->get(route('project-feedbacks.index'))
+            ->assertOk()
+            ->assertSee('id="show_loading"', false)
+            ->assertSee('id="show_kode"', false)
+            ->assertSee('id="show_gambar_file_wrap"', false)
+            ->assertSee('id="response_ticket"', false)
+            ->assertSee('pemberi feedback menerima email', false);
+    }
 }

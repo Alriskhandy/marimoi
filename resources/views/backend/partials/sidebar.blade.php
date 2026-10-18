@@ -7,14 +7,14 @@
     $isPublicationActive = request()->routeIs('publications.*');
     $isMasterDataActive =
         request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('opd.*');
-    $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*') || request()->routeIs('document-templates.*');
+    $isSystemActive = request()->routeIs('visitors.*') || request()->routeIs('logs.*') || request()->routeIs('mail-logs.*') || request()->routeIs('document-templates.*');
 
     $canPetaTematik = $user?->canAny(['spatial-layers.view', 'categories.view', 'project-feedbacks.view']);
     $canAspirasi = $user?->canAny(['aspirasi.view', 'kategori-aspirasi.view']);
     $canPublikasi = $user?->can('publications.view');
     $canAspirasiPublikasi = $canAspirasi || $canPublikasi;
     $canMasterData = $user?->canAny(['users.view', 'roles.view', 'opd.view']);
-    $canSistem = $user?->canAny(['visitors.view', 'logs.view', 'document-templates.view']);
+    $canSistem = $isSuperAdmin || $user?->canAny(['visitors.view', 'logs.view', 'document-templates.view']);
 
     $hasOpdLogo = $slug === 'admin-opd' && $user?->opd && $user->opd->logo;
     $logoPath = $user->opd?->logo ? storage_path('app/public/' . $user->opd->logo) : null;
@@ -180,6 +180,10 @@
                         <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"
                             href="{{ route('logs.index') }}"><span class="nav-text">Log Sistem</span></a>
                     @endcan
+                    @if ($isSuperAdmin)
+                        <a class="nav-link {{ request()->routeIs('mail-logs.*') ? 'active' : '' }}"
+                            href="{{ route('mail-logs.index') }}"><span class="nav-text">Log Email</span></a>
+                    @endif
                 </div>
             </div>
         @endif

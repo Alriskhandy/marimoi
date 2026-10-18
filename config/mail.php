@@ -113,4 +113,34 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Global "Reply-To" Address
+    |--------------------------------------------------------------------------
+    |
+    | Balasan warga atas email otomatis (konfirmasi aspirasi/feedback) diarahkan
+    | ke kotak masuk petugas ini. Kosongkan bila tidak dipakai.
+    |
+    */
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME', env('MAIL_FROM_NAME', 'Example')),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Notification Recipients
+    |--------------------------------------------------------------------------
+    |
+    | Penerima notifikasi aspirasi/feedback baru (dipisah koma). Bila kosong,
+    | notifikasi dikirim ke email user ber-role super-admin yang aktif.
+    |
+    */
+
+    'admin_addresses' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('MAIL_ADMIN_ADDRESS', ''))
+    ))),
+
 ];
