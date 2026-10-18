@@ -1,351 +1,289 @@
 @extends('backend.partials.main', ['title' => 'Aspirasi Masyarakat'])
 
 @section('main')
-    <!-- Add CSRF token to meta for AJAX requests -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    @php
+        $user = auth()->user();
+        $roleSlug = $user->role->slug ?? null;
+        $canSeeAllOpd = in_array($roleSlug, ['super-admin', 'admin-bappeda']);
+        $filteredKategori = $roleSlug === 'admin-opd'
+            ? $kategoriAspirasi->where('opd_id', $user->opd_id)
+            : $kategoriAspirasi;
+        $opdList = $kategoriAspirasi->pluck('opd')->filter()->unique('id')->sortBy('singkatan');
+        $statusBadges = ['pending' => 'warning', 'diproses' => 'info', 'selesai' => 'success', 'ditolak' => 'danger'];
+        $statusLabels = ['pending' => 'Menunggu', 'diproses' => 'Diproses', 'selesai' => 'Selesai', 'ditolak' => 'Ditolak'];
+        $jenisBadges = ['usulan' => 'primary', 'kritik & saran' => 'dark'];
+    @endphp
 
     <div class="page-header">
         <h3 class="page-title">
             <span class="page-title-icon bg-gradient-primary text-white me-2">
                 <i class="mdi mdi-message-text"></i>
-            </span> Manajemen Aspirasi
+            </span>
+            Aspirasi Masyarakat
         </h3>
         <nav aria-label="breadcrumb">
             <ul class="breadcrumb">
                 <li class="breadcrumb-item">
                     <a href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                    Aspirasi
-                </li>
+                <li class="breadcrumb-item active" aria-current="page">Aspirasi</li>
             </ul>
         </nav>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-warning card-img-holder text-white">
-                <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Pending
-                        <i class="mdi mdi-clock-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['pending'] ?? 0 }}</h2>
-                    <h6 class="card-text">Menunggu ditinjau</h6>
-                </div>
-            </div>
-        </div>
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
 
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-info card-img-holder text-white">
-                <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Diproses
-                        <i class="mdi mdi-cog-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['diproses'] ?? 0 }}</h2>
-                    <h6 class="card-text">Sedang diproses</h6>
-                </div>
+    <!-- Statistics Cards (klik untuk memfilter status) -->
+    <div class="row g-3 stats-row-compact">
+        @foreach ([['pending', 'warning', 'mdi-clock-outline'], ['diproses', 'info', 'mdi-cog-outline'], ['selesai', 'success', 'mdi-check-circle-outline'], ['ditolak', 'danger', 'mdi-close-circle-outline']] as [$statusKey, $color, $icon])
+            <div class="col-6 col-md-3">
+                <button type="button" class="card stat-card-compact stat-card-filter bg-gradient-{{ $color }} text-white w-100 text-start"
+                    data-status-shortcut="{{ $statusKey }}" title="Tampilkan aspirasi {{ strtolower($statusLabels[$statusKey]) }}">
+                    <div class="card-body w-100">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="stat-label">{{ $statusLabels[$statusKey] }}</p>
+                                <h3 class="stat-value">{{ number_format($stats[$statusKey] ?? 0) }}</h3>
+                            </div>
+                            <i class="mdi {{ $icon }} stat-icon"></i>
+                        </div>
+                    </div>
+                </button>
             </div>
-        </div>
-
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-success card-img-holder text-white">
-                <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Selesai
-                        <i class="mdi mdi-check-circle-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['selesai'] ?? 0 }}</h2>
-                    <h6 class="card-text">Telah diselesaikan</h6>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-sm-6 stretch-card grid-margin">
-            <div class="card bg-gradient-danger card-img-holder text-white">
-                <div class="card-body">
-                    <img src="{{ asset('backend/assets/images/dashboard/circle.svg') }}" class="card-img-absolute"
-                        alt="circle" />
-                    <h4 class="font-weight-normal mb-3">
-                        Ditolak
-                        <i class="mdi mdi-close-circle-outline mdi-24px float-end"></i>
-                    </h4>
-                    <h2 class="mb-4">{{ $stats['ditolak'] ?? 0 }}</h2>
-                    <h6 class="card-text">Ditolak</h6>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Main Content -->
     <div class="row">
         <div class="col-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                         <div>
-                            <h4 class="card-title">
-                                <i class="mdi mdi-message-text"></i>
-                                Daftar Aspirasi
-                            </h4>
-                            <p class="card-description">
-                                Kelola dan pantau aspirasi masyarakat
-                            </p>
+                            <h4 class="card-title mb-1">Daftar Aspirasi</h4>
+                            <p class="text-muted small mb-0">{{ number_format($stats['total'] ?? $aspirasi->count()) }} aspirasi
+                                masuk dari masyarakat</p>
                         </div>
-                        <div class="d-flex gap-2">
-                            {{-- Quick Export Button --}}
-@can('aspirasi.export')
-                            <a href="{{ route('aspirasi.export') }}" class="btn btn-outline-success btn-sm"
-                                title="Export Semua Data">
-                                <i class="mdi mdi-file-excel"></i>
-                                <span class="d-none d-md-inline">Quick Export</span>
-                            </a>
-@endcan
+                        @can('aspirasi.export')
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('aspirasi.export') }}" class="btn btn-outline-success" title="Export semua data">
+                                    <i class="mdi mdi-file-excel"></i> <span class="d-none d-md-inline">Quick Export</span>
+                                </a>
+                                <button type="button" class="btn btn-gradient-success" data-bs-toggle="modal"
+                                    data-bs-target="#exportModal" title="Export dengan filter">
+                                    <i class="mdi mdi-file-excel"></i> <span class="d-none d-md-inline">Export Excel</span>
+                                </button>
+                            </div>
+                        @endcan
+                    </div>
 
-                            {{-- Advanced Export Button --}}
-@can('aspirasi.export')
-                            <button type="button" class="btn btn-gradient-success btn-sm" data-bs-toggle="modal"
-                                data-bs-target="#exportModal" title="Export dengan Filter">
-                                <i class="mdi mdi-file-excel"></i>
-                                <span class="d-none d-md-inline">Export Excel</span>
-                            </button>
-@endcan
+                    <div class="row g-3 align-items-end filter-toolbar mb-3">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="kategoriFilter" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-tag-outline me-1"></i>Kategori
+                            </label>
+                            <select class="form-select filter-control" id="kategoriFilter">
+                                <option value="">Semua Kategori</option>
+                                @foreach ($filteredKategori->sortBy('nama_kategori') as $kategori)
+                                    <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        @if ($canSeeAllOpd)
+                            <div class="col-lg-3 col-md-6">
+                                <label for="opdFilter" class="form-label fw-semibold mb-1">
+                                    <i class="mdi mdi-domain me-1"></i>OPD Tujuan
+                                </label>
+                                <select class="form-select filter-control" id="opdFilter">
+                                    <option value="">Semua OPD</option>
+                                    @foreach ($opdList as $opd)
+                                        <option value="{{ $opd->id }}">{{ $opd->singkatan }}</option>
+                                    @endforeach
+                                    <option value="0">- Umum (tanpa OPD) -</option>
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="col-lg-3 col-md-6">
+                            <label for="jenisFilter" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-shape-outline me-1"></i>Jenis
+                            </label>
+                            <select class="form-select filter-control" id="jenisFilter">
+                                <option value="">Semua Jenis</option>
+                                <option value="usulan">Usulan</option>
+                                <option value="kritik & saran">Kritik &amp; Saran</option>
+                            </select>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label for="statusFilter" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-flag me-1"></i>Status
+                            </label>
+                            <select class="form-select filter-control" id="statusFilter">
+                                <option value="">Semua Status</option>
+                                @foreach ($statusLabels as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Bulk Actions Bar -->
+                    <div class="row g-3 align-items-end justify-content-between filter-toolbar mb-4">
+                        <div class="col-lg-5 col-md-6">
+                            <label for="tableSearch" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-magnify me-1"></i>Cari Aspirasi
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control filter-control" id="tableSearch"
+                                    placeholder="Nomor tiket, nama, email, atau judul...">
+                                <button class="btn btn-primary" type="button" id="searchTableBtn" title="Cari">
+                                    <i class="mdi mdi-magnify"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label for="sortBySelect" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-sort me-1"></i>Urutkan
+                            </label>
+                            <select class="form-select filter-control" id="sortBySelect">
+                                <option value="6-desc">Terbaru</option>
+                                <option value="6-asc">Terlama</option>
+                                <option value="2-asc">Pengirim (A-Z)</option>
+                                <option value="5-asc">Status (A-Z)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-lg-2 col-md-6">
+                            <label for="per_page" class="form-label fw-semibold mb-1">
+                                <i class="mdi mdi-table-row me-1"></i>Per halaman
+                            </label>
+                            <select class="form-select filter-control" id="per_page">
+                                <option value="10">10 data</option>
+                                <option value="25" selected>25 data</option>
+                                <option value="50">50 data</option>
+                                <option value="100">100 data</option>
+                            </select>
+                        </div>
+
+                        <div class="col-lg-2 col-md-6">
+                            <button type="button" class="btn btn-outline-secondary w-100" id="resetFiltersBtn"
+                                title="Reset semua filter">
+                                <i class="mdi mdi-filter-remove"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+
                     <div id="bulkActionsBar" class="alert alert-info d-none mb-3" role="alert">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
                                 <i class="mdi mdi-checkbox-multiple-marked me-2"></i>
                                 <span id="selectedCount">0</span> aspirasi dipilih
                             </div>
                             <div>
-@can('aspirasi.delete')
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
-                                    <i class="mdi mdi-trash-can-outline me-1"></i>
-                                    Hapus Terpilih
-                                </button>
-@endcan
+                                @can('aspirasi.delete')
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                                        <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
+                                    </button>
+                                @endcan
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
-                                    <i class="mdi mdi-close me-1"></i>
-                                    Batal
+                                    <i class="mdi mdi-close me-1"></i> Batal
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Enhanced Search and Filter Box -->
-                    <div class="row mb-3">
-
-
-                        @php
-                            $user = auth()->user();
-                            $role = $user->role->slug;
-                            $filteredKategori = $kategoriAspirasi;
-
-                            if ($role === 'admin-opd') {
-                                $filteredKategori = $kategoriAspirasi->filter(function ($kategori) use ($user) {
-                                    return $kategori->opd_id === $user->opd_id;
-                                });
-                            }
-                        @endphp
-
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-tag"></i></span>
-                                <select class="form-control" id="kategoriFilter">
-                                    <option value="">Semua Kategori</option>
-                                    @foreach ($filteredKategori as $kategori)
-                                        <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        @php
-                            $user = auth()->user();
-                            $roleSlug = $user->role->slug ?? null;
-                        @endphp
-
-                        @if (in_array($roleSlug, ['super-admin', 'admin-bappeda']))
-                            <div class="col-lg-3 col-md-6 mb-2">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="mdi mdi-office-building"></i></span>
-                                    <select class="form-control" id="opdFilter">
-                                        <option value="">Semua OPD</option>
-                                        @php
-                                            $opdList = collect($kategoriAspirasi)
-                                                ->map(function ($kategori) {
-                                                    return $kategori->opd;
-                                                })
-                                                ->filter()
-                                                ->unique('id')
-                                                ->sortBy('name');
-                                        @endphp
-                                        @foreach ($opdList as $opd)
-                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }} -
-                                                {{ $opd->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        @endif
-
-                        <div class="col-lg-3 col-md-6 mb-2">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="mdi mdi-filter"></i></span>
-                                <select class="form-control" id="statusFilter">
-                                    <option value="">Semua Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="diproses">Diproses</option>
-                                    <option value="selesai">Selesai</option>
-                                    <option value="ditolak">Ditolak</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Alert Container -->
                     <div id="alertContainer"></div>
 
-                    <!-- DataTable -->
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped" id="aspirasiTable" style="width:100%">
+                        <table class="table table-striped" id="aspirasiTable" style="width:100%">
                             <thead>
                                 <tr>
-                                    @if ($aspirasi->isNotEmpty())
-                                        <th style="width: 40px;">
-                                            <div class="checkbox-wrapper">
-                                                <input class="form-check-input" type="checkbox" id="selectAll">
-                                                <label class="form-check-label" for="selectAll">
-                                                    <span class="visually-hidden">Select All</span>
-                                                </label>
-                                            </div>
-                                        </th>
-                                    @endif
-                                    <th class="text-center" style="width: 50px;">No</th>
-                                    <th style="min-width: 150px;">Nomor Tiket</th>
-                                    <th style="min-width: 200px;">Pengirim</th>
-                                    <th style="min-width: 150px;">Tertuju</th>
-                                    <th class="text-center" style="width: 100px;">Jenis</th>
-                                    <th class="text-center" style="width: 100px;">Status</th>
-                                    <th class="text-center" style="width: 120px;">Tanggal</th>
-                                    <th class="text-center" style="width: 120px;">Aksi</th>
+                                    <th style="width: 12px;">
+                                        <div class="checkbox-wrapper">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                            <label class="form-check-label" for="selectAll">
+                                                <span class="visually-hidden">Pilih semua</span>
+                                            </label>
+                                        </div>
+                                    </th>
+                                    <th>Tiket &amp; Judul</th>
+                                    <th>Pengirim</th>
+                                    <th>Tujuan</th>
+                                    <th>Jenis</th>
+                                    <th>Status</th>
+                                    <th>Tanggal</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($aspirasi as $index => $item)
+                                @foreach ($aspirasi as $item)
+                                    @php
+                                        $jenis = strtolower($item->jenis_aspirasi);
+                                        $opd = $item->kategoriAspirasi?->opd;
+                                    @endphp
                                     <tr data-id="{{ $item->id }}" data-status="{{ $item->status }}"
-                                        data-jenis="{{ $item->jenis_aspirasi }}"
-                                        data-kategori="{{ $item->kategori_aspirasi_id }}"
-                                        data-opd="{{ $item->kategoriAspirasi?->opd_id ?? '' }}">
-                                        @if ($aspirasi->isNotEmpty())
-                                            <td>
-                                                <div class="checkbox-wrapper">
-                                                    <input class="form-check-input row-checkbox" type="checkbox"
-                                                        value="{{ $item->id }}" id="check-{{ $item->id }}">
-                                                    <label class="form-check-label" for="check-{{ $item->id }}">
-                                                        <span class="visually-hidden">Select row</span>
-                                                    </label>
-                                                </div>
-                                            </td>
-                                        @endif
-                                        <td class="text-center">{{ $loop->iteration }}</td>
+                                        data-jenis="{{ $jenis }}" data-kategori="{{ $item->kategori_aspirasi_id }}"
+                                        data-opd="{{ $opd?->id ?? '0' }}">
                                         <td>
-                                            <div class="d-flex flex-column">
-                                                <strong class="text-primary">{{ $item->nomor_tiket }}</strong>
+                                            <div class="checkbox-wrapper">
+                                                <input class="form-check-input row-checkbox" type="checkbox"
+                                                    value="{{ $item->id }}" id="check-{{ $item->id }}">
+                                                <label class="form-check-label" for="check-{{ $item->id }}">
+                                                    <span class="visually-hidden">Pilih baris</span>
+                                                </label>
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="d-flex flex-column">
-                                                <strong>{{ $item->nama_pengirim }}</strong>
-                                                <small class="text-muted">{{ $item->email }}</small>
-                                                @if ($item->phone)
-                                                    <small class="text-muted">{{ $item->phone }}</small>
-                                                @endif
-                                            </div>
+                                            <span class="ticket-code">{{ $item->nomor_tiket }}</span>
+                                            <div class="text-dark fw-bold">{{ Str::limit($item->judul_aspirasi, 60) }}</div>
                                         </td>
                                         <td>
-                                            @if ($item->kategoriAspirasi?->opd)
-                                                <div class="d-flex flex-column">
-                                                    <strong
-                                                        class="text-info">{{ $item->kategoriAspirasi->opd->singkatan }}</strong>
-                                                    <small
-                                                        class="text-muted">{{ Str::limit($item->kategoriAspirasi->opd->name, 25) }}</small>
-                                                </div>
+                                            <span class="fw-semibold">{{ $item->nama_pengirim }}</span>
+                                            <br><small class="text-muted">{{ $item->email }}</small>
+                                            @if ($item->phone)
+                                                <br><small class="text-muted">{{ $item->phone }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($opd)
+                                                <span class="fw-semibold">{{ $opd->singkatan }}</span>
+                                                <br><small class="text-muted">{{ Str::limit($opd->name, 30) }}</small>
                                             @else
-                                                <span class="badge bg-secondary">Umum</span>
+                                                <span class="badge bg-light text-muted border">Umum</span>
                                             @endif
                                         </td>
-                                        <td class="text-center">
-                                            @php
-                                                $jenis = strtolower($item->jenis_aspirasi);
-                                                $jenisBadge = match ($jenis) {
-                                                    'usulan' => 'primary',
-                                                    'keluhan' => 'danger',
-                                                    'kritik & saran' => 'info',
-                                                    default => 'secondary',
-                                                };
-                                            @endphp
-                                            <span class="badge bg-{{ $jenisBadge }}">
-                                                {{ ucfirst($item->jenis_aspirasi) }}
+                                        <td>
+                                            <span class="badge bg-{{ $jenisBadges[$jenis] ?? 'secondary' }}">{{ ucwords($item->jenis_aspirasi) }}</span>
+                                        </td>
+                                        <td data-order="{{ array_search($item->status, array_keys($statusLabels)) }}">
+                                            <span class="badge bg-{{ $statusBadges[$item->status] ?? 'secondary' }}">
+                                                {{ $statusLabels[$item->status] ?? ucfirst($item->status) }}
                                             </span>
                                         </td>
-                                        <td class="text-center">
-                                            @php
-                                                $statusBadge = match (strtolower($item->status)) {
-                                                    'pending' => 'warning',
-                                                    'diproses' => 'info',
-                                                    'selesai' => 'success',
-                                                    'ditolak' => 'danger',
-                                                    default => 'light',
-                                                };
-                                            @endphp
-                                            <span class="badge bg-{{ $statusBadge }}">
-                                                {{ ucfirst($item->status) }}
-                                            </span>
-                                        </td>
-
-                                        <td class="text-center">
-                                            <small>{{ $item->created_at->format('d/m/Y') }}</small>
+                                        <td data-order="{{ $item->created_at->timestamp }}">
+                                            <span class="text-nowrap">{{ $item->created_at->translatedFormat('d M Y') }}</span>
                                             @if ($item->tanggal_respon)
-                                                <br><small class="text-success">Resp:
-                                                    {{ Carbon\Carbon::parse($item->tanggal_respon)->format('d/m/Y') }}</small>
+                                                <br><small class="text-success text-nowrap" title="Tanggal respon">
+                                                    <i class="mdi mdi-reply"></i> {{ $item->tanggal_respon->translatedFormat('d M Y') }}
+                                                </small>
                                             @endif
                                         </td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-1">
-                                                <button type="button" class="btn btn-sm btn-outline-info btn-show"
-                                                    data-id="{{ $item->id }}" title="Lihat Detail">
-                                                    <i class="mdi mdi-eye"></i>
-                                                </button>
-                                                {{-- <button type="button" class="btn btn-sm btn-outline-danger btn-delete"
-                                                    data-id="{{ $item->id }}"
-                                                    onclick="deleteAspirasi({{ $item->id }})" title="Hapus">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button> --}}
-                                            </div>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary btn-show"
+                                                data-id="{{ $item->id }}" title="Lihat detail &amp; tanggapi">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
                                         </td>
                                     </tr>
-                                @empty
-                                    <tr id="no-data-row">
-                                        <td colspan="9" class="text-center">
-                                            <div class="py-4">
-                                                <i class="mdi mdi-message-text-outline mdi-48px text-muted"></i>
-                                                <p class="text-muted mt-2">Tidak ada data aspirasi</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -353,344 +291,246 @@
             </div>
         </div>
     </div>
-    {{-- Add the Export Modal before the closing @endsection --}}
     <!-- Export Modal -->
     <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-success text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="exportModalLabel">
-                        <i class="mdi mdi-file-excel me-2"></i>
-                        Export Data Aspirasi ke Excel
+                        <i class="mdi mdi-file-excel text-success"></i> Export Aspirasi ke Excel
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form id="exportForm">
                     <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="mdi mdi-information me-2"></i>
-                            <strong>Informasi:</strong> Pilih filter untuk mengekspor data sesuai kebutuhan, atau biarkan
-                            kosong untuk mengekspor semua data.
-                        </div>
+                        <p class="text-muted small">
+                            Pilih filter sesuai kebutuhan, atau biarkan kosong untuk mengekspor semua aspirasi.
+                        </p>
 
-                        <div class="row">
-                            <!-- Kategori Filter -->
-                            <div class="col-md-6 mb-3">
-                                <label for="export_kategori" class="form-label">
-                                    <i class="mdi mdi-tag me-1"></i>Kategori
-                                </label>
-                                <select class="form-control" id="export_kategori" name="kategori">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="export_kategori" class="form-label fw-semibold">Kategori</label>
+                                <select class="form-select" id="export_kategori" name="kategori">
                                     <option value="">Semua Kategori</option>
-                                    @foreach ($filteredKategori as $kategori)
+                                    @foreach ($filteredKategori->sortBy('nama_kategori') as $kategori)
                                         <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <!-- OPD Filter -->
-                            @if (in_array($roleSlug, ['super-admin', 'admin-bappeda']))
-                                <div class="col-md-6 mb-3">
-                                    <label for="export_opd" class="form-label">
-                                        <i class="mdi mdi-office-building me-1"></i>OPD
-                                    </label>
-                                    <select class="form-control" id="export_opd" name="opd">
+                            @if ($canSeeAllOpd)
+                                <div class="col-md-6">
+                                    <label for="export_opd" class="form-label fw-semibold">OPD Tujuan</label>
+                                    <select class="form-select" id="export_opd" name="opd">
                                         <option value="">Semua OPD</option>
-                                        @php
-                                            $opdList = collect($kategoriAspirasi)
-                                                ->map(function ($kategori) {
-                                                    return $kategori->opd;
-                                                })
-                                                ->filter()
-                                                ->unique('id')
-                                                ->sortBy('name');
-                                        @endphp
                                         @foreach ($opdList as $opd)
-                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }} -
-                                                {{ $opd->name }}</option>
+                                            <option value="{{ $opd->id }}">{{ $opd->singkatan }} - {{ $opd->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                             @endif
-                        </div>
 
-                        <div class="row">
-                            <!-- Status Filter -->
-                            <div class="col-md-6 mb-3">
-                                <label for="export_status" class="form-label">
-                                    <i class="mdi mdi-filter me-1"></i>Status
-                                </label>
-                                <select class="form-control" id="export_status" name="status">
+                            <div class="col-md-6">
+                                <label for="export_status" class="form-label fw-semibold">Status</label>
+                                <select class="form-select" id="export_status" name="status">
                                     <option value="">Semua Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="diproses">Diproses</option>
-                                    <option value="selesai">Selesai</option>
-                                    <option value="ditolak">Ditolak</option>
+                                    @foreach ($statusLabels as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
-                            <!-- Jenis Filter -->
-                            <div class="col-md-6 mb-3">
-                                <label for="export_jenis" class="form-label">
-                                    <i class="mdi mdi-format-list-bulleted me-1"></i>Jenis Aspirasi
-                                </label>
-                                <select class="form-control" id="export_jenis" name="jenis">
+                            <div class="col-md-6">
+                                <label for="export_jenis" class="form-label fw-semibold">Jenis</label>
+                                <select class="form-select" id="export_jenis" name="jenis">
                                     <option value="">Semua Jenis</option>
                                     <option value="usulan">Usulan</option>
-                                    <option value="kritik & saran">Kritik & Saran</option>
+                                    <option value="kritik & saran">Kritik &amp; Saran</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div class="row">
-                            <!-- Date Range -->
-                            <div class="col-md-6 mb-3">
-                                <label for="export_start_date" class="form-label">
-                                    <i class="mdi mdi-calendar-start me-1"></i>Tanggal Mulai
-                                </label>
+                            <div class="col-md-6">
+                                <label for="export_start_date" class="form-label fw-semibold">Dari tanggal</label>
                                 <input type="date" class="form-control" id="export_start_date" name="start_date">
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="export_end_date" class="form-label">
-                                    <i class="mdi mdi-calendar-end me-1"></i>Tanggal Akhir
-                                </label>
+                            <div class="col-md-6">
+                                <label for="export_end_date" class="form-label fw-semibold">Sampai tanggal</label>
                                 <input type="date" class="form-control" id="export_end_date" name="end_date">
                             </div>
                         </div>
 
-                        <!-- Preview Count -->
-                        <div class="alert alert-secondary" id="exportPreview" style="display: none;">
-                            <div class="d-flex align-items-center">
-                                <i class="mdi mdi-file-document-outline me-2"></i>
-                                <span id="previewText">Memuat preview...</span>
-                            </div>
+                        <div class="alert alert-light border mt-3 mb-0" id="exportPreview" style="display: none;">
+                            <i class="mdi mdi-file-document-outline me-1"></i>
+                            <span id="previewText">Memuat preview...</span>
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="mdi mdi-close me-1"></i>Batal
-                        </button>
-                        <button type="button" class="btn btn-outline-info me-2" id="previewExport">
-                            <i class="mdi mdi-eye me-1"></i>Preview Jumlah Data
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-outline-primary" id="previewExport">
+                            <i class="mdi mdi-counter"></i> Hitung Data
                         </button>
                         <button type="submit" class="btn btn-gradient-success" id="confirmExport">
-                            <i class="mdi mdi-download me-1"></i>Download Excel
+                            <i class="mdi mdi-download"></i> Unduh Excel
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <!-- Show Modal -->
+
+    <!-- Detail Modal -->
     <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="showModalLabel">
-                        <i class="mdi mdi-eye me-2"></i>
-                        Detail Aspirasi
+                        <i class="mdi mdi-message-text-outline"></i> Detail Aspirasi
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
 
-                <!-- Loading State -->
                 <div id="modalLoadingState" class="modal-body text-center py-5">
-                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="visually-hidden">Loading...</span>
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Memuat...</span>
                     </div>
-                    <div class="mt-3">
-                        <h5 class="text-muted">Memuat detail aspirasi...</h5>
-                        <p class="text-muted small">Mohon tunggu sebentar</p>
-                    </div>
+                    <p class="text-muted mt-3 mb-0">Memuat detail aspirasi...</p>
                 </div>
 
-                <!-- Content State (hidden by default) -->
                 <div id="modalContentState" class="modal-body" style="display: none;">
-                    <div class="row">
+                    {{-- Ringkasan --}}
+                    <div class="detail-summary d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <span id="show_nomor_tiket" class="ticket-code fs-6"></span>
+                        <span id="show_status" class="badge"></span>
+                        <span id="show_jenis_aspirasi" class="badge"></span>
+                        <span class="text-muted small ms-auto">
+                            <i class="mdi mdi-calendar"></i> Dikirim <span id="show_created_at"></span>
+                        </span>
+                    </div>
+
+                    <div class="row g-4">
                         <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Informasi Aspirasi</h6>
+                            <h4 id="show_judul_aspirasi" class="detail-title mb-2"></h4>
+                            <div id="show_isi_aspirasi" class="detail-text"></div>
+
+                            <div id="show_koordinat_row" class="detail-section" style="display: none;">
+                                <p class="detail-section-label"><i class="mdi mdi-map-marker"></i> Lokasi</p>
+                                <a id="openMapBtn" class="btn btn-sm btn-outline-success" target="_blank"
+                                    rel="noopener noreferrer">
+                                    <i class="mdi mdi-google-maps"></i> Buka di Google Maps
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" id="copyCoordinates">
+                                    <i class="mdi mdi-content-copy"></i> Salin Koordinat
+                                </button>
+                            </div>
+
+                            <div id="show_lampiran_container" class="detail-section" style="display: none;">
+                                <p class="detail-section-label"><i class="mdi mdi-paperclip"></i> Lampiran</p>
+                                <div id="show_lampiran_list"></div>
+                            </div>
+
+                            <div class="detail-section">
+                                <p class="detail-section-label"><i class="mdi mdi-reply"></i> Tanggapan Petugas</p>
+                                <div id="show_response_container" style="display: none;">
+                                    <div id="show_tanggapan_admin" class="detail-text detail-response"></div>
+                                    <small class="text-muted">
+                                        <i class="mdi mdi-clock-outline"></i> Ditanggapi
+                                        <span id="show_tanggal_respon"></span>
+                                        <span id="show_admin_info" style="display: none;">oleh <span
+                                                id="show_admin_name" class="fw-semibold"></span></span>
+                                    </small>
                                 </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Nomor Tiket:</strong>
-                                            <p id="show_nomor_tiket" class="text-primary font-weight-bold"></p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Kategori:</strong>
-                                            <p id="show_kategori" class="text-muted"></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Nama Pengirim:</strong>
-                                            <p id="show_nama_pengirim" class="text-muted"></p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Email:</strong>
-                                            <p id="show_email" class="text-muted"></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Telepon:</strong>
-                                            <p id="show_phone" class="text-muted"></p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Jenis Aspirasi:</strong>
-                                            <span id="show_jenis_aspirasi" class="badge"></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <strong>Alamat:</strong>
-                                            <p id="show_alamat" class="text-muted"></p>
-                                        </div>
-                                        <div class="col-6">
-                                            <strong>OPD TERKAIT:</strong>
-                                            <p id="show_opd" class="text-muted"></p>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-3">
-                                        <div class="col-12">
-                                            <strong>Judul Aspirasi:</strong>
-                                            <h6 id="show_judul_aspirasi" class="text-primary mt-2"></h6>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-3">
-                                        <div class="col-12">
-                                            <strong>Isi Aspirasi:</strong>
-                                            <div id="show_isi_aspirasi" class="text-muted p-3 bg-light rounded mt-2"
-                                                style="min-height: 100px;"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-3" id="show_koordinat_row" style="display: none;">
-                                        <div class="col-12">
-                                            <div class="border-top pt-3">
-                                                <h6 class="text-success"><i class="mdi mdi-map-marker me-2"></i>Lokasi
-                                                </h6>
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <a id="openMapBtn" class="btn btn-success btn-sm" target="_blank"
-                                                            rel="noopener noreferrer">
-                                                            <i class="mdi mdi-map-marker"></i> Lihat di Google Maps
-                                                        </a>
-                                                        <button type="button" class="btn btn-outline-info btn-sm ms-2"
-                                                            id="copyCoordinates">
-                                                            <i class="mdi mdi-content-copy"></i> Copy Koordinat
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-3" id="show_lampiran_container" style="display: none;">
-                                        <div class="col-12">
-                                            <div class="border-top pt-3">
-                                                <h6 class="text-info"><i class="mdi mdi-attachment me-2"></i>Lampiran</h6>
-                                                <div id="show_lampiran_list"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <p id="show_response_empty" class="text-muted small mb-0">
+                                    Belum ada tanggapan. Klik <b>Tanggapi</b> untuk mengubah status dan membalas warga.
+                                </p>
                             </div>
                         </div>
+
                         <div class="col-lg-4">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">Status & Response</h6>
-                                    <div>
-                                        <span id="show_status" class="badge"></span>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <strong>Tanggal Dibuat:</strong>
-                                        <p id="show_created_at" class="text-muted"></p>
-                                    </div>
+                            <div class="detail-side">
+                                <p class="detail-section-label"><i class="mdi mdi-account"></i> Pengirim</p>
+                                <dl class="detail-list">
+                                    <dt>Nama</dt>
+                                    <dd id="show_nama_pengirim"></dd>
+                                    <dt>Email</dt>
+                                    <dd id="show_email" class="text-break"></dd>
+                                    <dt>No. WhatsApp</dt>
+                                    <dd id="show_phone"></dd>
+                                    <dt>Alamat</dt>
+                                    <dd id="show_alamat"></dd>
+                                </dl>
 
-                                    <div class="mb-3" id="show_admin_info" style="display: none;">
-                                        <strong>Admin Penanggungjawab:</strong>
-                                        <p id="show_admin_name" class="text-muted"></p>
-                                    </div>
-
-                                    <div id="show_response_container" style="display: none;">
-                                        <div class="border-top pt-3">
-                                            <strong class="text-success">Tanggapan Admin:</strong>
-                                            <div id="show_tanggapan_admin" class="text-muted p-3 bg-light rounded mt-2">
-                                            </div>
-                                            <small class="text-muted">
-                                                <i class="mdi mdi-clock-outline me-1"></i>Ditanggapi pada: <span
-                                                    id="show_tanggal_respon"></span>
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
+                                <p class="detail-section-label mt-3"><i class="mdi mdi-domain"></i> Tujuan</p>
+                                <dl class="detail-list mb-0">
+                                    <dt>Kategori</dt>
+                                    <dd id="show_kategori"></dd>
+                                    <dt>OPD</dt>
+                                    <dd id="show_opd"></dd>
+                                </dl>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-footer" id="modalFooter" style="display: none;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="mdi mdi-close"></i> Tutup
-                    </button>
-@can('aspirasi.edit')
-                    <button type="button" class="btn btn-gradient-primary btn-status" id="btnUpdateStatus">
-                        <i class="mdi mdi-send"></i> Kirim Respons
-                    </button>
-@endcan
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    @can('aspirasi.edit')
+                        <button type="button" class="btn btn-gradient-primary btn-status" id="btnUpdateStatus">
+                            <i class="mdi mdi-reply"></i> Tanggapi
+                        </button>
+                    @endcan
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Status Update Modal -->
+    <!-- Tanggapi / Ubah Status Modal -->
     <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-gradient-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="statusModalLabel">
-                        <i class="mdi mdi-pencil me-2"></i> Update Status Aspirasi
+                        <i class="mdi mdi-reply"></i> Tanggapi Aspirasi
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form id="statusForm" method="POST">
                     @csrf
                     @method('PUT')
                     <input type="hidden" id="status_aspirasi_id" name="id">
                     <div class="modal-body">
-                        <div class="form-group mb-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-control" id="status" name="status" required>
-                                <option value="pending">Pending</option>
-                                <option value="diproses">Diproses</option>
-                                <option value="selesai">Selesai</option>
-                                <option value="ditolak">Ditolak</option>
+                        <p class="text-muted small">
+                            Tiket <span id="status_ticket" class="ticket-code"></span>
+                        </p>
+
+                        <div class="mb-3">
+                            <label for="status" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="status" name="status" required>
+                                @foreach ($statusLabels as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
                             </select>
                             <div class="invalid-feedback"></div>
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="tanggapan_admin" class="form-label">Tanggapan Admin</label>
-                            <textarea class="form-control" id="tanggapan_admin" name="tanggapan_admin" rows="4"
-                                placeholder="Berikan tanggapan/respon terhadap aspirasi ini..."></textarea>
+
+                        <div class="mb-3">
+                            <label for="tanggapan_admin" class="form-label fw-semibold">Tanggapan untuk warga</label>
+                            <textarea class="form-control" id="tanggapan_admin" name="tanggapan_admin" rows="5"
+                                placeholder="Tuliskan tindak lanjut atau jawaban untuk pengirim aspirasi..."></textarea>
                             <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="alert alert-light border small mb-0">
+                            <i class="mdi mdi-email-outline me-1"></i>
+                            Bila status <b>Diproses</b>, <b>Selesai</b>, atau <b>Ditolak</b>, pengirim menerima email
+                            berisi tanggapan ini dan dapat melacaknya dengan nomor tiket.
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-gradient-primary">
-                            <i class="mdi mdi-send"></i> Kirim Respons
+                            <i class="mdi mdi-send"></i> Simpan &amp; Kirim
                         </button>
                     </div>
                 </form>
@@ -698,42 +538,31 @@
         </div>
     </div>
 
-    <!-- Bulk Delete Confirmation Modal -->
+    <!-- Konfirmasi Hapus Massal Modal -->
     <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header">
                     <h5 class="modal-title" id="bulkDeleteModalLabel">
-                        <i class="mdi mdi-alert-circle me-2"></i>Konfirmasi Hapus
+                        <i class="mdi mdi-delete text-danger"></i> Hapus Aspirasi
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="text-center">
-                        <i class="mdi mdi-trash-can-outline text-danger" style="font-size: 4rem;"></i>
-                        <h5 class="mt-3">Apakah Anda yakin?</h5>
-                        <p class="text-muted">
-                            Anda akan menghapus <strong id="deleteCount">0</strong> aspirasi yang dipilih.
-                            <br>Tindakan ini tidak dapat dibatalkan.
-                        </p>
-                    </div>
+                    <p class="mb-1">Hapus <strong id="deleteCount">0</strong> aspirasi terpilih?</p>
+                    <p class="text-muted small mb-0">Data dihapus permanen dan tidak dapat dikembalikan.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="mdi mdi-close me-1"></i>Batal
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-danger" id="confirmBulkDelete">
-                        <i class="mdi mdi-trash-can-outline me-1"></i>Hapus Aspirasi
+                        <i class="mdi mdi-delete"></i> Hapus
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bulk Delete Form (Hidden) -->
-
-    <!-- Menjadi -->
     <form id="bulkDeleteForm" method="POST" action="{{ route('aspirasi.bulk-destroy') }}" style="display: none;">
         @csrf
         @method('DELETE')
@@ -743,168 +572,29 @@
 
 @push('styles')
     <style>
-        /* Checkbox styling yang sama dengan data spatial */
-        .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            padding: 8px;
-        }
-
-        .form-check-input {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #6c757d;
-            border-radius: 4px;
-            background-color: #fff;
-            cursor: pointer;
-            position: relative;
-            margin: 0 !important;
-            padding: 0 !important;
-            transition: all 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0;
-        }
-
-        .form-check-input:hover {
-            border-color: #007bff;
-            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.25);
-            transform: translateY(-1px);
-        }
-
-        .form-check-input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-            outline: none;
-        }
-
-        .form-check-input:checked {
-            background-color: #007bff;
-            border-color: #007bff;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
-        }
-
-        .form-check-input:checked::before {
-            content: "✓";
-            color: #fff;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            line-height: 1;
-        }
-
-        .form-check-input:indeterminate {
-            background-color: #6c757d;
-            border-color: #6c757d;
-        }
-
-        .form-check-input:indeterminate::before {
-            content: "─";
-            color: #fff;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            line-height: 1;
-        }
-
-        /* Table styling */
-        .table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
+        /* Pola tampilan daftar — mengikuti halaman Daftar Layer & Data (spatial-layers/index). */
         .table th {
             background-color: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             letter-spacing: 0.5px;
             color: #495057;
-            padding: 12px 8px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            padding: 10px 8px;
         }
 
         .table td {
             vertical-align: middle;
-            padding: 12px 8px;
+            padding: 10px 8px;
             border-bottom: 1px solid #eef2f7;
-        }
-
-        .table tbody tr {
-            transition: all 0.2s ease;
+            font-size: 0.85rem;
         }
 
         .table tbody tr:hover {
             background-color: rgba(0, 123, 255, 0.05);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        /* Bulk Actions Bar */
-        #bulkActionsBar {
-            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
-            border: 1px solid #2196f3;
-            border-radius: 8px;
-            color: #1976d2;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* DataTable styling */
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 8px 12px !important;
-            margin: 0 2px !important;
-            border-radius: 6px !important;
-            border: 1px solid #dee2e6 !important;
-            background: #fff !important;
-            color: #495057 !important;
-            transition: all 0.2s ease !important;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #e9ecef !important;
-            border-color: #adb5bd !important;
-            color: #495057 !important;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: linear-gradient(135deg, #007bff, #0056b3) !important;
-            border-color: #007bff !important;
-            color: white !important;
-            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
-        }
-
-        /* Badge styling */
         .badge {
             font-size: 0.75rem;
             padding: 6px 12px;
@@ -912,77 +602,124 @@
             font-weight: 500;
         }
 
-        /* Modal improvements */
-        .modal-content {
+        .stats-row-compact {
+            margin-bottom: 1rem;
+        }
+
+        .stat-card-compact {
             border: none;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 100%;
         }
 
-        /* Loading spinner */
-        .spinner-border {
-            animation: spinner-border .75s linear infinite;
+        .stat-card-compact .card-body {
+            padding: 0.85rem 1rem;
         }
 
-        @keyframes spinner-border {
-            to {
-                transform: rotate(360deg);
-            }
+        .stat-card-compact .stat-label {
+            margin: 0 0 2px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.9;
+            white-space: nowrap;
         }
 
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .checkbox-wrapper {
-                padding: 4px;
-            }
-
-            .form-check-input {
-                width: 18px;
-                height: 18px;
-            }
-
-            .btn-sm {
-                padding: 4px 8px;
-                font-size: 0.8rem;
-            }
-
-            .table th,
-            .table td {
-                padding: 8px 4px;
-                font-size: 0.85rem;
-            }
+        .stat-card-compact .stat-value {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.1;
         }
 
-        /* Accessibility */
-        .visually-hidden {
-            position: absolute !important;
-            width: 1px !important;
-            height: 1px !important;
-            padding: 0 !important;
-            margin: -1px !important;
-            overflow: hidden !important;
-            clip: rect(0, 0, 0, 0) !important;
-            white-space: nowrap !important;
-            border: 0 !important;
+        .stat-card-compact .stat-icon {
+            font-size: 2rem;
+            opacity: 0.5;
         }
 
-        .btn:focus,
-        .form-control:focus {
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-            outline: none;
+        /* Kartu statistik berfungsi sebagai pintasan filter status. */
+        .stat-card-filter {
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
-        /* Statistics cards hover effect */
-        .card.card-img-holder:hover {
+        .stat-card-filter:hover,
+        .stat-card-filter:focus-visible {
             transform: translateY(-2px);
-            transition: transform 0.3s ease;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
-        .card-img-absolute {
-            position: absolute;
-            top: 0;
-            right: 0;
-            opacity: 0.1;
+        .stat-card-filter.is-active {
+            outline: 3px solid rgba(0, 0, 0, 0.25);
+            outline-offset: 2px;
+        }
+
+        .ticket-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #0d6efd;
+            letter-spacing: 0.3px;
+        }
+
+        /* Modal detail aspirasi */
+        .detail-summary {
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .detail-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.4;
+        }
+
+        .detail-text {
+            white-space: pre-line;
+            word-break: break-word;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .detail-response {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.4rem;
+            background: #f0f7ff;
+            border-left: 3px solid #0d6efd;
+            border-radius: 6px;
+        }
+
+        .detail-section {
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .detail-section-label {
+            margin-bottom: 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+        }
+
+        .detail-side {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .detail-list dt {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        .detail-list dd {
+            margin-bottom: 0.6rem;
+            font-size: 0.875rem;
+            color: #1f2937;
         }
     </style>
 @endpush
@@ -1131,103 +868,169 @@
             });
 
 
-            // Initialize DataTable
+            // Filter kustom khusus tabel aspirasi (dibaca dari data-* tiap baris).
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                if (settings.nTable.id !== 'aspirasiTable') {
+                    return true;
+                }
+
+                const $row = $(settings.aoData[dataIndex].nTr);
+                const checks = {
+                    kategori: $('#kategoriFilter').val(),
+                    opd: $('#opdFilter').val(),
+                    jenis: $('#jenisFilter').val(),
+                    status: $('#statusFilter').val(),
+                };
+
+                return Object.entries(checks).every(([key, value]) => !value || String($row.data(key)) === value);
+            });
+
+            const FILTER_STORAGE_KEY = 'aspirasiIndexFilters';
+            const filterSelects = '#kategoriFilter, #opdFilter, #jenisFilter, #statusFilter';
+
+            function saveFiltersToStorage() {
+                try {
+                    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
+                        kategori: $('#kategoriFilter').val(),
+                        opd: $('#opdFilter').val() || '',
+                        jenis: $('#jenisFilter').val(),
+                        status: $('#statusFilter').val(),
+                        search: $('#tableSearch').val(),
+                        sortBy: $('#sortBySelect').val(),
+                        perPage: $('#per_page').val(),
+                    }));
+                } catch (e) {
+                    // localStorage bisa diblokir (mode privat) — filter tetap berlaku untuk sesi ini.
+                }
+            }
+
+            function loadFiltersFromStorage() {
+                try {
+                    return JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || 'null');
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function syncStatusShortcuts() {
+                const status = $('#statusFilter').val();
+                $('[data-status-shortcut]').each(function() {
+                    const active = this.dataset.statusShortcut === status;
+                    this.classList.toggle('is-active', active);
+                    this.setAttribute('aria-pressed', String(active));
+                });
+            }
+
             const table = $('#aspirasiTable').DataTable({
                 "processing": true,
-                "pageLength": 10,
+                "pageLength": 25,
                 "lengthMenu": [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "Semua"]
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
                 ],
                 "order": [
-                    [1, 'desc']
+                    [6, 'desc']
                 ],
                 "columnDefs": [{
                         "orderable": false,
-                        "targets": [0, -1] // Disable ordering on checkbox and action columns
-                    },
-                    {
                         "searchable": false,
-                        "targets": [0, -1] // Disable search on checkbox and action columns
+                        "targets": [0, -1]
                     },
                     {
                         "className": "text-center",
-                        "targets": [0, 1, 5, 6, 7, -1] // Center align specific columns
-                    }
+                        "targets": [0, 4, 5, -1]
+                    },
                 ],
                 "language": {
-                    "processing": "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>",
-                    "lengthMenu": "Tampilkan _MENU_ aspirasi per halaman",
-                    "zeroRecords": "Aspirasi tidak ditemukan",
-                    "emptyTable": "Tidak ada aspirasi tersedia",
+                    "processing": "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Memuat...</span></div>",
+                    "zeroRecords": "Aspirasi tidak ditemukan. Coba ubah kata kunci atau reset filter.",
+                    "emptyTable": "Belum ada aspirasi yang masuk",
                     "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ aspirasi",
-                    "infoEmpty": "Menampilkan 0 sampai 0 dari 0 aspirasi",
+                    "infoEmpty": "Menampilkan 0 dari 0 aspirasi",
                     "infoFiltered": "(difilter dari _MAX_ total aspirasi)",
-                    "search": "Cari:",
                     "paginate": {
                         "first": "Pertama",
                         "last": "Terakhir",
                         "next": "Selanjutnya",
                         "previous": "Sebelumnya"
-                    }
+                    },
                 },
-                "dom": '<"row mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                    '<"row"<"col-sm-12"tr>>' +
+                "dom": '<"row"<"col-sm-12"tr>>' +
                     '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "drawCallback": function(settings) {
+                "drawCallback": function() {
                     initializeCheckboxEvents();
-                    $(this).find('tbody tr').css('opacity', '0').animate({
-                        'opacity': '1'
-                    }, 300);
                 },
                 "initComplete": function() {
-                    $('.dataTables_filter input').attr('placeholder', 'Ketik untuk mencari...');
+                    // initComplete berjalan sinkron di dalam evaluasi `const table = ...` — pakai this.api().
+                    const api = this.api();
 
-                    // Connect custom filters
-                    $('#globalSearch').on('keyup', function() {
-                        table.search(this.value).draw();
+                    $('#searchTableBtn').on('click', function() {
+                        api.search($('#tableSearch').val()).draw();
+                        saveFiltersToStorage();
+                    });
+                    $('#tableSearch').on('input', function() {
+                        api.search($(this).val()).draw();
+                        saveFiltersToStorage();
+                    });
+                    $('#per_page').on('change', function() {
+                        api.page.len(parseInt($(this).val(), 10)).draw();
+                        saveFiltersToStorage();
+                    });
+                    $(filterSelects).on('change', function() {
+                        syncStatusShortcuts();
+                        api.draw();
+                        saveFiltersToStorage();
+                    });
+                    $('#sortBySelect').on('change', function() {
+                        const [column, direction] = $(this).val().split('-');
+                        api.order([parseInt(column, 10), direction]).draw();
+                        saveFiltersToStorage();
                     });
 
-                    $('#kategoriFilter, #opdFilter, #statusFilter').on('change', function() {
-                        applyFilters();
+                    // Kartu statistik: klik untuk memfilter status, klik lagi untuk melepas.
+                    $('[data-status-shortcut]').on('click', function() {
+                        const status = this.dataset.statusShortcut;
+                        $('#statusFilter').val($('#statusFilter').val() === status ? '' : status).trigger('change');
                     });
+
+                    $('#resetFiltersBtn').on('click', function() {
+                        $(filterSelects).val('');
+                        $('#tableSearch').val('');
+                        $('#sortBySelect').val('6-desc');
+                        $('#per_page').val('25');
+                        syncStatusShortcuts();
+                        api.search('').order([6, 'desc']).page.len(25).draw();
+                        try {
+                            localStorage.removeItem(FILTER_STORAGE_KEY);
+                        } catch (e) {
+                            // no-op
+                        }
+                    });
+
+                    // Pulihkan filter terakhir supaya tidak perlu memfilter ulang setelah reload.
+                    const stored = loadFiltersFromStorage() || {};
+                    $('#kategoriFilter').val(stored.kategori || '');
+                    $('#opdFilter').val(stored.opd || '');
+                    $('#jenisFilter').val(stored.jenis || '');
+                    $('#statusFilter').val(stored.status || '');
+                    $('#tableSearch').val(stored.search || '');
+                    $('#sortBySelect').val(stored.sortBy || '6-desc');
+                    $('#per_page').val(stored.perPage || '25');
+
+                    // Opsi yang tersimpan bisa saja sudah tidak ada (mis. kategori dihapus).
+                    $(filterSelects + ', #sortBySelect, #per_page').each(function() {
+                        if (this.selectedIndex === -1) {
+                            this.selectedIndex = 0;
+                        }
+                    });
+
+                    const [sortColumn, sortDirection] = $('#sortBySelect').val().split('-');
+                    syncStatusShortcuts();
+                    api.page.len(parseInt($('#per_page').val(), 10));
+                    api.order([parseInt(sortColumn, 10), sortDirection]);
+                    api.search($('#tableSearch').val()).draw();
                 }
             });
-
-            // Custom filtering function
-            function applyFilters() {
-                const kategoriFilter = $('#kategoriFilter').val();
-                const opdFilter = $('#opdFilter').val();
-                const statusFilter = $('#statusFilter').val();
-
-                // Clear previous search
-                $.fn.dataTable.ext.search.pop();
-
-                // Add custom filter
-                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                    const row = table.row(dataIndex).node();
-                    const $row = $(row);
-
-                    // Kategori filter
-                    if (kategoriFilter && $row.data('kategori') != kategoriFilter) {
-                        return false;
-                    }
-
-                    // OPD filter
-                    if (opdFilter && $row.data('opd') != opdFilter) {
-                        return false;
-                    }
-
-                    // Status filter
-                    if (statusFilter && $row.data('status') != statusFilter) {
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                table.draw();
-            }
 
             // Bulk actions functionality
             let selectedItems = [];
@@ -1395,6 +1198,24 @@
                 });
             }
 
+            const STATUS_LABELS = @json($statusLabels);
+            const JENIS_LABELS = {
+                'usulan': 'Usulan',
+                'kritik & saran': 'Kritik & Saran'
+            };
+
+            function formatTanggal(value, withTime = true) {
+                if (!value) {
+                    return '-';
+                }
+                return new Date(value).toLocaleString('id-ID', withTime ? {
+                    dateStyle: 'long',
+                    timeStyle: 'short'
+                } : {
+                    dateStyle: 'long'
+                });
+            }
+
             function getStatusClass(status) {
                 const statusClasses = {
                     'pending': 'warning',
@@ -1408,7 +1229,7 @@
             function getJenisClass(jenis) {
                 const jenisClasses = {
                     'usulan': 'primary',
-                    'kritik & saran': 'info',
+                    'kritik & saran': 'dark',
                 };
                 return jenisClasses[jenis] || 'secondary';
             }
@@ -1466,44 +1287,42 @@
                 $btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i>');
 
                 $.ajax({
-                    url: "{{ route('aspirasi.show', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
+                    url: "{{ route('aspirasi.show', ['aspirasi' => '__ID__']) }}".replace('__ID__',
+                        id),
                     type: 'GET',
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function(response) {
-                        setTimeout(() => {
+                        {
                             const aspirasi = response.data || response;
 
                             // Populate modal with data
-                            $('#show_opd').text(aspirasi.kategori_aspirasi?.opd?.name ||
-                                'Tidak ada OPD');
+                            const opd = aspirasi.kategori_aspirasi?.opd;
+                            $('#show_opd').text(opd ? `${opd.singkatan} - ${opd.name}` : 'Umum (tanpa OPD)');
                             $('#show_nomor_tiket').text(aspirasi.nomor_tiket);
-                            $('#show_kategori').text(aspirasi.kategori_aspirasi?.nama ||
+                            $('#show_kategori').text(aspirasi.kategori_aspirasi?.nama_kategori ||
                                 'Tanpa Kategori');
                             $('#show_nama_pengirim').text(aspirasi.nama_pengirim);
                             $('#show_email').text(aspirasi.email);
                             $('#show_phone').text(aspirasi.phone || '-');
-                            $('#show_alamat').text(aspirasi.alamat);
+                            $('#show_alamat').text(aspirasi.alamat || '-');
                             $('#show_judul_aspirasi').text(aspirasi.judul_aspirasi);
                             $('#show_isi_aspirasi').text(aspirasi.isi_aspirasi);
-                            $('#show_created_at').text(new Date(aspirasi.created_at)
-                                .toLocaleDateString('id-ID'));
+                            $('#show_created_at').text(formatTanggal(aspirasi.created_at));
 
                             // Jenis aspirasi badge
                             const jenisClass = getJenisClass(aspirasi.jenis_aspirasi);
                             $('#show_jenis_aspirasi').removeClass().addClass(
                                     `badge bg-${jenisClass}`)
-                                .text(aspirasi.jenis_aspirasi.charAt(0).toUpperCase() +
-                                    aspirasi.jenis_aspirasi.slice(1));
+                                .text(JENIS_LABELS[aspirasi.jenis_aspirasi] || aspirasi.jenis_aspirasi);
 
                             // Status badge
                             const statusClass = getStatusClass(aspirasi.status);
                             $('#show_status').removeClass().addClass(
                                     `badge bg-${statusClass}`)
-                                .text(aspirasi.status.charAt(0).toUpperCase() + aspirasi
-                                    .status.slice(1));
+                                .text(STATUS_LABELS[aspirasi.status] || aspirasi.status);
 
                             // Koordinat
                             if (aspirasi.latitude && aspirasi.longitude) {
@@ -1600,16 +1419,16 @@
                 </div>
                 <div class="btn-group ms-2">
                     ${canPreview ? `
-                                    <button type="button" class="btn btn-outline-info btn-sm btn-preview-single" 
-                                            data-preview-url="${previewUrl}"
-                                            data-direct-url="${downloadUrl}"
-                                            data-filename="${originalName}"
-                                            data-ext="${fileExt}"
-                                            title="Preview ${originalName}">
-                                        <i class="mdi mdi-eye"></i>
-                                        <span class="d-none d-md-inline ms-1">Preview</span>
-                                    </button>
-                                ` : ''}
+                                        <button type="button" class="btn btn-outline-info btn-sm btn-preview-single" 
+                                                data-preview-url="${previewUrl}"
+                                                data-direct-url="${downloadUrl}"
+                                                data-filename="${originalName}"
+                                                data-ext="${fileExt}"
+                                                title="Preview ${originalName}">
+                                            <i class="mdi mdi-eye"></i>
+                                            <span class="d-none d-md-inline ms-1">Preview</span>
+                                        </button>
+                                    ` : ''}
                     <button type="button" class="btn btn-outline-primary btn-sm btn-download-single" 
                             data-download-url="${directDownloadUrl}"
                             data-direct-url="${downloadUrl}"
@@ -1924,21 +1743,26 @@
                             if (aspirasi.tanggapan_admin) {
                                 $('#show_tanggapan_admin').text(aspirasi
                                     .tanggapan_admin);
-                                $('#show_tanggal_respon').text(new Date(aspirasi
-                                    .tanggal_respon).toLocaleDateString(
-                                    'id-ID'));
+                                $('#show_tanggal_respon').text(formatTanggal(aspirasi.tanggal_respon));
                                 $('#show_response_container').show();
+                                $('#show_response_empty').hide();
                             } else {
                                 $('#show_response_container').hide();
+                                $('#show_response_empty').show();
                             }
 
-                            $('#btnUpdateStatus').data('id', aspirasi.id);
+                            // Dipakai form Tanggapi agar terisi status & tanggapan yang sudah ada.
+                            $('#btnUpdateStatus').data({
+                                id: aspirasi.id,
+                                ticket: aspirasi.nomor_tiket,
+                                status: aspirasi.status,
+                                tanggapan: aspirasi.tanggapan_admin || ''
+                            });
 
                             $('#modalLoadingState').hide();
                             $('#modalContentState').show();
                             $('#modalFooter').show();
-
-                        }, 800);
+                        }
                     },
                     error: function(xhr) {
                         console.error('Error loading aspirasi details:', xhr);
@@ -1981,6 +1805,9 @@
                 $('#status_aspirasi_id').val(id);
                 $('#statusForm')[0].reset();
                 clearFormErrors($('#statusForm'));
+                $('#status_ticket').text($(this).data('ticket') || '');
+                $('#status').val($(this).data('status') || 'pending');
+                $('#tanggapan_admin').val($(this).data('tanggapan') || '');
                 $('#statusModal').modal('show');
                 $('#showModal').modal('hide');
             });
@@ -2000,7 +1827,7 @@
 
                 const submitBtn = form.find('button[type="submit"]');
                 submitBtn.prop('disabled', true).html(
-                    '<i class="mdi mdi-loading mdi-spin"></i> Mengupdate...');
+                    '<i class="mdi mdi-loading mdi-spin"></i> Menyimpan...');
 
                 const formData = {
                     status: $('#status').val(),
@@ -2009,7 +1836,8 @@
                 };
 
                 $.ajax({
-                    url: "{{ route('aspirasi.updateStatus', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
+                    url: "{{ route('aspirasi.updateStatus', ['aspirasi' => '__ID__']) }}".replace(
+                        '__ID__', id),
                     type: 'POST',
                     data: formData,
                     headers: {
@@ -2040,7 +1868,7 @@
                     },
                     complete: function() {
                         submitBtn.prop('disabled', false).html(
-                            '<i class="mdi mdi-send"></i> Kirim Respons');
+                            '<i class="mdi mdi-send"></i> Simpan &amp; Kirim');
                     }
                 });
             });
@@ -2071,7 +1899,8 @@
                         });
 
                         $.ajax({
-                            url: "{{ route('aspirasi.destroy', ['aspirasi' => '__ID__']) }}".replace('__ID__', id),
+                            url: "{{ route('aspirasi.destroy', ['aspirasi' => '__ID__']) }}"
+                                .replace('__ID__', id),
                             type: 'POST',
                             data: {
                                 _method: 'DELETE',

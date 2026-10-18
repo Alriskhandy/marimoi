@@ -57,5 +57,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api-v1', function (Request $request) {
             return Limit::perMinute(60)->by($request->ip());
         });
+
+        // Kiriman aspirasi/feedback publik memicu email ke warga & admin: batasi per IP.
+        RateLimiter::for('public-submissions', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip())->response(fn () => response()->json([
+                'status' => 'error',
+                'message' => 'Terlalu banyak kiriman dalam waktu singkat. Silakan coba lagi dalam 1 menit.',
+            ], 429));
+        });
     }
 }

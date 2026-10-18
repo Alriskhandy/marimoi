@@ -10,6 +10,7 @@ use App\Http\Controllers\LayerImportController;
 use App\Http\Controllers\LayerStyleController;
 use App\Http\Controllers\LayerWizardController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MailLogController;
 use App\Http\Controllers\OpdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectFeedbackController;
@@ -447,6 +448,14 @@ Route::prefix('dashboard')->middleware(['auth'])->group(function () {
         Route::delete('/destroy', [LogController::class, 'destroy'])->name('destroy')->middleware('permission:logs.manage');
         Route::delete('/prune-old', [LogController::class, 'pruneOld'])->name('prune-old')->middleware('permission:logs.manage');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Email (khusus super-admin — sengaja role, bukan permission, agar tidak bisa didelegasikan)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/mail-logs', [MailLogController::class, 'index'])->name('mail-logs.index')->middleware('role:super-admin');
 
 });
 // Route::get('/coming-soon', function () {

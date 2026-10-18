@@ -9,12 +9,12 @@ use App\Models\DataSpatial;
 use App\Models\Opd;
 use App\Models\ProjectFeedback;
 use App\Models\User;
+use App\Support\AspirasiMailer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -299,11 +299,12 @@ class ProjectFeedbackController extends Controller
     public function show($id)
     {
         try {
-            $feedback = $this->accessibleFeedbacks()->with('dataSpatial')->findOrFail($id);
+            $feedback = $this->accessibleFeedbacks()->with(['dataSpatial', 'opd'])->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
                 'data' => $feedback,
+                'kode' => $feedback->ticketCode(),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -426,30 +427,22 @@ class ProjectFeedbackController extends Controller
                 'responded_at' => now(),
             ]);
 
-            // === Kirim Email ke User berdasarkan status ===
-            if (! empty($feedback->email)) {
-                $data = [
+            // Email ke warga hanya bila status/tanggapan benar-benar berubah (bukan simpan ulang)
+            $type = match ($feedback->status) {
+                'ditindaklanjuti' => 'diproses',
+                'selesai' => 'selesai',
+                default => null,
+            };
+
+            if ($type && $feedback->wasChanged(['status', 'response_admin'])) {
+                AspirasiMailer::queue($feedback->email, new TanggapanMail([
                     'nama' => $feedback->nama_pemberi_aspirasi,
                     'email' => $feedback->email,
-                    'kode' => 'MARIMOI-FDB-'.$feedback->created_at->format('Ymd').'-'.str_pad($feedback->id, 4, '0', STR_PAD_LEFT),
+                    'kode' => $feedback->ticketCode(),
                     'tanggapan' => $feedback->tanggapan,
                     'tanggal' => now()->format('d-m-Y H:i'),
-                    'response_admin' => $request->response_admin,
-                ];
-
-                $type = null;
-                switch ($request->status) {
-                    case 'ditindaklanjuti':
-                        $type = 'diproses'; // sedang diproses
-                        break;
-                    case 'selesai':
-                        $type = 'selesai'; // sudah selesai
-                        break;
-                }
-
-                if ($type) {
-                    Mail::to($feedback->email)->queue(new TanggapanMail($data, $type));
-                }
+                    'response_admin' => $feedback->response_admin,
+                ], $type));
             }
 
             return response()->json([

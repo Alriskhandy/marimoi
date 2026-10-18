@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\KategoriAspirasi;
 use App\Models\Opd;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Support\Str;
 
 class KategoriAspirasiController extends Controller
 {
@@ -16,18 +14,19 @@ class KategoriAspirasiController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-{
-    $kategoriAspirasi = KategoriAspirasi::with('opd')->get();
-    $opdList = Opd::all(); // pastikan ini dikirim ke view
+    {
+        $kategoriAspirasi = KategoriAspirasi::with('opd')->withCount('aspirasi')->orderBy('nama_kategori')->get();
+        $opdList = Opd::all(); // pastikan ini dikirim ke view
 
-    $stats = [
-        'total' => $kategoriAspirasi->count(),
-        'dengan_opd' => $kategoriAspirasi->whereNotNull('opd_id')->count(),
-        'tanpa_opd' => $kategoriAspirasi->whereNull('opd_id')->count(),
-    ];
+        $stats = [
+            'total' => $kategoriAspirasi->count(),
+            'dengan_opd' => $kategoriAspirasi->whereNotNull('opd_id')->count(),
+            'tanpa_opd' => $kategoriAspirasi->whereNull('opd_id')->count(),
+            'total_aspirasi' => $kategoriAspirasi->sum('aspirasi_count'),
+        ];
 
-//     return view('backend.kategori.index', compact('kategoriAspirasi', 'opdList', 'stats'));
-// }
+        //     return view('backend.kategori.index', compact('kategoriAspirasi', 'opdList', 'stats'));
+        // }
         return view('backend.pages.aspirasi.kategori-aspirasi', compact('kategoriAspirasi', 'opdList', 'stats'));
     }
 
@@ -52,34 +51,33 @@ class KategoriAspirasiController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Kategori aspirasi berhasil ditambahkan.'
+                'message' => 'Kategori aspirasi berhasil ditambahkan.',
             ]);
         }
 
         return redirect()->route('kategori-aspirasi.index')
-                        ->with('success', 'Kategori aspirasi berhasil ditambahkan.');
+            ->with('success', 'Kategori aspirasi berhasil ditambahkan.');
     }
 
     /**
      * Display the specified resource.
      */
- public function show($id)
-{
-    $kategori = KategoriAspirasi::with('opd')->find($id);
+    public function show($id)
+    {
+        $kategori = KategoriAspirasi::with('opd')->withCount('aspirasi')->find($id);
 
-    if (!$kategori) {
+        if (! $kategori) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak ditemukan.',
+            ], 404);
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'Kategori tidak ditemukan.'
-        ], 404);
+            'success' => true,
+            'data' => $kategori,
+        ]);
     }
-
-    return response()->json([
-        'success' => true,
-        'data' => $kategori
-    ]);
-}
-
 
     /**
      * Show the form for editing the specified resource.
@@ -87,6 +85,7 @@ class KategoriAspirasiController extends Controller
     public function edit(KategoriAspirasi $kategoriAspirasi): View
     {
         $opd = Opd::all();
+
         return view('backend.pages.kategori-aspirasi.edit', compact('kategoriAspirasi', 'opd'));
     }
 
@@ -95,7 +94,7 @@ class KategoriAspirasiController extends Controller
      */
     public function update(Request $request, KategoriAspirasi $kategoriAspirasi)
     {
-        if($kategoriAspirasi->id == 1){
+        if ($kategoriAspirasi->id == 1) {
             return redirect()->back()->with('error', 'Kategori aspirasi tidak dapat diubah.');
         }
         $validated = $request->validate([
@@ -114,43 +113,42 @@ class KategoriAspirasiController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Kategori aspirasi berhasil diperbarui.'
+                'message' => 'Kategori aspirasi berhasil diperbarui.',
             ]);
         }
 
         return redirect()->route('kategori-aspirasi.index')
-                        ->with('success', 'Kategori aspirasi berhasil diperbarui.');
+            ->with('success', 'Kategori aspirasi berhasil diperbarui.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-   public function destroy($id)
-{
-    if($id == 1){
+    public function destroy($id)
+    {
+        if ($id == 1) {
             return redirect()->back()->with('error', 'Kategori aspirasi tidak dapat diubah.');
         }
-    $kategori = KategoriAspirasi::find($id);
+        $kategori = KategoriAspirasi::find($id);
 
-    if (!$kategori) {
-        return response()->json(['success' => false, 'message' => 'Kategori tidak ditemukan.'], 404);
+        if (! $kategori) {
+            return response()->json(['success' => false, 'message' => 'Kategori tidak ditemukan.'], 404);
+        }
+
+        $kategori->delete();
+
+        return response()->json(['success' => true, 'message' => 'Kategori berhasil dihapus.']);
     }
-
-    $kategori->delete();
-
-    return response()->json(['success' => true, 'message' => 'Kategori berhasil dihapus.']);
-}
-
 
     public function apiOptions(): JsonResponse
     {
         $kategori = KategoriAspirasi::select('id', 'nama_kategori', 'kode_kategori')
-                                   ->orderBy('nama_kategori')
-                                   ->get();
+            ->orderBy('nama_kategori')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'data' => $kategori
+            'data' => $kategori,
         ]);
     }
 }

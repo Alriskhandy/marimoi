@@ -451,4 +451,24 @@ class FrontendPagesTest extends TestCase
 
         $this->assertSame($before, $this->getJson(route('interaktif.version'))->json('version'));
     }
+
+    public function test_detail_page_has_no_duplicate_element_ids(): void
+    {
+        // Regresi: <section id="tanggapan"> bentrok dengan <textarea id="tanggapan">, sehingga skrip
+        // formulir mengambil <section> (tanpa .value) dan tombol Kirim Tanggapan tidak berfungsi.
+        $category = Category::create(['type' => 'tematik', 'nama' => 'Kategori ID Unik', 'warna' => '#0d6efd']);
+        $data = DataSpatial::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'kategori_id' => $category->id,
+        ]);
+
+        $html = $this->get(route('detail.interaktif', $data->uuid))->assertOk()->getContent();
+
+        preg_match_all('/\sid="([^"]+)"/', $html, $matches);
+        $duplicates = array_keys(array_filter(array_count_values($matches[1]), fn (int $count) => $count > 1));
+
+        $this->assertSame([], $duplicates, 'ID elemen ganda: '.implode(', ', $duplicates));
+        $this->assertStringContainsString('<textarea name="tanggapan" id="isi_tanggapan"', $html);
+        $this->assertStringContainsString('<label for="isi_tanggapan"', $html);
+    }
 }

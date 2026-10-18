@@ -21,6 +21,8 @@ class UnusedViewsRemovedTest extends TestCase
             'components.nav-link',
             'components.responsive-nav-link',
             'components.secondary-button',
+            'emails.aspirasi_mail',
+            'emails.tanggapan',
             'layouts.app',
             'layouts.navigation',
             'lokasi.index',
@@ -47,7 +49,8 @@ class UnusedViewsRemovedTest extends TestCase
             'layouts.guest',
             'components.text-input',
             'components.primary-button',
-            'emails.tanggapan',
+            'emails.notification',
+            'emails.notification-text',
             'errors.404',
         ] as $view) {
             $this->assertTrue(View::exists($view), "View {$view} masih dirender dan tidak boleh hilang.");

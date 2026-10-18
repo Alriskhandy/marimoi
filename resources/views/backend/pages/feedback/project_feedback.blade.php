@@ -327,188 +327,164 @@
             </div>
         </div>
 
-        <!-- Modal untuk mengubah OPD -->
+        <!-- Ubah OPD Modal -->
         <div class="modal fade" id="changeOpdModal" tabindex="-1" aria-labelledby="changeOpdModalLabel"
             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="changeOpdModalLabel">Ubah OPD Yang Bertanggung Jawab</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="changeOpdModalLabel">
+                            <i class="mdi mdi-domain"></i> Ubah OPD Penanggung Jawab
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                     </div>
                     <div class="modal-body">
                         <form id="changeOpdForm">
-                            <div class="mb-3">
-                                <label for="opdSelect" class="form-label">Pilih OPD Yang Bertanggung Jawab:</label>
-                                <select class="form-select" id="opdSelect" name="opd_id" required>
-                                    <option value="">Pilih OPD Yang Bertanggung Jawab</option>
-                                    @foreach ($opd as $opdItem)
-                                        <option value="{{ $opdItem->id }}">
-                                            {{ $opdItem->name }}
-                                            @if ($opdItem->singkatan)
-                                                ({{ $opdItem->singkatan }})
-                                            @endif
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <label for="opdSelect" class="form-label fw-semibold">OPD <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="opdSelect" name="opd_id" required>
+                                <option value="">-- Pilih OPD --</option>
+                                @foreach ($opd->sortBy('singkatan') as $opdItem)
+                                    <option value="{{ $opdItem->id }}">
+                                        {{ $opdItem->singkatan ? $opdItem->singkatan . ' - ' : '' }}{{ $opdItem->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Feedback akan tampil di daftar OPD yang dipilih untuk ditindaklanjuti.
                             </div>
                             <input type="hidden" id="feedbackId" name="feedback_id">
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="button" class="btn btn-primary" onclick="saveOpdChange()">Simpan</button>
+                        <button type="button" class="btn btn-primary btn-gradient-primary" onclick="saveOpdChange()">
+                            <i class="mdi mdi-content-save"></i> Simpan
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Add Modal -->
+
+        <!-- Tambah Feedback Modal -->
         <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="addModalLabel">
-                            <i class="mdi mdi-plus"></i>
-                            Tambah Feedback
+                            <i class="mdi mdi-comment-plus-outline"></i> Tambah Feedback
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                     </div>
                     <form id="addForm" action="{{ route('project-feedbacks.store') }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
                         <div class="modal-body">
-                            <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-group mb-3">
-                                            <label for="data_spatial_id" class="form-label">Pilih Data Spasial
-                                                <span class="text-danger">*</span></label>
-                                            <select class="form-control" id="data_spatial_id" name="data_spatial_id"
-                                                data-search-url="{{ route('project-feedbacks.data-spatial') }}" required>
-                                            </select>
-                                            <div class="invalid-feedback"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_nama_pemberi_aspirasi" class="form-label">Nama Pemberi Aspirasi <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="add_nama_pemberi_aspirasi"
-                                            name="nama_pemberi_aspirasi" required>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                            <p class="form-section-label"><i class="mdi mdi-map-outline"></i> Data spasial</p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <label for="data_spatial_id" class="form-label fw-semibold">Data Spasial <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-control" id="data_spatial_id" name="data_spatial_id"
+                                        data-search-url="{{ route('project-feedbacks.data-spatial') }}" required>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Ketik untuk mencari data spasial yang ditanggapi.</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_nama_proyek" class="form-label">Nama Proyek <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="add_nama_proyek" name="nama_proyek"
-                                            required>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                    <label for="add_nama_proyek" class="form-label fw-semibold">Nama Proyek <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="add_nama_proyek" name="nama_proyek"
+                                        required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="add_kabupaten_kota" class="form-label fw-semibold">Kabupaten/Kota <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="add_kabupaten_kota" name="kabupaten_kota" required>
+                                        <option value="">-- Pilih --</option>
+                                        @foreach ($kabupaten_list as $kab)
+                                            <option value="{{ $kab }}">{{ $kab }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="add_kecamatan" class="form-label fw-semibold">Kecamatan</label>
+                                    <select class="form-select" id="add_kecamatan" name="kecamatan">
+                                        <option value="">-- Pilih --</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_kabupaten_kota" class="form-label">Kabupaten/Kota <span
-                                                class="text-danger">*</span></label>
-                                        <select class="form-control" id="add_kabupaten_kota" name="kabupaten_kota" required>
-                                            <option value="">-- Pilih Kabupaten/Kota --</option>
-                                            @foreach ($kabupaten_list as $kab)
-                                                <option value="{{ $kab }}">{{ $kab }}</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                            <p class="form-section-label"><i class="mdi mdi-account-outline"></i> Pemberi feedback</p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label for="add_nama_pemberi_aspirasi" class="form-label fw-semibold">Nama <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="add_nama_pemberi_aspirasi"
+                                        name="nama_pemberi_aspirasi" required>
+                                    <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_kecamatan" class="form-label">Kecamatan</label>
-                                        <select class="form-control" id="add_kecamatan" name="kecamatan">
-                                            <option value="">-- Pilih Kecamatan --</option>
-                                        </select>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                <div class="col-md-4">
+                                    <label for="add_email" class="form-label fw-semibold">Email</label>
+                                    <input type="email" class="form-control" id="add_email" name="email"
+                                        placeholder="nama@email.com">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="add_phone" class="form-label fw-semibold">No. Telepon</label>
+                                    <input type="text" class="form-control" id="add_phone" name="phone"
+                                        placeholder="08xxxxxxxxxx">
+                                    <div class="invalid-feedback"></div>
                                 </div>
                             </div>
 
-                            <div class="row">
+                            <p class="form-section-label"><i class="mdi mdi-message-text-outline"></i> Isi feedback</p>
+                            <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_jenis_tanggapan" class="form-label">Jenis Tanggapan <span
-                                                class="text-danger">*</span></label>
-                                        <select class="form-control" id="add_jenis_tanggapan" name="jenis_tanggapan"
-                                            required>
-                                            <option value="">-- Pilih Jenis --</option>
-                                            <option value="keluhan">Keluhan</option>
-                                            <option value="saran">Saran</option>
-                                            <option value="apresiasi">Apresiasi</option>
-                                            <option value="pertanyaan">Pertanyaan</option>
-                                        </select>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                    <label for="add_jenis_tanggapan" class="form-label fw-semibold">Jenis <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select" id="add_jenis_tanggapan" name="jenis_tanggapan"
+                                        required>
+                                        <option value="">-- Pilih Jenis --</option>
+                                        <option value="keluhan">Keluhan</option>
+                                        <option value="saran">Saran</option>
+                                        <option value="apresiasi">Apresiasi</option>
+                                        <option value="pertanyaan">Pertanyaan</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_laporan_gambar" class="form-label">Laporan Gambar</label>
-                                        <input type="file" class="form-control" id="add_laporan_gambar"
-                                            name="laporan_gambar" accept="image/*">
-                                        <small class="text-muted">Maksimal 2MB (JPG, PNG, GIF)</small>
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                    <label for="add_laporan_gambar" class="form-label fw-semibold">Foto Laporan</label>
+                                    <input type="file" class="form-control" id="add_laporan_gambar"
+                                        name="laporan_gambar" accept="image/*">
+                                    <div class="form-text">Maksimal 2MB (JPG, PNG, GIF)</div>
+                                    <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="add_email" name="email">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                <div class="col-12">
+                                    <label for="add_tanggapan" class="form-label fw-semibold">Pesan <span
+                                            class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="add_tanggapan" name="tanggapan" rows="4" required
+                                        placeholder="Isi keluhan, saran, apresiasi, atau pertanyaan warga..."></textarea>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_phone" class="form-label">No. Telepon</label>
-                                        <input type="text" class="form-control" id="add_phone" name="phone">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_latitude" class="form-label">Latitude</label>
-                                        <input type="number" step="any" class="form-control" id="add_latitude"
-                                            name="latitude" placeholder="0.7881">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                    <label for="add_latitude" class="form-label fw-semibold">Latitude</label>
+                                    <input type="number" step="any" class="form-control" id="add_latitude"
+                                        name="latitude" placeholder="0.7881">
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="add_longitude" class="form-label">Longitude</label>
-                                        <input type="number" step="any" class="form-control" id="add_longitude"
-                                            name="longitude" placeholder="127.3781">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
+                                    <label for="add_longitude" class="form-label fw-semibold">Longitude</label>
+                                    <input type="number" step="any" class="form-control" id="add_longitude"
+                                        name="longitude" placeholder="127.3781">
+                                    <div class="invalid-feedback"></div>
                                 </div>
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <label for="add_tanggapan" class="form-label">Tanggapan <span
-                                        class="text-danger">*</span></label>
-                                <textarea class="form-control" id="add_tanggapan" name="tanggapan" rows="4" required></textarea>
-                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                             <button type="submit" class="btn btn-gradient-primary">
                                 <i class="mdi mdi-content-save"></i> Simpan
                             </button>
@@ -518,242 +494,178 @@
             </div>
         </div>
 
-        <!-- Show Modal -->
+        <!-- Detail Feedback Modal -->
         <div class="modal fade" id="showModal" tabindex="-1" aria-labelledby="showModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-xl">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="showModalLabel">
-                            <i class="mdi mdi-eye"></i>
-                            Detail Feedback
+                            <i class="mdi mdi-comment-text-outline"></i> Detail Feedback
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row">
+
+                    <div id="show_loading" class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Memuat...</span>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">Memuat detail feedback...</p>
+                    </div>
+
+                    <div id="show_content" class="modal-body" style="display: none;">
+                        <div class="detail-summary d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <span id="show_kode" class="ticket-code fs-6"></span>
+                            <span id="show_status" class="badge"></span>
+                            <span id="show_jenis_tanggapan" class="badge"></span>
+                            <span class="text-muted small ms-auto">
+                                <i class="mdi mdi-calendar"></i> Dikirim <span id="show_created_at"></span>
+                            </span>
+                        </div>
+
+                        <div class="row g-4">
                             <div class="col-lg-8">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Informasi Feedback</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <strong>Nama Pemberi:</strong>
-                                                <p id="show_nama_pemberi_aspirasi" class="text-muted"></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <strong>Nama Proyek:</strong>
-                                                <p id="show_nama_proyek" class="text-muted"></p>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <strong>Kabupaten:</strong>
-                                                <p id="show_kabupaten_kota" class="text-muted"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <strong>Kecamatan:</strong>
-                                                <p id="show_kecamatan" class="text-muted"></p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <strong>Jenis:</strong>
-                                                <span id="show_jenis_tanggapan" class="badge"></span>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <strong>Email:</strong>
-                                                <p id="show_email" class="text-muted"></p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <strong>Telepon:</strong>
-                                                <p id="show_phone" class="text-muted"></p>
-                                            </div>
-                                        </div>
+                                <h4 id="show_nama_proyek" class="detail-title mb-1"></h4>
+                                <p class="text-muted small mb-3">
+                                    <i class="mdi mdi-map-marker-outline"></i>
+                                    <span id="show_kecamatan"></span>, <span id="show_kabupaten_kota"></span>
+                                </p>
+                                <div id="show_tanggapan" class="detail-text"></div>
 
-                                        <!-- Project Info Section - Enhanced with UUID and Description -->
-                                        <div class="row" id="show_project_info" style="display: none;">
-                                            <div class="col-12">
-                                                <div class="border-top pt-3 mt-3">
-                                                    <h6 class="text-primary"><i
-                                                            class="mdi mdi-folder-outline me-2"></i>Informasi Proyek Terkait
-                                                    </h6>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <strong>Kode Proyek:</strong>
-                                                            <p id="show_project_uuid" class="text-muted font-monospace"></p>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <strong>Tipe Data:</strong>
-                                                            <p id="show_project_type" class="text-muted"></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <strong>Sub Tipe:</strong>
-                                                            <p id="show_project_subtype" class="text-muted"></p>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <strong>Tahun:</strong>
-                                                            <p id="show_project_year" class="text-muted"></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-12">
-                                                            <strong>Deskripsi Proyek:</strong>
-                                                            <div id="show_project_description"
-                                                                class="text-muted p-3 bg-light rounded mt-2"
-                                                                style="min-height: 60px;"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                                <strong>Tanggapan:</strong>
-                                                <div id="show_tanggapan" class="text-muted p-3 bg-light rounded mt-2"
-                                                    style="min-height: 80px;"></div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mt-3" id="show_koordinat_row" style="display: none;">
-                                            <div class="col-12">
-                                                <div class="border-top pt-3">
-                                                    <h6 class="text-success"><i class="mdi mdi-map-marker me-2"></i>Lokasi
-                                                        Pemberi Aspirasi</h6>
-                                                    {{-- <div class="row">
-                                                        <div class="col-md-6">
-                                                            <strong>Latitude:</strong>
-                                                            <p id="show_latitude" class="text-muted font-monospace"
-                                                                style="cursor: pointer;" title="Klik untuk copy koordinat">
-                                                            </p>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <strong>Longitude:</strong>
-                                                            <p id="show_longitude" class="text-muted font-monospace"
-                                                                style="cursor: pointer;" title="Klik untuk copy koordinat">
-                                                            </p>
-                                                        </div>
-                                                    </div> --}}
-                                                    <div class="row">
-                                                        <div class="col-12">
-                                                            <a id="openMapBtn" class="btn btn-success btn-sm" target="_blank"
-                                                                rel="noopener noreferrer">
-                                                                <i class="mdi mdi-map-marker"></i> Lihat di Google Maps
-                                                            </a>
-                                                            <button type="button" class="btn btn-outline-info btn-sm ms-2"
-                                                                id="copyCoordinates">
-                                                                <i class="mdi mdi-content-copy"></i> Copy Koordinat
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                <div id="show_gambar_container" class="detail-section" style="display: none;">
+                                    <p class="detail-section-label"><i class="mdi mdi-image-outline"></i> Foto laporan</p>
+                                    <div id="show_gambar_image_wrap">
+                                        <img id="show_laporan_gambar" src="" alt="Foto laporan"
+                                            class="detail-photo" title="Klik untuk memperbesar">
+                                        <div class="mt-2">
+                                            <a id="download_gambar" href="#" class="btn btn-sm btn-outline-primary"
+                                                download>
+                                                <i class="mdi mdi-download"></i> Unduh
+                                            </a>
                                         </div>
                                     </div>
+                                    <div id="show_gambar_file_wrap" style="display: none;"></div>
+                                </div>
+
+                                <div id="show_koordinat_row" class="detail-section" style="display: none;">
+                                    <p class="detail-section-label"><i class="mdi mdi-crosshairs-gps"></i> Lokasi pemberi
+                                        feedback</p>
+                                    <a id="openMapBtn" class="btn btn-sm btn-outline-success" target="_blank"
+                                        rel="noopener noreferrer">
+                                        <i class="mdi mdi-google-maps"></i> Buka di Google Maps
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                        id="copyCoordinates">
+                                        <i class="mdi mdi-content-copy"></i> Salin Koordinat
+                                    </button>
+                                </div>
+
+                                <div class="detail-section">
+                                    <p class="detail-section-label"><i class="mdi mdi-reply"></i> Tanggapan petugas</p>
+                                    <div id="show_response_container" style="display: none;">
+                                        <div id="show_response_admin" class="detail-text detail-response"></div>
+                                        <small class="text-muted">
+                                            <i class="mdi mdi-clock-outline"></i> Ditanggapi
+                                            <span id="show_responded_at"></span>
+                                        </small>
+                                    </div>
+                                    <p id="show_response_empty" class="text-muted small mb-0">
+                                        Belum ada tanggapan. Klik <b>Tanggapi</b> untuk mengubah status dan membalas warga.
+                                    </p>
                                 </div>
                             </div>
+
                             <div class="col-lg-4">
-                                <div class="card">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">Status & Response</h6>
-                                        <span id="show_status" class="badge"></span>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <strong>Tanggal Dibuat:</strong>
-                                            <p id="show_created_at" class="text-muted"></p>
-                                        </div>
+                                <div class="detail-side">
+                                    <p class="detail-section-label"><i class="mdi mdi-account"></i> Pemberi feedback</p>
+                                    <dl class="detail-list">
+                                        <dt>Nama</dt>
+                                        <dd id="show_nama_pemberi_aspirasi"></dd>
+                                        <dt>Email</dt>
+                                        <dd id="show_email" class="text-break"></dd>
+                                        <dt>No. Telepon</dt>
+                                        <dd id="show_phone"></dd>
+                                        <dt>OPD penanggung jawab</dt>
+                                        <dd id="show_opd"></dd>
+                                    </dl>
 
-                                        <div class="mb-3" id="show_gambar_container" style="display: none;">
-                                            <strong>Laporan Gambar:</strong>
-                                            <div class="mt-2">
-                                                <img id="show_laporan_gambar" src="" alt="Laporan"
-                                                    class="img-fluid rounded shadow-sm"
-                                                    style="max-height: 200px; width: 100%; object-fit: cover;">
-                                                <div class="mt-2">
-                                                    <a id="download_gambar" href="#"
-                                                        class="btn btn-outline-primary btn-sm" download>
-                                                        <i class="mdi mdi-download"></i> Download Gambar
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div id="show_response_container" style="display: none;">
-                                            <div class="border-top pt-3">
-                                                <strong class="text-success">Response Admin:</strong>
-                                                <div id="show_response_admin" class="text-muted p-3 bg-light rounded mt-2">
-                                                </div>
-                                                <small class="text-muted">
-                                                    <i class="mdi mdi-clock-outline me-1"></i>Direspon pada: <span
-                                                        id="show_responded_at"></span>
-                                                </small>
-                                            </div>
-                                        </div>
+                                    <div id="show_project_info" style="display: none;">
+                                        <p class="detail-section-label mt-3"><i class="mdi mdi-map-outline"></i> Data
+                                            spasial terkait</p>
+                                        <dl class="detail-list mb-0">
+                                            <dt>Kode</dt>
+                                            <dd id="show_project_uuid" class="font-monospace small text-break"></dd>
+                                            <dt>Tipe data</dt>
+                                            <dd><span id="show_project_type"></span> <span id="show_project_subtype"
+                                                    class="text-muted"></span></dd>
+                                            <dt>Tahun</dt>
+                                            <dd id="show_project_year"></dd>
+                                            <dt>Deskripsi</dt>
+                                            <dd id="show_project_description" class="detail-text small"></dd>
+                                        </dl>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="mdi mdi-close"></i> Tutup
-                        </button>
-@can('project-feedbacks.respond')
-                        <button type="button"
-                            class="btn btn-gradient-primary btn-respond"
-                            id="btnRespond">
-                            <i class="mdi mdi-reply"></i> Beri Response
-                        </button>
-@endcan
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        @can('project-feedbacks.respond')
+                            <button type="button" class="btn btn-gradient-primary btn-respond" id="btnRespond" disabled>
+                                <i class="mdi mdi-reply"></i> Tanggapi
+                            </button>
+                        @endcan
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Response Modal -->
+        <!-- Tanggapi Modal -->
         <div class="modal fade" id="responseModal" tabindex="-1" aria-labelledby="responseModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="responseModalLabel">
-                            <i class="mdi mdi-reply me-2"></i> Beri Response Admin
+                            <i class="mdi mdi-reply"></i> Tanggapi Feedback
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                     </div>
                     <form id="responseForm" method="POST">
                         @csrf
                         @method('PUT')
                         <input type="hidden" id="response_id" name="id">
                         <div class="modal-body">
-                            <div class="form-group mb-3">
-                                <label for="response_status" class="form-label">Update Status <span
+                            <p class="text-muted small">Tiket <span id="response_ticket" class="ticket-code"></span></p>
+
+                            <div class="mb-3">
+                                <label for="response_status" class="form-label fw-semibold">Status <span
                                         class="text-danger">*</span></label>
-                                <select class="form-control" id="response_status" name="status" required>
+                                <select class="form-select" id="response_status" name="status" required>
                                     <option value="ditinjau">Ditinjau</option>
                                     <option value="ditindaklanjuti">Ditindaklanjuti</option>
                                     <option value="selesai">Selesai</option>
                                 </select>
                                 <div class="invalid-feedback"></div>
                             </div>
-                            <div class="form-group mb-3">
-                                <label for="response_admin" class="form-label">Response Admin <span
+                            <div class="mb-3">
+                                <label for="response_admin" class="form-label fw-semibold">Tanggapan untuk warga <span
                                         class="text-danger">*</span></label>
-                                <textarea class="form-control" id="response_admin" name="response_admin" rows="4" required
-                                    placeholder="Berikan response/tanggapan admin terhadap feedback ini..."></textarea>
+                                <textarea class="form-control" id="response_admin" name="response_admin" rows="5"
+                                    required minlength="10"
+                                    placeholder="Tuliskan tindak lanjut atau jawaban untuk pemberi feedback (minimal 10 karakter)..."></textarea>
                                 <div class="invalid-feedback"></div>
+                            </div>
+
+                            <div class="alert alert-light border small mb-0">
+                                <i class="mdi mdi-email-outline me-1"></i>
+                                Bila status <b>Ditindaklanjuti</b> atau <b>Selesai</b>, pemberi feedback menerima email
+                                berisi tanggapan ini dan dapat melacaknya dengan nomor tiket.
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                             <button type="submit" class="btn btn-gradient-primary">
-                                <i class="mdi mdi-send"></i> Kirim Response
+                                <i class="mdi mdi-send"></i> Simpan &amp; Kirim
                             </button>
                         </div>
                     </form>
@@ -831,6 +743,20 @@
                         input.addClass('is-invalid');
                         input.siblings('.invalid-feedback').text(messages[0]);
                     });
+                }
+
+                const STATUS_LABELS = {
+                    'pending': 'Menunggu',
+                    'ditinjau': 'Ditinjau',
+                    'ditindaklanjuti': 'Ditindaklanjuti',
+                    'selesai': 'Selesai'
+                };
+
+                function formatTanggal(value) {
+                    return value ? new Date(value).toLocaleString('id-ID', {
+                        dateStyle: 'long',
+                        timeStyle: 'short'
+                    }) : '-';
                 }
 
                 function getStatusClass(status) {
@@ -991,6 +917,14 @@
                 $(document).on('click', '.btn-show', function() {
                     const id = $(this).data('id');
 
+                    // Modal terbuka lewat data-bs-toggle sebelum data siap: tampilkan status memuat
+                    // supaya isi feedback sebelumnya tidak sempat terlihat.
+                    $('#show_loading').html(`
+                        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Memuat...</span></div>
+                        <p class="text-muted mt-3 mb-0">Memuat detail feedback...</p>`).show();
+                    $('#show_content').hide();
+                    $('#btnRespond').prop('disabled', true);
+
                     const showUrl = `{{ route('project-feedbacks.index') }}/${id}`;
 
                     $.ajax({
@@ -999,18 +933,21 @@
                         success: function(data) {
                             if (data.status === 'success') {
                                 const feedback = data.data;
+                                $('#show_kode').text(data.kode || '');
+                                $('#show_opd').text(feedback.opd ?
+                                    `${feedback.opd.singkatan ? feedback.opd.singkatan + ' - ' : ''}${feedback.opd.name}` :
+                                    'Belum ditentukan');
 
                                 // Basic info
                                 $('#show_nama_pemberi_aspirasi').text(feedback
                                     .nama_pemberi_aspirasi);
                                 $('#show_nama_proyek').text(feedback.nama_proyek);
                                 $('#show_kabupaten_kota').text(feedback.kabupaten_kota);
-                                $('#show_kecamatan').text(feedback.kecamatan || '-');
+                                $('#show_kecamatan').text(feedback.kecamatan || 'Kecamatan tidak diisi');
                                 $('#show_email').text(feedback.email || '-');
                                 $('#show_phone').text(feedback.phone || '-');
                                 $('#show_tanggapan').text(feedback.tanggapan);
-                                $('#show_created_at').text(new Date(feedback.created_at)
-                                    .toLocaleDateString('id-ID'));
+                                $('#show_created_at').text(formatTanggal(feedback.created_at));
 
                                 // Enhanced Project info with UUID and description
                                 if (feedback.data_spatial) {
@@ -1040,13 +977,10 @@
                                 // Status badge
                                 const statusClass = getStatusClass(feedback.status);
                                 $('#show_status').removeClass().addClass(`badge bg-${statusClass}`)
-                                    .text(feedback.status.charAt(0).toUpperCase() + feedback.status
-                                        .slice(1));
+                                    .text(STATUS_LABELS[feedback.status] || feedback.status);
 
                                 // Koordinat
                                 if (feedback.latitude && feedback.longitude) {
-                                    $('#show_latitude').text(feedback.latitude);
-                                    $('#show_longitude').text(feedback.longitude);
                                     $('#show_koordinat_row').show();
 
                                     const googleMapsUrl =
@@ -1060,12 +994,6 @@
                                         copyToClipboard(coordinates);
                                     });
 
-                                    $('#show_latitude, #show_longitude').off('click').on('click',
-                                        function() {
-                                            const coordinates =
-                                                `${feedback.latitude}, ${feedback.longitude}`;
-                                            copyToClipboard(coordinates);
-                                        });
                                 } else {
                                     $('#show_koordinat_row').hide();
                                 }
@@ -1096,7 +1024,9 @@
 
                                         if (imageExts.includes(fileExt)) {
                                             // Untuk gambar, tampilkan preview dan tombol download
-                                            $('#show_laporan_gambar').attr('src', imagePath).on(
+                                            $('#show_gambar_file_wrap').hide().empty();
+                                            $('#show_gambar_image_wrap').show();
+                                            $('#show_laporan_gambar').off('error').attr('src', imagePath).on(
                                                 'error',
                                                 function() {
                                                     // Jika direct path gagal, coba via controller
@@ -1107,7 +1037,7 @@
                                             $('#download_gambar')
                                                 .attr('href', downloadUrl)
                                                 .attr('download', originalName)
-                                                .text(`Download ${displayName}`)
+                                                .html(`<i class="mdi mdi-download"></i> Unduh ${$('<span>').text(displayName).html()}`)
                                                 .off('click')
                                                 .on('click', function(e) {
                                                     e.preventDefault();
@@ -1118,10 +1048,11 @@
                                             $('#show_gambar_container').show();
                                         } else {
                                             // Untuk file non-gambar, tampilkan info file dengan tombol download
-                                            $('#show_gambar_container').html(`
-                <div class="mb-3">
-                    <strong>Lampiran File:</strong>
-                    <div class="mt-2 p-3 border rounded bg-light">
+                                            $('#show_gambar_image_wrap').hide();
+                                            $('#show_gambar_container').show();
+                                            $('#show_gambar_file_wrap').html(`
+                <div>
+                    <div class="p-3 border rounded bg-light">
                         <div class="d-flex align-items-center">
                             <i class="mdi mdi-file-outline me-2 text-primary" style="font-size: 1.5rem;"></i>
                             <div class="flex-grow-1">
@@ -1254,7 +1185,7 @@
                                 }
 
                                 // Optional: Tambahkan click handler untuk preview gambar
-                                $(document).on('click', '#show_laporan_gambar', function() {
+                                $(document).off('click.feedbackPreview').on('click.feedbackPreview', '#show_laporan_gambar', function() {
                                     const src = $(this).attr('src');
                                     const alt = $(this).attr('alt') || 'Laporan Gambar';
                                     if (src) {
@@ -1265,19 +1196,31 @@
                                 // Response admin
                                 if (feedback.response_admin) {
                                     $('#show_response_admin').text(feedback.response_admin);
-                                    $('#show_responded_at').text(new Date(feedback.responded_at)
-                                        .toLocaleDateString('id-ID'));
+                                    $('#show_responded_at').text(formatTanggal(feedback.responded_at));
                                     $('#show_response_container').show();
+                                    $('#show_response_empty').hide();
                                 } else {
                                     $('#show_response_container').hide();
+                                    $('#show_response_empty').show();
                                 }
 
-                                // Set respond button data
-                                $('#btnRespond').data('id', feedback.id);
+                                // Dipakai form Tanggapi agar terisi status & tanggapan yang sudah ada.
+                                $('#btnRespond').data({
+                                    id: feedback.id,
+                                    ticket: data.kode || '',
+                                    status: feedback.status,
+                                    response: feedback.response_admin || ''
+                                }).prop('disabled', false);
+
+                                $('#show_loading').hide();
+                                $('#show_content').show();
                             }
                         },
                         error: function(xhr) {
                             console.error('Error loading feedback details:', xhr);
+                            $('#show_loading').html(`
+                                <i class="mdi mdi-alert-circle-outline text-danger" style="font-size: 2.5rem;"></i>
+                                <p class="text-danger mt-2 mb-0">Gagal memuat detail feedback.</p>`).show();
                             showAlert('Gagal memuat data detail: ' + (xhr.responseJSON?.message ||
                                 'Unknown error'), 'error');
                         }
@@ -1295,6 +1238,11 @@
                     $('#response_id').val(id);
                     $('#responseForm')[0].reset();
                     clearFormErrors($('#responseForm'));
+                    const currentStatus = $(this).data('status');
+                    $('#response_ticket').text($(this).data('ticket') || '');
+                    $('#response_status').val(['ditinjau', 'ditindaklanjuti', 'selesai'].includes(currentStatus) ?
+                        currentStatus : 'ditinjau');
+                    $('#response_admin').val($(this).data('response') || '');
                     $('#responseModal').modal('show');
                     $('#showModal').modal('hide');
                 });
@@ -1357,7 +1305,7 @@
                         },
                         complete: function() {
                             submitBtn.prop('disabled', false).html(
-                                '<i class="mdi mdi-send"></i> Kirim Response');
+                                '<i class="mdi mdi-send"></i> Simpan &amp; Kirim');
                         }
                     });
                 });
@@ -1773,8 +1721,83 @@
                 min-width: 140px;
             }
 
-            #show_gambar_container img {
-                border: 2px solid #e9ecef;
+            /* Modal feedback — pola sama dengan modal detail Aspirasi */
+            .ticket-code {
+                font-family: 'Courier New', monospace;
+                font-size: 0.75rem;
+                color: #0d6efd;
+                letter-spacing: 0.3px;
+            }
+
+            .form-section-label,
+            .detail-section-label {
+                margin-bottom: 0.5rem;
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #6b7280;
+            }
+
+            .detail-summary {
+                padding-bottom: 0.75rem;
+                border-bottom: 1px solid #eef2f7;
+            }
+
+            .detail-title {
+                font-size: 1.15rem;
+                font-weight: 700;
+                color: #1f2937;
+                line-height: 1.4;
+            }
+
+            .detail-text {
+                white-space: pre-line;
+                word-break: break-word;
+                color: #374151;
+                line-height: 1.6;
+            }
+
+            .detail-response {
+                padding: 0.75rem 1rem;
+                margin-bottom: 0.4rem;
+                background: #f0f7ff;
+                border-left: 3px solid #0d6efd;
+                border-radius: 6px;
+            }
+
+            .detail-section {
+                margin-top: 1.25rem;
+                padding-top: 1rem;
+                border-top: 1px solid #eef2f7;
+            }
+
+            .detail-side {
+                padding: 1rem;
+                background: #f8f9fa;
+                border-radius: 10px;
+            }
+
+            .detail-list dt {
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: #6b7280;
+            }
+
+            .detail-list dd {
+                margin-bottom: 0.6rem;
+                font-size: 0.875rem;
+                color: #1f2937;
+            }
+
+            .detail-photo {
+                display: block;
+                max-width: 100%;
+                max-height: 320px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                object-fit: contain;
+                cursor: zoom-in;
             }
         </style>
     @endsection

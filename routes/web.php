@@ -51,10 +51,15 @@ Route::get('/kebijakan-privasi', function () {
 })->name('kebijakan_privasi');
 
 // FEEDBACK //
-Route::post('/feedback-send', [FrontendController::class, 'store'])->name('feedback.store');
+// Throttle: tiap kiriman memicu email ke warga & admin — cegah spam/email bombing //
+Route::post('/feedback-send', [FrontendController::class, 'store'])
+    ->name('feedback.store')
+    ->middleware('throttle:public-submissions');
 
 // USULAN ASPIRASI MASYARAKAT //
-Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])->name('aspirasi-masyarakat.store');
+Route::post('/aspirasi-masyarakat', [FrontendController::class, 'aspirasiStore'])
+    ->name('aspirasi-masyarakat.store')
+    ->middleware('throttle:public-submissions');
 
 // LACAK STATUS ASPIRASI //
 // Halaman lacak sudah digabung ke halaman Aspirasi (bagian #lacak) //

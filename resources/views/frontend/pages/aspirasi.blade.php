@@ -72,10 +72,13 @@
             'ditolak' => 'Ditolak',
         ];
         $lacakErrors = $errors->getBag('lacak');
+        $captchaRequired = \App\Rules\ValidHCaptcha::isRequired();
     @endphp
 
     @push('styles')
-        <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
+        @if ($captchaRequired)
+            <script src="https://js.hcaptcha.com/1/api.js?hl=id" async defer></script>
+        @endif
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
             integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
         <style>
@@ -98,8 +101,10 @@
 
 @section('main')
     @php
-        // Tab awal: Lacak bila baru saja mencari tiket (hasil, tidak ditemukan, atau error validasi).
-        $tabAwal = $hasilLacak || $lacakTidakDitemukan || $lacakErrors->any() ? 'lacak' : 'kirim';
+        // Tab awal: Lacak bila baru saja mencari tiket (hasil, tidak ditemukan, atau error validasi)
+        // atau dibuka dari link email (?tiket=...).
+        $tiketDariLink = is_string(request('tiket')) ? \Illuminate\Support\Str::limit(strtoupper(trim(request('tiket'))), 30, '') : null;
+        $tabAwal = $hasilLacak || $lacakTidakDitemukan || $lacakErrors->any() || $tiketDariLink ? 'lacak' : 'kirim';
         $tabs = [['kirim', 'Kirim Aspirasi', 'bi-send'], ['lacak', 'Lacak Status', 'bi-search']];
     @endphp
     <section class="bg-mist pb-16 md:pb-20">
@@ -317,7 +322,13 @@
                             <p class="{{ $feedback }}"></p>
                         </div>
                         <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                            @if ($captchaRequired)
+                                <div class="h-captcha" data-sitekey="{{ config('services.hcaptcha.sitekey_test') }}"></div>
+                            @else
+                                <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    <i class="bi bi-cone-striped"></i> Mode development: hCaptcha dinonaktifkan.
+                                </p>
+                            @endif
                             <button type="submit" id="submitBtn" class="{{ $btnPrimary }} w-full sm:w-auto">
                                 <i class="bi bi-send-fill"></i> <span id="submitText">Kirim Aspirasi</span>
                             </button>
@@ -358,15 +369,16 @@
             class="mx-auto grid w-full max-w-[73.75rem] gap-6 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
             <div
                 class="rounded-3xl border border-slate-900/10 bg-white p-5 shadow-[0_30px_60px_-40px_rgba(7,26,45,.35)] sm:p-7 lg:self-start">
-                <h2 class="mb-1 text-xl font-bold text-navy">Lacak Status Aspirasi</h2>
-                <p class="mb-6 text-sm text-slate-500">Masukkan nomor tiket beserta email atau nomor WhatsApp yang Anda
-                    gunakan saat mengirim aspirasi.</p>
+                <h2 class="mb-1 text-xl font-bold text-navy">Lacak Status Aspirasi &amp; Tanggapan</h2>
+                <p class="mb-6 text-sm text-slate-500">Masukkan nomor tiket dari email konfirmasi (MARIMOI-ASP-… untuk
+                    aspirasi, MARIMOI-FDB-… untuk tanggapan proyek) beserta email atau nomor WhatsApp yang Anda gunakan
+                    saat mengirim.</p>
                 <form action="{{ route('aspirasi-masyarakat.lacak.cari') }}" method="post"
                     class="grid gap-5 sm:grid-cols-2">
                     @csrf
                     <div>
                         <label for="nomor_tiket" class="{{ $label }}">Nomor tiket</label>
-                        <input type="text" id="nomor_tiket" name="nomor_tiket" value="{{ old('nomor_tiket') }}"
+                        <input type="text" id="nomor_tiket" name="nomor_tiket" value="{{ old('nomor_tiket', $tiketDariLink) }}"
                             placeholder="MARIMOI-ASP-20260101-0001"
                             class="{{ $input }} font-grotesk uppercase placeholder:normal-case {{ $lacakErrors->has('nomor_tiket') ? '!border-red-500' : '' }}"
                             required autocapitalize="characters" spellcheck="false">
@@ -399,28 +411,28 @@
 
                 @if ($hasilLacak)
                     @php
-                        $langkahAktif = ['pending' => 0, 'diproses' => 1, 'selesai' => 2][$hasilLacak->status] ?? 0;
-                        $ditolak = $hasilLacak->status === 'ditolak';
+                        $langkahAktif = ['pending' => 0, 'diproses' => 1, 'selesai' => 2][$hasilLacak['status']] ?? 0;
+                        $ditolak = $hasilLacak['status'] === 'ditolak';
                     @endphp
                     <div class="mt-8 border-t border-slate-200 pt-6" role="status">
                         <div class="flex flex-wrap items-start justify-between gap-3">
-                            <h3 class="text-xl font-bold leading-snug text-navy">{{ $hasilLacak->judul_aspirasi }}</h3>
+                            <h3 class="text-xl font-bold leading-snug text-navy">{{ $hasilLacak['judul'] }}</h3>
                             <span
                                 @class([
                                     'rounded-full px-3 py-1 text-xs font-bold',
-                                    'bg-amber-100 text-amber-700' => $hasilLacak->status === 'pending',
-                                    'bg-blue-100 text-blue-700' => $hasilLacak->status === 'diproses',
-                                    'bg-emerald-100 text-emerald-700' => $hasilLacak->status === 'selesai',
+                                    'bg-amber-100 text-amber-700' => $hasilLacak['status'] === 'pending',
+                                    'bg-blue-100 text-blue-700' => $hasilLacak['status'] === 'diproses',
+                                    'bg-emerald-100 text-emerald-700' => $hasilLacak['status'] === 'selesai',
                                     'bg-red-100 text-red-700' => $ditolak,
-                                ])>{{ $statusLabel[$hasilLacak->status] ?? ucfirst($hasilLacak->status) }}</span>
+                                ])>{{ $statusLabel[$hasilLacak['status']] ?? ucfirst($hasilLacak['status']) }}</span>
                         </div>
-                        <p class="mt-1 text-sm text-slate-500"><span
-                                class="font-grotesk">{{ $hasilLacak->nomor_tiket }}</span> · Diajukan
-                            {{ $hasilLacak->created_at->translatedFormat('d F Y') }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ $hasilLacak['jenis'] }} · <span
+                                class="font-grotesk">{{ $hasilLacak['nomor_tiket'] }}</span> · Diajukan
+                            {{ $hasilLacak['diajukan']->translatedFormat('d F Y') }}</p>
 
                         @if ($ditolak)
                             <div class="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                Aspirasi ini tidak dapat kami tindak lanjuti.
+                                {{ $hasilLacak['jenis'] }} ini tidak dapat kami tindak lanjuti.
                             </div>
                         @else
                             <ol class="mt-6 grid grid-cols-3">
@@ -448,10 +460,10 @@
 
                         <div class="mt-6 rounded-2xl bg-mist p-5">
                             <p class="text-sm font-semibold text-slate-500">
-                                Tanggapan{{ $hasilLacak->tanggal_respon ? ' · ' . $hasilLacak->tanggal_respon->translatedFormat('d F Y') : '' }}
+                                Tanggapan Petugas{{ $hasilLacak['tanggal_respon'] ? ' · ' . $hasilLacak['tanggal_respon']->translatedFormat('d F Y') : '' }}
                             </p>
                             <p class="mt-2 whitespace-pre-line text-slate-700">
-                                {{ $hasilLacak->tanggapan_admin ?: 'Belum ada tanggapan. Mohon tunggu, tim kami akan segera memproses.' }}
+                                {{ $hasilLacak['tanggapan'] ?: 'Belum ada tanggapan. Mohon tunggu, tim kami akan segera memproses.' }}
                             </p>
                         </div>
                     </div>
@@ -461,7 +473,7 @@
             <aside class="rounded-3xl border border-slate-900/10 bg-white p-6 lg:self-start">
                 <h2 class="mb-4 text-lg font-bold text-navy">Arti status</h2>
                 <dl class="space-y-3 text-sm">
-                    @foreach ([['Menunggu', 'Aspirasi sudah diterima dan menunggu peninjauan.', 'bg-amber-400'], ['Diproses', 'Aspirasi sedang ditinjau atau ditindaklanjuti.', 'bg-blue-500'], ['Selesai', 'Tindak lanjut selesai, lihat tanggapan tim.', 'bg-emerald-500'], ['Ditolak', 'Aspirasi tidak dapat ditindaklanjuti.', 'bg-red-500']] as [$nama, $arti, $warna])
+                    @foreach ([['Menunggu', 'Kiriman sudah diterima dan menunggu peninjauan.', 'bg-amber-400'], ['Diproses', 'Kiriman sedang ditinjau atau ditindaklanjuti.', 'bg-blue-500'], ['Selesai', 'Tindak lanjut selesai, lihat tanggapan tim.', 'bg-emerald-500'], ['Ditolak', 'Kiriman tidak dapat ditindaklanjuti.', 'bg-red-500']] as [$nama, $arti, $warna])
                         <div class="flex gap-3">
                             <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {{ $warna }}"
                                 aria-hidden="true"></span>
