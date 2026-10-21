@@ -18,7 +18,22 @@
         ["tanggal_data", "Tanggal Data"],
     ];
     // Atribut nama yang dicoba (berurutan) untuk judul panel.
-    const TITLE_KEYS = ["NAMOBJ", "NAMA", "nama", "name", "Nama", "KEGIATAN", "kegiatan", "Keterangan", "keterangan", "label"];
+    const TITLE_KEYS = ["NAMOBJ", "NAMA", "nama", "name", "Nama", "NAMA_PULAU", "KEGIATAN", "kegiatan", "Keterangan", "keterangan", "label"];
+    // Angka desimal berbentuk teks dari DBF/shapefile, mis. "0.000000" atau "42.500000".
+    const DECIMAL_TEXT = /^-?\d+\.\d+$/;
+    // Popup: atribut teknis (nomor urut, ID, koordinat mentah) tidak dijadikan ringkasan.
+    const POPUP_SKIP_KEY = /^(x|y|no|fid|objectid|id|shape_\w*|lat|lon|lng|long|latitude|longitude)$/i;
+    // Popup: atribut yang diutamakan bila ada (tanpa membedakan huruf besar/kecil).
+    const POPUP_PRIORITY_KEYS = ["kegiatan", "kabupaten", "kabupaten_", "kecamatan", "desa", "kelurahan", "urusan", "status", "tahun", "opd_pengelola"];
+    const POPUP_MAX_ROWS = 5;
+    const GEOMETRY_LABELS = {
+        Point: "Titik",
+        MultiPoint: "Titik",
+        LineString: "Garis",
+        MultiLineString: "Garis",
+        Polygon: "Area",
+        MultiPolygon: "Area",
+    };
 
     const panels = {};
     let currentLayer = null;
@@ -60,10 +75,18 @@
             return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
         }
         const text = String(value);
+        if (DECIMAL_TEXT.test(text.trim())) {
+            return escapeHtml(formatDecimalText(text.trim()));
+        }
         if (/^https?:\/\/\S+$/i.test(text)) {
             return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`;
         }
         return escapeHtml(text);
+    }
+
+    // "0.000000" → "0", "42.500000" → "42,5": nol di belakang koma dibuang, digit lain tetap utuh.
+    function formatDecimalText(text) {
+        return text.replace(/\.?0+$/, "").replace(".", ",");
     }
 
     // Judul panel: atribut nama pertama yang terisi, atau nama mapset.
@@ -119,6 +142,100 @@
             </div>`;
     }
 
+    // Atribut fitur yang layak tampil: bukan properti teknis, bukan Informasi Data, dan terisi.
+    function attributeEntries(props) {
+        const infoKeys = new Set(INFO_FIELDS.map(([key]) => key));
+        return Object.entries(props).filter(([key, value]) => !HIDDEN_KEYS.has(key) && !infoKeys.has(key) && !isEmpty(value));
+    }
+
+    function isZeroValue(value) {
+        return Number(value) === 0 && String(value).trim() !== "";
+    }
+
+    /**
+     * Baris ringkas untuk popup: atribut prioritas dulu, lalu atribut bernilai (bukan nol),
+     * lalu sisanya. Atribut judul & atribut teknis dilewati.
+     */
+    function popupRows(props, titleKey) {
+        const candidates = attributeEntries(props).filter(([key]) => key !== titleKey && !POPUP_SKIP_KEY.test(key));
+        const rank = ([key, value]) => {
+            const priority = POPUP_PRIORITY_KEYS.indexOf(key.toLowerCase());
+            if (priority !== -1) {
+                return priority;
+            }
+            return isZeroValue(value) ? 200 : 100;
+        };
+        const sorted = candidates
+            .map((entry, index) => ({ entry, index, rank: rank(entry) }))
+            .sort((a, b) => a.rank - b.rank || a.index - b.index)
+            .map(({ entry }) => entry);
+
+        return {
+            rows: sorted.slice(0, POPUP_MAX_ROWS).map(([key, value]) => [humanizeKey(key), value]),
+            remaining: Math.max(0, sorted.length - POPUP_MAX_ROWS),
+        };
+    }
+
+    // Panjang garis (km) dengan rumus haversine antar titik berurutan.
+    function lineLengthKm(geometry) {
+        const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.type === "MultiLineString" ? geometry.coordinates : [];
+        const rad = Math.PI / 180;
+        let length = 0;
+        lines.forEach((line) => {
+            for (let i = 1; i < line.length; i++) {
+                const [lon1, lat1] = line[i - 1];
+                const [lon2, lat2] = line[i];
+                const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2
+                    + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lon2 - lon1) * rad) / 2) ** 2;
+                length += 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            }
+        });
+        return length;
+    }
+
+    /**
+     * Isi popup ringkas: judul fitur, nama mapset, beberapa atribut penting, jenis geometri,
+     * koordinat, dan tombol Zoom To / Detail. Atribut lengkap ada di panel detail.
+     */
+    function popupHtml(feature, layer) {
+        const props = feature.properties || {};
+        const mapsetName = props.kategori || "";
+        const titleKey = TITLE_KEYS.find((name) => !isEmpty(props[name]));
+        const title = titleKey ? String(props[titleKey]) : mapsetName || "Fitur";
+        const { rows, remaining } = popupRows(props, titleKey);
+        const center = featureCenter(feature, layer);
+        const geometry = feature.geometry;
+
+        const facts = [];
+        if (geometry && GEOMETRY_LABELS[geometry.type]) {
+            facts.push(`<span><i class="bi bi-bounding-box"></i>${GEOMETRY_LABELS[geometry.type]}</span>`);
+            if (geometry.type.endsWith("LineString")) {
+                facts.push(`<span><i class="bi bi-rulers"></i>${lineLengthKm(geometry).toLocaleString("id-ID", { maximumFractionDigits: 2 })} km</span>`);
+            }
+        }
+        if (center) {
+            facts.push(`<span class="is-mono"><i class="bi bi-geo-alt"></i>${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}</span>`);
+        }
+
+        return `
+            <div class="feature-popup">
+                ${titleKey && mapsetName ? `<p class="feature-popup-mapset">${escapeHtml(mapsetName)}</p>` : ""}
+                <h5 class="feature-popup-title">${escapeHtml(title)}</h5>
+                ${props.gambar ? `<img class="feature-popup-image" src="${escapeHtml(props.gambar)}" alt="Foto ${escapeHtml(title)}" loading="lazy">` : ""}
+                ${rows.length ? `<table class="feature-popup-table"><tbody>${rowsHtml(rows)}</tbody></table>` : ""}
+                ${remaining ? `<p class="feature-popup-more">+${remaining} atribut lainnya di Detail</p>` : ""}
+                ${facts.length ? `<div class="feature-popup-facts">${facts.join("")}</div>` : ""}
+                <div class="popup-actions">
+                    <button type="button" class="zoomToBtn popup-action popup-action-zoom">
+                        <i class="bi bi-zoom-in"></i> Zoom To
+                    </button>
+                    <button type="button" class="featureDetailBtn popup-action popup-action-detail">
+                        <i class="bi bi-eye"></i> Detail
+                    </button>
+                </div>
+            </div>`;
+    }
+
     function rowsHtml(rows) {
         return rows
             .map(([label, value]) => `<tr><th scope="row">${escapeHtml(label)}</th><td>${formatValue(value)}</td></tr>`)
@@ -155,10 +272,7 @@
             : "";
 
         const infoRows = INFO_FIELDS.filter(([key]) => !isEmpty(props[key])).map(([key, label]) => [label, props[key]]);
-        const infoKeys = new Set(INFO_FIELDS.map(([key]) => key));
-        const attributeRows = Object.entries(props)
-            .filter(([key, value]) => !HIDDEN_KEYS.has(key) && !infoKeys.has(key) && !isEmpty(value))
-            .map(([key, value]) => [humanizeKey(key), value]);
+        const attributeRows = attributeEntries(props).map(([key, value]) => [humanizeKey(key), value]);
 
         const images = featureImages(props);
         galleries[kind] = images;
@@ -193,16 +307,21 @@
             </div>`;
     }
 
-    // Tombol "Perbesar ke fitur".
-    function zoomToCurrent() {
-        if (!currentLayer) {
+    // Perbesar peta ke satu fitur: titik di zoom dekat, area/garis sebatas bentuknya.
+    function zoomToLayer(layer) {
+        if (!layer) {
             return;
         }
-        if (typeof currentLayer.getLatLng === "function") {
-            map.setView(currentLayer.getLatLng(), Math.max(map.getZoom(), 16));
-        } else if (typeof currentLayer.getBounds === "function" && currentLayer.getBounds().isValid()) {
-            map.fitBounds(currentLayer.getBounds(), { padding: [40, 40], maxZoom: 17 });
+        if (typeof layer.getLatLng === "function") {
+            map.setView(layer.getLatLng(), Math.max(map.getZoom(), 16));
+        } else if (typeof layer.getBounds === "function" && layer.getBounds().isValid()) {
+            map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
         }
+    }
+
+    // Tombol "Perbesar ke fitur".
+    function zoomToCurrent() {
+        zoomToLayer(currentLayer);
     }
 
     // Pindah foto di galeri panel (indeks berputar dari akhir ke awal).
@@ -348,5 +467,5 @@
         });
     });
 
-    window.MarimoiFeatureDetail = { open, close };
+    window.MarimoiFeatureDetail = { open, close, popupHtml, zoomToLayer, formatValue };
 })();
