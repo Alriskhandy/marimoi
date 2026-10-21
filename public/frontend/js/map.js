@@ -920,187 +920,31 @@ async function applyStructuredFilters() {
 // =====================================================================
 
 /**
- * Pasang popup ringkas pada satu fitur: atribut utama, geometri, koordinat, dan tombol
- * Zoom To serta Detail (membuka panel detail di map-feature-detail.js).
+ * Pasang popup ringkas pada satu fitur (isi dari MarimoiFeatureDetail.popupHtml): judul,
+ * atribut penting, geometri, koordinat, serta tombol Zoom To dan Detail (panel lengkap).
+ * Isi dibuat saat popup dibuka agar ribuan fitur tidak menyimpan HTML popup di memori.
  */
 function bindPopupContent(feature, layer, urlPath) {
-    const props = feature.properties;
-    let content = `
-        <div class="p-4 max-w-xs bg-white rounded-lg shadow-lg border border-gray-200">
-            <h5 class="text-md font-semibold text-blue-600 mb-3 border-b border-gray-200 pb-2">
-                ${props.kategori || "Feature"}
-            </h5>`;
-
-    if (props.gambar) {
-        content += `
-            <div class="mb-3">
-                <img src="${props.gambar}" alt="Gambar ${props.KEGIATAN}"
-                    class="w-full h-32 object-cover rounded-md border border-gray-300 shadow-sm">
-            </div>`;
-    }
-
-    content += `
-        <div class="space-y-2 mb-4">
-            <div class="max-h-40 overflow-y-auto">
-                <table class="w-full text-[9px]" >`;
-
-    // Popup hanya menampilkan atribut ringkas ini; atribut lengkap ada di panel detail.
-    const allowedKeys = ["KEGIATAN", "TAHUN", "KABUPATEN", "URUSAN", "SUMBER_DATA", "OPD_PENGELOLA", "TANGGAL_DATA"];
-    Object.entries(props).forEach(([key, value]) => {
-        if (allowedKeys.includes(key.toUpperCase()) && value) {
-            const label = key
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase());
-            content += `
-                <tr class="border-b border-gray-100">
-                    <td class="text-[9px] font-medium text-gray-700 py-1 pr-2 align-top">${label}</td>
-                    <td class="text-[9px] text-gray-600 py-1">${value}</td>
-                </tr>`;
-        }
-    });
-
-    content += `</table></div></div>`;
-
-    const geom = feature.geometry;
-    let center = null;
-
-    if (geom) {
-        const type = geom.type;
-        content += `
-            <div class="border-t border-gray-200 pt-3 mb-3">
-                <table class="w-full text-[9px]">
-                    <tr class="border-b border-gray-100">
-                        <td class="text-[9px] font-medium text-gray-700 py-1 pr-2">Geometry</td>
-                        <td class="text-[9px] text-gray-600 py-1">${type}</td>
-                    </tr>`;
-
-        // Panjang garis (km) dengan rumus haversine antar titik berurutan.
-        if (type === "LineString" && Array.isArray(geom.coordinates)) {
-            let length = 0;
-            for (let i = 1; i < geom.coordinates.length; i++) {
-                const [lon1, lat1] = geom.coordinates[i - 1];
-                const [lon2, lat2] = geom.coordinates[i];
-                const R = 6371;
-                const rad = Math.PI / 180;
-                const dLat = (lat2 - lat1) * rad;
-                const dLon = (lon2 - lon1) * rad;
-                const a =
-                    Math.sin(dLat / 2) ** 2 +
-                    Math.cos(lat1 * rad) *
-                        Math.cos(lat2 * rad) *
-                        Math.sin(dLon / 2) ** 2;
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                length += R * c;
-            }
-            content += `
-                <tr class="border-b border-gray-100">
-                    <td class="text-[9px] font-medium text-gray-700 py-1 pr-2">Panjang</td>
-                    <td class="text-[9px] text-gray-600 py-1">${length.toFixed(
-                        2
-                    )} km</td>
-                </tr>`;
-        }
-
-        // Titik perkiraan untuk koordinat & Zoom To: titik tengah daftar koordinat.
-        if (type === "Point") {
-            center = geom.coordinates;
-        } else if (type === "LineString") {
-            const mid = Math.floor(geom.coordinates.length / 2);
-            center = geom.coordinates[mid];
-        } else if (type === "Polygon") {
-            const poly = geom.coordinates[0];
-            const mid = Math.floor(poly.length / 2);
-            center = poly[mid];
-        } else if (type === "MultiPolygon") {
-            const poly = geom.coordinates[0][0];
-            const mid = Math.floor(poly.length / 2);
-            center = poly[mid];
-        }
-
-        if (center && center.length >= 2) {
-            content += `
-                <tr>
-                    <td class="text-[9px] ont-medium text-gray-700 py-1 pr-2">Koordinat</td>
-                    <td class="text-[9px] text-gray-600 py-1 font-mono text-xs">${center[1].toFixed(
-                        5
-                    )}, ${center[0].toFixed(5)}</td>
-                </tr>`;
-        }
-        content += `</table></div>`;
-    }
-
-    const lat = center?.[1] || 0;
-    const lng = center?.[0] || 0;
-
-    content += `
-        <div class="popup-actions">
-            <button type="button" class="zoomToBtn popup-action popup-action-zoom"
-                data-lat="${lat}" data-lng="${lng}">
-                <i class="bi bi-zoom-in"></i>
-                Zoom To
-            </button>
-            <button type="button" class="featureDetailBtn popup-action popup-action-detail">
-                <i class="bi bi-eye"></i>
-                Detail
-            </button>
-        </div>
-    </div>`;
-
-    const popupOptions = {
+    layer.bindPopup(() => window.MarimoiFeatureDetail?.popupHtml(feature, layer) ?? "", {
         maxWidth: 320,
         minWidth: 280,
         className: "tailwind-popup",
         closeButton: true,
         autoClose: false,
         closeOnEscapeKey: true,
-    };
-
-    layer.bindPopup(content, popupOptions);
+    });
 
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
-        const zoomButton = popupNode.querySelector(".zoomToBtn");
 
         popupNode.querySelector(".featureDetailBtn")?.addEventListener("click", () => {
             layer.closePopup();
             window.MarimoiFeatureDetail?.open(feature, layer);
         });
 
-        if (zoomButton) {
-            zoomButton.addEventListener("click", function () {
-                const geom = feature.geometry;
-                if (!geom) return;
-
-                const mapInstance = layer._map;
-                if (geom.type === "Point") {
-                    const lat = parseFloat(this.getAttribute("data-lat"));
-                    const lng = parseFloat(this.getAttribute("data-lng"));
-                    mapInstance.setView([lat, lng], 15);
-                } else if (geom.type === "LineString") {
-                    const latlngs = geom.coordinates.map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "Polygon") {
-                    const latlngs = geom.coordinates[0].map(([lng, lat]) => [
-                        lat,
-                        lng,
-                    ]);
-                    mapInstance.fitBounds(latlngs);
-                } else if (geom.type === "MultiPolygon") {
-                    let allLatLngs = [];
-                    geom.coordinates.forEach((poly) => {
-                        poly[0].forEach(([lng, lat]) => {
-                            allLatLngs.push([lat, lng]);
-                        });
-                    });
-                    if (allLatLngs.length > 0) {
-                        mapInstance.fitBounds(allLatLngs);
-                    }
-                }
-            });
-        }
+        popupNode.querySelector(".zoomToBtn")?.addEventListener("click", () => {
+            window.MarimoiFeatureDetail?.zoomToLayer(layer);
+        });
     });
 }
 

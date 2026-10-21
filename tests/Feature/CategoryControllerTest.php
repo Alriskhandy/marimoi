@@ -171,6 +171,8 @@ class CategoryControllerTest extends TestCase
         $this->assertSame(0, $data[0]['level']);
         $this->assertSame(1, $data[1]['level']);
         $this->assertSame(2, $data[2]['level']);
+        // Form parent di halaman index hanya menawarkan opsi yang boleh punya anak.
+        $this->assertSame([true, true, false], array_column($data, 'can_have_children'));
     }
 
     public function test_index_page_renders_with_nested_categories(): void
@@ -182,6 +184,25 @@ class CategoryControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('categories.index'));
 
         $response->assertOk()->assertSee('Root Uji')->assertSee('Child Uji');
+    }
+
+    /**
+     * Pencarian & bar hapus massal berada di luar area scroll pohon, jadi tetap terlihat
+     * saat pohon panjang di-scroll; sidebar tidak lagi ikut memanjang (stretch-card).
+     */
+    public function test_index_tree_keeps_bulk_delete_bar_outside_scrollable_tree(): void
+    {
+        $admin = $this->admin();
+        Category::create(['nama' => 'Root Uji']);
+
+        $html = $this->actingAs($admin)->get(route('categories.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="col-lg-4 grid-margin taxonomy-tree-column"', $html);
+        $this->assertLessThan(
+            strpos($html, 'class="taxonomy-tree-scroll"'),
+            strpos($html, 'id="categoryBulkActionsBar"'),
+        );
+        $this->assertStringContainsString("\$('.alert').not('#categoryBulkActionsBar')", $html);
     }
 
     public function test_user_without_permission_cannot_view_categories(): void

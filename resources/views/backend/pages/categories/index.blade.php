@@ -107,51 +107,56 @@
     </div>
 
     <div class="row">
-        <div class="col-lg-4 grid-margin stretch-card">
+        <div class="col-lg-5 grid-margin taxonomy-tree-column">
             <div class="card taxonomy-tree-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="card-title mb-0"><i class="mdi mdi-file-tree-outline me-1"></i>Struktur Kategori</h4>
                 </div>
                 <div class="card-body">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
-                        <input type="text" id="treeSearch" class="form-control"
-                            placeholder="Saring kategori berdasarkan nama...">
-                    </div>
-
-                    @can('categories.delete')
-                        <div id="categoryBulkActionsBar" class="alert alert-info d-none py-2 px-3 mb-3"
-                            role="alert">
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <small><i class="mdi mdi-checkbox-multiple-marked me-1"></i>
-                                    <span id="categorySelectedCount">0</span> dipilih</small>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        onclick="bulkDeleteCategories()">
-                                        <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        onclick="clearCategorySelection()">
-                                        <i class="mdi mdi-close me-1"></i> Batal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    @endcan
-
                     @php
                         $user = Auth::user();
                         $role = $user->role->slug ?? null;
                         $rootCategories = $categories->whereNull('parent_id')->sortBy(['sort_order', 'nama']);
                     @endphp
 
-                    <ul class="taxonomy-tree" id="taxonomyTree">
-                        @forelse ($rootCategories as $root)
-                            @include('backend.pages.categories._tree-node', ['category' => $root])
-                        @empty
-                            <li class="text-muted small px-2 py-3">Belum ada kategori.</li>
-                        @endforelse
-                    </ul>
+                    {{-- Pencarian & bar hapus massal tetap di atas; hanya pohon yang di-scroll. --}}
+                    <div class="taxonomy-tree-toolbar">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+                            <input type="text" id="treeSearch" class="form-control"
+                                placeholder="Saring kategori berdasarkan nama...">
+                        </div>
+
+                        @can('categories.delete')
+                            <div id="categoryBulkActionsBar" class="alert alert-info d-none py-2 px-3 mb-3"
+                                role="alert">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <small><i class="mdi mdi-checkbox-multiple-marked me-1"></i>
+                                        <span id="categorySelectedCount">0</span> dipilih</small>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="bulkDeleteCategories()">
+                                            <i class="mdi mdi-delete me-1"></i> Hapus Terpilih
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            onclick="clearCategorySelection()">
+                                            <i class="mdi mdi-close me-1"></i> Batal
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endcan
+                    </div>
+
+                    <div class="taxonomy-tree-scroll">
+                        <ul class="taxonomy-tree" id="taxonomyTree">
+                            @forelse ($rootCategories as $root)
+                                @include('backend.pages.categories._tree-node', ['category' => $root])
+                            @empty
+                                <li class="text-muted small px-2 py-3">Belum ada kategori.</li>
+                            @endforelse
+                        </ul>
+                    </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between text-muted small">
                     <span>{{ $categories->count() }} Kategori</span>
@@ -160,7 +165,7 @@
             </div>
         </div>
 
-        <div class="col-lg-8 grid-margin stretch-card">
+        <div class="col-lg-7 grid-margin stretch-card">
             <div id="categoryDetailPanels">
                 @foreach ($categories as $category)
                     @include('backend.pages.categories._detail-panel', [
@@ -321,9 +326,53 @@
         /* ===========================================
                                                                                                                                                                                                            TAXONOMY TREE (PANEL KIRI)
                                                                                                                                                                                                         =========================================== */
+        /* Navbar admin sticky setinggi 72px; sidebar diberi jarak 1rem di atas & bawah. */
+        .taxonomy-tree-column {
+            --taxonomy-tree-gap: 1rem;
+            --taxonomy-tree-top: calc(72px + var(--taxonomy-tree-gap));
+            margin-top: var(--taxonomy-tree-gap);
+        }
+
         .taxonomy-tree-card .card-body {
-            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .taxonomy-tree-toolbar {
+            flex-shrink: 0;
+        }
+
+        .taxonomy-tree-scroll {
+            max-height: 60vh;
+            margin: 0 -0.5rem;
+            padding: 0 0.5rem;
             overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        /* Desktop: sidebar menempel saat halaman di-scroll dan tingginya dibatasi layar,
+           jadi pohon yang panjang di-scroll di dalam kartu, bukan memanjangkan halaman. */
+        @media (min-width: 992px) {
+            .taxonomy-tree-column {
+                position: sticky;
+                top: var(--taxonomy-tree-top);
+                align-self: flex-start;
+            }
+
+            .taxonomy-tree-card {
+                max-height: calc(100vh - var(--taxonomy-tree-top) - var(--taxonomy-tree-gap));
+            }
+
+            .taxonomy-tree-card .card-body {
+                flex: 1 1 auto;
+            }
+
+            .taxonomy-tree-scroll {
+                flex: 1 1 auto;
+                max-height: none;
+                min-height: 0;
+            }
         }
 
         .taxonomy-tree,
@@ -961,6 +1010,16 @@
             // expand/collapse manual, dan filter pencarian nama kategori.
             const $tree = $('#taxonomyTree');
 
+            // Parent default untuk "+ Subkategori": kategori terpilih itu sendiri, atau
+            // induknya bila sudah di level 2 (maksimal 3 level).
+            function subCategoryParentId($row, id) {
+                const $node = $row.closest('.taxonomy-tree-node');
+                if (!$node.length || Number($node.data('depth')) < 2) {
+                    return id;
+                }
+                return $node.parent().closest('.taxonomy-tree-node').children('.taxonomy-tree-row').data('category-id') || id;
+            }
+
             function selectCategory(id) {
                 $('.taxonomy-tree-row.active').removeClass('active');
                 $('.category-detail-panel').hide();
@@ -987,7 +1046,7 @@
                 const $subBtn = $('#btnAddSubCategory');
                 if ($subBtn.length) {
                     $subBtn.prop('disabled', false);
-                    $subBtn.data('root-id', $row.data('root-id') || id);
+                    $subBtn.data('parent-id', subCategoryParentId($row, id));
                     $subBtn.data('type', $row.data('type') || '');
                 }
             }
@@ -1106,23 +1165,50 @@
                 });
             }
 
-            // Load parent categories for form
-            function loadParentCategories(selectElement, excludeId = null) {
-                selectElement.empty();
-                selectElement.append('<option value="">-- Pilih Parent (Opsional) --</option>');
+            // ID kategori beserta seluruh turunannya di pohon — tidak boleh jadi parent saat edit.
+            function categoryWithDescendantIds(id) {
+                return $tree.find(`.taxonomy-tree-row[data-category-id="${id}"]`)
+                    .closest('.taxonomy-tree-node')
+                    .find('.taxonomy-tree-row')
+                    .map((index, row) => String($(row).data('category-id')))
+                    .get();
+            }
 
-                $.get('{{ route('categories.api.options') }}', function(response) {
-                    if (response.success) {
-                        $.each(response.data, function(index, kategori) {
-                            if (excludeId && kategori.id == excludeId) return;
-                            if (kategori.parent_id == null) { // Only show parent categories
-                                selectElement.append(
-                                    `<option value="${kategori.id}">${kategori.nama}</option>`);
-                            }
-                        });
+            // Muat opsi parent lalu pilih selectedId SETELAH opsi tersedia (bukan setTimeout,
+            // yang gagal bila respons lebih lambat). Respons lama diabaikan bila modal dibuka ulang.
+            function loadParentCategories(selectElement, excludeId = null, selectedId = null) {
+                const requestToken = Symbol('parent-options');
+                const excludedIds = excludeId ? categoryWithDescendantIds(excludeId) : [];
+                selectElement.data('request-token', requestToken);
+                selectElement.prop('disabled', true).empty()
+                    .append('<option value="">Memuat kategori...</option>');
+
+                return $.get('{{ route('categories.api.options') }}').done(function(response) {
+                    if (selectElement.data('request-token') !== requestToken) {
+                        return;
+                    }
+
+                    selectElement.empty().append('<option value="">-- Pilih Parent (Opsional) --</option>');
+                    $.each(response.data || [], function(index, kategori) {
+                        // Level 2 tidak bisa punya anak (maksimal 3 level).
+                        if (!kategori.can_have_children || excludedIds.includes(String(kategori.id))) {
+                            return;
+                        }
+                        selectElement.append($('<option>').val(kategori.id).text(kategori.nama));
+                    });
+
+                    if (selectedId && selectElement.find(`option[value="${selectedId}"]`).length) {
+                        selectElement.val(String(selectedId));
                     }
                 }).fail(function() {
-                    console.warn('Failed to load parent categories');
+                    if (selectElement.data('request-token') === requestToken) {
+                        selectElement.empty().append(
+                            '<option value="">Gagal memuat kategori — tutup & buka lagi form ini</option>');
+                    }
+                }).always(function() {
+                    if (selectElement.data('request-token') === requestToken) {
+                        selectElement.prop('disabled', false);
+                    }
                 });
             }
 
@@ -1133,19 +1219,10 @@
                 form[0].reset();
                 clearFormErrors(form);
 
-                loadParentCategories($('#add_parent_id'));
-
-                // "+ Subkategori" dipicu dari panel detail/toolbar: paksa parent-nya
-                // mengikuti kategori utama yang sedang dipilih di pohon (lihat
-                // selectCategory() di atas yang mengisi data-root-id tombol
-                // #btnAddSubCategory).
+                // "+ Subkategori" dari toolbar: parent default = kategori yang dipilih di pohon
+                // (lihat selectCategory() yang mengisi data-parent-id tombol #btnAddSubCategory).
                 const isSubCategory = trigger && trigger.id === 'btnAddSubCategory';
-
-                if (isSubCategory && $(trigger).data('root-id')) {
-                    setTimeout(function() {
-                        $('#add_parent_id').val($(trigger).data('root-id'));
-                    }, 600);
-                }
+                loadParentCategories($('#add_parent_id'), null, isSubCategory ? $(trigger).data('parent-id') : null);
             });
 
             // Add Form Submit
@@ -1199,16 +1276,7 @@
                 $('#edit_deskripsi').val($(this).data('deskripsi'));
                 $('#edit_sort_order').val($(this).data('sort-order') ?? 0);
 
-                // Load parent categories
-                loadParentCategories($('#edit_parent_id'), id);
-
-                // Set selected parent after loading options
-                const parentId = $(this).data('parent-id');
-                setTimeout(function() {
-                    if (parentId) {
-                        $('#edit_parent_id').val(parentId);
-                    }
-                }, 500);
+                loadParentCategories($('#edit_parent_id'), id, $(this).data('parent-id'));
 
                 clearFormErrors(form);
             });
@@ -1375,9 +1443,9 @@
                 trigger: 'hover'
             });
 
-            // Auto-hide alerts
+            // Auto-hide alerts — kecuali bar hapus massal, yang tampil/sembunyi mengikuti checkbox.
             setTimeout(function() {
-                $('.alert').fadeOut();
+                $('.alert').not('#categoryBulkActionsBar').fadeOut();
             }, 5000);
 
             // Initialize tooltips for keyboard shortcuts
