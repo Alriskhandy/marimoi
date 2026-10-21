@@ -54,10 +54,12 @@
             icon: "bi-zoom-in",
             title: "Zoom & Navigasi",
             text: "Perbesar atau perkecil peta, masuk ke tampilan layar penuh, dan kembali ke tampilan awal. Anda juga bisa memakai scroll mouse atau gerakan cubit pada touchpad.",
+            mobileText: "Cubit layar dengan dua jari untuk memperbesar atau memperkecil peta. Tombol bola dunia ini mengembalikan peta ke tampilan awal.",
         },
         {
             icon: "bi-cursor-fill",
             title: "Detail Fitur",
+            mobileText: "Ketuk fitur di peta untuk membuka ringkasannya. Tombol Detail menampilkan atribut lengkap beserta foto, dan tombol Halaman Detail membuka halaman khusus fitur tersebut.",
             text: "Klik fitur di peta untuk membuka ringkasannya. Tombol Detail menampilkan atribut lengkap beserta foto, dan tombol Halaman Detail membuka halaman khusus fitur tersebut.",
         },
         {
@@ -71,6 +73,7 @@
             icon: "bi-crosshair",
             title: "Koordinat & Skala",
             text: "Pantau koordinat di bawah kursor, tingkat zoom, dan skala jarak peta.",
+            mobileText: "Skala di kiri bawah menunjukkan perbandingan jarak pada peta.",
         },
         {
             target: "#btn-toggle-sidebar-help",
@@ -82,6 +85,27 @@
 
     const el = {};
     let current = 0;
+    // Langkah yang dipakai saat panduan dibuka (lihat availableSteps()).
+    let steps = STEPS;
+
+    function isMobile() {
+        return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    /**
+     * Langkah yang relevan untuk layar saat ini: langkah yang tombolnya disembunyikan
+     * (mis. Unduh & Bantuan di ponsel, lihat peta.css) dilewati, dan teks khusus ponsel
+     * dipakai bila ada.
+     */
+    function availableSteps() {
+        const mobile = isMobile();
+        return STEPS
+            .filter((step) => {
+                const target = step.target ? document.querySelector(step.target) : null;
+                return !step.target || (target && target.getClientRects().length > 0);
+            })
+            .map((step) => (mobile && step.mobileText ? { ...step, text: step.mobileText } : step));
+    }
 
     // Akses localStorage yang aman bila diblokir browser (mode privat, dsb.).
     function storage(action) {
@@ -154,14 +178,14 @@
 
     // Tampilkan isi langkah saat ini lalu atur posisi sorotan & kartu.
     function render() {
-        const step = STEPS[current];
+        const step = steps[current];
         el.icon.innerHTML = `<i class="bi ${step.icon}"></i>`;
-        el.progress.textContent = `Langkah ${current + 1} dari ${STEPS.length}`;
+        el.progress.textContent = `Langkah ${current + 1} dari ${steps.length}`;
         el.title.textContent = step.title;
         el.text.textContent = step.text;
-        el.dots.innerHTML = STEPS.map((_, index) => `<span class="${index === current ? "is-current" : ""}"></span>`).join("");
+        el.dots.innerHTML = steps.map((_, index) => `<span class="${index === current ? "is-current" : ""}"></span>`).join("");
         el.prev.disabled = current === 0;
-        el.next.textContent = current === STEPS.length - 1 ? "Selesai" : "Berikutnya";
+        el.next.textContent = current === steps.length - 1 ? "Selesai" : "Berikutnya";
 
         const rect = visibleTarget(step);
         placeSpotlight(rect);
@@ -169,7 +193,7 @@
     }
 
     function go(index) {
-        current = Math.min(Math.max(index, 0), STEPS.length - 1);
+        current = Math.min(Math.max(index, 0), steps.length - 1);
         render();
         el.next.focus();
     }
@@ -179,6 +203,7 @@
         // Panel samping & katalog ditutup dulu supaya kontrol yang disorot terlihat.
         ["sidebar-layer", "sidebar-basemap", "sidebar-legend"].forEach((id) => document.getElementById(id)?.classList.add("hidden"));
         window.MarimoiCatalog?.close();
+        steps = availableSteps();
         el.root.classList.remove("hidden");
         go(0);
     }
@@ -210,7 +235,7 @@
         el.next = el.root.querySelector("[data-guide-next]");
 
         el.prev.addEventListener("click", () => go(current - 1));
-        el.next.addEventListener("click", () => (current === STEPS.length - 1 ? close() : go(current + 1)));
+        el.next.addEventListener("click", () => (current === steps.length - 1 ? close() : go(current + 1)));
         el.root.querySelectorAll("[data-guide-skip]").forEach((button) => button.addEventListener("click", close));
         document.getElementById("btn-toggle-sidebar-help")?.addEventListener("click", open);
 

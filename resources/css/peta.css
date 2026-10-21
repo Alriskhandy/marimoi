@@ -452,21 +452,172 @@
     }
 }
 
-/* ---------- Ponsel ---------- */
+/* Tinggi peta mengikuti layar yang benar-benar terlihat: 100vh di browser ponsel ikut
+   menghitung area di balik toolbar, sehingga tombol bawah bisa tertutup. */
+#map-section {
+    height: 100vh;
+    height: 100dvh;
+}
+
+/* ---------- Ponsel: panel jadi lembar bawah (bottom sheet) ---------- */
 @media (max-width: 767px) {
+    /* Selebar layar, tinggi mengikuti isi, peta tetap terlihat di atasnya. Di atas tombol
+       kontrol (z 102) & pencarian (z 103) karena lembar menutupi area tombol kanan. */
     #map-section #sidebar-layer,
     #map-section #sidebar-basemap,
     #map-section #sidebar-legend,
     #map-section #sidebar-download {
-        left: 12px;
-        right: 70px;
+        top: auto;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        z-index: 104;
         width: auto;
-        bottom: 84px;
+        height: auto;
+        max-height: 65vh;
+        max-height: 65dvh;
+        padding: 22px 14px 14px !important;
+        border-radius: 22px;
+        box-shadow: 0 -18px 50px -20px rgba(6, 21, 34, .6);
+        animation: map-sheet-in .22s ease-out;
+        touch-action: pan-y;
+    }
+
+    #map-section #sidebar-layer:not(.hidden),
+    #map-section #sidebar-basemap:not(.hidden),
+    #map-section #sidebar-legend:not(.hidden),
+    #map-section #sidebar-download:not(.hidden) {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Pegangan geser: tarik kepala panel ke bawah untuk menutup (map.js). */
+    #map-section #sidebar-layer::before,
+    #map-section #sidebar-basemap::before,
+    #map-section #sidebar-legend::before,
+    #map-section #sidebar-download::before {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, .22);
+        transform: translateX(-50%);
+    }
+
+    #map-section #sidebar-layer > div:first-child,
+    #map-section #sidebar-basemap > div:first-child,
+    #map-section #sidebar-legend > div:first-child,
+    #map-section #sidebar-download > div:first-child {
+        flex-shrink: 0;
+        touch-action: none;
+    }
+
+    #map-section #basemap-list,
+    #map-section #legend-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+    }
+
+    #map-section .map-sheet-dragging { animation: none; transition: none !important; }
+
+    /* ---------- Ponsel: tata letak tombol kontrol ----------
+       Disembunyikan: zoom +/- (cukup cubit dua jari), Tampilan Penuh (tidak didukung Safari
+       iPhone), Unduh Peta (cetak lebih cocok di desktop), Bantuan (panduan tetap otomatis
+       di kunjungan pertama; map-guide.js melewati langkah yang tombolnya tersembunyi). */
+    #map-section .leaflet-control-zoom,
+    #map-section #btn-fullscreen,
+    #map-section #btn-toggle-sidebar-help,
+    #map-section #btn-toggle-sidebar-download {
+        display: none !important;
+    }
+
+    /* Kanan bawah (jangkauan jempol): grup panel di atas tombol Bagikan. */
+    #map-section #nav-control-buttons {
+        right: 14px;
+        bottom: 28px;
+    }
+
+    #map-section #sidebar-control-buttons {
+        top: auto;
+        right: 14px;
+        bottom: calc(28px + 44px + 12px);
+        transform: none;
+    }
+
+    #map-section #sidebar-control-buttons,
+    #map-section #nav-control-buttons {
+        overflow: hidden;
+    }
+
+    #map-section #sidebar-control-buttons button,
+    #map-section #nav-control-buttons button {
+        width: 44px;
+        height: 44px;
+        border-radius: 0 !important;
+        font-size: 18px;
+    }
+
+    /* Urutan dari atas: Legenda, Basemap, Analisis, Layer — Layer paling dekat jempol. */
+    #map-section #btn-toggle-sidebar-legend { order: 1; }
+    #map-section #btn-toggle-sidebar-basemap { order: 2; }
+    #map-section #btn-open-analysis { order: 3; }
+    #map-section #sidebar-control-buttons #btn-toggle-sidebar-layer {
+        order: 4;
+        border-bottom: 0;
+        background: var(--peta-ocean);
+    }
+
+    #map-section #sidebar-control-buttons #btn-toggle-sidebar-layer:hover { background: #0866c4; color: #fff; }
+
+    #map-section #sidebar-control-buttons #btn-open-analysis { border-bottom: 1px solid rgba(255, 255, 255, .08); }
+
+    /* Kiri bawah, di atas skala: tombol kembali ke tampilan awal. */
+    #map-section .leaflet-top.leaflet-left {
+        top: auto;
+        bottom: 64px;
+        left: 10px;
+        transform: none;
+    }
+
+    #map-section .leaflet-bar a,
+    #map-section .leaflet-bar a:hover {
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        font-size: 18px;
+    }
+
+    #map-section #map-bottom-bar {
+        left: 14px;
+        bottom: 28px;
+    }
+
+    /* Popup terbuka: tombol samping disembunyikan sementara (map.js) agar popup selebar layar. */
+    #map-section .leaflet-left .leaflet-control,
+    #map-section #sidebar-control-buttons,
+    #map-section #nav-control-buttons {
+        transition: opacity .2s ease;
+    }
+
+    #map-section.is-popup-open .leaflet-left .leaflet-control,
+    #map-section.is-popup-open #sidebar-control-buttons,
+    #map-section.is-popup-open #nav-control-buttons {
+        opacity: 0;
+        pointer-events: none;
     }
 
     #map-hud {
         display: none;
     }
+}
+
+@keyframes map-sheet-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @media (hover: none) {
@@ -479,6 +630,7 @@
 @media (prefers-reduced-motion: reduce) {
     #map-section * {
         transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
     }
 }
 
@@ -2381,5 +2533,5 @@ body.leaflet-dragging #map-section .leaflet-grab .leaflet-interactive { cursor: 
 
 /* Ponsel: panel jadi lembar bawah agar bingkai area cetak tetap terlihat di atasnya. */
 @media (max-width: 767px) {
-    #map-section #sidebar-download { top: auto; bottom: 12px; height: 54vh; }
+    #map-section #sidebar-download { height: 54vh; height: 54dvh; }
 }

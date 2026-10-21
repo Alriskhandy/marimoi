@@ -245,10 +245,11 @@ const LeftControlButtons = L.Control.extend({
         const homeBtn = L.DomUtil.create("a", "", container);
         homeBtn.id = "btn-default-zoom";
         homeBtn.href = "#";
-        homeBtn.title = "Default Zoom";
+        homeBtn.title = "Tampilan Awal";
         homeBtn.setAttribute("role", "button");
-        homeBtn.setAttribute("aria-label", "Default Zoom");
-        homeBtn.innerHTML = '<i class="bi bi-house-door-fill"></i>';
+        homeBtn.setAttribute("aria-label", "Kembali ke tampilan awal");
+        // Ikon bola dunia, bukan rumah: rumah sudah dipakai tombol Beranda.
+        homeBtn.innerHTML = '<i class="bi bi-globe-asia-australia"></i>';
 
         L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
         L.DomEvent.disableClickPropagation(container);
@@ -919,20 +920,47 @@ async function applyStructuredFilters() {
 // Popup fitur & pemuatan data
 // =====================================================================
 
+/** Layar ponsel: sama dengan breakpoint lembar bawah di peta.css. */
+function isMobileViewport() {
+    return window.matchMedia("(max-width: 767px)").matches;
+}
+
 /**
- * Pasang popup ringkas pada satu fitur (isi dari MarimoiFeatureDetail.popupHtml): judul,
- * atribut penting, geometri, koordinat, serta tombol Zoom To dan Detail (panel lengkap).
- * Isi dibuat saat popup dibuka agar ribuan fitur tidak menyimpan HTML popup di memori.
+ * Opsi popup fitur. Saat digeser ke tampilan, popup menjauhi bilah atas (Beranda, pencarian)
+ * dan tumpukan tombol kanan agar tidak tertutup. Di ponsel popup hampir selebar layar
+ * (tombol samping disembunyikan selama popup terbuka, lihat map.on("popupopen")) dan
+ * tingginya dibatasi (isi panjang di-scroll).
  */
-function bindPopupContent(feature, layer, urlPath) {
-    layer.bindPopup(() => window.MarimoiFeatureDetail?.popupHtml(feature, layer) ?? "", {
+function popupOptions() {
+    const options = {
         maxWidth: 320,
         minWidth: 280,
         className: "tailwind-popup",
         closeButton: true,
         autoClose: false,
         closeOnEscapeKey: true,
-    });
+        autoPanPaddingTopLeft: L.point(16, 76),
+        autoPanPaddingBottomRight: L.point(72, 24),
+    };
+
+    if (isMobileViewport()) {
+        const width = Math.min(360, window.innerWidth - 40);
+        options.minWidth = width;
+        options.maxWidth = width;
+        options.maxHeight = Math.max(260, window.innerHeight - 220);
+        options.autoPanPaddingBottomRight = L.point(20, 24);
+    }
+
+    return options;
+}
+
+/**
+ * Pasang popup ringkas pada satu fitur (isi dari MarimoiFeatureDetail.popupHtml): judul,
+ * atribut penting, geometri, koordinat, serta tombol Zoom To dan Detail (panel lengkap).
+ * Isi dibuat saat popup dibuka agar ribuan fitur tidak menyimpan HTML popup di memori.
+ */
+function bindPopupContent(feature, layer, urlPath) {
+    layer.bindPopup(() => window.MarimoiFeatureDetail?.popupHtml(feature, layer) ?? "", popupOptions());
 
     layer.on("popupopen", function () {
         const popupNode = layer.getPopup().getElement();
@@ -1677,6 +1705,58 @@ document.addEventListener("DOMContentLoaded", async () => {
                 sidebarElements[type].classList.add("hidden");
             });
         }
+    });
+
+    // Ponsel: panel tampil sebagai lembar bawah (peta.css) — tutup dengan menarik kepalanya
+    // ke bawah, atau dengan mengetuk peta. Panel Unduh tidak ikut tutup saat peta diketuk
+    // karena peta sedang digeser untuk mengatur area cetak.
+    Object.values(sidebarElements).forEach((sheet) => {
+        const handle = sheet?.firstElementChild;
+        if (!handle) return;
+        let startY = null;
+        let offset = 0;
+
+        handle.addEventListener("touchstart", (event) => {
+            if (!isMobileViewport() || event.target.closest("button")) return;
+            startY = event.touches[0].clientY;
+            offset = 0;
+            sheet.classList.add("map-sheet-dragging");
+        }, { passive: true });
+
+        handle.addEventListener("touchmove", (event) => {
+            if (startY === null) return;
+            offset = Math.max(0, event.touches[0].clientY - startY);
+            sheet.style.transform = `translateY(${offset}px)`;
+        }, { passive: true });
+
+        const finishDrag = () => {
+            if (startY === null) return;
+            startY = null;
+            sheet.classList.remove("map-sheet-dragging");
+            sheet.style.transform = "";
+            if (offset > 80) {
+                sheet.classList.add("hidden");
+            }
+        };
+        handle.addEventListener("touchend", finishDrag);
+        handle.addEventListener("touchcancel", finishDrag);
+    });
+
+    map.on("click", () => {
+        if (!isMobileViewport()) return;
+        ["layer", "basemap", "legend"].forEach((key) => sidebarElements[key]?.classList.add("hidden"));
+    });
+
+    // Ponsel: selama popup terbuka tombol samping disembunyikan (peta.css) agar popup lega.
+    const mapSection = document.getElementById("map-section");
+    map.on("popupopen", () => {
+        mapSection?.classList.toggle("is-popup-open", isMobileViewport());
+    });
+    map.on("popupclose", () => {
+        // autoClose: false — popup lain bisa masih terbuka.
+        setTimeout(() => {
+            mapSection?.classList.toggle("is-popup-open", isMobileViewport() && !!document.querySelector("#map .leaflet-popup"));
+        });
     });
 
     // Kontrol Filter Data ada di modal Katalog (map-catalog.js); di sini hanya memastikan

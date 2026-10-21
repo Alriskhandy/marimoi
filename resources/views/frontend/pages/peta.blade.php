@@ -705,6 +705,11 @@
             var debounce = null;
             var matches = [];
 
+            // Di ponsel kolom pencarian sempit: placeholder panjang terpotong.
+            if (window.matchMedia('(max-width: 767px)').matches) {
+                input.placeholder = 'Cari data...';
+            }
+
             function escapeHtml(text) {
                 var div = document.createElement('div');
                 div.textContent = text;
